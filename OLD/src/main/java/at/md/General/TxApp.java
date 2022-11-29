@@ -78,7 +78,8 @@ public class TxApp {
                     System.out.println(sa.length);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                System.out.println("Error while processing the following transaction: " + transaction + " | " + e.getMessage());
+//                throw new RuntimeException(e);
             }
         }
         return transactions;

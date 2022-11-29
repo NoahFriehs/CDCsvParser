@@ -20,7 +20,8 @@ public enum TransactionType {
     admin_wallet_credited,  //Free money from fork
     crypto_wallet_swap_credited,    //fork stuff
     crypto_wallet_swap_debited,  //fork stuff
-
+    dust_conversion_credited,   //Dust conversion end
+    dust_conversion_debited,    //Dust conversion start
     STRING //for Card und unknown things
 
 }

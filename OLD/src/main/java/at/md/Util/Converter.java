@@ -15,7 +15,8 @@ public class Converter {
             return TransactionType.valueOf(s);
         } catch (Exception e) {
             System.out.println(s);
-            return null;
+            throw new IllegalArgumentException("Please give a correct TransactionType");
+//            return null;
         }
 
     }

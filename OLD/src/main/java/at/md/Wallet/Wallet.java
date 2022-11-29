@@ -153,6 +153,13 @@ public class Wallet {
                 }
                 wt.removeFromWallet(transaction.getAmount(), BigDecimal.ZERO);
             }
+            case dust_conversion_debited -> {
+                System.out.println(transaction);
+            }
+            case dust_conversion_credited -> {
+                System.out.println(transaction);
+            }
+            default -> System.out.println("This is an unsupported TransactionType: " + t);
         }
     }
 }
