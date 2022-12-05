@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">CDCsvParser</string>
+    <string name="welcome_message">Welcome to CDCsvParser</string>
+    <string name="upload_file">Upload new File</string>
+    <string name="history_text">Or select one of your old uploads:</string>
+    <string name="history">History</string>
 </resources>
