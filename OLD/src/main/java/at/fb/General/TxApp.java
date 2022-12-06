@@ -1,10 +1,10 @@
-package at.md.General;
+package at.fb.General;
 
-import at.md.Transactions.Transaction;
-import at.md.Transactions.TransactionType;
-import at.md.Util.CurrencyType;
-import at.md.Util.IOHandler;
-import at.md.Wallet.Wallet;
+import at.fb.Transactions.Transaction;
+import at.fb.Transactions.TransactionType;
+import at.fb.Util.CurrencyType;
+import at.fb.Util.IOHandler;
+import at.fb.Wallet.Wallet;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -12,9 +12,12 @@ import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static at.md.Util.Converter.ttConverter;
+import static at.fb.Util.Converter.ttConverter;
 
-
+/**
+ * The main class of the parser
+ *
+ */
 public class TxApp {
 
     public static ArrayList<Wallet> wallets = new ArrayList<>();
@@ -85,6 +88,10 @@ public class TxApp {
         return transactions;
     }
 
+    /**
+     * Creates Wallets for every CurrencyType
+     *
+     */
     private static void createWallets() {
         for (String t : CurrencyType.currencys) {
             wallets.add(new Wallet(t, BigDecimal.ZERO, BigDecimal.ZERO));
@@ -94,6 +101,11 @@ public class TxApp {
         }
     }
 
+    /**
+     * Fills the Wallets with the given transaction list
+     *
+     * @param tr the transaction list to be processed
+     */
     private static void fillWallet(ArrayList<Transaction> tr) {
         for (Transaction t : tr) {
             wallets.get(0).addTransaction(t);

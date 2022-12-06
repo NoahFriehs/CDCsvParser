@@ -1,16 +1,20 @@
-package at.md.Wallet;
+package at.fb.Wallet;
 
-import at.md.Transactions.Transaction;
-import at.md.Transactions.TransactionType;
+import at.fb.Transactions.Transaction;
+import at.fb.Transactions.TransactionType;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Objects;
 
-import static at.md.General.TxApp.outsideWallets;
-import static at.md.General.TxApp.wallets;
+import static at.fb.General.TxApp.outsideWallets;
+import static at.fb.General.TxApp.wallets;
 
+/**
+ * Represents a Wallet object
+ *
+ */
 public class Wallet {
 
     String currencyType;
@@ -30,6 +34,12 @@ public class Wallet {
         this.transactions = new ArrayList<>();
     }
 
+    /**
+     * Get Wallet from CurrencyType String
+     *
+     * @param ct the CurrencyType as String
+     * @return the idex of the wallet
+     */
     public static int getWallet(String ct) {
         int i = 0;
         for (Wallet w : wallets) {
@@ -39,6 +49,11 @@ public class Wallet {
         return -1;
     }
 
+
+    /**
+     * Prints out all wallets
+     *
+     */
     public static void writeAmount() {
         BigDecimal amountSpent = BigDecimal.ZERO;
         for (Wallet w : wallets) {
@@ -68,12 +83,26 @@ public class Wallet {
         return currencyType;
     }
 
+    /**
+     * Add a transaction to the Wallet
+     *
+     * @param amount the amount of the coin
+     * @param nativeAmount the amount in native currency
+     * @param amountBonus the amount the user got for free
+     */
     public void addToWallet(BigDecimal amount, BigDecimal nativeAmount, BigDecimal amountBonus) {
         this.amount = this.amount.add(amount);
         this.moneySpent = this.moneySpent.add(nativeAmount);
         this.amountBonus = this.amountBonus.add(amountBonus);
     }
 
+
+    /**
+     * Remove a transaction from the Wallet
+     *
+     * @param amount the amount to remove
+     * @param nativeAmount the amount in native currency to remove
+     */
     public void removeFromWallet(BigDecimal amount, BigDecimal nativeAmount) {
         this.amount = this.amount.subtract(amount);
         this.moneySpent = this.moneySpent.subtract(nativeAmount);
@@ -83,6 +112,12 @@ public class Wallet {
         return transactions;
     }
 
+
+    /**
+     * Adds a transactions to the respective Wallet
+     *
+     * @param transaction the transaction to be added
+     */
     public void addTransaction(Transaction transaction) {
         transactions.add(transaction);
         TransactionType t = transaction.getTransactionType();
@@ -161,5 +196,37 @@ public class Wallet {
             }
             default -> System.out.println("This is an unsupported TransactionType: " + t);
         }
+    }
+
+    public void setCurrencyType(String currencyType) {
+        this.currencyType = currencyType;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public BigDecimal getAmountBonus() {
+        return amountBonus;
+    }
+
+    public void setAmountBonus(BigDecimal amountBonus) {
+        this.amountBonus = amountBonus;
+    }
+
+    public BigDecimal getMoneySpent() {
+        return moneySpent;
+    }
+
+    public void setMoneySpent(BigDecimal moneySpent) {
+        this.moneySpent = moneySpent;
+    }
+
+    public void setTransactions(ArrayList<Transaction> transactions) {
+        this.transactions = transactions;
     }
 }

@@ -1,11 +1,15 @@
-package at.md.Transactions;
+package at.fb.Transactions;
 
-import at.md.Util.Converter;
-import at.md.Util.CurrencyType;
+import at.fb.Util.Converter;
+import at.fb.Util.CurrencyType;
 
 import java.math.BigDecimal;
 import java.util.Date;
 
+/**
+ * Represents a Transaction object
+ *
+ */
 public class Transaction {
 
     Date date;

@@ -1,5 +1,9 @@
-package at.md.Transactions;
+package at.fb.Transactions;
 
+/**
+ * All different TransactionTypes
+ *
+ */
 public enum TransactionType {
 
     crypto_purchase,    //Purchase of crypto

@@ -1,11 +1,15 @@
-package at.md.Util;
+package at.fb.Util;
 
-import at.md.Transactions.TransactionType;
+import at.fb.Transactions.TransactionType;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * Helper-class to convert types
+ *
+ */
 public class Converter {
 
     public static TransactionType ttConverter(String s) {

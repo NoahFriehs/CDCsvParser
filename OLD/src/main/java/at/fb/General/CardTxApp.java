@@ -1,8 +1,8 @@
-package at.md.General;
+package at.fb.General;
 
-import at.md.Transactions.CardTX;
-import at.md.Util.IOHandler;
-import at.md.Wallet.CardWallet;
+import at.fb.Transactions.CardTX;
+import at.fb.Util.IOHandler;
+import at.fb.Wallet.CardWallet;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 
-
+/**
+ * @deprecated
+ */
 public class CardTxApp {
 
     public static ArrayList<CardWallet> cardWallets = new ArrayList<>();

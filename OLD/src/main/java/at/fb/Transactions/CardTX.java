@@ -1,7 +1,10 @@
-package at.md.Transactions;
+package at.fb.Transactions;
 
 import java.math.BigDecimal;
 
+/**
+ * @deprecated
+ */
 public class CardTX extends Transaction {
 
     String transactionType;

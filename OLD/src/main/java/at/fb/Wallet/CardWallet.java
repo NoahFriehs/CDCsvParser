@@ -1,12 +1,15 @@
-package at.md.Wallet;
+package at.fb.Wallet;
 
-import at.md.Transactions.CardTX;
+import at.fb.Transactions.CardTX;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
-import static at.md.General.CardTxApp.cardWallets;
+import static at.fb.General.CardTxApp.cardWallets;
 
+/**
+ * @deprecated
+ */
 public class CardWallet extends Wallet {
 
     public static ArrayList<String> tts = new ArrayList<>();
