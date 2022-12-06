@@ -1,6 +1,6 @@
-package at.fb.Util;
+package at.msd.friehs_bicha.cdcsvparser.Util;
 
-import at.fb.Transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

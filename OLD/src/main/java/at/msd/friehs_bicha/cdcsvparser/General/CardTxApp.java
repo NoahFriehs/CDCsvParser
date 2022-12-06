@@ -1,8 +1,8 @@
-package at.fb.General;
+package at.msd.friehs_bicha.cdcsvparser.General;
 
-import at.fb.Transactions.CardTX;
-import at.fb.Util.IOHandler;
-import at.fb.Wallet.CardWallet;
+import at.msd.friehs_bicha.cdcsvparser.Transactions.CardTX;
+import at.msd.friehs_bicha.cdcsvparser.Util.IOHandler;
+import at.msd.friehs_bicha.cdcsvparser.Wallet.CardWallet;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;

@@ -1,7 +1,7 @@
-package at.fb.Transactions;
+package at.msd.friehs_bicha.cdcsvparser.Transactions;
 
-import at.fb.Util.Converter;
-import at.fb.Util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.Util.Converter;
+import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -15,14 +15,14 @@ public class Transaction {
     Date date;
     String description;
     String currencyType;
-    java.math.BigDecimal amount;
-    java.math.BigDecimal nativeAmount;
+    BigDecimal amount;
+    BigDecimal nativeAmount;
     TransactionType transactionType;
     String transHash;
 
     String toCurrency;
 
-    java.math.BigDecimal toAmount;
+    BigDecimal toAmount;
 
     public Transaction(String date, String description, String currencyType, BigDecimal amount, BigDecimal nativeAmount, TransactionType transactionType) {
 
@@ -50,7 +50,7 @@ public class Transaction {
         return amount;
     }
 
-    public java.math.BigDecimal getNativeAmount() {
+    public BigDecimal getNativeAmount() {
         return nativeAmount;
     }
 
