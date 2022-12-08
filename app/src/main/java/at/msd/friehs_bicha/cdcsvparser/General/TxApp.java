@@ -7,6 +7,7 @@ import at.msd.friehs_bicha.cdcsvparser.Util.IOHandler;
 import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
 
 import java.io.File;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -20,13 +21,13 @@ import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
  * The main class of the parser
  *
  */
-public class TxApp {
+public class TxApp implements Serializable {
 
-    public static ArrayList<Wallet> wallets = new ArrayList<>();
-    public static ArrayList<Wallet> outsideWallets = new ArrayList<>();
-    public static ArrayList<Transaction> transactions = new ArrayList<>();
+    public ArrayList<Wallet> wallets = new ArrayList<>();
+    public ArrayList<Wallet> outsideWallets = new ArrayList<>();
+    public ArrayList<Transaction> transactions = new ArrayList<>();
 
-    public static void main(ArrayList<String> file) {
+    public TxApp(ArrayList<String> file) {
         try {
             transactions = getTransactions(file);
         } catch (Exception e) {
@@ -45,7 +46,7 @@ public class TxApp {
      * @param input csv file as String list
      * @return Transactions list
      */
-    private static ArrayList<Transaction> getTransactions(ArrayList<String> input) {
+    private ArrayList<Transaction> getTransactions(ArrayList<String> input) {
         input.remove(0);
         ArrayList<Transaction> transactions = new ArrayList<>();
 
@@ -94,12 +95,12 @@ public class TxApp {
      * Creates Wallets for every CurrencyType
      *
      */
-    private static void createWallets() {
+    private void createWallets() {
         for (String t : CurrencyType.currencys) {
-            wallets.add(new Wallet(t, BigDecimal.ZERO, BigDecimal.ZERO));
+            wallets.add(new Wallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this));
         }
         for (String t : CurrencyType.currencys) {
-            outsideWallets.add(new Wallet(t, BigDecimal.ZERO, BigDecimal.ZERO));
+            outsideWallets.add(new Wallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this));
         }
     }
 
@@ -108,10 +109,11 @@ public class TxApp {
      *
      * @param tr the transaction list to be processed
      */
-    private static void fillWallet(ArrayList<Transaction> tr) {
+    private void fillWallet(ArrayList<Transaction> tr) {
         for (Transaction t : tr) {
             wallets.get(0).addTransaction(t);
         }
+        System.out.println("We have " + wallets.size() + " Wallets");
     }
 
 }

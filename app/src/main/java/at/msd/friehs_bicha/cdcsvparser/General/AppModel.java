@@ -5,7 +5,7 @@ import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
 import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
 import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
 
-import java.io.File;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +18,16 @@ import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
  * The parser control for the CDCsvParser
  *
  */
-public class AppModel {
+public class AppModel implements Serializable {
+
+    public boolean isRunning = false;
+
+    protected TxApp txApp;
 
     public boolean init(ArrayList<String> file) {
-        TxApp.main(file);
+        TxApp app = new TxApp(file);
+        this.txApp = app;
+        isRunning = true;
         return true;
     }
 
@@ -31,16 +37,16 @@ public class AppModel {
      * @param s the string of the coin
      * @return the transactions that contain this coin
      */
-    public static List<Transaction> getTXByCoin(String s) {
+    public List<Transaction> getTXByCoin(String s) {
         ArrayList<Transaction> transactions = new ArrayList<>();
         try {
             if (!CurrencyType.currencys.contains(s)) return null;
-            for (Wallet w : TxApp.wallets) {
+            for (Wallet w : txApp.wallets) {
                 if (w.getCurrencyType().equals(s)) {
                     transactions.addAll(w.getTransactions());
                 }
             }
-            for (Wallet w : TxApp.outsideWallets) {
+            for (Wallet w : txApp.outsideWallets) {
                 if (w.getCurrencyType().equals(s)) {
                     transactions.addAll(w.getTransactions());
                 }
@@ -52,11 +58,11 @@ public class AppModel {
         return transactions;
     }
 
-    public  static List<Transaction> getTXByType(String s) {
+    public List<Transaction> getTXByType(String s) {
         ArrayList<Transaction> transactions = new ArrayList<>();
         try {
             TransactionType tt = ttConverter(s);
-            for (Transaction t : TxApp.transactions) {
+            for (Transaction t : txApp.transactions) {
                 if (t.getTransactionType().equals(tt)) {
                     transactions.add(t);
                 }
@@ -76,14 +82,14 @@ public class AppModel {
      * @param day the day from which the transactions should be returned, if 0 then only month tx get returned
      * @return the List with the transactions
      */
-    public static List<Transaction> getTxByDate(int year, int month, int day) {
+    public List<Transaction> getTxByDate(int year, int month, int day) {
         ArrayList<Transaction> rightTX = new ArrayList<>();
         ArrayList<Transaction> rightMonthTX = new ArrayList<>();
         ArrayList<Transaction> rightDayTX = new ArrayList<>();
         int txPerYear = 0;
         int txPerMonth = 0;
         int txPerDay = 0;
-        for (Transaction t : TxApp.transactions) {
+        for (Transaction t : txApp.transactions) {
             if (Integer.parseInt(Objects.requireNonNull(stringToDateConverter(t.getDate())).substring(0, 4)) == year) {
                 txPerYear++;
                 rightTX.add(t);
@@ -125,11 +131,11 @@ public class AppModel {
      *
      * @return the total amount spent
      */
-    public static BigDecimal getTotalPrice() {
+    public BigDecimal getTotalPrice() {
 
         BigDecimal totalPrice = new BigDecimal(0);
 
-        for (Wallet wallet : TxApp.wallets) {
+        for (Wallet wallet : txApp.wallets) {
             totalPrice = totalPrice.add(wallet.getMoneySpent());
         }
         return totalPrice;
@@ -140,11 +146,11 @@ public class AppModel {
      *
      * @return the total amount spent
      */
-    public static BigDecimal getTotalBonus() {
+    public BigDecimal getTotalBonus() {
 
         BigDecimal totalBonus = new BigDecimal(0);
 
-        for (Wallet wallet : TxApp.wallets) {
+        for (Wallet wallet : txApp.wallets) {
             totalBonus = totalBonus.add(wallet.getAmountBonus());
         }
         return totalBonus;

@@ -3,6 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser.Transactions;
 import at.msd.friehs_bicha.cdcsvparser.Util.Converter;
 import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -10,7 +11,7 @@ import java.util.Date;
  * Represents a Transaction object
  *
  */
-public class Transaction {
+public class Transaction implements Serializable {
 
     Date date;
     String description;

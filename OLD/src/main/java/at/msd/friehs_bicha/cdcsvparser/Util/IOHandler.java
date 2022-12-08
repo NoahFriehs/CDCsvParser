@@ -12,14 +12,14 @@ import java.util.ArrayList;
 public class IOHandler {
 
     /**
-     * Reads the file the path is given to and returns a list with it
+     * Reads the file and returns a list with it
      *
-     * @param fileName the path to the file
+     * @param file the file
      * @return List with all the lines in the file
      * @throws IOException if something goes wrong while reading the file
      */
-    public static ArrayList<String> readFile(String fileName) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(fileName));
+    public static ArrayList<String> readFile(File file) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(file));
         ArrayList<String> lines = new ArrayList<>();
         String newLine;
         while ((newLine = br.readLine()) != null) {

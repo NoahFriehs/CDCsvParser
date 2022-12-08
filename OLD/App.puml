@@ -1,0 +1,122 @@
+@startuml
+class at.fb.General.CardTxApp {
++ {static} ArrayList<CardWallet> cardWallets
++ {static} ArrayList<CardTX> transactions
++ {static} void main(String[])
++ {static} ArrayList<CardTX> getTransactions()
+- {static} ArrayList<CardTX> getTransactions(ArrayList<String>)
+- {static} void fillWallet(ArrayList<CardTX>)
+}
+enum at.fb.Transactions.TransactionType {
++  crypto_purchase
++  supercharger_deposit
++  rewards_platform_deposit_credited
++  supercharger_reward_to_app_credited
++  viban_purchase
++  crypto_earn_program_created
++  crypto_earn_interest_paid
++  supercharger_withdrawal
++  lockup_lock
++  crypto_withdrawal
++  crypto_deposit
++  referral_card_cashback
++  reimbursement
++  card_cashback_reverted
++  crypto_earn_program_withdrawn
++  admin_wallet_credited
++  crypto_wallet_swap_credited
++  crypto_wallet_swap_debited
++  dust_conversion_credited
++  dust_conversion_debited
++  STRING
+}
+class at.fb.Transactions.Transaction {
+~ Date date
+~ String description
+~ String currencyType
+~ java.math.BigDecimal amount
+~ java.math.BigDecimal nativeAmount
+~ TransactionType transactionType
+~ String transHash
+~ String toCurrency
+~ java.math.BigDecimal toAmount
++ Date getDate()
++ String getCurrencyType()
++ BigDecimal getAmount()
++ java.math.BigDecimal getNativeAmount()
++ TransactionType getTransactionType()
++ void setTransactionType(TransactionType)
++ String getTransHash()
++ void setTransHash(String)
++ String getToCurrency()
++ void setToCurrency(String)
++ BigDecimal getToAmount()
++ void setToAmount(BigDecimal)
++ String toString()
+}
+class at.fb.Wallet.Wallet {
+~ String currencyType
+~ BigDecimal amount
+~ BigDecimal amountBonus
+~ BigDecimal moneySpent
+~ ArrayList<Transaction> transactions
++ {static} int getWallet(String)
++ {static} void writeAmount()
++ String getCurrencyType()
++ void addToWallet(BigDecimal,BigDecimal,BigDecimal)
++ void removeFromWallet(BigDecimal,BigDecimal)
++ ArrayList<Transaction> getTransactions()
++ void addTransaction(Transaction)
+}
+class at.fb.Util.Converter {
++ {static} TransactionType ttConverter(String)
++ {static} Date dateConverter(String)
++ {static} String stringToDateConverter(Date)
+}
+class at.fb.General.Application {
++ {static} Scanner scanner
+~ {static} String datapath
++ {static} void main(String[])
+- {static} String getDatapath()
+~ {static} BigDecimal readNumber(String)
+~ {static} int userInterface()
+~ {static} void userInterfaceCardTxApp()
+~ {static} void userInstructionsCardTxApp()
+~ {static} void userInterfaceTxApp()
+~ {static} void userInstructionsTxApp()
+}
+class at.fb.Transactions.CardTX {
+~ String transactionType
++ String getTransactionTypeString()
++ String toString()
+}
+class at.fb.General.TxApp {
++ {static} ArrayList<Wallet> wallets
++ {static} ArrayList<Wallet> outsideWallets
++ {static} ArrayList<Transaction> transactions
++ {static} void main(String[])
+- {static} ArrayList<Transaction> getTransactions(ArrayList<String>)
+- {static} void createWallets()
+- {static} void fillWallet(ArrayList<Transaction>)
+}
+class at.fb.Wallet.CardWallet {
++ {static} ArrayList<String> tts
+~ String transactionType
+~ ArrayList<CardTX> txs
++ {static} void addTransaction(CardTX)
++ {static} void writeAmount()
++ void addToCardWallet(BigDecimal)
++ ArrayList<CardTX> getTxs()
++ String getTransactionType()
+}
+class at.fb.Util.IOHandler {
++ {static} ArrayList<String> readFile(String)
+}
+class at.fb.Util.CurrencyType {
++ {static} ArrayList<String> currencys
+}
+
+
+at.fb.Transactions.Transaction <|-- at.fb.Transactions.CardTX
+at.fb.Wallet.Wallet <|-- at.fb.Wallet.CardWallet
+@enduml

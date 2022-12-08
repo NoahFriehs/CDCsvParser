@@ -2,32 +2,20 @@ package at.msd.friehs_bicha.cdcsvparser;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.annotation.SuppressLint;
 import android.content.ContentResolver;
-import android.content.ContentUris;
-import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.FileUtils;
-import android.provider.MediaStore;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
 
 import at.msd.friehs_bicha.cdcsvparser.General.AppModel;
 
@@ -57,10 +45,6 @@ public class MainActivity extends AppCompatActivity {
         btnParse.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, ParseActivity.class);
-                //intent.putExtra("NAME_KEY","Value");
-                startActivity(intent);
-
                 onBtnClick(view);
             }
 
@@ -78,8 +62,14 @@ public class MainActivity extends AppCompatActivity {
 
             ArrayList<String> list = getFileContentFromUri(fileUri);
             appModel.init(list);
-
+            callParseView();
         }
+    }
+
+    private void callParseView() {
+        Intent intent = new Intent(MainActivity.this, ParseActivity.class);
+        intent.putExtra("AppModel", appModel);
+        startActivity(intent);
     }
 
     public void onBtnClick(View view){

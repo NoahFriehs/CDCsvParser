@@ -124,9 +124,7 @@ public class Wallet {
             w.transactions.add(transaction);
         }
         switch (t) {
-            case crypto_purchase -> {
-                w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
-            }
+            case crypto_purchase -> w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
             case supercharger_deposit -> {
                 //do nothing
             }
