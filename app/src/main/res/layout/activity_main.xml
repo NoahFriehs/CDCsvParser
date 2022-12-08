@@ -36,7 +36,6 @@
         android:layout_margin="10dp"
         android:background="#6C92F4"
         android:textAllCaps="false"
-        android:onClick="onBtnClick"
         />
 
     <TextView

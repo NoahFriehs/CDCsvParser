@@ -60,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(MainActivity.this, ParseActivity.class);
                 //intent.putExtra("NAME_KEY","Value");
                 startActivity(intent);
+
+                onBtnClick(view);
             }
 
         });
