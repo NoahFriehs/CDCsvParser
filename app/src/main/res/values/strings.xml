@@ -7,4 +7,8 @@
     <string name="assets_value_label">Value of assets:</string>
     <string name="euro_sign">€</string>
     <string name="money_spent_label">Money spent</string>
+    <string name="profit_loss">Profit/Loss</string>
+    <string name="rewards_earned">Rewards earned</string>
+    <string name="filter_by_asset">Filter by asset</string>
+    <string name="all_transactions">All transactions</string>
 </resources>

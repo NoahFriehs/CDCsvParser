@@ -34,7 +34,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         android:layout_margin="10dp"
-        android:background="#6C92F4"
+        android:background="@drawable/round_button_layer_list"
         android:textAllCaps="false"
         />
 
