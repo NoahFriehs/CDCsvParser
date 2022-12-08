@@ -4,8 +4,11 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 
 public class ParseActivity extends AppCompatActivity {
 
@@ -18,6 +21,28 @@ public class ParseActivity extends AppCompatActivity {
 
         // showing the back button in action bar
         actionBar.setDisplayHomeAsUpEnabled(true);
+
+        Button btnFilter = findViewById(R.id.btn_filter);
+        Button btnTx = findViewById(R.id.btn_all_tx);
+
+        btnFilter.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(ParseActivity.this, AssetsFilterActivity.class);
+                //intent.putExtra("NAME_KEY","Value");
+                startActivity(intent);
+            }
+
+        });
+        btnTx.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(ParseActivity.this, TransactionsActivity.class);
+                //intent.putExtra("NAME_KEY","Value");
+                startActivity(intent);
+            }
+
+        });
     }
 
     @Override
