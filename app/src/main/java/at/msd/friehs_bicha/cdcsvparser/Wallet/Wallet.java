@@ -55,7 +55,7 @@ public class Wallet {
     public static void writeAmount() {
         BigDecimal amountSpent = BigDecimal.ZERO;
         for (Wallet w : TxApp.wallets) {
-            System.out.println("-".repeat(20));
+            //System.out.println("-".repeat(20));
             System.out.println(w.getCurrencyType());
             System.out.println("Amount: " + w.amount);
             System.out.println("Money spent: " + w.moneySpent);
@@ -68,12 +68,12 @@ public class Wallet {
         }
         for (Wallet w : TxApp.outsideWallets) {
             if (Objects.equals(w.amount, BigDecimal.ZERO)) continue;
-            System.out.println("-".repeat(20));
+            //System.out.println("-".repeat(20));
             System.out.println("Outside-" + w.getCurrencyType());
             System.out.println("Amount: " + w.amount);
             System.out.println("Transactions: " + w.transactions.size());
         }
-        System.out.println("-".repeat(20));
+        //System.out.println("-".repeat(20));
         System.out.println("Amount total spent: " + amountSpent);
     }
 
@@ -124,76 +124,78 @@ public class Wallet {
             w.transactions.add(transaction);
         }
         switch (t) {
-            case crypto_purchase -> {
-                w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
-            }
-            case supercharger_deposit -> {
-                //do nothing
-            }
-            case rewards_platform_deposit_credited -> {
-                //do nothing
-            }
-            case supercharger_reward_to_app_credited -> {
+            case crypto_purchase: w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
+
+            case supercharger_deposit:
+                ;
+
+            case rewards_platform_deposit_credited:
+                ;//do nothing
+
+            case supercharger_reward_to_app_credited:
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-            }
-            case viban_purchase -> {
-                Wallet wv = TxApp.wallets.get(Wallet.getWallet(transaction.getToCurrency()));
-                wv.addToWallet(transaction.getToAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
-            }
-            case crypto_earn_program_created -> {
-            }
-            case crypto_earn_interest_paid -> {
+
+            case viban_purchase:
+                vibanPurchase(transaction);
+
+            case crypto_earn_program_created:
+                ;
+            case crypto_earn_interest_paid:
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-            }
-            case supercharger_withdrawal -> {
-            }
-            case lockup_lock -> {
-            }
-            case crypto_withdrawal -> {
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, BigDecimal.ZERO);
-                Wallet wt = TxApp.outsideWallets.get(Wallet.getWallet(transaction.getCurrencyType()));
-                if (!wt.transactions.contains(transaction)) {
-                    wt.transactions.add(transaction);
-                }
-                wt.removeFromWallet(transaction.getAmount(), BigDecimal.ZERO);
-            }
-            case referral_card_cashback -> {
+
+            case supercharger_withdrawal:
+                ;
+            case lockup_lock:
+                ;
+            case crypto_withdrawal:
+                cryptoWithdrawal(w, transaction, TxApp.outsideWallets);
+
+            case referral_card_cashback:
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-            }
-            case reimbursement -> {
+
+            case reimbursement:
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-            }
-            case card_cashback_reverted -> {
+
+            case card_cashback_reverted:
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-            }
-            case crypto_earn_program_withdrawn -> {
-            }
-            case admin_wallet_credited -> {
+
+            case crypto_earn_program_withdrawn:
+                ;
+            case admin_wallet_credited:
                 //Free money from fork
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-            }
-            case crypto_wallet_swap_credited -> {
+
+            case crypto_wallet_swap_credited:
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-            }
-            case crypto_wallet_swap_debited -> {
+
+            case crypto_wallet_swap_debited:
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-            }
-            case crypto_deposit -> {
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, BigDecimal.ZERO);
-                Wallet wt = TxApp.wallets.get(Wallet.getWallet(transaction.getCurrencyType()));
-                if (!wt.transactions.contains(transaction)) {
-                    wt.transactions.add(transaction);
-                }
-                wt.removeFromWallet(transaction.getAmount(), BigDecimal.ZERO);
-            }
-            case dust_conversion_debited -> {
+
+            case crypto_deposit:
+                cryptoWithdrawal(w, transaction, TxApp.wallets);
+
+            case dust_conversion_debited:
                 System.out.println(transaction);
-            }
-            case dust_conversion_credited -> {
+
+            case dust_conversion_credited:
                 System.out.println(transaction);
-            }
-            default -> System.out.println("This is an unsupported TransactionType: " + t);
+
+            default: System.out.println("This is an unsupported TransactionType: " + t);
         }
+    }
+
+    private void cryptoWithdrawal(Wallet w, Transaction transaction, ArrayList<Wallet> outsideWallets) {
+        w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, BigDecimal.ZERO);
+        Wallet wt = outsideWallets.get(Wallet.getWallet(transaction.getCurrencyType()));
+        if (!wt.transactions.contains(transaction)) {
+            wt.transactions.add(transaction);
+        }
+        wt.removeFromWallet(transaction.getAmount(), BigDecimal.ZERO);
+    }
+
+    private void vibanPurchase(Transaction transaction) {
+        Wallet wv = TxApp.wallets.get(Wallet.getWallet(transaction.getToCurrency()));
+        wv.addToWallet(transaction.getToAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
     }
 
     public void setCurrencyType(String currencyType) {

@@ -6,11 +6,13 @@ import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
 import at.msd.friehs_bicha.cdcsvparser.Util.IOHandler;
 import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
 
@@ -24,9 +26,9 @@ public class TxApp {
     public static ArrayList<Wallet> outsideWallets = new ArrayList<>();
     public static ArrayList<Transaction> transactions = new ArrayList<>();
 
-    public static void main(String[] args) {
+    public static void main(ArrayList<String> file) {
         try {
-            transactions = getTransactions(IOHandler.readFile(args[0]));
+            transactions = getTransactions(file);
         } catch (Exception e) {
             e.printStackTrace();
         }

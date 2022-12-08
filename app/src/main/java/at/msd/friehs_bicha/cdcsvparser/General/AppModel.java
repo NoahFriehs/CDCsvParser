@@ -20,8 +20,8 @@ import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
  */
 public class AppModel {
 
-    boolean Init(File file) {
-        TxApp.main(new String[]{file.getAbsolutePath()});
+    public boolean init(ArrayList<String> file) {
+        TxApp.main(file);
         return true;
     }
 
