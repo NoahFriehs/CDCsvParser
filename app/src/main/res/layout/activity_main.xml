@@ -62,6 +62,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/history_text"
         android:padding="16dp"
+        android:layout_marginLeft="10dp"
         android:paddingTop="0dp"
         android:textAlignment="center"
         android:textColor="@color/black"

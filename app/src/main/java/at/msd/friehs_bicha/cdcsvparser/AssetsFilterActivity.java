@@ -6,6 +6,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 
 public class AssetsFilterActivity extends AppCompatActivity {
 
@@ -18,6 +20,15 @@ public class AssetsFilterActivity extends AppCompatActivity {
 
         // showing the back button in action bar
         actionBar.setDisplayHomeAsUpEnabled(true);
+
+        Spinner dropdown = findViewById(R.id.asset_spinner);
+        //create a list of items for the spinner.
+        String[] items = new String[]{"BTX" , "DOGE", "LUNA"};
+        //create an adapter to describe how the items are displayed, adapters are used in several places in android.
+//There are multiple variations of this, but this is the basic variant.
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);
+//set the spinners adapter to the previously created one.
+        dropdown.setAdapter(adapter);
     }
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
