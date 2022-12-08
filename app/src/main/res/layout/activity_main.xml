@@ -69,7 +69,7 @@
         />
 
     <Spinner
-        android:id="@+id/spinner1"
+        android:id="@+id/spinner_history"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="10dp"
@@ -78,5 +78,19 @@
         android:background="@android:drawable/btn_dropdown"
         android:spinnerMode="dropdown"
         tools:ignore="MissingConstraints" />
+    <Button
+        android:id="@+id/btn_history"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/show_history"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/spinner_history"
+        android:layout_margin="10dp"
+        android:background="@drawable/round_button_layer_list"
+        android:textAllCaps="false"
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

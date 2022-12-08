@@ -3,7 +3,9 @@ package at.msd.friehs_bicha.cdcsvparser;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -12,10 +14,16 @@ import android.widget.Button;
 import android.widget.Spinner;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Date;
 
 import at.msd.friehs_bicha.cdcsvparser.General.AppModel;
 
@@ -23,15 +31,17 @@ import at.msd.friehs_bicha.cdcsvparser.General.AppModel;
 public class MainActivity extends AppCompatActivity {
 
     private static final int PICKFILE_REQUEST_CODE = 1;
-
-    AppModel appModel = new AppModel();
-
+    Context context;
+    AppModel appModel;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        context = getApplicationContext();
+
         //get the spinner from the xml.
-        Spinner dropdown = findViewById(R.id.spinner1);
+        Spinner dropdown = findViewById(R.id.spinner_history);
         //create a list of items for the spinner.
         String[] items = new String[]{"1", "2", "three"};
         //create an adapter to describe how the items are displayed, adapters are used in several places in android.
@@ -41,11 +51,20 @@ public class MainActivity extends AppCompatActivity {
         dropdown.setAdapter(adapter);
 
         Button btnParse = findViewById(R.id.btn_parse);
+        Button btnHistory = findViewById(R.id.btn_history);
 
         btnParse.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 onBtnClick(view);
+            }
+
+        });
+        btnHistory.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, ParseActivity.class);
+                startActivity(intent);
             }
 
         });
@@ -59,9 +78,28 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == PICKFILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
             // Get the URI of the selected file
             Uri fileUri = data.getData();
-
+            long time = System.currentTimeMillis();
+            String filename = Long.toString(time) + ".csv";
             ArrayList<String> list = getFileContentFromUri(fileUri);
-            appModel.init(list);
+
+            try (FileOutputStream fos = context.openFileOutput(filename, Context.MODE_APPEND)) {
+                for (String element : list) {
+                    fos.write(element.getBytes());
+                    fos.write("\n".getBytes());  // add a newline after each element
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println(filename + "\n");
+            System.out.println(context.getFilesDir() + "\n");
+            System.out.println(new File(context.getFilesDir(), filename) + "\n");
+
+
+
+            appModel = new AppModel(list);
+
+
             callParseView();
         }
     }
