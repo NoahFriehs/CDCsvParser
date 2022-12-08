@@ -179,11 +179,18 @@ public class Wallet implements Serializable {
                 cryptoWithdrawal(w, transaction, txApp.wallets);
                 break;
             case dust_conversion_debited:
-                System.out.println(transaction);
+                System.out.println("Not supported yet: " + transaction);
                 break;
             case dust_conversion_credited:
-                System.out.println(transaction);
+                System.out.println("Not supported yet: " + transaction);
                 break;
+            case crypto_viban_exchange:
+                System.out.println("Not supported yet: " + transaction);
+                w.removeFromWallet(transaction.getAmount(), transaction.getNativeAmount());
+                Wallet eur = txApp.wallets.get(getWallet("EUR"));
+                eur.addToWallet(transaction.getNativeAmount(),transaction.getNativeAmount(), BigDecimal.ZERO);
+                break;
+
             default: System.out.println("This is an unsupported TransactionType: " + t);
         }
     }

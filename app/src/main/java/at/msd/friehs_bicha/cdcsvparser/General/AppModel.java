@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.General;
 
+import at.msd.friehs_bicha.cdcsvparser.Price.AssetValue;
 import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
 import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.stringToDateConverter;
 import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
@@ -22,7 +24,7 @@ public class AppModel implements Serializable {
 
     public boolean isRunning = false;
 
-    protected TxApp txApp;
+    public TxApp txApp;
 
     public boolean init(ArrayList<String> file) {
         TxApp app = new TxApp(file);
@@ -146,14 +148,29 @@ public class AppModel implements Serializable {
      *
      * @return the total amount spent
      */
-    public BigDecimal getTotalBonus() {
+    public double getTotalBonus() {
 
-        BigDecimal totalBonus = new BigDecimal(0);
+        AssetValue asset = new AssetValue();
 
-        for (Wallet wallet : txApp.wallets) {
-            totalBonus = totalBonus.add(wallet.getAmountBonus());
+        AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
+        Thread t = new Thread(() ->{
+            for (Wallet wallet : txApp.wallets) {
+                double price = asset.getPrice(wallet.getCurrencyType());
+                BigDecimal amount = wallet.getAmountBonus();
+                valueOfAll.updateAndGet(v -> v + price * amount.doubleValue());
+            }
+        });
+        t.start();
+        while (t.isAlive()){
+            try {
+                Thread.sleep(400);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Waiting");
         }
-        return totalBonus;
+
+        return valueOfAll.get();
     }
 
 }

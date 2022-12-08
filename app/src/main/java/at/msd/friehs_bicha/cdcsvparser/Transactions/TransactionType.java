@@ -26,6 +26,7 @@ public enum TransactionType {
     crypto_wallet_swap_debited,  //fork stuff
     dust_conversion_credited,   //Dust conversion end
     dust_conversion_debited,    //Dust conversion start
+    crypto_viban_exchange,      //sell
     STRING //for Card und unknown things
 
 }

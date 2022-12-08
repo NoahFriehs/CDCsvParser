@@ -9,6 +9,13 @@ import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
+
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.util.concurrent.atomic.AtomicReference;
+
+import at.msd.friehs_bicha.cdcsvparser.General.AppModel;
 
 public class ParseActivity extends AppCompatActivity {
 
@@ -43,6 +50,33 @@ public class ParseActivity extends AppCompatActivity {
             }
 
         });
+
+        TextView rewards_value = findViewById(R.id.rewards_value);
+        rewards_value.setText(Math.round(getRewardsEarned()*100.0)/100.0 + " €");
+
+        TextView money_spent_value = findViewById(R.id.money_spent_value);
+        BigDecimal total = getTotalPrice().round(new MathContext(0));
+        money_spent_value.setText(total.toString() + " €");
+
+        TextView assets_value = findViewById(R.id.assets_value);
+        AtomicReference<Double> valueOfA = new AtomicReference<>((double) 0);
+        Thread t = new Thread(() ->{
+            valueOfA.set(getValueOfAssets());
+        });
+        t.start();
+        while (t.isAlive()){
+            try {
+                Thread.sleep(400);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Waiting");
+        }
+        double value = valueOfA.get();
+        assets_value.setText( Math.round(value*100.0)/100.0 + " €");
+
+        TextView profit_loss_value = findViewById(R.id.profit_loss_value);
+        profit_loss_value.setText(Math.round((value - total.doubleValue())*100.0)/100.0 + " €");
     }
 
     @Override
@@ -53,5 +87,20 @@ public class ParseActivity extends AppCompatActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public double getRewardsEarned(){
+        AppModel appModel = (AppModel) getIntent().getExtras().get("AppModel");
+        return appModel.getTotalBonus();
+    }
+
+    public BigDecimal getTotalPrice(){
+        AppModel appModel = (AppModel) getIntent().getExtras().get("AppModel");
+        return appModel.getTotalPrice();
+    }
+
+    public Double getValueOfAssets(){
+        AppModel appModel = (AppModel) getIntent().getExtras().get("AppModel");
+        return appModel.txApp.getValueOfAssets();
     }
 }
