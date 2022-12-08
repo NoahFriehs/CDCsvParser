@@ -3,17 +3,14 @@ package at.msd.friehs_bicha.cdcsvparser.General;
 import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
 import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
-import at.msd.friehs_bicha.cdcsvparser.Util.IOHandler;
 import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
 
-import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
 
@@ -29,7 +26,7 @@ public class TxApp implements Serializable {
 
     public TxApp(ArrayList<String> file) {
         try {
-            transactions = getTransactions(file);
+            transactions = parseTransactions(file);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -39,6 +36,17 @@ public class TxApp implements Serializable {
 
     }
 
+    public ArrayList<Wallet> getWallets() {
+        return wallets;
+    }
+
+    public ArrayList<Wallet> getOutsideWallets() {
+        return outsideWallets;
+    }
+
+    public ArrayList<Transaction> getTransactions() {
+        return transactions;
+    }
 
     /**
      * Csv file to Transaction list
@@ -46,7 +54,7 @@ public class TxApp implements Serializable {
      * @param input csv file as String list
      * @return Transactions list
      */
-    private ArrayList<Transaction> getTransactions(ArrayList<String> input) {
+    private ArrayList<Transaction> parseTransactions(ArrayList<String> input) {
         input.remove(0);
         ArrayList<Transaction> transactions = new ArrayList<>();
 
