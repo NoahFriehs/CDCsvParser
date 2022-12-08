@@ -4,8 +4,10 @@ import at.msd.friehs_bicha.cdcsvparser.Price.AssetValue;
 import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
 import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.Util.IOHandler;
 import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
 
+import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -28,7 +30,7 @@ public class TxApp implements Serializable {
 
     public TxApp(ArrayList<String> file) {
         try {
-            transactions = parseTransactions(file);
+            transactions = getTransactions(file);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -45,7 +47,7 @@ public class TxApp implements Serializable {
      * @param input csv file as String list
      * @return Transactions list
      */
-    private ArrayList<Transaction> parseTransactions(ArrayList<String> input) {
+    private ArrayList<Transaction> getTransactions(ArrayList<String> input) {
         input.remove(0);
         ArrayList<Transaction> transactions = new ArrayList<>();
 

@@ -14,5 +14,4 @@
     <string name="choose_asset">choose asset</string>
     <string name="amount_of_asset">Amount of asset</string>
     <string name="all_transactions_regarding">All transactions regarding BTC</string>
-    <string name="show_history">Show history</string>
 </resources>

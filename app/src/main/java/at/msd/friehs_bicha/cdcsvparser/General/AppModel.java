@@ -22,16 +22,15 @@ import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
  */
 public class AppModel implements Serializable {
 
+    public boolean isRunning = false;
 
     public TxApp txApp;
 
-    public AppModel(ArrayList<String> file) {
+    public boolean init(ArrayList<String> file) {
         TxApp app = new TxApp(file);
         this.txApp = app;
-    }
-
-    public TxApp getTxApp() {
-        return txApp;
+        isRunning = true;
+        return true;
     }
 
     /**
