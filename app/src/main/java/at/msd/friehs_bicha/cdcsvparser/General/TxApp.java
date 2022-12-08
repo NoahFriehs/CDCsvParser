@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.General;
 
+import at.msd.friehs_bicha.cdcsvparser.Price.AssetValue;
 import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
 import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
@@ -11,6 +12,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
 
@@ -36,17 +38,6 @@ public class TxApp implements Serializable {
 
     }
 
-    public ArrayList<Wallet> getWallets() {
-        return wallets;
-    }
-
-    public ArrayList<Wallet> getOutsideWallets() {
-        return outsideWallets;
-    }
-
-    public ArrayList<Transaction> getTransactions() {
-        return transactions;
-    }
 
     /**
      * Csv file to Transaction list
@@ -58,7 +49,6 @@ public class TxApp implements Serializable {
         input.remove(0);
         ArrayList<Transaction> transactions = new ArrayList<>();
 
-        // Create a DecimalFormat that fits your requirements
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator(',');
         symbols.setDecimalSeparator('.');
@@ -123,5 +113,23 @@ public class TxApp implements Serializable {
         }
         System.out.println("We have " + wallets.size() + " Wallets");
     }
+
+    public Double getValueOfAssets(){
+
+        AssetValue asset = new AssetValue();
+
+        Double valueOfAll = (double) 0;
+
+        for (Wallet w : wallets) {
+            if (Objects.equals(w.getCurrencyType(), "EUR")) continue;
+            double price = asset.getPrice(w.getCurrencyType());
+            BigDecimal amount = w.getAmount();
+            valueOfAll += price * amount.doubleValue();
+        }
+
+        return valueOfAll;
+    }
+
+
 
 }
