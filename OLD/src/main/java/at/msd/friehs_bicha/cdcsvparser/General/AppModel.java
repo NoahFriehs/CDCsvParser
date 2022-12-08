@@ -1,9 +1,9 @@
-package at.fb.General;
+package at.msd.friehs_bicha.cdcsvparser.General;
 
-import at.fb.Transactions.Transaction;
-import at.fb.Transactions.TransactionType;
-import at.fb.Util.CurrencyType;
-import at.fb.Wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static at.fb.Util.Converter.stringToDateConverter;
-import static at.fb.Util.Converter.ttConverter;
+import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.stringToDateConverter;
+import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
 
 public class AppModel {
 

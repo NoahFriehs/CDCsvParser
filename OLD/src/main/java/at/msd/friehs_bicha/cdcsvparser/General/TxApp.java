@@ -1,10 +1,10 @@
-package at.fb.General;
+package at.msd.friehs_bicha.cdcsvparser.General;
 
-import at.fb.Transactions.Transaction;
-import at.fb.Transactions.TransactionType;
-import at.fb.Util.CurrencyType;
-import at.fb.Util.IOHandler;
-import at.fb.Wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.Util.IOHandler;
+import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -12,7 +12,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static at.fb.Util.Converter.ttConverter;
+import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
 
 /**
  * The main class of the parser

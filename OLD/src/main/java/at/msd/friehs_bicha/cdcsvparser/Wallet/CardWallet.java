@@ -1,11 +1,10 @@
-package at.fb.Wallet;
+package at.msd.friehs_bicha.cdcsvparser.Wallet;
 
-import at.fb.Transactions.CardTX;
+import at.msd.friehs_bicha.cdcsvparser.Transactions.CardTX;
+import at.msd.friehs_bicha.cdcsvparser.General.CardTxApp;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-
-import static at.fb.General.CardTxApp.cardWallets;
 
 /**
  * @deprecated
@@ -28,20 +27,20 @@ public class CardWallet extends Wallet {
 
         String tt = transaction.getTransactionTypeString();
         if (tts.contains(tt)) {
-            CardWallet w = cardWallets.get(tts.indexOf(tt));
+            CardWallet w = CardTxApp.cardWallets.get(tts.indexOf(tt));
             w.addToCardWallet(transaction.getAmount());
             w.txs.add(transaction);
         } else {
             CardWallet w = new CardWallet("EUR", transaction.getAmount(), tt);
             //w.addToCardWallet(transaction.getAmount());
             w.txs.add(transaction);
-            cardWallets.add(w);
+            CardTxApp.cardWallets.add(w);
         }
     }
 
     public static void writeAmount() {
         BigDecimal amountSpent = BigDecimal.ZERO;
-        for (CardWallet w : cardWallets) {
+        for (CardWallet w : CardTxApp.cardWallets) {
             System.out.println("-".repeat(20));
             System.out.println(w.transactionType);
             System.out.println(w.amount);

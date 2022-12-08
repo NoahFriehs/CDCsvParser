@@ -1,4 +1,4 @@
-package at.fb.Transactions;
+package at.msd.friehs_bicha.cdcsvparser.Transactions;
 
 import java.math.BigDecimal;
 

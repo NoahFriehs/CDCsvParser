@@ -1,15 +1,13 @@
-package at.fb.Wallet;
+package at.msd.friehs_bicha.cdcsvparser.Wallet;
 
-import at.fb.Transactions.Transaction;
-import at.fb.Transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.General.TxApp;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Objects;
-
-import static at.fb.General.TxApp.outsideWallets;
-import static at.fb.General.TxApp.wallets;
 
 /**
  * Represents a Wallet object
@@ -42,7 +40,7 @@ public class Wallet {
      */
     public static int getWallet(String ct) {
         int i = 0;
-        for (Wallet w : wallets) {
+        for (Wallet w : TxApp.wallets) {
             if (w.getCurrencyType().equals(ct)) return i;
             i++;
         }
@@ -56,7 +54,7 @@ public class Wallet {
      */
     public static void writeAmount() {
         BigDecimal amountSpent = BigDecimal.ZERO;
-        for (Wallet w : wallets) {
+        for (Wallet w : TxApp.wallets) {
             System.out.println("-".repeat(20));
             System.out.println(w.getCurrencyType());
             System.out.println("Amount: " + w.amount);
@@ -68,7 +66,7 @@ public class Wallet {
             System.out.println("Transactions: " + w.transactions.size());
             amountSpent = amountSpent.add(w.moneySpent);
         }
-        for (Wallet w : outsideWallets) {
+        for (Wallet w : TxApp.outsideWallets) {
             if (Objects.equals(w.amount, BigDecimal.ZERO)) continue;
             System.out.println("-".repeat(20));
             System.out.println("Outside-" + w.getCurrencyType());
@@ -121,7 +119,7 @@ public class Wallet {
     public void addTransaction(Transaction transaction) {
         transactions.add(transaction);
         TransactionType t = transaction.getTransactionType();
-        Wallet w = wallets.get(Wallet.getWallet(transaction.getCurrencyType()));
+        Wallet w = TxApp.wallets.get(Wallet.getWallet(transaction.getCurrencyType()));
         if (!w.transactions.contains(transaction)) {
             w.transactions.add(transaction);
         }
@@ -139,7 +137,7 @@ public class Wallet {
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
             }
             case viban_purchase -> {
-                Wallet wv = wallets.get(Wallet.getWallet(transaction.getToCurrency()));
+                Wallet wv = TxApp.wallets.get(Wallet.getWallet(transaction.getToCurrency()));
                 wv.addToWallet(transaction.getToAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
             }
             case crypto_earn_program_created -> {
@@ -153,7 +151,7 @@ public class Wallet {
             }
             case crypto_withdrawal -> {
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, BigDecimal.ZERO);
-                Wallet wt = outsideWallets.get(Wallet.getWallet(transaction.getCurrencyType()));
+                Wallet wt = TxApp.outsideWallets.get(Wallet.getWallet(transaction.getCurrencyType()));
                 if (!wt.transactions.contains(transaction)) {
                     wt.transactions.add(transaction);
                 }
@@ -182,7 +180,7 @@ public class Wallet {
             }
             case crypto_deposit -> {
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, BigDecimal.ZERO);
-                Wallet wt = wallets.get(Wallet.getWallet(transaction.getCurrencyType()));
+                Wallet wt = TxApp.wallets.get(Wallet.getWallet(transaction.getCurrencyType()));
                 if (!wt.transactions.contains(transaction)) {
                     wt.transactions.add(transaction);
                 }
