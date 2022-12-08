@@ -15,6 +15,7 @@ import android.os.FileUtils;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Spinner;
 
 import java.io.BufferedReader;
@@ -43,13 +44,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         //get the spinner from the xml.
         Spinner dropdown = findViewById(R.id.spinner1);
-//create a list of items for the spinner.
+        //create a list of items for the spinner.
         String[] items = new String[]{"1", "2", "three"};
-//create an adapter to describe how the items are displayed, adapters are used in several places in android.
+        //create an adapter to describe how the items are displayed, adapters are used in several places in android.
 //There are multiple variations of this, but this is the basic variant.
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);
 //set the spinners adapter to the previously created one.
         dropdown.setAdapter(adapter);
+
+        Button btnParse = findViewById(R.id.btn_parse);
+
+        btnParse.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, ParseActivity.class);
+                //intent.putExtra("NAME_KEY","Value");
+                startActivity(intent);
+            }
+
+        });
 
     }
 
