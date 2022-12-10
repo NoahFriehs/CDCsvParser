@@ -246,4 +246,6 @@ public class Wallet implements Serializable {
     public void setTransactions(ArrayList<Transaction> transactions) {
         this.transactions = transactions;
     }
+
+
 }

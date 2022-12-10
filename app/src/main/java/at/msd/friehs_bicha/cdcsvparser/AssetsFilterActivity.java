@@ -9,7 +9,13 @@ import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
+import java.util.ArrayList;
+
+import at.msd.friehs_bicha.cdcsvparser.General.AppModel;
+
 public class AssetsFilterActivity extends AppCompatActivity {
+
+    AppModel appModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,7 +29,15 @@ public class AssetsFilterActivity extends AppCompatActivity {
 
         Spinner dropdown = findViewById(R.id.asset_spinner);
         //create a list of items for the spinner.
-        String[] items = new String[]{"BTX" , "DOGE", "LUNA"};
+
+        appModel = (AppModel) getIntent().getExtras().get("AppModel");
+
+        ArrayList<String> wallets = new ArrayList<>();
+        appModel.txApp.wallets.forEach(wallet -> {
+            wallets.add(wallet.getCurrencyType());
+        });
+
+        String[] items = wallets.toArray(new String[0]);
         //create an adapter to describe how the items are displayed, adapters are used in several places in android.
 //There are multiple variations of this, but this is the basic variant.
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);

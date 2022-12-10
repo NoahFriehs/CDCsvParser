@@ -41,6 +41,7 @@ public class ParseActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Intent intent = new Intent(ParseActivity.this, AssetsFilterActivity.class);
                 //intent.putExtra("NAME_KEY","Value");
+                intent.putExtra("AppModel", appModel);
                 startActivity(intent);
             }
 
@@ -50,6 +51,7 @@ public class ParseActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Intent intent = new Intent(ParseActivity.this, TransactionsActivity.class);
                 //intent.putExtra("NAME_KEY","Value");
+                intent.putExtra("AppModel", appModel);
                 startActivity(intent);
             }
 
