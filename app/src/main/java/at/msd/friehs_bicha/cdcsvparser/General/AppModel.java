@@ -140,30 +140,20 @@ public class AppModel implements Serializable {
     }
 
     /**
-     * Returns the total amount spent
+     * Returns the total amount earned as a bonus
      *
-     * @return the total amount spent
+     * @return the total amount earned as a bonus
      */
     public double getTotalBonus() {
 
         AssetValue asset = new AssetValue();
 
         AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
-        Thread t = new Thread(() ->{
-            for (Wallet wallet : txApp.wallets) {
-                double price = asset.getPrice(wallet.getCurrencyType());
-                BigDecimal amount = wallet.getAmountBonus();
-                valueOfAll.updateAndGet(v -> v + price * amount.doubleValue());
-            }
-        });
-        t.start();
-        while (t.isAlive()){
-            try {
-                Thread.sleep(400);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println("Waiting");
+        for (Wallet wallet : txApp.wallets) {
+            if (Objects.equals(wallet.getCurrencyType(), "EUR")) continue;
+            double price = asset.getPrice(wallet.getCurrencyType());
+            BigDecimal amount = wallet.getAmountBonus();
+            valueOfAll.updateAndGet(v -> v + price * amount.doubleValue());
         }
 
         return valueOfAll.get();

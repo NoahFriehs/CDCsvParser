@@ -7,6 +7,7 @@ import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 
 public class AssetValue {
@@ -15,6 +16,7 @@ public class AssetValue {
     List<CoinMarkets> coinMarkets;
 
     public Double getPrice(String symbol){
+        symbol = overrideSymbol(symbol);
         CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
         try {
             if (coinMarkets == null) coinMarkets = client.getCoinMarkets(Currency.EUR);
@@ -34,16 +36,11 @@ public class AssetValue {
         CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
         if (coinLists == null) coinLists = client.getCoinList();
 
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         for (CoinList coinList : coinLists) {
             if (coinList.getSymbol().contains(symbol.toLowerCase())||coinList.getId().contains(symbol.toLowerCase())||coinList.getName().contains(symbol.toLowerCase())){
                 CoinFullData bitcoinInfo = client.getCoinById(coinList.getId());
-                MarketData btcData = bitcoinInfo.getMarketData();
-                Map dataPrice = btcData.getCurrentPrice();
+                MarketData data = bitcoinInfo.getMarketData();
+                Map<String, Double> dataPrice = data.getCurrentPrice();
                 return (Double) dataPrice.get("eur");
             }
         }
@@ -51,6 +48,12 @@ public class AssetValue {
         System.out.println("No price found for: " + symbol);
 
         return (double) 0;
+    }
+
+    private String overrideSymbol(String symbol){
+        if (Objects.equals(symbol, "LUNA")) return "terra-luna";
+        if (symbol.equals("LUNA2")) return "terra-luna-2";
+        return symbol;
     }
 
 }
