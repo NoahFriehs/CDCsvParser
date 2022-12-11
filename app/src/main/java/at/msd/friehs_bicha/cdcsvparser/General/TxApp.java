@@ -116,22 +116,5 @@ public class TxApp implements Serializable {
         System.out.println("We have " + wallets.size() + " Wallets");
     }
 
-    public Double getValueOfAssets(){
-
-        AssetValue asset = new AssetValue();
-
-        Double valueOfAll = (double) 0;
-
-        for (Wallet w : wallets) {
-            if (Objects.equals(w.getCurrencyType(), "EUR")) continue;
-            double price = asset.getPrice(w.getCurrencyType());
-            BigDecimal amount = w.getAmount();
-            valueOfAll += price * amount.doubleValue();
-        }
-
-        return valueOfAll;
-    }
-
-
 
 }

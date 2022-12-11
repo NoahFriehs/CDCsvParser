@@ -23,9 +23,11 @@ import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
 public class AppModel implements Serializable {
 
     public TxApp txApp;
+    public static AssetValue asset;
 
     public AppModel(ArrayList<String> file) {
         TxApp app = new TxApp(file);
+        asset = new AssetValue();
         this.txApp = app;
     }
 
@@ -146,8 +148,6 @@ public class AppModel implements Serializable {
      */
     public double getTotalBonus() {
 
-        AssetValue asset = new AssetValue();
-
         AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
         for (Wallet wallet : txApp.wallets) {
             if (Objects.equals(wallet.getCurrencyType(), "EUR")) continue;
@@ -157,6 +157,25 @@ public class AppModel implements Serializable {
         }
 
         return valueOfAll.get();
+    }
+
+    /**
+     * Returns the total amount the assets are worth in EUR
+     *
+     * @return the total amount the assets are worth in EUR
+     */
+    public Double getValueOfAssets(){
+
+        Double valueOfAll = (double) 0;
+
+        for (Wallet w : txApp.wallets) {
+            if (Objects.equals(w.getCurrencyType(), "EUR")) continue;
+            double price = asset.getPrice(w.getCurrencyType());
+            BigDecimal amount = w.getAmount();
+            valueOfAll += price * amount.doubleValue();
+        }
+
+        return valueOfAll;
     }
 
 }

@@ -102,6 +102,6 @@ public class ParseActivity extends AppCompatActivity {
     }
 
     public Double getValueOfAssets(){
-        return appModel.txApp.getValueOfAssets();
+        return appModel.getValueOfAssets();
     }
 }
