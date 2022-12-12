@@ -1,10 +1,10 @@
-package at.msd.friehs_bicha.cdcsvparser.General;
+package at.msd.friehs_bicha.cdcsvparser.general;
 
-import at.msd.friehs_bicha.cdcsvparser.Price.AssetValue;
-import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
-import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
-import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.price.AssetValue;
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.stringToDateConverter;
-import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
+import static at.msd.friehs_bicha.cdcsvparser.util.Converter.stringToDateConverter;
+import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
 
 /**
  * The parser control for the CDCsvParser
@@ -164,9 +164,9 @@ public class AppModel implements Serializable {
      *
      * @return the total amount the assets are worth in EUR
      */
-    public Double getValueOfAssets(){
+    public double getValueOfAssets(){
 
-        Double valueOfAll = (double) 0;
+        double valueOfAll = (double) 0;
 
         for (Wallet w : txApp.wallets) {
             if (Objects.equals(w.getCurrencyType(), "EUR")) continue;

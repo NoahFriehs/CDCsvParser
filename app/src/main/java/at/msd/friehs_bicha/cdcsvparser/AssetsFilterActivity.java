@@ -11,7 +11,7 @@ import android.widget.Spinner;
 
 import java.util.ArrayList;
 
-import at.msd.friehs_bicha.cdcsvparser.General.AppModel;
+import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 
 public class AssetsFilterActivity extends AppCompatActivity {
 

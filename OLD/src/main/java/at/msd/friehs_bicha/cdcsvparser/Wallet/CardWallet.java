@@ -1,7 +1,7 @@
-package at.msd.friehs_bicha.cdcsvparser.Wallet;
+package at.msd.friehs_bicha.cdcsvparser.wallet;
 
-import at.msd.friehs_bicha.cdcsvparser.Transactions.CardTX;
-import at.msd.friehs_bicha.cdcsvparser.General.CardTxApp;
+import at.msd.friehs_bicha.cdcsvparser.transactions.CardTX;
+import at.msd.friehs_bicha.cdcsvparser.general.CardTxApp;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.Price;
+package at.msd.friehs_bicha.cdcsvparser.price;
 
 import java.io.Serializable;
 import java.time.Instant;

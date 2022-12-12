@@ -1,8 +1,8 @@
-package at.msd.friehs_bicha.cdcsvparser.General;
+package at.msd.friehs_bicha.cdcsvparser.general;
 
-import at.msd.friehs_bicha.cdcsvparser.Transactions.CardTX;
-import at.msd.friehs_bicha.cdcsvparser.Util.IOHandler;
-import at.msd.friehs_bicha.cdcsvparser.Wallet.CardWallet;
+import at.msd.friehs_bicha.cdcsvparser.transactions.CardTX;
+import at.msd.friehs_bicha.cdcsvparser.util.IOHandler;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CardWallet;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;

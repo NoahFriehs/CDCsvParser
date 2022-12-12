@@ -1,22 +1,18 @@
-package at.msd.friehs_bicha.cdcsvparser.General;
+package at.msd.friehs_bicha.cdcsvparser.general;
 
-import at.msd.friehs_bicha.cdcsvparser.Price.AssetValue;
-import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
-import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
-import at.msd.friehs_bicha.cdcsvparser.Util.IOHandler;
-import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
-import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Objects;
 
-import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
+import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
 
 /**
  * The main class of the parser

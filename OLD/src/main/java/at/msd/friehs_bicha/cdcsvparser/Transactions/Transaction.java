@@ -1,7 +1,7 @@
-package at.msd.friehs_bicha.cdcsvparser.Transactions;
+package at.msd.friehs_bicha.cdcsvparser.transactions;
 
-import at.msd.friehs_bicha.cdcsvparser.Util.Converter;
-import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.util.Converter;
+import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
 
 import java.math.BigDecimal;
 import java.util.Date;

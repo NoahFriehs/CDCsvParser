@@ -1,6 +1,6 @@
-package at.msd.friehs_bicha.cdcsvparser.Util;
+package at.msd.friehs_bicha.cdcsvparser.util;
 
-import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

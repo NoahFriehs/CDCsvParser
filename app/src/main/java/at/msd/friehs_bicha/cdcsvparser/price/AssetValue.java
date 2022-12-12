@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.Price;
+package at.msd.friehs_bicha.cdcsvparser.price;
 
 import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.constant.Currency;

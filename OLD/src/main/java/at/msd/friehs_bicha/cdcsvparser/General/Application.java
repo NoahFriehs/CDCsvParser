@@ -1,12 +1,12 @@
-package at.msd.friehs_bicha.cdcsvparser.General;
+package at.msd.friehs_bicha.cdcsvparser.general;
 
-import at.msd.friehs_bicha.cdcsvparser.Transactions.CardTX;
-import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
-import at.msd.friehs_bicha.cdcsvparser.Util.Converter;
-import at.msd.friehs_bicha.cdcsvparser.Util.CurrencyType;
-import at.msd.friehs_bicha.cdcsvparser.Wallet.CardWallet;
-import at.msd.friehs_bicha.cdcsvparser.Wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.transactions.CardTX;
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.util.Converter;
+import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CardWallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -16,8 +16,8 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Scanner;
 
-import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.stringToDateConverter;
-import static at.msd.friehs_bicha.cdcsvparser.Util.Converter.ttConverter;
+import static at.msd.friehs_bicha.cdcsvparser.util.Converter.stringToDateConverter;
+import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
 
 public class Application {
 

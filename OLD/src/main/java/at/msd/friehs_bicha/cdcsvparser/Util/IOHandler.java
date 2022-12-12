@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.Util;
+package at.msd.friehs_bicha.cdcsvparser.util;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.Util;
+package at.msd.friehs_bicha.cdcsvparser.util;
 
 import java.util.ArrayList;
 

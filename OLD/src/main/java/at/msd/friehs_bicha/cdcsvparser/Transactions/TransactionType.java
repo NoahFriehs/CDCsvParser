@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.Transactions;
+package at.msd.friehs_bicha.cdcsvparser.transactions;
 
 /**
  * All different TransactionTypes

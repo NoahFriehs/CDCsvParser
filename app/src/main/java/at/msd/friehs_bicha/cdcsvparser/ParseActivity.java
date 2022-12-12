@@ -13,9 +13,8 @@ import android.widget.TextView;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.concurrent.atomic.AtomicReference;
 
-import at.msd.friehs_bicha.cdcsvparser.General.AppModel;
+import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 
 public class ParseActivity extends AppCompatActivity {
 

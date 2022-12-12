@@ -1,8 +1,8 @@
-package at.msd.friehs_bicha.cdcsvparser.Wallet;
+package at.msd.friehs_bicha.cdcsvparser.wallet;
 
-import at.msd.friehs_bicha.cdcsvparser.Transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.Transactions.TransactionType;
-import at.msd.friehs_bicha.cdcsvparser.General.TxApp;
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.general.TxApp;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
