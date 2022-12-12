@@ -8,10 +8,12 @@ import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 public class AssetsFilterActivity extends AppCompatActivity {
 
@@ -43,6 +45,16 @@ public class AssetsFilterActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);
 //set the spinners adapter to the previously created one.
         dropdown.setAdapter(adapter);
+
+        //get the specific wallet
+        Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
+
+        //TODO right implamentation
+        TextView assetsValue = findViewById(R.id.assets_value);
+        double amountOfAsset = appModel.getValueOfAssets(specificWallet);
+
+        assetsValue.setText(amountOfAsset + " €");
+        System.out.println(amountOfAsset);
     }
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {

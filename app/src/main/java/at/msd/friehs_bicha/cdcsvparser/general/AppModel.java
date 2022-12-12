@@ -178,4 +178,14 @@ public class AppModel implements Serializable {
         return valueOfAll;
     }
 
+    public double getValueOfAssets(Wallet w){
+
+        double valueOfWallet = (double) 0;
+        double price = asset.getPrice(w.getCurrencyType());
+        BigDecimal amount = w.getAmount();
+        valueOfWallet = price * amount.doubleValue();
+
+        return valueOfWallet;
+    }
+
 }
