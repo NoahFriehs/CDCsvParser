@@ -39,6 +39,8 @@ public class AssetsFilterActivity extends AppCompatActivity {
             wallets.add(wallet.getCurrencyType());
         });
 
+        wallets.remove("EUR");
+
         String[] items = wallets.toArray(new String[0]);
         //create an adapter to describe how the items are displayed, adapters are used in several places in android.
 //There are multiple variations of this, but this is the basic variant.

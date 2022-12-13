@@ -11,6 +11,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
 
@@ -23,6 +24,7 @@ public class TxApp implements Serializable {
     public ArrayList<Wallet> wallets = new ArrayList<>();
     public ArrayList<Wallet> outsideWallets = new ArrayList<>();
     public ArrayList<Transaction> transactions = new ArrayList<>();
+    public int amountTxFailed = 0;
 
     public TxApp(ArrayList<String> file) {
         try {
@@ -42,8 +44,12 @@ public class TxApp implements Serializable {
      *
      * @param input csv file as String list
      * @return Transactions list
+     * @throws IllegalArgumentException when the file is not supported
      */
     private ArrayList<Transaction> getTransactions(ArrayList<String> input) {
+        if (!Objects.equals(input.get(0), "Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash")){
+            throw new IllegalArgumentException("This file seems to be not supported yet.");
+        }
         input.remove(0);
         ArrayList<Transaction> transactions = new ArrayList<>();
 
@@ -81,6 +87,7 @@ public class TxApp implements Serializable {
                 }
             } catch (Exception e) {
                 System.out.println("Error while processing the following transaction: " + transaction + " | " + e.getMessage());
+                amountTxFailed++;
 //                throw new RuntimeException(e);
             }
         }

@@ -21,7 +21,6 @@ public class AssetValue implements Serializable {
     List<PriceCache> cache;
 
     public AssetValue() {
-        CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
         cache = new ArrayList<>();
     }
 
@@ -59,7 +58,7 @@ public class AssetValue implements Serializable {
                 MarketData data = bitcoinInfo.getMarketData();
                 Map<String, Double> dataPrice = data.getCurrentPrice();
                 cache.add(new PriceCache(symbol, dataPrice.get("eur")));
-                return (Double) dataPrice.get("eur");
+                return dataPrice.get("eur");
             }
         }
 

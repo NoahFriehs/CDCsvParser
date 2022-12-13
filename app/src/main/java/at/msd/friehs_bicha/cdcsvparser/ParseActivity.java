@@ -38,20 +38,24 @@ public class ParseActivity extends AppCompatActivity {
         btnFilter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(ParseActivity.this, AssetsFilterActivity.class);
-                //intent.putExtra("NAME_KEY","Value");
-                intent.putExtra("AppModel", appModel);
-                startActivity(intent);
+                if (appModel.isRunning) {
+                    Intent intent = new Intent(ParseActivity.this, AssetsFilterActivity.class);
+                    //intent.putExtra("NAME_KEY","Value");
+                    intent.putExtra("AppModel", appModel);
+                    startActivity(intent);
+                }
             }
 
         });
         btnTx.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(ParseActivity.this, TransactionsActivity.class);
-                //intent.putExtra("NAME_KEY","Value");
-                intent.putExtra("AppModel", appModel);
-                startActivity(intent);
+                if (appModel.isRunning) {
+                    Intent intent = new Intent(ParseActivity.this, TransactionsActivity.class);
+                    //intent.putExtra("NAME_KEY","Value");
+                    intent.putExtra("AppModel", appModel);
+                    startActivity(intent);
+                }
             }
 
         });

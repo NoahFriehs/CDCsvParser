@@ -5,6 +5,7 @@ import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Date;
 
 /**
@@ -20,9 +21,7 @@ public class Transaction implements Serializable {
     BigDecimal nativeAmount;
     TransactionType transactionType;
     String transHash;
-
     String toCurrency;
-
     BigDecimal toAmount;
 
     public Transaction(String date, String description, String currencyType, BigDecimal amount, BigDecimal nativeAmount, TransactionType transactionType) {
@@ -89,16 +88,10 @@ public class Transaction implements Serializable {
 
     @Override
     public String toString() {
-        return "Transaction{" +
-                "date=" + date +
-                ", description='" + description + '\'' +
-                ", currencyType=" + currencyType +
-                ", amount=" + amount +
-                ", nativeAmount=" + nativeAmount +
-                ", transactionType=" + transactionType +
-                ", transHash='" + transHash + '\'' +
-                ", toCurrency=" + toCurrency +
-                ", toAmount=" + toAmount +
-                '}';
+        return
+                date +  "\n"+
+                "Description: " + description + '\n' +
+                "Amount: " + amount + " €\n" +
+                "NativeAmount: " + nativeAmount.round(new MathContext(5)) + " " + currencyType;
     }
 }

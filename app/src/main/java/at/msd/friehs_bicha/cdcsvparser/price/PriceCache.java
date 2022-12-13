@@ -5,7 +5,7 @@ import java.time.Instant;
 
 public class PriceCache implements Serializable {
 
-    private Instant creationTime;
+    private final Instant creationTime;
 
     public String id;
 
