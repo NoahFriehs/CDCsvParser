@@ -162,6 +162,20 @@ public class AppModel implements Serializable {
     }
 
     /**
+     * Returns the total amount earned as a bonus
+     *
+     * @return the total amount earned as a bonus
+     */
+    public double getTotalBonus(Wallet wallet) {
+        AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
+            double price = asset.getPrice(wallet.getCurrencyType());
+            BigDecimal amount = wallet.getAmountBonus();
+            valueOfAll.updateAndGet(v -> v + price * amount.doubleValue());
+
+        return valueOfAll.get();
+    }
+
+    /**
      * Returns the total amount the assets are worth in EUR
      *
      * @return the total amount the assets are worth in EUR
@@ -182,7 +196,7 @@ public class AppModel implements Serializable {
 
     public double getValueOfAssets(Wallet w){
 
-        double valueOfWallet = (double) 0;
+        double valueOfWallet;
         double price = asset.getPrice(w.getCurrencyType());
         BigDecimal amount = w.getAmount();
         valueOfWallet = price * amount.doubleValue();

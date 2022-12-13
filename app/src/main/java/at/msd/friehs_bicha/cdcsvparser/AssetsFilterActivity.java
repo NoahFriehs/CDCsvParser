@@ -6,16 +6,20 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.ArrayList;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
-public class AssetsFilterActivity extends AppCompatActivity {
+    public class AssetsFilterActivity extends AppCompatActivity {
 
     AppModel appModel;
 
@@ -57,6 +61,43 @@ public class AssetsFilterActivity extends AppCompatActivity {
 
         assetsValue.setText(amountOfAsset + " €");
         System.out.println(amountOfAsset);
+
+        dropdown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                //get the specific wallet
+                Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
+
+                TextView assetsValue = findViewById(R.id.assets_value);
+                TextView rewards_value = findViewById(R.id.rewards_value);
+                TextView profit_loss_value = findViewById(R.id.profit_loss_value);
+                TextView all_regarding_tx = findViewById(R.id.all_regarding_tx);
+
+                all_regarding_tx.setText("All transactions regarding " + specificWallet.getCurrencyType());
+
+                BigDecimal total = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString())).getMoneySpent().round(new MathContext(0));
+
+                Thread t = new Thread(() -> {
+                    double amountOfAsset = appModel.getValueOfAssets(specificWallet);
+                    double rewardValue = appModel.getTotalBonus(specificWallet);
+                    AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText((amountOfAsset*100.0)/100.0 + " €"));
+                    AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText((rewardValue*100.0)/100.0 + " €"));
+                    AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(Math.round((amountOfAsset - total.doubleValue())*100.0)/100.0 + " €"));
+
+                });
+                t.start();
+                TextView money_spent_value = findViewById(R.id.money_spent_value);
+                money_spent_value.setText(total.toString() + " €");
+
+
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+                //TODO
+            }
+
+        });
     }
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
