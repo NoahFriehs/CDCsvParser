@@ -10,16 +10,15 @@
         android:id="@+id/asset_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/choose_asset"
-        android:textSize="12sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginStart="10dp"
         android:padding="16dp"
-        android:layout_marginLeft="10dp"
         android:paddingTop="0dp"
+        android:text="@string/choose_asset"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Spinner
         android:id="@+id/asset_spinner"
@@ -27,9 +26,9 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
-        app:layout_constraintTop_toBottomOf="@id/asset_label"
         android:background="@android:drawable/btn_dropdown"
         android:spinnerMode="dropdown"
+        app:layout_constraintTop_toBottomOf="@id/asset_label"
         tools:ignore="MissingConstraints" />
 
     <!--value of assets views-->
@@ -37,129 +36,134 @@
         android:id="@+id/assets_value_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/amount_of_asset"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/asset_spinner"
-        android:layout_marginTop="14dp"
         android:layout_marginStart="14dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/amount_of_asset"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/asset_spinner" />
+
     <TextView
         android:id="@+id/assets_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/euro_sign"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/assets_value_label"
-        android:layout_marginTop="14dp"
         android:layout_marginStart="22dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/euro_sign"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/assets_value_label" />
 
     <!--money spent views-->
     <TextView
         android:id="@+id/money_spent_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/money_spent_label"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/assets_value"
-        android:layout_marginTop="14dp"
         android:layout_marginStart="14dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/money_spent_label"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/assets_value" />
+
     <TextView
         android:id="@+id/money_spent_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/euro_sign"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/money_spent_label"
-        android:layout_marginTop="14dp"
         android:layout_marginStart="22dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/euro_sign"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/money_spent_label" />
 
     <!--profit/loss views-->
     <TextView
         android:id="@+id/profit_loss_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/profit_loss"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/money_spent_value"
-        android:layout_marginTop="14dp"
         android:layout_marginStart="14dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/profit_loss"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/money_spent_value" />
+
     <TextView
         android:id="@+id/profit_loss_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/euro_sign"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/profit_loss_label"
-        android:layout_marginTop="14dp"
         android:layout_marginStart="22dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/euro_sign"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/profit_loss_label" />
 
     <!--Rewards earned views-->
     <TextView
         android:id="@+id/rewards_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/rewards_earned"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/profit_loss_value"
-        android:layout_marginTop="14dp"
         android:layout_marginStart="14dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/rewards_earned"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/profit_loss_value" />
+
     <TextView
         android:id="@+id/rewards_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/euro_sign"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/rewards_label"
-        android:layout_marginTop="14dp"
         android:layout_marginStart="22dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/euro_sign"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/rewards_label" />
 
     <!--All regarding transaktions views-->
     <TextView
         android:id="@+id/all_regarding_tx"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/all_transactions_regarding"
-        android:textSize="14sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/rewards_value"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginTop="14dp"
         android:layout_marginStart="22dp"
+        android:layout_marginTop="14dp"
+        android:text="@string/all_transactions_regarding"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/rewards_value" />
+
+    <ListView
+        android:id="@+id/lv_txs"
+        app:layout_constraintTop_toBottomOf="@id/all_regarding_tx"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintVertical_bias="0.97"
+        tools:layout_editor_absoluteX="1dp"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

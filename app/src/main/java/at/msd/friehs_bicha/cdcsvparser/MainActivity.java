@@ -162,12 +162,22 @@ public class MainActivity extends AppCompatActivity {
             try {
                 appModel = new AppModel(list);
                 callParseView();
-            }catch (Exception e) {
+            }catch (IllegalArgumentException e) {
+                context = getApplicationContext();
                 CharSequence text = e.getMessage();
                 int duration = Toast.LENGTH_SHORT;
 
                 Toast toast = Toast.makeText(context, text, duration);
                 toast.show();
+
+            }catch (RuntimeException e){
+                Context context = getApplicationContext();
+                CharSequence text = e.getMessage();
+                int duration = Toast.LENGTH_SHORT;
+
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+                callParseView();
             }
 
 
