@@ -30,7 +30,7 @@ public class TxApp implements Serializable {
         try {
             transactions = getTransactions(file);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalArgumentException("This file seems to be not supported yet.");
         }
         System.out.println("We have " + transactions.size() + " transaction(s).");
         createWallets();
