@@ -60,6 +60,12 @@ public class AppModel implements Serializable {
         return transactions;
     }
 
+    /**
+     * Get transactions by TransactionType
+     *
+     * @param s the string of the coin
+     * @return the transactions that contain this coin
+     */
     public List<Transaction> getTXByType(String s) {
         ArrayList<Transaction> transactions = new ArrayList<>();
         try {

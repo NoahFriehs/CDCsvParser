@@ -10,7 +10,7 @@
         android:id="@+id/asset_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
         android:padding="16dp"
         android:paddingTop="0dp"
         android:text="@string/choose_asset"
