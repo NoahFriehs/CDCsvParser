@@ -121,7 +121,7 @@ public class Wallet implements Serializable {
      * @param transaction the transaction to be added
      */
     public void addTransaction(Transaction transaction) {
-        transactions.add(transaction);
+        //transactions.add(transaction);
         TransactionType t = transaction.getTransactionType();
         Wallet w = txApp.wallets.get(getWallet(transaction.getCurrencyType()));
         if (!w.transactions.contains(transaction)) {

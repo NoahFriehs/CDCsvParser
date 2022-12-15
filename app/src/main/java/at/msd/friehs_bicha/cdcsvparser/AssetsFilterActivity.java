@@ -62,12 +62,13 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
         //get the specific wallet
         Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
 
-        //TODO right implamentation
         TextView assetsValue = findViewById(R.id.assets_value);
         double amountOfAsset = appModel.getValueOfAssets(specificWallet);
 
         assetsValue.setText(amountOfAsset + " €");
         System.out.println(amountOfAsset);
+
+        displayTxs(specificWallet);
 
         dropdown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -75,16 +76,7 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
                 //get the specific wallet
                 Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
 
-                // Get a reference to the ListView
-                ListView listView = findViewById(R.id.lv_txs);
-
-                List<Transaction> transactions = specificWallet.getTransactions();
-
-                // Create an adapter for the ListView
-                ArrayAdapter<Transaction> adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_2, transactions);
-
-                // Set the adapter on the ListView
-                listView.setAdapter(adapter);
+                displayTxs(specificWallet);
 
                 TextView assetsValue = findViewById(R.id.assets_value);
                 TextView rewards_value = findViewById(R.id.rewards_value);
@@ -120,7 +112,21 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 
     }
-    @Override
+
+        private void displayTxs(Wallet specificWallet) {
+            // Get a reference to the ListView
+            ListView listView = findViewById(R.id.lv_txs);
+
+            List<Transaction> transactions = specificWallet.getTransactions();
+
+            // Create an adapter for the ListView
+            ArrayAdapter<Transaction> adapterLV = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, transactions);
+
+            // Set the adapter on the ListView
+            listView.setAdapter(adapterLV);
+        }
+
+        @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:

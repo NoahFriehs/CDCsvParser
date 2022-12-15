@@ -158,11 +158,12 @@
 
     <ListView
         android:id="@+id/lv_txs"
-        android:layout_width="409dp"
-        android:layout_height="322dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/all_regarding_tx"
-        tools:layout_editor_absoluteX="1dp" />
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintVertical_bias="0.97"
+        tools:layout_editor_absoluteX="1dp"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
