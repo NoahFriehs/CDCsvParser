@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -91,11 +92,20 @@ public class MainActivity extends AppCompatActivity {
             System.out.println(new File(context.getFilesDir(), filename) + "\n");
 
 
+            try {
+                appModel = new AppModel(list);
+                callParseView();
+            }catch (Exception e) {
+                Context context = getApplicationContext();
+                CharSequence text = e.getMessage();
+                int duration = Toast.LENGTH_SHORT;
 
-            appModel = new AppModel(list);
+                Toast toast = Toast.makeText(context, text, duration);
+                toast.show();
+
+            }
 
 
-            callParseView();
         }
     }
 
