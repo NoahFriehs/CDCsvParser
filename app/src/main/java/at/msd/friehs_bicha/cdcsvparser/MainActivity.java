@@ -19,9 +19,12 @@ import android.widget.Toast;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -34,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PICKFILE_REQUEST_CODE = 1;
     Context context;
     AppModel appModel;
+    File[] files;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         File appDir = getFilesDir();
 
         // Get a list of all files in the app's internal file directory
-        File[] files = appDir.listFiles();
+        files = appDir.listFiles();
         System.out.println(files);
 
         if(files.length == 0){
@@ -71,10 +75,22 @@ public class MainActivity extends AppCompatActivity {
             btnHistory.setTextColor(Color.DKGRAY);
             btnHistory.setBackground(drawable);
         }else{
-            // Loop through the list of files and print their names
             String[] fileNames = new String[files.length];
+            SimpleDateFormat sdf = new SimpleDateFormat("M-d-yyyy-hh-mm-ss");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("d.M hh:mm");
+            String filename;
+            Date date;
             for (int i = 0; i < files.length;i++) {
-                fileNames[i] = files[i].getName();
+                filename = files[i].getName();
+                filename = filename.substring(0, filename.length() - 4);
+                try {
+                    date = sdf.parse(filename);
+                    filename = dateFormat.format(date);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                    // TODO error message
+                }
+                fileNames[i] = filename;
             }
 
             //create an adapter to describe how the items are displayed, adapters are used in several places in android.
@@ -87,8 +103,7 @@ public class MainActivity extends AppCompatActivity {
             btnHistory.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent intent = new Intent(MainActivity.this, ParseActivity.class);
-                    startActivity(intent);
+                    onBtnHistoryClick(view, files,dropdown);
                 }
 
             });
@@ -96,6 +111,24 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    }
+
+    private void onBtnHistoryClick(View view, File[] files,Spinner spinner) {
+        int position = spinner.getSelectedItemPosition();
+        File selectedFile = files[position];
+
+        ArrayList<String> list = getFileContent(selectedFile);
+
+        try {
+            appModel = new AppModel(list);
+            callParseView();
+        }catch (Exception e) {
+            CharSequence text = e.getMessage();
+            int duration = Toast.LENGTH_SHORT;
+
+            Toast toast = Toast.makeText(context, text, duration);
+            toast.show();
+        }
     }
 
     @Override
@@ -112,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
             String filename = time + ".csv";
 
             ArrayList<String> list = getFileContentFromUri(fileUri);
-
+//TODO set timezone
             try (FileOutputStream fos = context.openFileOutput(filename, Context.MODE_APPEND)) {
                 for (String element : list) {
                     fos.write(element.getBytes());
@@ -121,23 +154,20 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-            System.out.println(filename + "\n");
-            System.out.println(context.getFilesDir() + "\n");
-            System.out.println(new File(context.getFilesDir(), filename) + "\n");
-
+            //delete oldest file if 7 files
+            if(files.length >= 7){
+                files[0].delete();
+            }
 
             try {
                 appModel = new AppModel(list);
                 callParseView();
             }catch (Exception e) {
-                Context context = getApplicationContext();
                 CharSequence text = e.getMessage();
                 int duration = Toast.LENGTH_SHORT;
 
                 Toast toast = Toast.makeText(context, text, duration);
                 toast.show();
-
             }
 
 
@@ -182,6 +212,26 @@ public class MainActivity extends AppCompatActivity {
             // Close the BufferedReader and InputStream.
             reader.close();
             inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return fileContents;
+    }
+    public ArrayList<String> getFileContent(File file){
+        ArrayList<String> fileContents = new ArrayList<>();
+        try {
+
+            // Create a BufferedReader to read the file contents.
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+
+            // Read the file line by line and add each line to the fileContents list.
+            String line;
+            while ((line = reader.readLine()) != null) {
+                fileContents.add(line);
+            }
+
+            // Close the BufferedReader and InputStream.
+            reader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
