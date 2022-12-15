@@ -35,7 +35,9 @@ public class TxApp implements Serializable {
         System.out.println("We have " + transactions.size() + " transaction(s).");
         createWallets();
         fillWallet(transactions);
-
+        if (amountTxFailed > 0){
+            throw new RuntimeException(amountTxFailed + " transaction(s) failed");
+        }
     }
 
 

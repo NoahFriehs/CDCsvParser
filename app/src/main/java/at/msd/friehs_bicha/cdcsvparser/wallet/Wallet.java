@@ -185,7 +185,6 @@ public class Wallet implements Serializable {
                 System.out.println("Not supported yet: " + transaction);
                 break;
             case crypto_viban_exchange:
-                System.out.println("Not supported yet: " + transaction);
                 w.removeFromWallet(transaction.getAmount(), transaction.getNativeAmount());
                 Wallet eur = txApp.wallets.get(getWallet("EUR"));
                 eur.addToWallet(transaction.getNativeAmount(),transaction.getNativeAmount(), BigDecimal.ZERO);
