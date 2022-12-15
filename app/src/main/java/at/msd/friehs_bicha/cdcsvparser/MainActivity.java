@@ -5,6 +5,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -18,7 +21,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 
@@ -34,35 +39,61 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         context = getApplicationContext();
-
-        //get the spinner from the xml.
+        //get the elements from the xml.
         Spinner dropdown = findViewById(R.id.spinner_history);
-        //create a list of items for the spinner.
-        String[] items = new String[]{"1", "2", "three"};
-        //create an adapter to describe how the items are displayed, adapters are used in several places in android.
-//There are multiple variations of this, but this is the basic variant.
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);
-//set the spinners adapter to the previously created one.
-        dropdown.setAdapter(adapter);
-
         Button btnParse = findViewById(R.id.btn_parse);
         Button btnHistory = findViewById(R.id.btn_history);
 
         btnParse.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                onBtnClick(view);
+                onBtnUploadClick(view);
             }
 
         });
-        btnHistory.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, ParseActivity.class);
-                startActivity(intent);
+
+        // Get the app's internal file directory
+        File appDir = getFilesDir();
+
+        // Get a list of all files in the app's internal file directory
+        File[] files = appDir.listFiles();
+        System.out.println(files);
+
+        if(files.length == 0){
+            // Disable the button
+            // Get the app's resources
+            Resources res = getResources();
+            // Get the drawable with the name "my_drawable" from the app's resources
+            Drawable drawable = res.getDrawable(R.drawable.round_button_disabeld);
+            btnHistory.setEnabled(false);
+            btnHistory.setBackgroundColor(Color.LTGRAY);
+            btnHistory.setTextColor(Color.DKGRAY);
+            btnHistory.setBackground(drawable);
+        }else{
+            // Loop through the list of files and print their names
+            String[] fileNames = new String[files.length];
+            for (int i = 0; i < files.length;i++) {
+                fileNames[i] = files[i].getName();
             }
 
-        });
+            //create an adapter to describe how the items are displayed, adapters are used in several places in android.
+            ArrayAdapter<String> fileNamesAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, fileNames);
+            //set the spinners adapter to the previously created one.
+            dropdown.setAdapter(fileNamesAdapter);
+
+
+
+            btnHistory.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(MainActivity.this, ParseActivity.class);
+                    startActivity(intent);
+                }
+
+            });
+        }
+
+
 
     }
 
@@ -73,8 +104,12 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == PICKFILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
             // Get the URI of the selected file
             Uri fileUri = data.getData();
-            long time = System.currentTimeMillis();
-            String filename = Long.toString(time) + ".csv";
+            //creat filename with format M-d-y-H-m-s
+            SimpleDateFormat dateFormat = new SimpleDateFormat("M-d-y-H-m-s");
+            Date now = new Date();
+            String time = dateFormat.format(now);
+            String filename = time + ".csv";
+
             ArrayList<String> list = getFileContentFromUri(fileUri);
 
             try (FileOutputStream fos = context.openFileOutput(filename, Context.MODE_APPEND)) {
@@ -105,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    public void onBtnClick(View view){
+    public void onBtnUploadClick(View view){
         // Create an Intent object to allow the user to select a file
         Intent chooseFile = new Intent(Intent.ACTION_GET_CONTENT);
 
