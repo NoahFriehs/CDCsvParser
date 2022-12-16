@@ -1,14 +1,12 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet;
 
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
-import at.msd.friehs_bicha.cdcsvparser.general.TxApp;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Objects;
+
+import at.msd.friehs_bicha.cdcsvparser.general.TxApp;
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
 
 /**
  * Represents a Wallet object
@@ -165,6 +163,13 @@ public class Wallet implements Serializable {
         }
     }
 
+    /**
+     * Handles crypto withdrawal
+     *
+     * @param w the wallet from which crypto is withdrawn
+     * @param transaction the transaction to be made
+     * @param outsideWallets all outsideWallets
+     */
     private void cryptoWithdrawal(Wallet w, Transaction transaction, ArrayList<Wallet> outsideWallets) {
         w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, BigDecimal.ZERO);
         Wallet wt = outsideWallets.get(getWallet(transaction.getCurrencyType()));
@@ -174,6 +179,11 @@ public class Wallet implements Serializable {
         wt.removeFromWallet(transaction.getAmount(), BigDecimal.ZERO);
     }
 
+    /**
+     * Hadles crypto viban purchase
+     *
+     * @param transaction the transaction which is a vibanPurchase
+     */
     private void vibanPurchase(Transaction transaction) {
         if (getWallet(transaction.getToCurrency()) == -1)
         {

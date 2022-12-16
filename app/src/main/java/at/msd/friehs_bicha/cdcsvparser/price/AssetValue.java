@@ -19,9 +19,17 @@ public class AssetValue implements Serializable {
     List<CoinMarkets> coinMarkets;
     private Instant coinMarketsCreationTime;
     List<PriceCache> cache;
+    public boolean isRunning;
 
     public AssetValue() {
         cache = new ArrayList<>();
+        try {
+            CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
+            client.ping();
+            isRunning = true;
+        }catch (Exception e) {
+            isRunning = false;
+        }
     }
 
     /**

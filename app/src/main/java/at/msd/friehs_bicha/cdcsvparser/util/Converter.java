@@ -32,17 +32,6 @@ public class Converter {
     }
 
 
-//    public static CurrencyType ctConverter(String s) {
-//        s = s.trim().toUpperCase();
-//        try {
-//            return CurrencyType.valueOf(s);
-//        } catch (Exception e) {
-//            System.out.println(s);
-//            return null;
-//        }
-//    }
-
-
     /**
      * Converts a String to a Date
      *
@@ -58,6 +47,7 @@ public class Converter {
             return null;
         }
     }
+
 
     /**
      * Converts a Date to a String

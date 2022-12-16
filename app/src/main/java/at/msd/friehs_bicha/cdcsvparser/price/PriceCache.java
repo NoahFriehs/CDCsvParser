@@ -3,6 +3,9 @@ package at.msd.friehs_bicha.cdcsvparser.price;
 import java.io.Serializable;
 import java.time.Instant;
 
+/**
+ * Object to store price for a specific token for 5 mins
+ */
 public class PriceCache implements Serializable {
 
     private final Instant creationTime;

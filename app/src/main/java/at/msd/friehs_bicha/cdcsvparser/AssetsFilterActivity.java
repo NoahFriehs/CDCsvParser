@@ -63,10 +63,13 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
         Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
 
         TextView assetsValue = findViewById(R.id.assets_value);
-        double amountOfAsset = appModel.getValueOfAssets(specificWallet);
+        if (AppModel.asset.isRunning) {
+            double amountOfAsset = appModel.getValueOfAssets(specificWallet);
 
-        assetsValue.setText(amountOfAsset + " €");
-        System.out.println(amountOfAsset);
+            assetsValue.setText(amountOfAsset + " €");
+        }else {
+            assetsValue.setText("no internet connection");
+        }
 
         displayTxs(specificWallet);
 
@@ -88,12 +91,17 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
                 BigDecimal total = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString())).getMoneySpent().round(new MathContext(0));
 
                 Thread t = new Thread(() -> {
-                    double amountOfAsset = appModel.getValueOfAssets(specificWallet);
-                    double rewardValue = appModel.getTotalBonus(specificWallet);
-                    AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText((amountOfAsset*100.0)/100.0 + " €"));
-                    AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText((rewardValue*100.0)/100.0 + " €"));
-                    AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(Math.round((amountOfAsset - total.doubleValue())*100.0)/100.0 + " €"));
-
+                    if (AppModel.asset.isRunning) {
+                        double amountOfAsset = appModel.getValueOfAssets(specificWallet);
+                        double rewardValue = appModel.getTotalBonus(specificWallet);
+                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText((amountOfAsset * 100.0) / 100.0 + " €"));
+                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText((rewardValue * 100.0) / 100.0 + " €"));
+                        AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €"));
+                    }else {
+                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(("no internet connection")));
+                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText(("no internet connection")));
+                        AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(("no internet connection")));
+                    }
                 });
                 t.start();
                 TextView money_spent_value = findViewById(R.id.money_spent_value);

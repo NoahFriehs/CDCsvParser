@@ -65,23 +65,33 @@ public class ParseActivity extends AppCompatActivity {
         money_spent_value.setText(total.toString() + " €");
 
         Thread t = new Thread(() ->{
+            if (AppModel.asset.isRunning) {
+                double valueOfAssets = getValueOfAssets();
+                double rewardsEarned = getRewardsEarned();
 
-            double valueOfAssets = getValueOfAssets();
-            double rewardsEarned = getRewardsEarned();
-
-            ParseActivity.this.runOnUiThread(() -> setPrice(valueOfAssets , total, Math.round(rewardsEarned*100.0)/100.0 + " €"));
+                ParseActivity.this.runOnUiThread(() -> setPrice(valueOfAssets, total, Math.round(rewardsEarned * 100.0) / 100.0 + " €"));
+            }else {
+                ParseActivity.this.runOnUiThread(() -> setPrice(0.0, BigDecimal.ZERO, "no internet connection"));
+            }
         });
         t.start();
 
     }
 
     private void setPrice(Double valueOfA, BigDecimal total, String rewardsValue) {
-        TextView assets_value = findViewById(R.id.assets_value);
-        assets_value.setText( Math.round(valueOfA*100.0)/100.0 + " €");
+        if (AppModel.asset.isRunning) {
+            TextView assets_value = findViewById(R.id.assets_value);
+            assets_value.setText(Math.round(valueOfA * 100.0) / 100.0 + " €");
 
-        TextView profit_loss_value = findViewById(R.id.profit_loss_value);
-        profit_loss_value.setText(Math.round((valueOfA - total.doubleValue())*100.0)/100.0 + " €");
+            TextView profit_loss_value = findViewById(R.id.profit_loss_value);
+            profit_loss_value.setText(Math.round((valueOfA - total.doubleValue()) * 100.0) / 100.0 + " €");
+        } else {
+            TextView assets_value = findViewById(R.id.assets_value);
+            assets_value.setText("no internet connection");
 
+            TextView profit_loss_value = findViewById(R.id.profit_loss_value);
+            profit_loss_value.setText("no internet connection");
+        }
         TextView rewards_value = findViewById(R.id.rewards_value);
         rewards_value.setText(rewardsValue);
     }
