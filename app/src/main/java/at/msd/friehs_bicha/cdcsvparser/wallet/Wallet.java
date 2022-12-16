@@ -148,10 +148,10 @@ public class Wallet implements Serializable {
                 cryptoWithdrawal(w, transaction, txApp.wallets);
                 break;
             case dust_conversion_debited:
-                System.out.println("Not supported yet: " + transaction);
+                w.removeFromWallet(transaction.getAmount(), transaction.getNativeAmount());
                 break;
             case dust_conversion_credited:
-                System.out.println("Not supported yet: " + transaction);
+                w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
                 break;
             case crypto_viban_exchange:
                 w.removeFromWallet(transaction.getAmount(), transaction.getNativeAmount());

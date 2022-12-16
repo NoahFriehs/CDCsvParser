@@ -71,8 +71,8 @@ public class ParseActivity extends AppCompatActivity {
         });
 
         TextView money_spent_value = findViewById(R.id.money_spent_value);
-        BigDecimal total = getTotalPrice().round(new MathContext(0));
-        money_spent_value.setText(total.toString() + " €");
+        BigDecimal total = getTotalPrice();
+        money_spent_value.setText(Math.round(total.doubleValue() * 100.0) / 100.0 + " €");
 
 
 
