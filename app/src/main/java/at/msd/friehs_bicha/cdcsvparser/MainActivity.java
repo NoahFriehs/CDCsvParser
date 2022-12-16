@@ -169,7 +169,8 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            //delete oldest file if 7 files
+            //delete oldest file if alredy 7 files in array
+            updateFiles();
             while(files.length > 7){
                 files[0].delete();
                 updateFiles();
