@@ -1,7 +1,5 @@
 package at.msd.friehs_bicha.cdcsvparser;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -16,6 +14,8 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,7 +23,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -122,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //create an adapter to describe how the items are displayed, adapters are used in several places in android.
-        ArrayAdapter<String> fileNamesAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, fileNames);
+        ArrayAdapter<String> fileNamesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, fileNames);
         //set the spinners adapter to the previously created one.
         spinner.setAdapter(fileNamesAdapter);
 

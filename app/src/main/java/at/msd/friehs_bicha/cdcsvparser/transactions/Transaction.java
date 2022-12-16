@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions;
 
+import androidx.annotation.NonNull;
+
 import at.msd.friehs_bicha.cdcsvparser.util.Converter;
 import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
 
@@ -86,6 +88,7 @@ public class Transaction implements Serializable {
         this.toAmount = toAmount;
     }
 
+    @NonNull
     @Override
     public String toString() {
         return

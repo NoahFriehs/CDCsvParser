@@ -17,7 +17,6 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 
 public class TransactionsActivity extends AppCompatActivity {
 
-    private List<Transaction> mTransactionList = new ArrayList<>();
     AppModel appModel;
 
     @Override
@@ -29,7 +28,7 @@ public class TransactionsActivity extends AppCompatActivity {
 
         appModel = (AppModel) getIntent().getExtras().get("AppModel");
 
-        mTransactionList = appModel.txApp.transactions;
+        List<Transaction> mTransactionList = appModel.txApp.transactions;
 
         // showing the back button in action bar
         actionBar.setDisplayHomeAsUpEnabled(true);
@@ -46,10 +45,9 @@ public class TransactionsActivity extends AppCompatActivity {
     }
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                this.finish();
-                return true;
+        if (item.getItemId() == android.R.id.home) {
+            this.finish();
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }

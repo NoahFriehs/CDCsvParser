@@ -10,9 +10,9 @@ public class PriceCache implements Serializable {
 
     private final Instant creationTime;
 
-    public String id;
+    public final String id;
 
-    public double price;
+    public final double price;
 
     public PriceCache(String id, double price) {
         this.creationTime = Instant.now();
