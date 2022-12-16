@@ -57,12 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-        // Get the app's internal file directory
-        File appDir = getFilesDir();
-
-        // Get a list of all files in the app's internal file directory
-        files = appDir.listFiles();
-        System.out.println(files);
+        updateFiles();
 
         if(files.length == 0){
             // Disable the button
@@ -75,29 +70,7 @@ public class MainActivity extends AppCompatActivity {
             btnHistory.setTextColor(Color.DKGRAY);
             btnHistory.setBackground(drawable);
         }else{
-            String[] fileNames = new String[files.length];
-            SimpleDateFormat sdf = new SimpleDateFormat("M-d-yyyy-hh-mm-ss");
-            SimpleDateFormat dateFormat = new SimpleDateFormat("d.M hh:mm");
-            String filename;
-            Date date;
-            for (int i = 0; i < files.length;i++) {
-                filename = files[i].getName();
-                filename = filename.substring(0, filename.length() - 4);
-                try {
-                    date = sdf.parse(filename);
-                    filename = dateFormat.format(date);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    // TODO error message
-                }
-                fileNames[i] = filename;
-            }
-
-            //create an adapter to describe how the items are displayed, adapters are used in several places in android.
-            ArrayAdapter<String> fileNamesAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, fileNames);
-            //set the spinners adapter to the previously created one.
-            dropdown.setAdapter(fileNamesAdapter);
-
+            setSpinner(dropdown);
 
 
             btnHistory.setOnClickListener(new View.OnClickListener() {
@@ -113,7 +86,49 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void onBtnHistoryClick(View view, File[] files,Spinner spinner) {
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        updateFiles();
+        Spinner dropdown = findViewById(R.id.spinner_history);
+        setSpinner(dropdown);
+    }
+
+    private void updateFiles(){
+        // Get the app's internal file directory
+        File appDir = getFilesDir();
+        // Get a list of all files in the app's internal file directory
+        files = appDir.listFiles();
+    }
+
+    private void setSpinner(Spinner spinner){
+        String[] fileNames = new String[files.length];
+        SimpleDateFormat sdf = new SimpleDateFormat("M-d-yyyy-hh-mm-ss");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("d.M hh:mm");
+        String filename;
+        Date date;
+        for (int i = 0; i < files.length;i++) {
+            filename = files[i].getName();
+            filename = filename.substring(0, filename.length() - 4);
+            try {
+                date = sdf.parse(filename);
+                filename = dateFormat.format(date);
+            } catch (ParseException e) {
+                e.printStackTrace();
+                // TODO error message
+            }
+            fileNames[i] = filename;
+        }
+
+        //create an adapter to describe how the items are displayed, adapters are used in several places in android.
+        ArrayAdapter<String> fileNamesAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, fileNames);
+        //set the spinners adapter to the previously created one.
+        spinner.setAdapter(fileNamesAdapter);
+
+    }
+
+    private void onBtnHistoryClick(View view, File[] files, Spinner spinner) {
         int position = spinner.getSelectedItemPosition();
         File selectedFile = files[position];
 
@@ -155,8 +170,9 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
             //delete oldest file if 7 files
-            if(files.length >= 7){
+            while(files.length > 7){
                 files[0].delete();
+                updateFiles();
             }
 
             try {
