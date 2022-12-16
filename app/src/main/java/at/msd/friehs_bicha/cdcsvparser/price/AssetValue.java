@@ -18,7 +18,7 @@ public class AssetValue implements Serializable {
     List<CoinList> coinLists;
     List<CoinMarkets> coinMarkets;
     private Instant coinMarketsCreationTime;
-    List<PriceCache> cache;
+    final List<PriceCache> cache;
     public boolean isRunning;
 
     public AssetValue() {

@@ -24,7 +24,7 @@ public class AppModel implements Serializable {
 
     public TxApp txApp;
     public static AssetValue asset;
-    public boolean isRunning = false;
+    public boolean isRunning;
 
     public AppModel(ArrayList<String> file) {
         String exception = "";

@@ -23,7 +23,7 @@ public class TxApp implements Serializable {
 
     public ArrayList<Wallet> wallets = new ArrayList<>();
     public ArrayList<Wallet> outsideWallets = new ArrayList<>();
-    public ArrayList<Transaction> transactions = new ArrayList<>();
+    public ArrayList<Transaction> transactions;
     public int amountTxFailed = 0;
 
     public TxApp(ArrayList<String> file) {

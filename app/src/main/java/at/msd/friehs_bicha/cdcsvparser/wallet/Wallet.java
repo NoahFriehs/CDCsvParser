@@ -97,61 +97,41 @@ public class Wallet implements Serializable {
             w.transactions.add(transaction);
         }
         switch (t) {
-            case crypto_purchase: w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
+            case crypto_purchase:
+            case dust_conversion_credited:
+                w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
 
             case supercharger_deposit:
+            case crypto_earn_program_created:
+            case lockup_lock:
+            case supercharger_withdrawal:
+            case crypto_earn_program_withdrawn:
                 break;
 
             case rewards_platform_deposit_credited:
                 break;//do nothing
 
             case supercharger_reward_to_app_credited:
+            case crypto_earn_interest_paid:
+            case referral_card_cashback:
+            case reimbursement:
+            case card_cashback_reverted:
+            case admin_wallet_credited:
+            case crypto_wallet_swap_credited:
+            case crypto_wallet_swap_debited:
                 w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
                 break;
             case viban_purchase:
                 vibanPurchase(transaction);
                 break;
-            case crypto_earn_program_created:
-                break;
-            case crypto_earn_interest_paid:
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-                break;
-            case supercharger_withdrawal:
-                break;
-            case lockup_lock:
-                break;
             case crypto_withdrawal:
                 cryptoWithdrawal(w, transaction, txApp.outsideWallets);
-                break;
-            case referral_card_cashback:
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-                break;
-            case reimbursement:
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-                break;
-            case card_cashback_reverted:
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-                break;
-            case crypto_earn_program_withdrawn:
-                break;
-            case admin_wallet_credited:
-                //Free money from fork
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-                break;
-            case crypto_wallet_swap_credited:
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-                break;
-            case crypto_wallet_swap_debited:
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
                 break;
             case crypto_deposit:
                 cryptoWithdrawal(w, transaction, txApp.wallets);
                 break;
             case dust_conversion_debited:
-                System.out.println("Not supported yet: " + transaction);
-                break;
-            case dust_conversion_credited:
-                System.out.println("Not supported yet: " + transaction);
+                w.removeFromWallet(transaction.getAmount(), transaction.getNativeAmount());
                 break;
             case crypto_viban_exchange:
                 w.removeFromWallet(transaction.getAmount(), transaction.getNativeAmount());
@@ -187,7 +167,7 @@ public class Wallet implements Serializable {
     private void vibanPurchase(Transaction transaction) {
         if (getWallet(transaction.getToCurrency()) == -1)
         {
-            System.out.println("Tx failed: " + transaction.toString());
+            System.out.println("Tx failed: " + transaction);
         }else {
 
         Wallet wv = txApp.wallets.get(getWallet(transaction.getToCurrency()));
@@ -195,36 +175,16 @@ public class Wallet implements Serializable {
         }
     }
 
-    public void setCurrencyType(String currencyType) {
-        this.currencyType = currencyType;
-    }
-
     public BigDecimal getAmount() {
         return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
     }
 
     public BigDecimal getAmountBonus() {
         return amountBonus;
     }
 
-    public void setAmountBonus(BigDecimal amountBonus) {
-        this.amountBonus = amountBonus;
-    }
-
     public BigDecimal getMoneySpent() {
         return moneySpent;
-    }
-
-    public void setMoneySpent(BigDecimal moneySpent) {
-        this.moneySpent = moneySpent;
-    }
-
-    public void setTransactions(ArrayList<Transaction> transactions) {
-        this.transactions = transactions;
     }
 
 
