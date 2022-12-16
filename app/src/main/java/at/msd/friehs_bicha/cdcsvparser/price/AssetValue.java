@@ -24,6 +24,12 @@ public class AssetValue implements Serializable {
         cache = new ArrayList<>();
     }
 
+    /**
+     * Returns the price of the entered symbol
+     *
+     * @param symbol the symbol for which the price is needed
+     * @return the price of the symbol
+     */
     public Double getPrice(String symbol){
         symbol = overrideSymbol(symbol);
         double price = checkCache(symbol);
@@ -48,6 +54,12 @@ public class AssetValue implements Serializable {
         return getPriceTheOtherWay(symbol);
     }
 
+    /**
+     * Returns the price of the entered symbol in a more complicate way
+     *
+     * @param symbol the symbol for which the price is needed
+     * @return the price of the symbol
+     */
     private Double getPriceTheOtherWay(String symbol){
         CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
         if (coinLists == null) coinLists = client.getCoinList();
@@ -67,12 +79,24 @@ public class AssetValue implements Serializable {
         return (double) 0;
     }
 
+    /**
+     * Replaces symbols with the right ones
+     *
+     * @param symbol the symbol to be checked and if needed replaced
+     * @return the if needed replaced symbol
+     */
     private String overrideSymbol(String symbol){
         if (Objects.equals(symbol, "LUNA")) return "terra-luna";
         if (symbol.equals("LUNA2")) return "terra-luna-2";
         return symbol;
     }
 
+    /**
+     * Checks if the price of the symbol is stored
+     *
+     * @param symbol the symbol to be checked for
+     * @return a price if it has it it else -1
+     */
     private double checkCache(String symbol){
 
         for (int i = 0; i < cache.size(); i++)

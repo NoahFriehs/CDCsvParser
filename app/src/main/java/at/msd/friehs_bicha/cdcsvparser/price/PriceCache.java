@@ -17,6 +17,11 @@ public class PriceCache implements Serializable {
         this.price = price;
     }
 
+    /**
+     * Checks if the object is older than five minutes
+     *
+     * @return true if it is older than five minutes
+     */
     public boolean isOlderThanFiveMinutes() {
         return Instant.now().isAfter(creationTime.plusSeconds(300));
     }

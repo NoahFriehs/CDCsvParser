@@ -12,6 +12,12 @@ import java.util.Date;
  */
 public class Converter {
 
+    /**
+     * Converts a String to a TransactionType
+     *
+     * @param s the String to be converted
+     * @return the TransactionType
+     */
     public static TransactionType ttConverter(String s) {
 
         s = s.trim().toLowerCase();
@@ -37,6 +43,12 @@ public class Converter {
 //    }
 
 
+    /**
+     * Converts a String to a Date
+     *
+     * @param s the String to be converted
+     * @return the Date of the String
+     */
     public static Date dateConverter(String s) {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -47,6 +59,12 @@ public class Converter {
         }
     }
 
+    /**
+     * Converts a Date to a String
+     *
+     * @param s the Date to be converted
+     * @return the String of the Date
+     */
     public static String stringToDateConverter(Date s) {
         try {
             DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");

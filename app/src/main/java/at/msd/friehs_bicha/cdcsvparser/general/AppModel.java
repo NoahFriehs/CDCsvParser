@@ -27,10 +27,18 @@ public class AppModel implements Serializable {
     public boolean isRunning = false;
 
     public AppModel(ArrayList<String> file) {
-        TxApp app = new TxApp(file);
+        String exception = "";
+        try {
+            this.txApp = new TxApp(file);
+        }catch (Exception e) {
+            exception = e.getMessage();
+        }
         asset = new AssetValue();
-        this.txApp = app;
+
         isRunning = true;
+        if (!exception.equals("")){
+            throw new RuntimeException(exception);
+        }
     }
 
     /**
@@ -155,16 +163,20 @@ public class AppModel implements Serializable {
      * @return the total amount earned as a bonus
      */
     public double getTotalBonus() {
+        try {
+            AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
+            for (Wallet wallet : txApp.wallets) {
+                if (Objects.equals(wallet.getCurrencyType(), "EUR")) continue;
+                double price = asset.getPrice(wallet.getCurrencyType());
+                BigDecimal amount = wallet.getAmountBonus();
+                valueOfAll.updateAndGet(v -> v + price * amount.doubleValue());
+            }
 
-        AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
-        for (Wallet wallet : txApp.wallets) {
-            if (Objects.equals(wallet.getCurrencyType(), "EUR")) continue;
-            double price = asset.getPrice(wallet.getCurrencyType());
-            BigDecimal amount = wallet.getAmountBonus();
-            valueOfAll.updateAndGet(v -> v + price * amount.doubleValue());
+            return valueOfAll.get();
+        }catch (Exception e) {
+            return 0;
         }
 
-        return valueOfAll.get();
     }
 
     /**
@@ -173,12 +185,16 @@ public class AppModel implements Serializable {
      * @return the total amount earned as a bonus
      */
     public double getTotalBonus(Wallet wallet) {
-        AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
+        try {
+            AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
             double price = asset.getPrice(wallet.getCurrencyType());
             BigDecimal amount = wallet.getAmountBonus();
             valueOfAll.updateAndGet(v -> v + price * amount.doubleValue());
 
-        return valueOfAll.get();
+            return valueOfAll.get();
+        }catch (Exception e) {
+            return 0;
+        }
     }
 
     /**
@@ -187,27 +203,38 @@ public class AppModel implements Serializable {
      * @return the total amount the assets are worth in EUR
      */
     public double getValueOfAssets(){
+        try {
+            double valueOfAll = (double) 0;
 
-        double valueOfAll = (double) 0;
+            for (Wallet w : txApp.wallets) {
+                if (Objects.equals(w.getCurrencyType(), "EUR")) continue;
+                double price = asset.getPrice(w.getCurrencyType());
+                BigDecimal amount = w.getAmount();
+                valueOfAll += price * amount.doubleValue();
+            }
 
-        for (Wallet w : txApp.wallets) {
-            if (Objects.equals(w.getCurrencyType(), "EUR")) continue;
-            double price = asset.getPrice(w.getCurrencyType());
-            BigDecimal amount = w.getAmount();
-            valueOfAll += price * amount.doubleValue();
+            return valueOfAll;
+        }catch (Exception e) {
+            return 0;
         }
-
-        return valueOfAll;
     }
 
+    /**
+     * Returns the amount the asset is worth in EUR
+     *
+     * @return the amount the asset is worth in EUR
+     */
     public double getValueOfAssets(Wallet w){
-
+        try {
         double valueOfWallet;
         double price = asset.getPrice(w.getCurrencyType());
         BigDecimal amount = w.getAmount();
         valueOfWallet = price * amount.doubleValue();
 
         return valueOfWallet;
+        }catch (Exception e) {
+            return 0;
+        }
     }
 
 }

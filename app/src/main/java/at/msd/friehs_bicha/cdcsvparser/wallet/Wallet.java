@@ -52,35 +52,6 @@ public class Wallet implements Serializable {
     }
 
 
-    /**
-     * Prints out all wallets
-     *
-     */
-    public void writeAmount() {
-        BigDecimal amountSpent = BigDecimal.ZERO;
-        for (Wallet w : txApp.wallets) {
-            //System.out.println("-".repeat(20));
-            System.out.println(w.getCurrencyType());
-            System.out.println("Amount: " + w.amount);
-            System.out.println("Money spent: " + w.moneySpent);
-            System.out.println("Bonus: " + w.amountBonus);
-            if (!Objects.equals(w.amount, BigDecimal.ZERO))
-                if (!Objects.equals(w.amount, w.amountBonus))
-                    System.out.println("AVG. Price: " + w.moneySpent.divide(w.amount.subtract(w.amountBonus), RoundingMode.DOWN));
-            System.out.println("Transactions: " + w.transactions.size());
-            amountSpent = amountSpent.add(w.moneySpent);
-        }
-        for (Wallet w : txApp.outsideWallets) {
-            if (Objects.equals(w.amount, BigDecimal.ZERO)) continue;
-            //System.out.println("-".repeat(20));
-            System.out.println("Outside-" + w.getCurrencyType());
-            System.out.println("Amount: " + w.amount);
-            System.out.println("Transactions: " + w.transactions.size());
-        }
-        //System.out.println("-".repeat(20));
-        System.out.println("Amount total spent: " + amountSpent);
-    }
-
     public String getCurrencyType() {
         return currencyType;
     }
