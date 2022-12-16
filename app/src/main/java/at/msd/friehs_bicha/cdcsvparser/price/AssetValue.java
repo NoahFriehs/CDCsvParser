@@ -35,7 +35,10 @@ public class AssetValue implements Serializable {
     public Double getPrice(String symbol){
         symbol = overrideSymbol(symbol);
         double price = checkCache(symbol);
-        if (price != -1) return price;
+        if (price != -1.0){
+            isRunning = true;
+            return price;
+        }
         try {
             CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
             client.ping();
@@ -114,7 +117,8 @@ public class AssetValue implements Serializable {
                 i--;
                 continue;
             }
-            if (cache.get(i).id == symbol){
+            if (cache.get(i).id.equals(symbol)){
+                System.out.println("used cache");
                 return cache.get(i).price;
             }
         }
