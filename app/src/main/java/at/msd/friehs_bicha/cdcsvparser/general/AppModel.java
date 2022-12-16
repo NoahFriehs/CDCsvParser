@@ -34,8 +34,8 @@ public class AppModel implements Serializable {
             exception = e.getMessage();
         }
         asset = new AssetValue();
-
         isRunning = true;
+
         if (!exception.equals("")){
             throw new RuntimeException(exception);
         }

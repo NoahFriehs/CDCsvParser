@@ -29,6 +29,16 @@ public class ParseActivity extends AppCompatActivity {
 
         appModel = (AppModel) getIntent().getExtras().get("AppModel");
 
+        Thread t1 = new Thread(() ->{
+            try {
+                getValueOfAssets();
+                AppModel.asset.isRunning = true;
+            } catch (Exception e) {
+                System.out.println("no internet connection");
+            }
+        });
+        t1.start();
+
         // showing the back button in action bar
         actionBar.setDisplayHomeAsUpEnabled(true);
 
@@ -64,7 +74,15 @@ public class ParseActivity extends AppCompatActivity {
         BigDecimal total = getTotalPrice().round(new MathContext(0));
         money_spent_value.setText(total.toString() + " €");
 
+
+
         Thread t = new Thread(() ->{
+            try {
+                getValueOfAssets();
+                AppModel.asset.isRunning = true;
+            } catch (Exception e) {
+                System.out.println("no internet connection");
+            }
             if (AppModel.asset.isRunning) {
                 double valueOfAssets = getValueOfAssets();
                 double rewardsEarned = getRewardsEarned();

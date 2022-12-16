@@ -45,6 +45,16 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
         appModel = (AppModel) getIntent().getExtras().get("AppModel");
 
+        Thread t1 = new Thread(() ->{
+            try {
+                appModel.getValueOfAssets();
+                AppModel.asset.isRunning = true;
+            } catch (Exception e) {
+                System.out.println("no internet connection");
+            }
+        });
+        t1.start();
+
         ArrayList<String> wallets = new ArrayList<>();
         appModel.txApp.wallets.forEach(wallet -> {
             wallets.add(wallet.getCurrencyType());
@@ -63,13 +73,22 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
         Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
 
         TextView assetsValue = findViewById(R.id.assets_value);
-        if (AppModel.asset.isRunning) {
-            double amountOfAsset = appModel.getValueOfAssets(specificWallet);
+        Thread t2 = new Thread(() ->{
+            try {
+                appModel.getValueOfAssets();
+                AppModel.asset.isRunning = true;
+            } catch (Exception e) {
+                System.out.println("no internet connection");
+            }
+            if (AppModel.asset.isRunning) {
+                double amountOfAsset = appModel.getValueOfAssets(specificWallet);
 
-            assetsValue.setText(amountOfAsset + " €");
-        }else {
-            assetsValue.setText("no internet connection");
-        }
+                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(amountOfAsset + " €"));
+            }else {
+                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText("no internet connection"));
+            }
+        });
+        t2.start();
 
         displayTxs(specificWallet);
 

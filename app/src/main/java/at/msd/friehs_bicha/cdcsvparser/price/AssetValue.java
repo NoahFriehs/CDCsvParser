@@ -23,13 +23,7 @@ public class AssetValue implements Serializable {
 
     public AssetValue() {
         cache = new ArrayList<>();
-        try {
-            CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
-            client.ping();
-            isRunning = true;
-        }catch (Exception e) {
-            isRunning = false;
-        }
+        isRunning = true;
     }
 
     /**
@@ -42,24 +36,30 @@ public class AssetValue implements Serializable {
         symbol = overrideSymbol(symbol);
         double price = checkCache(symbol);
         if (price != -1) return price;
-        CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
-        if (coinMarkets == null || Instant.now().isAfter(coinMarketsCreationTime.plusSeconds(300))) {
-            coinMarkets = client.getCoinMarkets(Currency.EUR);
-            this.coinMarketsCreationTime = Instant.now();
-        }
         try {
-            if (coinMarkets == null) coinMarkets = client.getCoinMarkets(Currency.EUR);
-            for (CoinMarkets coinMarket : coinMarkets){
-                if (coinMarket.getSymbol().contains(symbol.toLowerCase()) || coinMarket.getId().contains(symbol.toLowerCase())){
-                    cache.add(new PriceCache(symbol, coinMarket.getCurrentPrice()));
-                    return coinMarket.getCurrentPrice();
-                }
+            CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
+            client.ping();
+            if (coinMarkets == null || Instant.now().isAfter(coinMarketsCreationTime.plusSeconds(300))) {
+                coinMarkets = client.getCoinMarkets(Currency.EUR);
+                this.coinMarketsCreationTime = Instant.now();
             }
-        }catch (Exception e){
-            System.out.println("|" + e.getMessage());
+            try {
+                if (coinMarkets == null) coinMarkets = client.getCoinMarkets(Currency.EUR);
+                for (CoinMarkets coinMarket : coinMarkets) {
+                    if (coinMarket.getSymbol().contains(symbol.toLowerCase()) || coinMarket.getId().contains(symbol.toLowerCase())) {
+                        cache.add(new PriceCache(symbol, coinMarket.getCurrentPrice()));
+                        return coinMarket.getCurrentPrice();
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("|" + e.getMessage());
+            }
+            isRunning = true;
+            return getPriceTheOtherWay(symbol);
+        } catch (Exception e) {
+            isRunning = false;
+            return 0.0;
         }
-
-        return getPriceTheOtherWay(symbol);
     }
 
     /**
