@@ -59,15 +59,7 @@ public class MainActivity extends AppCompatActivity {
         updateFiles();
 
         if(files.length == 0){
-            // Disable the button
-            // Get the app's resources
-            Resources res = getResources();
-            // Get the drawable with the name "my_drawable" from the app's resources
-            Drawable drawable = res.getDrawable(R.drawable.round_button_disabeld);
-            btnHistory.setEnabled(false);
-            btnHistory.setBackgroundColor(Color.LTGRAY);
-            btnHistory.setTextColor(Color.DKGRAY);
-            btnHistory.setBackground(drawable);
+            setHistory("disabled",dropdown,btnHistory);
         }else{
             setSpinner(dropdown);
 
@@ -91,7 +83,41 @@ public class MainActivity extends AppCompatActivity {
 
         updateFiles();
         Spinner dropdown = findViewById(R.id.spinner_history);
-        setSpinner(dropdown);
+        Button btnHistory = findViewById(R.id.btn_history);
+        if(files.length == 0){
+            setHistory("disabled",dropdown,btnHistory);
+        }else{
+            setHistory("enabled",dropdown,btnHistory);
+        }
+    }
+
+    private void setHistory(String type, Spinner dropdown,Button btnHistory){
+        Resources res = getResources();
+        Drawable drawable = res.getDrawable(R.drawable.round_button_layer_list);
+        switch(type){
+            case "disabled":
+                // Disable the button
+
+                btnHistory.setEnabled(false);
+                btnHistory.setBackgroundColor(Color.LTGRAY);
+                btnHistory.setTextColor(Color.DKGRAY);
+                btnHistory.setBackground(drawable);
+                //Disable the dropdown
+                String[] items = new String[]{"No History"};
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);
+                dropdown.setAdapter(adapter);
+                dropdown.setEnabled(false);
+                break;
+            case "enabled":
+                // Enable the button
+                btnHistory.setEnabled(true);
+                btnHistory.setTextColor(Color.WHITE);
+                btnHistory.setBackground(drawable);
+                //Enable the dropdown
+                dropdown.setEnabled(true);
+                setSpinner(dropdown);
+        }
+
     }
 
     private void updateFiles(){
