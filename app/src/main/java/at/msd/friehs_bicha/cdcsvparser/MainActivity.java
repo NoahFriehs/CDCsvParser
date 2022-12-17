@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     File[] files;
 
     /**
-     *sets the buttons and spinner and also filles the global vars files and context the first time
+     *sets the buttons and spinner and also fills the global vars files and context the first time
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
