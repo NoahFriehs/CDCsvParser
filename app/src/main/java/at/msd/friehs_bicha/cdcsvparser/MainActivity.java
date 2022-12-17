@@ -37,12 +37,17 @@ public class MainActivity extends AppCompatActivity {
     Context context;
     AppModel appModel;
     File[] files;
+
+    /**
+     *sets the buttons and spinner and also filles the global vars files and context the first time
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         context = getApplicationContext();
+
         //get the elements from the xml.
         Spinner dropdown = findViewById(R.id.spinner_history);
         Button btnParse = findViewById(R.id.btn_parse);
@@ -53,11 +58,11 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 onBtnUploadClick(view);
             }
-
         });
 
         updateFiles();
 
+        //disable spinner and history or fill spinner
         if(files.length == 0){
             setHistory("disabled",dropdown,btnHistory);
         }else{
@@ -67,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
             btnHistory.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    onBtnHistoryClick(view, files,dropdown);
+                    onBtnHistoryClick(view,dropdown);
                 }
 
             });
@@ -77,6 +82,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * gets all files from internal file storage and updates it
+     * if there are files enable history otherwise disable
+     */
     @Override
     protected void onRestart() {
         super.onRestart();
@@ -88,9 +97,24 @@ public class MainActivity extends AppCompatActivity {
             setHistory("disabled",dropdown,btnHistory);
         }else{
             setHistory("enabled",dropdown,btnHistory);
+            btnHistory.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    onBtnHistoryClick(view,dropdown);
+                }
+
+            });
         }
     }
 
+
+    /**
+     * disables or enbales and fills a spinner
+     *
+     * @param type "disabled" or "enabled"
+     * @param dropdown the Spinner element
+     * @param btnHistory the button to de/activate
+     */
     private void setHistory(String type, Spinner dropdown,Button btnHistory){
         Resources res = getResources();
         Drawable drawable = res.getDrawable(R.drawable.round_button_layer_list);
@@ -120,6 +144,9 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * updates the global file array to the newest
+     */
     private void updateFiles(){
         // Get the app's internal file directory
         File appDir = getFilesDir();
@@ -127,6 +154,11 @@ public class MainActivity extends AppCompatActivity {
         files = appDir.listFiles();
     }
 
+    /**
+     * Fills a spinner with parsed names of the global file var
+     *
+     * @param spinner spinner to fill
+     */
     private void setSpinner(Spinner spinner){
         String[] fileNames = new String[files.length];
         SimpleDateFormat sdf = new SimpleDateFormat("M-d-yyyy-hh-mm-ss");
@@ -145,15 +177,18 @@ public class MainActivity extends AppCompatActivity {
             }
             fileNames[i] = filename;
         }
-
-        //create an adapter to describe how the items are displayed, adapters are used in several places in android.
         ArrayAdapter<String> fileNamesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, fileNames);
-        //set the spinners adapter to the previously created one.
         spinner.setAdapter(fileNamesAdapter);
 
     }
 
-    private void onBtnHistoryClick(View view, File[] files, Spinner spinner) {
+    /**
+     *Gets the file selected in spinner and reads it to call the parse view
+     *
+     * @param view the view of the button click
+     * @param spinner the spinner to look at
+     */
+    private void onBtnHistoryClick(View view, Spinner spinner) {
         int position = spinner.getSelectedItemPosition();
         File selectedFile = files[position];
 
@@ -171,6 +206,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     *is called on successful file select and saves it to storage.
+     * Also reads the file and then calls the parse view
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -185,7 +224,6 @@ public class MainActivity extends AppCompatActivity {
             String filename = time + ".csv";
 
             ArrayList<String> list = getFileContentFromUri(fileUri);
-//TODO set timezone
             try (FileOutputStream fos = context.openFileOutput(filename, Context.MODE_APPEND)) {
                 for (String element : list) {
                     fos.write(element.getBytes());
@@ -232,6 +270,9 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    /**
+     * start action to let the user select a file
+     */
     public void onBtnUploadClick(View view){
         // Create an Intent object to allow the user to select a file
         Intent chooseFile = new Intent(Intent.ACTION_GET_CONTENT);
@@ -243,6 +284,12 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(chooseFile, PICKFILE_REQUEST_CODE);
     }
 
+    /**
+     * gets the file from the url then reads it and returns it
+     *
+     * @param uri url to file
+     * @return the content of the file in a ArrayList<Sting>
+     */
     public ArrayList<String> getFileContentFromUri(Uri uri){
         ArrayList<String> fileContents = new ArrayList<>();
         try {
@@ -269,6 +316,13 @@ public class MainActivity extends AppCompatActivity {
         }
         return fileContents;
     }
+
+    /**
+     * reads a file and returns it
+     *
+     * @param file a file
+     * @return the content of the file in a ArrayList<Sting>
+     */
     public ArrayList<String> getFileContent(File file){
         ArrayList<String> fileContents = new ArrayList<>();
         try {

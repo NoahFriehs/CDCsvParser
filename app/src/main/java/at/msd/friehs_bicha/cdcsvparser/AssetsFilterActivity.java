@@ -131,7 +131,7 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
             @Override
             public void onNothingSelected(AdapterView<?> parentView) {
-                //TODO
+
             }
 
         });

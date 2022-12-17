@@ -124,7 +124,6 @@ public class AppModel implements Serializable {
                 }
             }
         }
-//TODO https://www.coingecko.com/en/branding
         System.out.print("Press 0 to view " + txPerMonth + " transaction(s) or enter day");
 
         if (day == 0) {

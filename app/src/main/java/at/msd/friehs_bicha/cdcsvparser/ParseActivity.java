@@ -23,8 +23,10 @@ public class ParseActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_parse);
+
         // calling the action bar
         ActionBar actionBar = getSupportActionBar();
+        actionBar.setDisplayHomeAsUpEnabled(true);
 
         appModel = (AppModel) getIntent().getExtras().get("AppModel");
 
@@ -38,8 +40,7 @@ public class ParseActivity extends AppCompatActivity {
         });
         t1.start();
 
-        // showing the back button in action bar
-        actionBar.setDisplayHomeAsUpEnabled(true);
+
 
         Button btnFilter = findViewById(R.id.btn_filter);
         Button btnTx = findViewById(R.id.btn_all_tx);
@@ -74,7 +75,7 @@ public class ParseActivity extends AppCompatActivity {
         money_spent_value.setText(Math.round(total.doubleValue() * 100.0) / 100.0 + " €");
 
 
-
+        //trys to get the prices from api and the prints the values depending on the answer of coingeko api
         Thread t = new Thread(() ->{
             try {
                 getValueOfAssets();
@@ -95,6 +96,13 @@ public class ParseActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * sets the views ammount text
+     *
+     * @param valueOfA profit or loss
+     * @param total total amount
+     * @param rewardsValue rewards
+     */
     private void setPrice(Double valueOfA, BigDecimal total, String rewardsValue) {
         if (AppModel.asset.isRunning) {
             TextView assets_value = findViewById(R.id.assets_value);
@@ -113,6 +121,9 @@ public class ParseActivity extends AppCompatActivity {
         rewards_value.setText(rewardsValue);
     }
 
+    /**
+     * Set the back button in action bar
+     */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
