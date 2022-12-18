@@ -116,7 +116,7 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
                 all_regarding_tx.setText("All transactions regarding " + specificWallet.getCurrencyType());
 
                 BigDecimal total = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString())).getMoneySpent().round(new MathContext(0));
-                
+
                 //get and set prices
                 Thread t = new Thread(() -> {
                     if (AppModel.asset.isRunning) {
