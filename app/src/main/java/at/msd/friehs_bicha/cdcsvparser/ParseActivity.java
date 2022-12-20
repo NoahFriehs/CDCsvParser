@@ -87,9 +87,9 @@ public class ParseActivity extends AppCompatActivity {
                 double valueOfAssets = getValueOfAssets();
                 double rewardsEarned = getRewardsEarned();
 
-                ParseActivity.this.runOnUiThread(() -> setPrice(valueOfAssets, total, Math.round(rewardsEarned * 100.0) / 100.0 + " €"));
+                ParseActivity.this.runOnUiThread(() -> setPrice(valueOfAssets, total, Math.round(rewardsEarned * 100.0) / 100.0 + " €", true));
             }else {
-                ParseActivity.this.runOnUiThread(() -> setPrice(0.0, BigDecimal.ZERO, "no internet connection"));
+                ParseActivity.this.runOnUiThread(() -> setPrice(0.0, BigDecimal.ZERO, "no internet connection", false));
             }
         });
         t.start();
@@ -103,15 +103,14 @@ public class ParseActivity extends AppCompatActivity {
      * @param total total amount
      * @param rewardsValue rewards
      */
-    private void setPrice(Double valueOfA, BigDecimal total, String rewardsValue) {
-        if (AppModel.asset.isRunning) {
-            TextView assets_value = findViewById(R.id.assets_value);
+    private void setPrice(Double valueOfA, BigDecimal total, String rewardsValue, boolean isRunning) {
+        TextView assets_value = findViewById(R.id.assets_value);
+        if (isRunning) {
             assets_value.setText(Math.round(valueOfA * 100.0) / 100.0 + " €");
 
             TextView profit_loss_value = findViewById(R.id.profit_loss_value);
             profit_loss_value.setText(Math.round((valueOfA - total.doubleValue()) * 100.0) / 100.0 + " €");
         } else {
-            TextView assets_value = findViewById(R.id.assets_value);
             assets_value.setText("no internet connection");
 
             TextView profit_loss_value = findViewById(R.id.profit_loss_value);

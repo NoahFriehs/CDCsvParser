@@ -89,7 +89,7 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
             if (AppModel.asset.isRunning) {
                 double amountOfAsset = appModel.getValueOfAssets(specificWallet);
 
-                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(amountOfAsset + " €"));
+                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(Math.round(amountOfAsset) + " €"));
             }else {
                 AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText("no internet connection"));
             }
@@ -122,8 +122,8 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
                     if (AppModel.asset.isRunning) {
                         double amountOfAsset = appModel.getValueOfAssets(specificWallet);
                         double rewardValue = appModel.getTotalBonus(specificWallet);
-                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText((amountOfAsset * 100.0) / 100.0 + " €"));
-                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText((rewardValue * 100.0) / 100.0 + " €"));
+                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(Math.round(amountOfAsset * 100.0) / 100.0 + " €"));
+                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText(Math.round(rewardValue * 100.0) / 100.0 + " €"));
                         AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €"));
                     }else {
                         AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(("no internet connection")));
