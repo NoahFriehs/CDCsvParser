@@ -21,9 +21,9 @@ import java.util.List;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
 
-    public class AssetsFilterActivity extends AppCompatActivity {
+public class AssetsFilterActivity extends AppCompatActivity {
 
     AppModel appModel;
     Context context;
@@ -74,7 +74,7 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
         dropdown.setAdapter(assetNamesAdapter);
 
         //get the specific wallet
-        Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
+        CDCWallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
 
         TextView assetsValue = findViewById(R.id.assets_value);
 
@@ -91,7 +91,7 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
                 AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(Math.round(amountOfAsset) + " €"));
             }else {
-                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText("no internet connection"));
+                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(R.string.no_internet_connection));
             }
         });
         t2.start();
@@ -103,7 +103,7 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                 //get the specific wallet
-                Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
+                CDCWallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
 
                 //display Transactions
                 displayTxs(specificWallet);
@@ -126,9 +126,9 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
                         AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText(Math.round(rewardValue * 100.0) / 100.0 + " €"));
                         AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €"));
                     }else {
-                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(("no internet connection")));
-                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText(("no internet connection")));
-                        AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(("no internet connection")));
+                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText((getString(R.string.no_internet_connection))));
+                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText((R.string.no_internet_connection)));
+                        AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText((R.string.no_internet_connection)));
                     }
                 });
                 t.start();
@@ -152,9 +152,9 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
         /**
          * Displays the Transactions of specificWallet
          *
-         * @param specificWallet the Wallet which should be displayed
+         * @param specificWallet the CDCWallet which should be displayed
          */
-        private void displayTxs(Wallet specificWallet) {
+        private void displayTxs(CDCWallet specificWallet) {
             // Get a reference to the ListView
             ListView listView = findViewById(R.id.lv_txs);
 

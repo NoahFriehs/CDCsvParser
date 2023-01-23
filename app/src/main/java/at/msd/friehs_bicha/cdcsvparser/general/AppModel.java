@@ -1,20 +1,13 @@
 package at.msd.friehs_bicha.cdcsvparser.general;
 
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue;
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
-import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static at.msd.friehs_bicha.cdcsvparser.util.Converter.stringToDateConverter;
-import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
 
 /**
  * The parser control for the CDCsvParser
@@ -50,7 +43,7 @@ public class AppModel implements Serializable {
 
         BigDecimal totalPrice = new BigDecimal(0);
 
-        for (Wallet wallet : txApp.wallets) {
+        for (CDCWallet wallet : txApp.wallets) {
             totalPrice = totalPrice.add(wallet.getMoneySpent());
         }
         return totalPrice;
@@ -64,7 +57,7 @@ public class AppModel implements Serializable {
     public double getTotalBonus() {
         try {
             AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
-            for (Wallet wallet : txApp.wallets) {
+            for (CDCWallet wallet : txApp.wallets) {
                 if (Objects.equals(wallet.getCurrencyType(), "EUR")) continue;
                 double price = asset.getPrice(wallet.getCurrencyType());
                 BigDecimal amount = wallet.getAmountBonus();
@@ -83,7 +76,7 @@ public class AppModel implements Serializable {
      *
      * @return the total amount earned as a bonus
      */
-    public double getTotalBonus(Wallet wallet) {
+    public double getTotalBonus(CDCWallet wallet) {
         try {
             AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
             double price = asset.getPrice(wallet.getCurrencyType());
@@ -105,7 +98,7 @@ public class AppModel implements Serializable {
         try {
             double valueOfAll = (double) 0;
 
-            for (Wallet w : txApp.wallets) {
+            for (CDCWallet w : txApp.wallets) {
                 if (Objects.equals(w.getCurrencyType(), "EUR")) continue;
                 double price = asset.getPrice(w.getCurrencyType());
                 BigDecimal amount = w.getAmount();
@@ -123,7 +116,7 @@ public class AppModel implements Serializable {
      *
      * @return the amount the asset is worth in EUR
      */
-    public double getValueOfAssets(Wallet w){
+    public double getValueOfAssets(CDCWallet w){
         try {
         double valueOfWallet;
         double price = asset.getPrice(w.getCurrencyType());

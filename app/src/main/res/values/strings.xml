@@ -16,4 +16,5 @@
     <string name="all_transactions_regarding">All transactions regarding BTC</string>
     <string name="show_history">Show history</string>
     <string name="coinGeckoAttribution">All prices provided by \n<a href="https://www.coingecko.com/en/api">CoinGecko API</a></string>
+    <string name="no_internet_connection">no internet connection</string>
 </resources>

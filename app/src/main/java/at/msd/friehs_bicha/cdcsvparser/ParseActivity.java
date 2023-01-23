@@ -111,10 +111,10 @@ public class ParseActivity extends AppCompatActivity {
             TextView profit_loss_value = findViewById(R.id.profit_loss_value);
             profit_loss_value.setText(Math.round((valueOfA - total.doubleValue()) * 100.0) / 100.0 + " €");
         } else {
-            assets_value.setText("no internet connection");
+            assets_value.setText(R.string.no_internet_connection);
 
             TextView profit_loss_value = findViewById(R.id.profit_loss_value);
-            profit_loss_value.setText("no internet connection");
+            profit_loss_value.setText(R.string.no_internet_connection);
         }
         TextView rewards_value = findViewById(R.id.rewards_value);
         rewards_value.setText(rewardsValue);

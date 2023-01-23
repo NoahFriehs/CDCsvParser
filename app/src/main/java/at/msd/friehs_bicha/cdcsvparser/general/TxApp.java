@@ -3,7 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser.general;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
 import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -21,8 +21,8 @@ import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
  */
 public class TxApp implements Serializable {
 
-    public ArrayList<Wallet> wallets = new ArrayList<>();
-    public ArrayList<Wallet> outsideWallets = new ArrayList<>();
+    public ArrayList<CDCWallet> wallets = new ArrayList<>();
+    public ArrayList<CDCWallet> outsideWallets = new ArrayList<>();
     public ArrayList<Transaction> transactions;
     public int amountTxFailed = 0;
 
@@ -102,10 +102,10 @@ public class TxApp implements Serializable {
      */
     private void createWallets() {
         for (String t : CurrencyType.currencys) {
-            wallets.add(new Wallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this));
+            wallets.add(new CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this));
         }
         for (String t : CurrencyType.currencys) {
-            outsideWallets.add(new Wallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this));
+            outsideWallets.add(new CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this));
         }
     }
 

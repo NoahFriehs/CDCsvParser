@@ -94,7 +94,7 @@ public class Transaction implements Serializable {
         return
                 date +  "\n"+
                 "Description: " + description + '\n' +
-                "Amount: " + amount + " €\n" +
-                "NativeAmount: " + nativeAmount.round(new MathContext(5)) + " " + currencyType;
+                "Amount: " + nativeAmount.round(new MathContext(5)) + " €\n" +
+                "AssetAmount: " + amount.round(new MathContext(5)) + " " + currencyType;
     }
 }
