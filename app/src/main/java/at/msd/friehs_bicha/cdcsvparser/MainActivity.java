@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
-import at.msd.friehs_bicha.cdcsvparser.general.AppType;
+import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 
 
 public class MainActivity extends AppCompatActivity {

@@ -20,9 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
-import at.msd.friehs_bicha.cdcsvparser.general.AppType;
+import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet;
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
@@ -127,7 +126,6 @@ public class AssetsFilterActivity extends AppCompatActivity {
                 TextView all_regarding_tx = findViewById(R.id.all_regarding_tx);
 
                 displayInformation(specificWallet, assetsValue, rewards_value, profit_loss_value, all_regarding_tx, dropdown);
-
 
             }
 
