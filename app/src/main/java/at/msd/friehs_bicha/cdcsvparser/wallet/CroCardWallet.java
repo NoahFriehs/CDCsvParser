@@ -109,9 +109,9 @@ public class CroCardWallet extends Wallet implements Serializable {
 
         if (tt.equals("EUR -> EUR")) return null;   //TODO: fix Curencys
 
-        for (CroCardWallet w : txApp.wallets) {
-            if (w.transactionType.contains(tt.substring(0, tt.indexOf(" ")))){
-                return w;
+        for (Wallet w : txApp.wallets) {
+            if (((CroCardWallet)w).transactionType.contains(tt.substring(0, tt.indexOf(" ")))){
+                return ((CroCardWallet)w);
             }
         }
 
