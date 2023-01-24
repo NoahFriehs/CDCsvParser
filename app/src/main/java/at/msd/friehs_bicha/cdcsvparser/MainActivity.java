@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
+import at.msd.friehs_bicha.cdcsvparser.general.AppType;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -195,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<String> list = getFileContent(selectedFile);
 
         try {
-            appModel = new AppModel(list, 0);
+            appModel = new AppModel(list, AppType.CdCsvParser);
             callParseView();
         }catch (Exception e) {
             CharSequence text = e.getMessage();
@@ -240,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             try {
-                appModel = new AppModel(list, 0);
+                appModel = new AppModel(list, AppType.CdCsvParser);
                 callParseView();
             }catch (IllegalArgumentException e) {
                 context = getApplicationContext();
@@ -257,6 +258,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Toast toast = Toast.makeText(context, text, duration);
                 toast.show();
+                System.out.println(e.getMessage());
                 callParseView();
             }
 

@@ -8,12 +8,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction;
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet;
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 public class CroCardTxApp extends BaseApp implements Serializable {
-
-    private ArrayList<CroCardTransaction> transactions = new ArrayList<>();
 
     private boolean useStrictWalletType;
 
@@ -21,14 +20,14 @@ public class CroCardTxApp extends BaseApp implements Serializable {
 
         setUseStrictWalletType(useStrictWallet);
         try {
-            setTransactions(getTransactions(file));
+            this.transactions.addAll(getTransactions(file));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("We have " + getTransactions().size() + " transaction(s).");
-        fillWallet(getTransactions());
+        System.out.println("We have " + this.transactions.size() + " transaction(s).");
+        fillWallet();
         System.out.println("we have " + getWallets().size() + " different transactions.");
-        //CardWallet.writeAmount();
+        //((CroCardWallet)wallets.get(0)).writeAmount();
     }
 
 
@@ -70,11 +69,13 @@ public class CroCardTxApp extends BaseApp implements Serializable {
     }
 
 
-    private void fillWallet(ArrayList<CroCardTransaction> tr) {
+    private void fillWallet() {
+        System.out.println("Filling Wallets");
         wallets.add(new CroCardWallet("EUR", BigDecimal.ZERO, "EUR -> EUR", this));
-        for (CroCardTransaction t : tr) {
-            getWallets().get(0).addTransaction(t);
+        for (Transaction t : transactions) {
+            wallets.get(0).addTransaction(t);
         }
+        System.out.println("Wallets filled");
     }
 
     public ArrayList<Wallet> getWallets() {
@@ -85,11 +86,11 @@ public class CroCardTxApp extends BaseApp implements Serializable {
         this.wallets = wallets;
     }
 
-    public ArrayList<CroCardTransaction> getTransactions() {
+    public ArrayList<Transaction> getTransactions() {
         return transactions;
     }
 
-    public void setTransactions(ArrayList<CroCardTransaction> transactions) {
+    public void setTransactions(ArrayList<Transaction> transactions) {
         this.transactions = transactions;
     }
 

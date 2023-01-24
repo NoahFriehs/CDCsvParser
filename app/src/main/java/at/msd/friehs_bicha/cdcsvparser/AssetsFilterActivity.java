@@ -20,8 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
+import at.msd.friehs_bicha.cdcsvparser.general.AppType;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 public class AssetsFilterActivity extends AppCompatActivity {
 
@@ -61,9 +64,18 @@ public class AssetsFilterActivity extends AppCompatActivity {
 
         // make List with all Wallets
         ArrayList<String> wallets = new ArrayList<>();
-        appModel.txApp.wallets.forEach(wallet -> {
-            wallets.add(wallet.getCurrencyType());
-        });
+        switch(appModel.appType) {
+            case CdCsvParser:
+                appModel.txApp.wallets.forEach(wallet -> wallets.add(wallet.getCurrencyType()));
+                break;
+            case CroCard:
+                appModel.txApp.wallets.forEach(wallet -> wallets.add(((CroCardWallet)wallet).getTransactionType()));
+                break;
+            default:
+                wallets.add("This should not happen");
+        }
+
+
 
         wallets.remove("EUR");
 
@@ -74,7 +86,8 @@ public class AssetsFilterActivity extends AppCompatActivity {
         dropdown.setAdapter(assetNamesAdapter);
 
         //get the specific wallet
-        CDCWallet specificWallet = (CDCWallet) appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
+        String index = dropdown.getSelectedItem().toString();
+        Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(index));
 
         TextView assetsValue = findViewById(R.id.assets_value);
 
@@ -103,7 +116,7 @@ public class AssetsFilterActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                 //get the specific wallet
-                CDCWallet specificWallet = (CDCWallet) appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
+                Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
 
                 //display Transactions
                 displayTxs(specificWallet);
@@ -113,27 +126,7 @@ public class AssetsFilterActivity extends AppCompatActivity {
                 TextView profit_loss_value = findViewById(R.id.profit_loss_value);
                 TextView all_regarding_tx = findViewById(R.id.all_regarding_tx);
 
-                all_regarding_tx.setText("All transactions regarding " + specificWallet.getCurrencyType());
-
-                BigDecimal total = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString())).getMoneySpent().round(new MathContext(0));
-
-                //get and set prices
-                Thread t = new Thread(() -> {
-                    if (AppModel.asset.isRunning) {
-                        double amountOfAsset = appModel.getValueOfAssets(specificWallet);
-                        double rewardValue = appModel.getTotalBonus(specificWallet);
-                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(Math.round(amountOfAsset * 100.0) / 100.0 + " €"));
-                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText(Math.round(rewardValue * 100.0) / 100.0 + " €"));
-                        AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €"));
-                    }else {
-                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText((getString(R.string.no_internet_connection))));
-                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText((R.string.no_internet_connection)));
-                        AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText((R.string.no_internet_connection)));
-                    }
-                });
-                t.start();
-                TextView money_spent_value = findViewById(R.id.money_spent_value);
-                money_spent_value.setText(total.toString() + " €");
+                displayInformation(specificWallet, assetsValue, rewards_value, profit_loss_value, all_regarding_tx, dropdown);
 
 
             }
@@ -149,12 +142,39 @@ public class AssetsFilterActivity extends AppCompatActivity {
 
     }
 
-        /**
+    private void displayInformation(Wallet specificWallet, TextView assetsValue, TextView rewards_value, TextView profit_loss_value, TextView all_regarding_tx, Spinner dropdown) {
+        all_regarding_tx.setText("All transactions regarding " + specificWallet.getCurrencyType());
+        if (appModel.appType == AppType.CroCard) {
+            all_regarding_tx.setText("All transactions regarding " + ((CroCardWallet) specificWallet).getTransactionType());
+        }
+
+        BigDecimal total = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString())).getMoneySpent().round(new MathContext(0));
+
+        //get and set prices
+        Thread t = new Thread(() -> {
+            if (AppModel.asset.isRunning) {
+                double amountOfAsset = appModel.getValueOfAssets(specificWallet);
+                double rewardValue = appModel.getTotalBonus(specificWallet);
+                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(Math.round(amountOfAsset * 100.0) / 100.0 + " €"));
+                AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText(Math.round(rewardValue * 100.0) / 100.0 + " €"));
+                AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €"));
+            }else {
+                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText((getString(R.string.no_internet_connection))));
+                AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText((R.string.no_internet_connection)));
+                AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText((R.string.no_internet_connection)));
+            }
+        });
+        t.start();
+        TextView money_spent_value = findViewById(R.id.money_spent_value);
+        money_spent_value.setText(total.toString() + " €");
+    }
+
+    /**
          * Displays the Transactions of specificWallet
          *
          * @param specificWallet the CDCWallet which should be displayed
          */
-        private void displayTxs(CDCWallet specificWallet) {
+        private void displayTxs(Wallet specificWallet) {
             // Get a reference to the ListView
             ListView listView = findViewById(R.id.lv_txs);
 

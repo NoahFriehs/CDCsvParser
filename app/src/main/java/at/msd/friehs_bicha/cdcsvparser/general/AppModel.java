@@ -14,28 +14,25 @@ import java.util.concurrent.atomic.AtomicReference;
  * The parser control for the CDCsvParser
  *
  */
-public class AppModel implements Serializable {
+public class AppModel extends BaseAppModel implements Serializable {
 
-    public BaseApp txApp;
     public static AssetValue asset;
-    public boolean isRunning;
 
     /**
      * Creates a new AppModel
      *
      * @param file the file to parse
-     * @param usage which app to use
-     *              0 = CDCsvParser
-     *              1 = CroCardParser
+     * @param appType which app to use
      */
-    public AppModel(ArrayList<String> file, int usage) {
+    public AppModel(ArrayList<String> file, AppType appType) {
+        super(file, appType);
         String exception = "";
         try {
-            switch(usage) {
-                case 0:
+            switch(appType) {
+                case CdCsvParser:
                     this.txApp = new TxApp(file);
                     break;
-                case 1:
+                case CroCard:
                     this.txApp = new CroCardTxApp(file, false);
                     break;
                 default:
@@ -93,7 +90,7 @@ public class AppModel implements Serializable {
      *
      * @return the total amount earned as a bonus
      */
-    public double getTotalBonus(CDCWallet wallet) {
+    public double getTotalBonus(Wallet wallet) {
         try {
             AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
             double price = asset.getPrice(wallet.getCurrencyType());
@@ -133,7 +130,7 @@ public class AppModel implements Serializable {
      *
      * @return the amount the asset is worth in EUR
      */
-    public double getValueOfAssets(CDCWallet w){
+    public double getValueOfAssets(Wallet w){
         try {
         double valueOfWallet;
         double price = asset.getPrice(w.getCurrencyType());

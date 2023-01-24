@@ -12,7 +12,6 @@ public class CroCardWallet extends Wallet implements Serializable {
 
     public static ArrayList<String> tts = new ArrayList<>();
     String transactionType;
-    ArrayList<CroCardTransaction> txs = new ArrayList<>();
     CroCardTxApp txApp;
 
     public CroCardWallet(String currencyType, BigDecimal amount, String transactionType, CroCardTxApp txApp) {
@@ -32,7 +31,7 @@ public class CroCardWallet extends Wallet implements Serializable {
         if (tts.contains(tt)) {
             CroCardWallet w = (CroCardWallet) txApp.wallets.get(tts.indexOf(tt));
             w.addToWallet(transaction.getAmount());
-            w.txs.add(cardTransaction);
+            w.transactions.add(cardTransaction);
         } else {
             CroCardWallet w;
             if (!txApp.isUseStrictWalletType())
@@ -40,12 +39,14 @@ public class CroCardWallet extends Wallet implements Serializable {
                 w = getNonStrictWallet(tt);
                 if (w == null){
                     w = new CroCardWallet("EUR", cardTransaction.getAmount(), tt, txApp);
-                    w.txs.add(cardTransaction);
                     txApp.wallets.add(w);
+                } else {
+                    w.addToWallet(transaction.getAmount());
                 }
+                w.transactions.add(cardTransaction);
             } else {
                 w = new CroCardWallet("EUR", cardTransaction.getAmount(), tt, txApp);
-                w.txs.add(cardTransaction);
+                w.transactions.add(cardTransaction);
                 txApp.wallets.add(w);
             }
             //w.addToWallet(transaction.getAmount());
@@ -62,7 +63,7 @@ public class CroCardWallet extends Wallet implements Serializable {
     public int getWallet(String ct) {
         int i = 0;
         for (Wallet w : txApp.wallets) {
-            if (w.getCurrencyType().equals(ct)) return i;
+            if (((CroCardWallet)w).transactionType.equals(ct)) return i;
             i++;
         }
         return -1;
@@ -75,7 +76,7 @@ public class CroCardWallet extends Wallet implements Serializable {
             System.out.println(((CroCardWallet)w).transactionType);
             System.out.println(w.amount);
             System.out.println(w.moneySpent);
-            System.out.println("Transactions: " + ((CroCardWallet)w).txs.size());
+            System.out.println("Transactions: " + ((CroCardWallet)w).transactions.size());
             amountSpent = amountSpent.add(w.moneySpent);
         }
         //System.out.println("-".repeat(20));
@@ -86,8 +87,8 @@ public class CroCardWallet extends Wallet implements Serializable {
         this.amount = this.amount.add(amount);
     }
 
-    public ArrayList<CroCardTransaction> getTxs() {
-        return txs;
+    public ArrayList<Transaction> getTxs() {
+        return transactions;
     }
 
     public String getTransactionType() {
@@ -107,15 +108,32 @@ public class CroCardWallet extends Wallet implements Serializable {
 
     private CroCardWallet getNonStrictWallet(String tt){
 
+        for (Wallet w : txApp.wallets) {
+            if (((CroCardWallet) w).transactionType.equals(tt)) {
+                return ((CroCardWallet) w);
+            }
+        }
+
         if (tt.equals("EUR -> EUR")) return null;   //TODO: fix Curencys
 
+        if (tt.contains("Refund: ")){
+            tt = tt.substring(8);
+        }
+        if (tt.contains("Refund reversal: ")){
+            tt = tt.substring(17);
+        }
+
         for (Wallet w : txApp.wallets) {
-            if (((CroCardWallet)w).transactionType.contains(tt.substring(0, tt.indexOf(" ")))){
-                return ((CroCardWallet)w);
+            if (tt.contains(" ")) {
+                if (((CroCardWallet) w).transactionType.contains(tt.substring(0, tt.indexOf(" ")))) {
+                    ((CroCardWallet) w).transactionType = tt.substring(0, tt.indexOf(" "));
+                    return ((CroCardWallet) w);
+                }
             }
         }
 
         return null;
+
     }
 
 }
