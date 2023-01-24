@@ -16,13 +16,30 @@ import java.util.concurrent.atomic.AtomicReference;
 public class AppModel implements Serializable {
 
     public TxApp txApp;
+    public CroCardTxApp croCardTxApp;
     public static AssetValue asset;
     public boolean isRunning;
 
-    public AppModel(ArrayList<String> file) {
+    /**
+     * Creates a new AppModel
+     *
+     * @param file the file to parse
+     * @param usage which app to use
+     *              0 = CDCsvParser
+     *              1 = CroCardParser
+     */
+    public AppModel(ArrayList<String> file, int usage) {
         String exception = "";
         try {
-            this.txApp = new TxApp(file);
+            switch(usage) {
+                case 0:
+                    this.txApp = new TxApp(file);
+                    break;
+                case 1:
+                    this.croCardTxApp = new CroCardTxApp(file, false);
+                    break;
+                default:
+                    throw new RuntimeException("Usage not found");}
         }catch (Exception e) {
             exception = e.getMessage();
         }

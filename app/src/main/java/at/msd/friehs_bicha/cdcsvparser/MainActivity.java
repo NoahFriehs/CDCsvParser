@@ -195,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<String> list = getFileContent(selectedFile);
 
         try {
-            appModel = new AppModel(list);
+            appModel = new AppModel(list, 0);
             callParseView();
         }catch (Exception e) {
             CharSequence text = e.getMessage();
@@ -240,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             try {
-                appModel = new AppModel(list);
+                appModel = new AppModel(list, 0);
                 callParseView();
             }catch (IllegalArgumentException e) {
                 context = getApplicationContext();
