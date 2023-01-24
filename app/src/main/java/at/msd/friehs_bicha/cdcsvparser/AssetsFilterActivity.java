@@ -74,7 +74,7 @@ public class AssetsFilterActivity extends AppCompatActivity {
         dropdown.setAdapter(assetNamesAdapter);
 
         //get the specific wallet
-        CDCWallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
+        CDCWallet specificWallet = (CDCWallet) appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
 
         TextView assetsValue = findViewById(R.id.assets_value);
 
@@ -103,7 +103,7 @@ public class AssetsFilterActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                 //get the specific wallet
-                CDCWallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
+                CDCWallet specificWallet = (CDCWallet) appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
 
                 //display Transactions
                 displayTxs(specificWallet);

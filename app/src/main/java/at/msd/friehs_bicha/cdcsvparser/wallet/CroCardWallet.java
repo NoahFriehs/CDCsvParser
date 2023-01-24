@@ -30,7 +30,7 @@ public class CroCardWallet extends Wallet implements Serializable {
 
         String tt = (cardTransaction.getTransactionTypeString());
         if (tts.contains(tt)) {
-            CroCardWallet w = txApp.cardWallets.get(tts.indexOf(tt));
+            CroCardWallet w = (CroCardWallet) txApp.wallets.get(tts.indexOf(tt));
             w.addToWallet(transaction.getAmount());
             w.txs.add(cardTransaction);
         } else {
@@ -41,12 +41,12 @@ public class CroCardWallet extends Wallet implements Serializable {
                 if (w == null){
                     w = new CroCardWallet("EUR", cardTransaction.getAmount(), tt, txApp);
                     w.txs.add(cardTransaction);
-                    txApp.cardWallets.add(w);
+                    txApp.wallets.add(w);
                 }
             } else {
                 w = new CroCardWallet("EUR", cardTransaction.getAmount(), tt, txApp);
                 w.txs.add(cardTransaction);
-                txApp.cardWallets.add(w);
+                txApp.wallets.add(w);
             }
             //w.addToWallet(transaction.getAmount());
 
@@ -54,14 +54,14 @@ public class CroCardWallet extends Wallet implements Serializable {
     }
 
     /**
-     * Get CDCWallet from CurrencyType String
+     * Get Wallet index from CurrencyType String
      *
      * @param ct the CurrencyType as String
      * @return the index of the wallet
      */
     public int getWallet(String ct) {
         int i = 0;
-        for (CroCardWallet w : txApp.cardWallets) {
+        for (Wallet w : txApp.wallets) {
             if (w.getCurrencyType().equals(ct)) return i;
             i++;
         }
@@ -70,12 +70,12 @@ public class CroCardWallet extends Wallet implements Serializable {
 
     public void writeAmount() {
         BigDecimal amountSpent = BigDecimal.ZERO;
-        for (CroCardWallet w : txApp.cardWallets) {
+        for (Wallet w : txApp.wallets) {
             //System.out.println("-".repeat(20));
-            System.out.println(w.transactionType);
+            System.out.println(((CroCardWallet)w).transactionType);
             System.out.println(w.amount);
             System.out.println(w.moneySpent);
-            System.out.println("Transactions: " + w.txs.size());
+            System.out.println("Transactions: " + ((CroCardWallet)w).txs.size());
             amountSpent = amountSpent.add(w.moneySpent);
         }
         //System.out.println("-".repeat(20));
@@ -109,7 +109,7 @@ public class CroCardWallet extends Wallet implements Serializable {
 
         if (tt.equals("EUR -> EUR")) return null;   //TODO: fix Curencys
 
-        for (CroCardWallet w : txApp.cardWallets) {
+        for (CroCardWallet w : txApp.wallets) {
             if (w.transactionType.contains(tt.substring(0, tt.indexOf(" ")))){
                 return w;
             }

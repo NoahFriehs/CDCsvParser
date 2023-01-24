@@ -2,6 +2,7 @@ package at.msd.friehs_bicha.cdcsvparser.general;
 
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue;
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -15,8 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class AppModel implements Serializable {
 
-    public TxApp txApp;
-    public CroCardTxApp croCardTxApp;
+    public BaseApp txApp;
     public static AssetValue asset;
     public boolean isRunning;
 
@@ -36,7 +36,7 @@ public class AppModel implements Serializable {
                     this.txApp = new TxApp(file);
                     break;
                 case 1:
-                    this.croCardTxApp = new CroCardTxApp(file, false);
+                    this.txApp = new CroCardTxApp(file, false);
                     break;
                 default:
                     throw new RuntimeException("Usage not found");}
@@ -60,7 +60,7 @@ public class AppModel implements Serializable {
 
         BigDecimal totalPrice = new BigDecimal(0);
 
-        for (CDCWallet wallet : txApp.wallets) {
+        for (Wallet wallet : txApp.wallets) {
             totalPrice = totalPrice.add(wallet.getMoneySpent());
         }
         return totalPrice;
@@ -74,7 +74,7 @@ public class AppModel implements Serializable {
     public double getTotalBonus() {
         try {
             AtomicReference<Double> valueOfAll = new AtomicReference<>((double) 0);
-            for (CDCWallet wallet : txApp.wallets) {
+            for (Wallet wallet : txApp.wallets) {
                 if (Objects.equals(wallet.getCurrencyType(), "EUR")) continue;
                 double price = asset.getPrice(wallet.getCurrencyType());
                 BigDecimal amount = wallet.getAmountBonus();
@@ -115,7 +115,7 @@ public class AppModel implements Serializable {
         try {
             double valueOfAll = (double) 0;
 
-            for (CDCWallet w : txApp.wallets) {
+            for (Wallet w : txApp.wallets) {
                 if (Objects.equals(w.getCurrencyType(), "EUR")) continue;
                 double price = asset.getPrice(w.getCurrencyType());
                 BigDecimal amount = w.getAmount();

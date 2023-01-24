@@ -9,15 +9,16 @@ import java.util.Arrays;
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction;
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
-public class CroCardTxApp implements Serializable {
+public class CroCardTxApp extends BaseApp implements Serializable {
 
-    public ArrayList<CroCardWallet> cardWallets = new ArrayList<>();
     private ArrayList<CroCardTransaction> transactions = new ArrayList<>();
 
     private boolean useStrictWalletType;
 
     CroCardTxApp(ArrayList<String> file, boolean useStrictWallet) {
+
         setUseStrictWalletType(useStrictWallet);
         try {
             setTransactions(getTransactions(file));
@@ -26,7 +27,7 @@ public class CroCardTxApp implements Serializable {
         }
         System.out.println("We have " + getTransactions().size() + " transaction(s).");
         fillWallet(getTransactions());
-        System.out.println("we have " + getCardWallets().size() + " different transactions.");
+        System.out.println("we have " + getWallets().size() + " different transactions.");
         //CardWallet.writeAmount();
     }
 
@@ -70,18 +71,18 @@ public class CroCardTxApp implements Serializable {
 
 
     private void fillWallet(ArrayList<CroCardTransaction> tr) {
-        cardWallets.add(new CroCardWallet("EUR", BigDecimal.ZERO, "EUR -> EUR", this));
+        wallets.add(new CroCardWallet("EUR", BigDecimal.ZERO, "EUR -> EUR", this));
         for (CroCardTransaction t : tr) {
-            getCardWallets().get(0).addTransaction(t);
+            getWallets().get(0).addTransaction(t);
         }
     }
 
-    public ArrayList<CroCardWallet> getCardWallets() {
-        return cardWallets;
+    public ArrayList<Wallet> getWallets() {
+        return wallets;
     }
 
-    public void setCardWallets(ArrayList<CroCardWallet> cardWallets) {
-        this.cardWallets = cardWallets;
+    public void setWallets(ArrayList<Wallet> wallets) {
+        this.wallets = wallets;
     }
 
     public ArrayList<CroCardTransaction> getTransactions() {
