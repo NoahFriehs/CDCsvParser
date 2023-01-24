@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.general;
+package at.msd.friehs_bicha.cdcsvparser.App;
 
 public enum AppType {
 

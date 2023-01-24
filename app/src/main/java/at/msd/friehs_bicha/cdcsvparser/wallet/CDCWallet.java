@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
-import at.msd.friehs_bicha.cdcsvparser.general.TxApp;
+import at.msd.friehs_bicha.cdcsvparser.App.TxApp;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
 

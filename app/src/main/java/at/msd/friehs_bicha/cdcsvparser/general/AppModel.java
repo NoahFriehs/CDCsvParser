@@ -1,7 +1,9 @@
 package at.msd.friehs_bicha.cdcsvparser.general;
 
+import at.msd.friehs_bicha.cdcsvparser.App.AppType;
+import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp;
+import at.msd.friehs_bicha.cdcsvparser.App.TxApp;
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue;
-import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 import java.io.Serializable;

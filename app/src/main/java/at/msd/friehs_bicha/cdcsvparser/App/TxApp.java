@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.general;
+package at.msd.friehs_bicha.cdcsvparser.App;
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
