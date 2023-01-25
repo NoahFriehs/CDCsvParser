@@ -16,7 +16,7 @@ public class CroCardTxApp extends BaseApp implements Serializable {
 
     private boolean useStrictWalletType;
 
-    CroCardTxApp(ArrayList<String> file, boolean useStrictWallet) {
+    public CroCardTxApp(ArrayList<String> file, boolean useStrictWallet) {
 
         setUseStrictWalletType(useStrictWallet);
         try {

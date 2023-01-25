@@ -3,12 +3,15 @@ package at.msd.friehs_bicha.cdcsvparser.general;
 import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp;
 import at.msd.friehs_bicha.cdcsvparser.App.TxApp;
+import at.msd.friehs_bicha.cdcsvparser.R;
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue;
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -143,6 +146,34 @@ public class AppModel extends BaseAppModel implements Serializable {
         }catch (Exception e) {
             return 0;
         }
+    }
+
+
+    public Map<String, String> getAssetMap(Wallet wallet) {
+
+        BigDecimal total = wallet.getMoneySpent().round(new MathContext(0));
+
+        double amountOfAsset = getValueOfAssets(wallet);
+        double rewardValue = getTotalBonus(wallet);
+
+        Map<String, String> map;
+        if (AppModel.asset.isRunning) {
+            map = Map.of(
+                    String.valueOf(R.id.assets_value), Math.round(amountOfAsset * 100.0) / 100.0 + " €",
+                    String.valueOf(R.id.rewards_value), Math.round(rewardValue * 100.0) / 100.0 + " €",
+                    String.valueOf(R.id.profit_loss_value), Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €",
+                    String.valueOf(R.id.money_spent_value), total.toString() + " €"
+
+            );
+        } else {
+            map = Map.of(
+                    String.valueOf(R.id.assets_value), "no internet connection",
+                    String.valueOf(R.id.rewards_value), "no internet connection",
+                    String.valueOf(R.id.profit_loss_value), "no internet connection",
+                    String.valueOf(R.id.money_spent_value), total.toString() + " €"
+            );
+        }
+        return map;
     }
 
 }
