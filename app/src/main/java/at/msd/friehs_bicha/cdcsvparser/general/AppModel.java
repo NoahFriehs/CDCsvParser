@@ -11,12 +11,13 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * The parser control for the CDCsvParser
+ * The parser control for the Parser
  *
  */
 public class AppModel extends BaseAppModel implements Serializable {
@@ -62,9 +63,21 @@ public class AppModel extends BaseAppModel implements Serializable {
 
         BigDecimal totalPrice = new BigDecimal(0);
 
-        for (Wallet wallet : txApp.wallets) {
-            totalPrice = totalPrice.add(wallet.getMoneySpent());
-        }
+        switch(appType) {
+            case CdCsvParser:
+                for (Wallet wallet : txApp.wallets) {
+                    totalPrice = totalPrice.add(wallet.getMoneySpent());
+                }
+                break;
+            case CroCard:
+                ArrayList<Wallet> wallets = (ArrayList<Wallet>) txApp.wallets.clone();
+                wallets.remove(0);
+                for (Wallet wallet : wallets) {
+                    totalPrice = totalPrice.add(wallet.getAmount());
+                }
+                break;
+            default:
+                throw new RuntimeException("Usage not found");}
         return totalPrice;
     }
 
@@ -150,30 +163,84 @@ public class AppModel extends BaseAppModel implements Serializable {
 
 
     public Map<String, String> getAssetMap(Wallet wallet) {
-
         BigDecimal total = wallet.getMoneySpent().round(new MathContext(0));
 
-        double amountOfAsset = getValueOfAssets(wallet);
-        double rewardValue = getTotalBonus(wallet);
+        Map<String, String> map = new HashMap<>();
+        switch(appType) {
+            case CdCsvParser:
+                double amountOfAsset = getValueOfAssets(wallet);
+                double rewardValue = getTotalBonus(wallet);
 
-        Map<String, String> map;
-        if (AppModel.asset.isRunning) {
-            map = Map.of(
-                    String.valueOf(R.id.assets_value), Math.round(amountOfAsset * 100.0) / 100.0 + " €",
-                    String.valueOf(R.id.rewards_value), Math.round(rewardValue * 100.0) / 100.0 + " €",
-                    String.valueOf(R.id.profit_loss_value), Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €",
-                    String.valueOf(R.id.money_spent_value), total.toString() + " €"
-
-            );
-        } else {
-            map = Map.of(
-                    String.valueOf(R.id.assets_value), "no internet connection",
-                    String.valueOf(R.id.rewards_value), "no internet connection",
-                    String.valueOf(R.id.profit_loss_value), "no internet connection",
-                    String.valueOf(R.id.money_spent_value), total.toString() + " €"
-            );
+                if (AppModel.asset.isRunning) {
+                    map.put(String.valueOf(R.id.assets_value), Math.round(amountOfAsset * 100.0) / 100.0 + " €");
+                    map.put(String.valueOf(R.id.rewards_value), Math.round(rewardValue * 100.0) / 100.0 + " €");
+                    map.put(String.valueOf(R.id.profit_loss_value), Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €");
+                    map.put(String.valueOf(R.id.money_spent_value), total.toString() + " €");
+                } else {
+                    map.put(String.valueOf(R.id.assets_value), "no internet connection");
+                    map.put(String.valueOf(R.id.rewards_value), "no internet connection");
+                    map.put(String.valueOf(R.id.profit_loss_value), "no internet connection");
+                    map.put(String.valueOf(R.id.money_spent_value), total.toString() + " €");
+                }
+                break;
+            case CroCard:
+                map.put(String.valueOf(R.id.money_spent_value), total.toString() + " €");
+                map.put(String.valueOf(R.id.assets_value), null);
+                map.put(String.valueOf(R.id.rewards_value), null);
+                map.put(String.valueOf(R.id.profit_loss_value), null);
+                map.put(String.valueOf(R.id.assets_value_label), null);
+                map.put(String.valueOf(R.id.rewards_label), null);
+                map.put(String.valueOf(R.id.profit_loss_label), null);
+                break;
+            default:
+                throw new RuntimeException("Usage not found");
         }
+
         return map;
+    }
+
+
+    public Map<String, String> getParseMap() {
+        try {
+            BigDecimal total = getTotalPrice();
+
+            double amountOfAsset = getValueOfAssets();
+            double rewardValue = getTotalBonus();
+
+            String totalMoneySpent = Math.round(total.doubleValue() * 100.0) / 100.0 + " €";
+            Map<String, String> map = new HashMap<>();
+            switch (appType) {
+                case CdCsvParser:
+
+                    if (AppModel.asset.isRunning) {
+                        map.put(String.valueOf(R.id.assets_value), Math.round(amountOfAsset * 100.0) / 100.0 + " €");
+                        map.put(String.valueOf(R.id.rewards_value), Math.round(rewardValue * 100.0) / 100.0 + " €");
+                        map.put(String.valueOf(R.id.profit_loss_value), Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €");
+                        map.put(String.valueOf(R.id.money_spent_value), totalMoneySpent);
+                    } else {
+                        map.put(String.valueOf(R.id.assets_value), "no internet connection");
+                        map.put(String.valueOf(R.id.rewards_value), "no internet connection");
+                        map.put(String.valueOf(R.id.profit_loss_value), "no internet connection");
+                        map.put(String.valueOf(R.id.money_spent_value), totalMoneySpent);
+                    }
+                    break;
+                case CroCard:
+                    map.put(String.valueOf(R.id.money_spent_value), totalMoneySpent);
+                    map.put(String.valueOf(R.id.assets_value), null);
+                    map.put(String.valueOf(R.id.rewards_value), null);
+                    map.put(String.valueOf(R.id.profit_loss_value), null);
+                    map.put(String.valueOf(R.id.assets_value_label), null);
+                    map.put(String.valueOf(R.id.rewards_label), null);
+                    map.put(String.valueOf(R.id.profit_loss_label), null);
+                    break;
+                default:
+                    throw new RuntimeException("Usage not found");
+            }
+
+            return map;
+        }catch (Exception e) {
+            return null;
+        }
     }
 
 }

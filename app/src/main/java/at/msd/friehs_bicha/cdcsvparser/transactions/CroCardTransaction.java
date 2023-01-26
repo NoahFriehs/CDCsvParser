@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.MathContext;
 
 public class CroCardTransaction extends Transaction implements Serializable {
 
@@ -19,17 +20,15 @@ public class CroCardTransaction extends Transaction implements Serializable {
         return transactionType;
     }
 
+
     @NonNull
     @Override
     public String toString() {
-        return "CardTransaction{" +
-                "date=" + date +
-                ", description='" + description + '\'' +
-                ", amount=" + amount +
-                ", transactionType=" + transactionType +
-                ", toCurrency=" + toCurrency +
-                ", toAmount=" + toAmount +
-                '}';
+        return
+                date +  "\n"+
+                        "Description: " + description + '\n' +
+                        "Amount: " + nativeAmount.round(new MathContext(5)) + currencyType +"\n" +
+                        "transactionType: " + transactionType;
     }
 
 }

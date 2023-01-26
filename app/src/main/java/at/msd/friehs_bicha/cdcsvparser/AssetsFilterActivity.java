@@ -50,7 +50,7 @@ public class AssetsFilterActivity extends AppCompatActivity {
         appModel = (AppModel) getIntent().getExtras().get("AppModel");
 
         //test Internet connection
-        testConnection();
+        //testConnection();
 
         // make List with all Wallets
         String[] items = getWalletNames();
@@ -160,7 +160,7 @@ public class AssetsFilterActivity extends AppCompatActivity {
         texts.forEach((key, value) -> {
             TextView textView = findViewById(getResources().getIdentifier(key, "id", getPackageName()));
             if (value == null){
-                textView.setVisibility(View.INVISIBLE);
+                AssetsFilterActivity.this.runOnUiThread(() -> textView.setVisibility(View.INVISIBLE));
             } else {
                 AssetsFilterActivity.this.runOnUiThread(() -> textView.setText(value));
             }

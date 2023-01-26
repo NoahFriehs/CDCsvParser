@@ -139,7 +139,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/rewards_label" />
 
-    <!--All regarding transaktions views-->
+    <!--All regarding transactions views-->
     <TextView
         android:id="@+id/all_regarding_tx"
         android:layout_width="wrap_content"
@@ -158,12 +158,13 @@
 
     <ListView
         android:id="@+id/lv_txs"
+        tools:layout_editor_absoluteX="1dp"
+        android:layout_height="200dp"
+        android:layout_width="match_parent"
         app:layout_constraintTop_toBottomOf="@id/all_regarding_tx"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintVertical_bias="0.97"
-        tools:layout_editor_absoluteX="1dp"
-        android:layout_height="wrap_content"
-        android:layout_width="match_parent" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

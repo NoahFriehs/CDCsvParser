@@ -1,11 +1,14 @@
 package at.msd.friehs_bicha.cdcsvparser.App;
 
+import static at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet.tts;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
@@ -73,7 +76,11 @@ public class CroCardTxApp extends BaseApp implements Serializable {
         System.out.println("Filling Wallets");
         wallets.add(new CroCardWallet("EUR", BigDecimal.ZERO, "EUR -> EUR", this));
         for (Transaction t : transactions) {
-            wallets.get(0).addTransaction(t);
+            if (Objects.equals(((CroCardTransaction)t).getTransactionTypeString(), "EUR -> EUR")) {
+                ((CroCardWallet)wallets.get(0)).addToWallet(t);
+            } else {
+                wallets.get(0).addTransaction(t);
+            }
         }
         System.out.println("Wallets filled");
     }

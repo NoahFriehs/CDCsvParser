@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
             btnHistory.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    onBtnHistoryClick(view,dropdown);
+                    onBtnHistoryClick(dropdown);
                 }
 
             });
@@ -98,13 +98,7 @@ public class MainActivity extends AppCompatActivity {
             setHistory("disabled",dropdown,btnHistory);
         }else{
             setHistory("enabled",dropdown,btnHistory);
-            btnHistory.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    onBtnHistoryClick(view,dropdown);
-                }
-
-            });
+            btnHistory.setOnClickListener(view -> onBtnHistoryClick(dropdown));
         }
     }
 
@@ -186,10 +180,9 @@ public class MainActivity extends AppCompatActivity {
     /**
      *Gets the file selected in spinner and reads it to call the parse view
      *
-     * @param view the view of the button click
      * @param spinner the spinner to look at
      */
-    private void onBtnHistoryClick(View view, Spinner spinner) {
+    private void onBtnHistoryClick(Spinner spinner) {
         int position = spinner.getSelectedItemPosition();
         File selectedFile = files[position];
 
