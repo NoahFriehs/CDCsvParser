@@ -14,14 +14,15 @@ import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
+import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 public class AssetsFilterActivity extends AppCompatActivity {
 
@@ -49,6 +50,79 @@ public class AssetsFilterActivity extends AppCompatActivity {
         appModel = (AppModel) getIntent().getExtras().get("AppModel");
 
         //test Internet connection
+        //testConnection();
+
+        // make List with all Wallets
+        String[] items = getWalletNames();
+        //create an adapter to describe how the items are displayed
+        ArrayAdapter<String> assetNamesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);
+        //set the spinners adapter to the previously created one.
+        dropdown.setAdapter(assetNamesAdapter);
+
+        //get the specific wallet
+        Object indexObj = dropdown.getSelectedItem();
+        if (indexObj == null) {
+            return;
+        }
+        Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(indexObj.toString()));
+
+        // display prices
+        displayInformation(specificWallet, findViewById(R.id.all_regarding_tx));
+
+        displayTxs(specificWallet);
+
+        //if spinner item gets changed
+        dropdown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                //get the specific wallet
+                Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
+
+                //display Transactions
+                displayTxs(specificWallet);
+                //display prices
+                displayInformation(specificWallet, findViewById(R.id.all_regarding_tx));
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+            }
+        });
+
+
+
+    }
+
+
+    /**
+     * Gets the wallet names for the selected appType
+     *
+     * @return the wallet names as String[]
+     */
+    @NonNull
+    private String[] getWalletNames() {
+        ArrayList<String> wallets = new ArrayList<>();
+        switch(appModel.appType) {
+            case CdCsvParser:
+                appModel.txApp.wallets.forEach(wallet -> wallets.add(wallet.getCurrencyType()));
+                wallets.remove("EUR");
+                break;
+            case CroCard:
+                appModel.txApp.wallets.forEach(wallet -> wallets.add(((CroCardWallet)wallet).getTransactionType()));
+                break;
+            default:
+                wallets.add("This should not happen");
+        }
+
+        String[] items = wallets.toArray(new String[0]);
+        return items;
+    }
+
+
+    /**
+     * Checks if there is an internet connection
+     */
+    private void testConnection() {
         Thread t1 = new Thread(() ->{
             try {
                 appModel.getValueOfAssets();
@@ -58,114 +132,64 @@ public class AssetsFilterActivity extends AppCompatActivity {
             }
         });
         t1.start();
-
-        // make List with all Wallets
-        ArrayList<String> wallets = new ArrayList<>();
-        appModel.txApp.wallets.forEach(wallet -> {
-            wallets.add(wallet.getCurrencyType());
-        });
-
-        wallets.remove("EUR");
-
-        String[] items = wallets.toArray(new String[0]);
-        //create an adapter to describe how the items are displayed
-        ArrayAdapter<String> assetNamesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);
-        //set the spinners adapter to the previously created one.
-        dropdown.setAdapter(assetNamesAdapter);
-
-        //get the specific wallet
-        CDCWallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
-
-        TextView assetsValue = findViewById(R.id.assets_value);
-
-        // display prices
-        Thread t2 = new Thread(() ->{
-            try {
-                appModel.getValueOfAssets();
-                AppModel.asset.isRunning = true;
-            } catch (Exception e) {
-                System.out.println("no internet connection");
-            }
-            if (AppModel.asset.isRunning) {
-                double amountOfAsset = appModel.getValueOfAssets(specificWallet);
-
-                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(Math.round(amountOfAsset) + " €"));
-            }else {
-                AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(R.string.no_internet_connection));
-            }
-        });
-        t2.start();
-
-        displayTxs(specificWallet);
-
-        //if spinner item gets changed
-        dropdown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                //get the specific wallet
-                CDCWallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString()));
-
-                //display Transactions
-                displayTxs(specificWallet);
-
-                TextView assetsValue = findViewById(R.id.assets_value);
-                TextView rewards_value = findViewById(R.id.rewards_value);
-                TextView profit_loss_value = findViewById(R.id.profit_loss_value);
-                TextView all_regarding_tx = findViewById(R.id.all_regarding_tx);
-
-                all_regarding_tx.setText("All transactions regarding " + specificWallet.getCurrencyType());
-
-                BigDecimal total = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(dropdown.getSelectedItem().toString())).getMoneySpent().round(new MathContext(0));
-
-                //get and set prices
-                Thread t = new Thread(() -> {
-                    if (AppModel.asset.isRunning) {
-                        double amountOfAsset = appModel.getValueOfAssets(specificWallet);
-                        double rewardValue = appModel.getTotalBonus(specificWallet);
-                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText(Math.round(amountOfAsset * 100.0) / 100.0 + " €"));
-                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText(Math.round(rewardValue * 100.0) / 100.0 + " €"));
-                        AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText(Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €"));
-                    }else {
-                        AssetsFilterActivity.this.runOnUiThread(() -> assetsValue.setText((getString(R.string.no_internet_connection))));
-                        AssetsFilterActivity.this.runOnUiThread(() -> rewards_value.setText((R.string.no_internet_connection)));
-                        AssetsFilterActivity.this.runOnUiThread(() -> profit_loss_value.setText((R.string.no_internet_connection)));
-                    }
-                });
-                t.start();
-                TextView money_spent_value = findViewById(R.id.money_spent_value);
-                money_spent_value.setText(total.toString() + " €");
+    }
 
 
-            }
+    /**
+     * Displays the prices of specificWallet
+     *
+     * @param specificWallet which should be displayed
+     * @param all_regarding_tx the TextView which should be set
+     */
+    private void displayInformation(Wallet specificWallet, TextView all_regarding_tx) {
+        all_regarding_tx.setText("All transactions regarding " + specificWallet.getCurrencyType());
+        if (appModel.appType == AppType.CroCard) {
+            all_regarding_tx.setText("All transactions regarding " + ((CroCardWallet) specificWallet).getTransactionType());
+        }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parentView) {
-
-            }
-
-        });
-
-
+        //get and set prices
+        Thread t = new Thread(() -> displayTexts(appModel.getAssetMap(specificWallet)));
+        t.start();
 
     }
 
-        /**
-         * Displays the Transactions of specificWallet
-         *
-         * @param specificWallet the CDCWallet which should be displayed
-         */
-        private void displayTxs(CDCWallet specificWallet) {
-            // Get a reference to the ListView
-            ListView listView = findViewById(R.id.lv_txs);
 
-            List<Transaction> transactions = specificWallet.getTransactions();
+    /**
+     * Displays the prices of specificWallet
+     *
+     * @param texts the Map<String, String> which should be displayed with id of View and text to set pairs
+     */
+    private void displayTexts(Map<String, String> texts) {
+        texts.forEach((key, value) -> {
+            TextView textView = findViewById(getResources().getIdentifier(key, "id", getPackageName()));
+            if (value == null){
+                AssetsFilterActivity.this.runOnUiThread(() -> textView.setVisibility(View.INVISIBLE));
+            } else {
+                AssetsFilterActivity.this.runOnUiThread(() -> textView.setText(value));
+            }
+        });
+    }
 
-            // Create an adapter for the ListView
-            ArrayAdapter<Transaction> adapterLV = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, transactions);
 
-            // Set the adapter on the ListView
-            listView.setAdapter(adapterLV);
-        }
+    /**
+     * Displays the Transactions of specificWallet
+     *
+     * @param specificWallet the CDCWallet which should be displayed
+     */
+    private void displayTxs(Wallet specificWallet) {
+        // Get a reference to the ListView
+        ListView listView = findViewById(R.id.lv_txs);
+
+        List<Transaction> transactions = specificWallet.getTransactions();
+
+        // Create an adapter for the ListView
+        ArrayAdapter<Transaction> adapterLV = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, transactions);
+
+        // Set the adapter on the ListView
+        listView.setAdapter(adapterLV);
+    }
+
+
     /**
      * Set the back button in action bar
      */

@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.general;
+package at.msd.friehs_bicha.cdcsvparser.App;
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
@@ -19,13 +19,14 @@ import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
  * The main class of the parser
  *
  */
-public class TxApp implements Serializable {
+public class TxApp extends BaseApp implements Serializable {
 
-    public ArrayList<CDCWallet> wallets = new ArrayList<>();
-    public ArrayList<CDCWallet> outsideWallets = new ArrayList<>();
-    public ArrayList<Transaction> transactions;
-    public int amountTxFailed = 0;
-
+    /**
+     * Create a new TxApp object
+     *
+     * @param file the csv file as String list
+     * @throws IllegalArgumentException when the file is not supported
+     */
     public TxApp(ArrayList<String> file) {
         try {
             transactions = getTransactions(file);
