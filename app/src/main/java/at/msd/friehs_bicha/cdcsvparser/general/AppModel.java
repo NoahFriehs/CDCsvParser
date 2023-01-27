@@ -4,6 +4,7 @@ import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp;
 import at.msd.friehs_bicha.cdcsvparser.App.TxApp;
 import at.msd.friehs_bicha.cdcsvparser.R;
+import at.msd.friehs_bicha.cdcsvparser.SettingsActivity;
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue;
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
@@ -26,11 +27,11 @@ public class AppModel extends BaseAppModel implements Serializable {
 
     /**
      * Creates a new AppModel
-     *
-     * @param file the file to parse
+     *  @param file the file to parse
      * @param appType which app to use
+     * @param useStrictType
      */
-    public AppModel(ArrayList<String> file, AppType appType) {
+    public AppModel(ArrayList<String> file, AppType appType, Boolean useStrictType) {
         super(file, appType);
         String exception = "";
         try {
@@ -39,7 +40,7 @@ public class AppModel extends BaseAppModel implements Serializable {
                     this.txApp = new TxApp(file);
                     break;
                 case CroCard:
-                    this.txApp = new CroCardTxApp(file, false);
+                    this.txApp = new CroCardTxApp(file, useStrictType);
                     break;
                 default:
                     throw new RuntimeException("Usage not found");}

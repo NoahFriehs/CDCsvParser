@@ -60,8 +60,11 @@ public class AssetsFilterActivity extends AppCompatActivity {
         dropdown.setAdapter(assetNamesAdapter);
 
         //get the specific wallet
-        String index = dropdown.getSelectedItem().toString();
-        Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(index));
+        Object indexObj = dropdown.getSelectedItem();
+        if (indexObj == null) {
+            return;
+        }
+        Wallet specificWallet = appModel.txApp.wallets.get(appModel.txApp.wallets.get(0).getWallet(indexObj.toString()));
 
         // display prices
         displayInformation(specificWallet, findViewById(R.id.all_regarding_tx));

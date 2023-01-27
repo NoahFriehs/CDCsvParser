@@ -38,8 +38,10 @@ public class CroCardWallet extends Wallet implements Serializable {
             System.out.println("Found EUR -> EUR: " + tt);
         }
 
-        if (tts.contains(tt)) {
-            CroCardWallet w = findWallet(tt);
+
+        CroCardWallet w = findWallet(tt);
+        if (w != null) {
+            w = findWallet(tt);
             if (!txApp.isUseStrictWalletType())
             {
                 w = getNonStrictWallet(tt);
@@ -47,7 +49,6 @@ public class CroCardWallet extends Wallet implements Serializable {
             w.addToWallet(transaction);
             w.transactions.add(cardTransaction);
         } else {
-            CroCardWallet w;
             if (!txApp.isUseStrictWalletType())
             {
                 w = getNonStrictWallet(tt);

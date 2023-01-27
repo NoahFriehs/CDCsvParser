@@ -28,7 +28,12 @@ public class CroCardTxApp extends BaseApp implements Serializable {
             e.printStackTrace();
         }
         System.out.println("We have " + this.transactions.size() + " transaction(s).");
-        fillWallet();
+        try {
+            fillWallet();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
         System.out.println("we have " + getWallets().size() + " different transactions.");
         //((CroCardWallet)wallets.get(0)).writeAmount();
     }

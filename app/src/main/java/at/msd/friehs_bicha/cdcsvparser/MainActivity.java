@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
-import at.msd.friehs_bicha.cdcsvparser.App.AppType;
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
                 onBtnUploadClick(view);
             }
         });
-
+        settingsButton();
         updateFiles();
 
         //disable spinner and history or fill spinner
@@ -189,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<String> list = getFileContent(selectedFile);
 
         try {
-            appModel = new AppModel(list, AppType.CdCsvParser);
+            appModel = new AppModel(list, PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this));
             callParseView();
         }catch (Exception e) {
             CharSequence text = e.getMessage();
@@ -234,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             try {
-                appModel = new AppModel(list, AppType.CdCsvParser);
+                appModel = new AppModel(list, PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this));
                 callParseView();
             }catch (IllegalArgumentException e) {
                 context = getApplicationContext();
@@ -339,4 +339,13 @@ public class MainActivity extends AppCompatActivity {
         return fileContents;
     }
 
+
+    public void settingsButton()
+    {
+        Button settingsButton = findViewById(R.id.settings_button);
+        settingsButton.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        });
+    }
 }
