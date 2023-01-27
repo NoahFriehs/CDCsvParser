@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
-import at.msd.friehs_bicha.cdcsvparser.general.TxApp;
+import at.msd.friehs_bicha.cdcsvparser.App.TxApp;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
 
@@ -31,7 +31,7 @@ public class CDCWallet extends Wallet implements Serializable {
      */
     public int getWallet(String ct) {
         int i = 0;
-        for (CDCWallet w : txApp.wallets) {
+        for (Wallet w : txApp.wallets) {
             if (w.getCurrencyType().equals(ct)) return i;
             i++;
         }
@@ -74,7 +74,7 @@ public class CDCWallet extends Wallet implements Serializable {
     public void addTransaction(Transaction transaction) {
         //transactions.add(transaction);
         TransactionType t = transaction.getTransactionType();
-        CDCWallet w = txApp.wallets.get(getWallet(transaction.getCurrencyType()));
+        CDCWallet w = (CDCWallet) txApp.wallets.get(getWallet(transaction.getCurrencyType()));
         if (!w.transactions.contains(transaction)) {
             w.transactions.add(transaction);
         }
@@ -117,7 +117,7 @@ public class CDCWallet extends Wallet implements Serializable {
                 break;
             case crypto_viban_exchange:
                 w.removeFromWallet(transaction.getAmount(), transaction.getNativeAmount());
-                CDCWallet eur = txApp.wallets.get(getWallet("EUR"));
+                CDCWallet eur = (CDCWallet) txApp.wallets.get(getWallet("EUR"));
                 eur.addToWallet(transaction.getNativeAmount(),transaction.getNativeAmount(), BigDecimal.ZERO);
                 break;
 
@@ -127,14 +127,13 @@ public class CDCWallet extends Wallet implements Serializable {
 
     /**
      * Handles crypto withdrawal
-     *
-     * @param w the wallet from which crypto is withdrawn
+     *  @param w the wallet from which crypto is withdrawn
      * @param transaction the transaction to be made
      * @param outsideWallets all outsideWallets
      */
-    private void cryptoWithdrawal(CDCWallet w, Transaction transaction, ArrayList<CDCWallet> outsideWallets) {
+    private void cryptoWithdrawal(CDCWallet w, Transaction transaction, ArrayList<Wallet> outsideWallets) {
         w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, BigDecimal.ZERO);
-        CDCWallet wt = outsideWallets.get(getWallet(transaction.getCurrencyType()));
+        CDCWallet wt = (CDCWallet) outsideWallets.get(getWallet(transaction.getCurrencyType()));
         if (!wt.transactions.contains(transaction)) {
             wt.transactions.add(transaction);
         }
@@ -152,7 +151,7 @@ public class CDCWallet extends Wallet implements Serializable {
             System.out.println("Tx failed: " + transaction);
         }else {
 
-        CDCWallet wv = txApp.wallets.get(getWallet(transaction.getToCurrency()));
+        CDCWallet wv = (CDCWallet) txApp.wallets.get(getWallet(transaction.getToCurrency()));
         wv.addToWallet(transaction.getToAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
         }
     }

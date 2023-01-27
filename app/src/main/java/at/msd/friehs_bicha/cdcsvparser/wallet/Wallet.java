@@ -42,15 +42,6 @@ public abstract class Wallet implements Serializable {
     }
 
     /**
-     * Add a transaction to the Wallet
-     *
-     * @param amount the amount of the coin
-     * @param nativeAmount the amount in native currency
-     * @param amountBonus the amount the user got for free
-     */
-    public abstract void addToWallet(BigDecimal amount, BigDecimal nativeAmount, BigDecimal amountBonus);
-
-    /**
      * Remove a transaction from the Wallet
      *
      * @param amount the amount to remove

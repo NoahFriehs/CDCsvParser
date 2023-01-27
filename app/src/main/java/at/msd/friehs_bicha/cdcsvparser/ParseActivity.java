@@ -12,6 +12,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 
@@ -30,95 +31,58 @@ public class ParseActivity extends AppCompatActivity {
 
         appModel = (AppModel) getIntent().getExtras().get("AppModel");
 
-        Thread t1 = new Thread(() ->{
-            try {
-                getValueOfAssets();
-                AppModel.asset.isRunning = true;
-            } catch (Exception e) {
-                System.out.println("no internet connection");
-            }
-        });
-        t1.start();
-
-
-
         Button btnFilter = findViewById(R.id.btn_filter);
         Button btnTx = findViewById(R.id.btn_all_tx);
 
-        btnFilter.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (appModel.isRunning) {
-                    Intent intent = new Intent(ParseActivity.this, AssetsFilterActivity.class);
-                    //intent.putExtra("NAME_KEY","Value");
-                    intent.putExtra("AppModel", appModel);
-                    startActivity(intent);
-                }
+        btnFilter.setOnClickListener(view -> {
+            if (appModel.isRunning) {
+                Intent intent = new Intent(ParseActivity.this, AssetsFilterActivity.class);
+                //intent.putExtra("NAME_KEY","Value");
+                intent.putExtra("AppModel", appModel);
+                startActivity(intent);
             }
-
         });
-        btnTx.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (appModel.isRunning) {
-                    Intent intent = new Intent(ParseActivity.this, TransactionsActivity.class);
-                    //intent.putExtra("NAME_KEY","Value");
-                    intent.putExtra("AppModel", appModel);
-                    startActivity(intent);
-                }
+        btnTx.setOnClickListener(view -> {
+            if (appModel.isRunning) {
+                Intent intent = new Intent(ParseActivity.this, TransactionsActivity.class);
+                //intent.putExtra("NAME_KEY","Value");
+                intent.putExtra("AppModel", appModel);
+                startActivity(intent);
             }
-
         });
-
-        TextView money_spent_value = findViewById(R.id.money_spent_value);
-        BigDecimal total = getTotalPrice();
-        money_spent_value.setText(Math.round(total.doubleValue() * 100.0) / 100.0 + " €");
-
 
         //trys to get the prices from api and the prints the values depending on the answer of coingeko api
-        Thread t = new Thread(() ->{
-            try {
-                getValueOfAssets();
-                AppModel.asset.isRunning = true;
-            } catch (Exception e) {
-                System.out.println("no internet connection");
-            }
-            if (AppModel.asset.isRunning) {
-                double valueOfAssets = getValueOfAssets();
-                double rewardsEarned = getRewardsEarned();
-
-                ParseActivity.this.runOnUiThread(() -> setPrice(valueOfAssets, total, Math.round(rewardsEarned * 100.0) / 100.0 + " €", true));
-            }else {
-                ParseActivity.this.runOnUiThread(() -> setPrice(0.0, BigDecimal.ZERO, "no internet connection", false));
-            }
-        });
-        t.start();
-
+        displayInformation();
     }
+
 
     /**
-     * sets the views ammount text
+     * Displays the prices of all assets
      *
-     * @param valueOfA profit or loss
-     * @param total total amount
-     * @param rewardsValue rewards
      */
-    private void setPrice(Double valueOfA, BigDecimal total, String rewardsValue, boolean isRunning) {
-        TextView assets_value = findViewById(R.id.assets_value);
-        if (isRunning) {
-            assets_value.setText(Math.round(valueOfA * 100.0) / 100.0 + " €");
-
-            TextView profit_loss_value = findViewById(R.id.profit_loss_value);
-            profit_loss_value.setText(Math.round((valueOfA - total.doubleValue()) * 100.0) / 100.0 + " €");
-        } else {
-            assets_value.setText(R.string.no_internet_connection);
-
-            TextView profit_loss_value = findViewById(R.id.profit_loss_value);
-            profit_loss_value.setText(R.string.no_internet_connection);
-        }
-        TextView rewards_value = findViewById(R.id.rewards_value);
-        rewards_value.setText(rewardsValue);
+    private void displayInformation() {
+        //get and set prices
+        Thread t = new Thread(() -> displayTexts(appModel.getParseMap()));
+        t.start();
     }
+
+
+    /**
+     * Displays the prices of specificWallet
+     *
+     * @param texts the Map<String, String> which should be displayed with id of View and text to set pairs
+     */
+    private void displayTexts(Map<String, String> texts) {
+        texts.forEach((key, value) -> {
+            TextView textView = findViewById(getResources().getIdentifier(key, "id", getPackageName()));
+            if (value == null){
+                ParseActivity.this.runOnUiThread(() -> textView.setVisibility(View.INVISIBLE));
+            } else {
+                ParseActivity.this.runOnUiThread(() -> textView.setText(value));
+            }
+        });
+    }
+
 
     /**
      * Set the back button in action bar
@@ -132,15 +96,4 @@ public class ParseActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public double getRewardsEarned(){
-        return appModel.getTotalBonus();
-    }
-
-    public BigDecimal getTotalPrice(){
-        return appModel.getTotalPrice();
-    }
-
-    public Double getValueOfAssets(){
-        return appModel.getValueOfAssets();
-    }
 }
