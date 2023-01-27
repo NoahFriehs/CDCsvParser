@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
-import at.msd.friehs_bicha.cdcsvparser.App.AppType;
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
                 onBtnUploadClick(view);
             }
         });
-
+        settingsButton();
         updateFiles();
 
         //disable spinner and history or fill spinner
@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
             btnHistory.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    onBtnHistoryClick(view,dropdown);
+                    onBtnHistoryClick(dropdown);
                 }
 
             });
@@ -98,13 +98,7 @@ public class MainActivity extends AppCompatActivity {
             setHistory("disabled",dropdown,btnHistory);
         }else{
             setHistory("enabled",dropdown,btnHistory);
-            btnHistory.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    onBtnHistoryClick(view,dropdown);
-                }
-
-            });
+            btnHistory.setOnClickListener(view -> onBtnHistoryClick(dropdown));
         }
     }
 
@@ -186,17 +180,16 @@ public class MainActivity extends AppCompatActivity {
     /**
      *Gets the file selected in spinner and reads it to call the parse view
      *
-     * @param view the view of the button click
      * @param spinner the spinner to look at
      */
-    private void onBtnHistoryClick(View view, Spinner spinner) {
+    private void onBtnHistoryClick(Spinner spinner) {
         int position = spinner.getSelectedItemPosition();
         File selectedFile = files[position];
 
         ArrayList<String> list = getFileContent(selectedFile);
 
         try {
-            appModel = new AppModel(list, AppType.CdCsvParser);
+            appModel = new AppModel(list, PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this));
             callParseView();
         }catch (Exception e) {
             CharSequence text = e.getMessage();
@@ -241,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             try {
-                appModel = new AppModel(list, AppType.CdCsvParser);
+                appModel = new AppModel(list, PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this));
                 callParseView();
             }catch (IllegalArgumentException e) {
                 context = getApplicationContext();
@@ -346,4 +339,13 @@ public class MainActivity extends AppCompatActivity {
         return fileContents;
     }
 
+
+    public void settingsButton()
+    {
+        Button settingsButton = findViewById(R.id.settings_button);
+        settingsButton.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        });
+    }
 }
