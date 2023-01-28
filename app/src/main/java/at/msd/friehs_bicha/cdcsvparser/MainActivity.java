@@ -23,11 +23,18 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
+import at.msd.friehs_bicha.cdcsvparser.encryption.AESEncryption;
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper;
 
@@ -187,7 +194,16 @@ public class MainActivity extends AppCompatActivity {
         File selectedFile = files[position];
 
         ArrayList<String> list = getFileContent(selectedFile);
+        try {
+            //list = AESEncryption.decrypt(PreferenceHelper.getEncryptionKey(this), list);
+        } catch (Exception e) {
+            e.printStackTrace();
+            CharSequence text = "Wrong password";
+            int duration = Toast.LENGTH_SHORT;
 
+            Toast toast = Toast.makeText(context, text, duration);
+            toast.show();
+        }
         try {
             appModel = new AppModel(list, PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this));
             callParseView();
@@ -218,14 +234,12 @@ public class MainActivity extends AppCompatActivity {
             String filename = time + ".csv";
 
             ArrayList<String> list = getFileContentFromUri(fileUri);
-            try (FileOutputStream fos = context.openFileOutput(filename, Context.MODE_APPEND)) {
-                for (String element : list) {
-                    fos.write(element.getBytes());
-                    fos.write("\n".getBytes());  // add a newline after each element
-                }
-            } catch (IOException e) {
+            try {
+                //AESEncryption.encrypt( PreferenceHelper.getEncryptionKey(this), list, context.openFileOutput(filename, Context.MODE_APPEND));
+            } catch (Exception e) {
                 e.printStackTrace();
             }
+
             //delete oldest file if alredy 7 files in array
             updateFiles();
             while(files.length > 7){
