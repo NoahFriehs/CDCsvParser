@@ -10,7 +10,6 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
 
 /**
  * Represents a CDCWallet object
- *
  */
 public class CDCWallet extends Wallet implements Serializable {
 
@@ -18,14 +17,13 @@ public class CDCWallet extends Wallet implements Serializable {
     TxApp txApp;
 
 
-    public CDCWallet(String  currencyType, BigDecimal amount, BigDecimal nativeAmount, TxApp txApp, Boolean isOutsideWallet) {
+    public CDCWallet(String currencyType, BigDecimal amount, BigDecimal nativeAmount, TxApp txApp, Boolean isOutsideWallet) {
         super(currencyType, amount, nativeAmount);
         this.txApp = txApp;
         this.isOutsideWallet = isOutsideWallet;
     }
 
-    public CDCWallet(Wallet wallet)
-    {
+    public CDCWallet(Wallet wallet) {
         super(wallet);
     }
 
@@ -48,9 +46,9 @@ public class CDCWallet extends Wallet implements Serializable {
     /**
      * Add a transaction to the CDCWallet
      *
-     * @param amount the amount of the coin
+     * @param amount       the amount of the coin
      * @param nativeAmount the amount in native currency
-     * @param amountBonus the amount the user got for free
+     * @param amountBonus  the amount the user got for free
      */
     public void addToWallet(BigDecimal amount, BigDecimal nativeAmount, BigDecimal amountBonus) {
         this.amount = this.amount.add(amount);
@@ -76,14 +74,13 @@ public class CDCWallet extends Wallet implements Serializable {
     /**
      * Remove a transaction from the CDCWallet
      *
-     * @param amount the amount to remove
+     * @param amount       the amount to remove
      * @param nativeAmount the amount in native currency to remove
      */
     public void removeFromWallet(BigDecimal amount, BigDecimal nativeAmount) {
         this.amount = this.amount.subtract(amount);
         this.moneySpent = this.moneySpent.subtract(nativeAmount);
     }
-
 
 
     /**
@@ -143,17 +140,19 @@ public class CDCWallet extends Wallet implements Serializable {
             case crypto_viban_exchange:
                 w.removeFromWallet(transaction.getAmount(), transaction.getNativeAmount());
                 CDCWallet eur = (CDCWallet) txApp.wallets.get(getWallet("EUR"));
-                eur.addToWallet(transaction.getNativeAmount(),transaction.getNativeAmount(), BigDecimal.ZERO);
+                eur.addToWallet(transaction.getNativeAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
                 break;
 
-            default: System.out.println("This is an unsupported TransactionType: " + t);
+            default:
+                System.out.println("This is an unsupported TransactionType: " + t);
         }
     }
 
     /**
      * Handles crypto withdrawal
-     *  @param w the wallet from which crypto is withdrawn
-     * @param transaction the transaction to be made
+     *
+     * @param w              the wallet from which crypto is withdrawn
+     * @param transaction    the transaction to be made
      * @param outsideWallets all outsideWallets
      */
     private void cryptoWithdrawal(CDCWallet w, Transaction transaction, ArrayList<Wallet> outsideWallets) {
@@ -172,15 +171,14 @@ public class CDCWallet extends Wallet implements Serializable {
      * @param transaction the transaction which is a vibanPurchase
      */
     private void vibanPurchase(Transaction transaction) {
-        if (getWallet(transaction.getToCurrency()) == -1)
-        {
+        if (getWallet(transaction.getToCurrency()) == -1) {
             System.out.println("Tx failed: " + transaction);
-        }else {
+        } else {
 
-        CDCWallet wv = (CDCWallet) txApp.wallets.get(getWallet(transaction.getToCurrency()));
-        wv.addToWallet(transaction.getToAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
-        //wv.addToWallet(transaction);
-        transaction.setWalletId(wv.walletId);
+            CDCWallet wv = (CDCWallet) txApp.wallets.get(getWallet(transaction.getToCurrency()));
+            wv.addToWallet(transaction.getToAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
+            //wv.addToWallet(transaction);
+            transaction.setWalletId(wv.walletId);
             if (!this.transactions.contains(transaction)) {
                 this.transactions.add(transaction);
             }

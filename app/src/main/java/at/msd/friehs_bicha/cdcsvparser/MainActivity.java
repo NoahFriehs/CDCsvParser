@@ -27,14 +27,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
-import at.msd.friehs_bicha.cdcsvparser.db.AppDatabase;
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper;
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
-import at.msd.friehs_bicha.cdcsvparser.wallet.WalletWithTransactions;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -45,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     File[] files;
 
     /**
-     *sets the buttons and spinner and also fills the global vars files and context the first time
+     * sets the buttons and spinner and also fills the global vars files and context the first time
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,9 +64,9 @@ public class MainActivity extends AppCompatActivity {
         updateFiles();
 
         //disable spinner and history or fill spinner
-        if(files.length == 0){
-            setHistory("disabled",dropdown,btnHistory);
-        }else{
+        if (files.length == 0) {
+            setHistory("disabled", dropdown, btnHistory);
+        } else {
             setSpinner(dropdown);
 
             btnHistory.setOnClickListener(new View.OnClickListener() {
@@ -96,10 +91,10 @@ public class MainActivity extends AppCompatActivity {
         updateFiles();
         Spinner dropdown = findViewById(R.id.spinner_history);
         Button btnHistory = findViewById(R.id.btn_history);
-        if(files.length == 0){
-            setHistory("disabled",dropdown,btnHistory);
-        }else{
-            setHistory("enabled",dropdown,btnHistory);
+        if (files.length == 0) {
+            setHistory("disabled", dropdown, btnHistory);
+        } else {
+            setHistory("enabled", dropdown, btnHistory);
             btnHistory.setOnClickListener(view -> onBtnHistoryClick(dropdown));
         }
     }
@@ -108,14 +103,14 @@ public class MainActivity extends AppCompatActivity {
     /**
      * disables or enbales and fills a spinner
      *
-     * @param type "disabled" or "enabled"
-     * @param dropdown the Spinner element
+     * @param type       "disabled" or "enabled"
+     * @param dropdown   the Spinner element
      * @param btnHistory the button to de/activate
      */
-    private void setHistory(String type, Spinner dropdown,Button btnHistory){
+    private void setHistory(String type, Spinner dropdown, Button btnHistory) {
         Resources res = getResources();
         Drawable drawable = res.getDrawable(R.drawable.round_button_layer_list);
-        switch(type){
+        switch (type) {
             case "disabled":
                 // Disable the button
 
@@ -144,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * updates the global file array to the newest
      */
-    private void updateFiles(){
+    private void updateFiles() {
         // Get the app's internal file directory
         File appDir = getFilesDir();
         // Get a list of all files in the app's internal file directory
@@ -156,13 +151,13 @@ public class MainActivity extends AppCompatActivity {
      *
      * @param spinner spinner to fill
      */
-    private void setSpinner(Spinner spinner){
+    private void setSpinner(Spinner spinner) {
         String[] fileNames = new String[files.length];
         SimpleDateFormat sdf = new SimpleDateFormat("M-d-yyyy-hh-mm-ss");
         SimpleDateFormat dateFormat = new SimpleDateFormat("d.M hh:mm");
         String filename;
         Date date;
-        for (int i = 0; i < files.length;i++) {
+        for (int i = 0; i < files.length; i++) {
             filename = files[i].getName();
             filename = filename.substring(0, filename.length() - 4);
             try {
@@ -180,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     *Gets the file selected in spinner and reads it to call the parse view
+     * Gets the file selected in spinner and reads it to call the parse view
      *
      * @param spinner the spinner to look at
      */
@@ -193,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             appModel = new AppModel(list, PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this));
             callParseView();
-        }catch (Exception e) {
+        } catch (Exception e) {
             CharSequence text = e.getMessage();
             int duration = Toast.LENGTH_SHORT;
 
@@ -203,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     *is called on successful file select and saves it to storage.
+     * is called on successful file select and saves it to storage.
      * Also reads the file and then calls the parse view
      */
     @Override
@@ -230,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
             }
             //delete oldest file if alredy 7 files in array
             updateFiles();
-            while(files.length > 7){
+            while (files.length > 7) {
                 files[0].delete();
                 updateFiles();
             }
@@ -238,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 appModel = new AppModel(list, PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this));
                 callParseView();
-            }catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 context = getApplicationContext();
                 CharSequence text = e.getMessage();
                 int duration = Toast.LENGTH_SHORT;
@@ -246,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast toast = Toast.makeText(context, text, duration);
                 toast.show();
 
-            }catch (RuntimeException e){
+            } catch (RuntimeException e) {
                 Context context = getApplicationContext();
                 CharSequence text = e.getMessage();
                 int duration = Toast.LENGTH_SHORT;
@@ -271,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * start action to let the user select a file
      */
-    public void onBtnUploadClick(View view){
+    public void onBtnUploadClick(View view) {
         // Create an Intent object to allow the user to select a file
         Intent chooseFile = new Intent(Intent.ACTION_GET_CONTENT);
 
@@ -288,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
      * @param uri url to file
      * @return the content of the file in a ArrayList<Sting>
      */
-    public ArrayList<String> getFileContentFromUri(Uri uri){
+    public ArrayList<String> getFileContentFromUri(Uri uri) {
         ArrayList<String> fileContents = new ArrayList<>();
         try {
             // Get the ContentResolver for the current context.
@@ -321,7 +316,7 @@ public class MainActivity extends AppCompatActivity {
      * @param file a file
      * @return the content of the file in a ArrayList<Sting>
      */
-    public ArrayList<String> getFileContent(File file){
+    public ArrayList<String> getFileContent(File file) {
         ArrayList<String> fileContents = new ArrayList<>();
         try {
 
@@ -343,8 +338,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void settingsButton()
-    {
+    public void settingsButton() {
         Button settingsButton = findViewById(R.id.settings_button);
         settingsButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
@@ -353,8 +347,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private boolean saveToDB()
-    {
+    private boolean saveToDB() {
         return appModel.setInAndroidDB(getApplicationContext());
     }
 }

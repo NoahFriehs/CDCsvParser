@@ -25,9 +25,9 @@ public class CroCardTransaction extends Transaction implements Serializable {
     @Override
     public String toString() {
         return
-                date +  "\n"+
+                date + "\n" +
                         "Description: " + description + '\n' +
-                        "Amount: " + nativeAmount.round(new MathContext(5)) + currencyType +"\n" +
+                        "Amount: " + nativeAmount.round(new MathContext(5)) + currencyType + "\n" +
                         "transactionType: " + transactionType;
     }
 

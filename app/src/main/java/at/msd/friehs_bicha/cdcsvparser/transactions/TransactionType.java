@@ -2,7 +2,6 @@ package at.msd.friehs_bicha.cdcsvparser.transactions;
 
 /**
  * All different TransactionTypes
- *
  */
 public enum TransactionType {
 

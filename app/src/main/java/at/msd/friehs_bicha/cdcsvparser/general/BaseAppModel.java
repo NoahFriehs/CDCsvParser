@@ -1,7 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.general;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 
 import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 import at.msd.friehs_bicha.cdcsvparser.App.BaseApp;

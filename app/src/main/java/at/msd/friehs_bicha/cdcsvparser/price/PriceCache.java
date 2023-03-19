@@ -8,11 +8,9 @@ import java.time.Instant;
  */
 public class PriceCache implements Serializable {
 
-    private final Instant creationTime;
-
     public final String id;
-
     public final double price;
+    private final Instant creationTime;
 
     public PriceCache(String id, double price) {
         this.creationTime = Instant.now();

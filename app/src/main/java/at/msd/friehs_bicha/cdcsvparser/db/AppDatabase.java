@@ -15,14 +15,10 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.util.Converter;
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 import at.msd.friehs_bicha.cdcsvparser.wallet.WalletTransactionCrossRef;
-import at.msd.friehs_bicha.cdcsvparser.wallet.WalletWithTransactions;
 
 @Database(entities = {Wallet.class, Transaction.class, WalletTransactionCrossRef.class}, version = 1)
 @TypeConverters({Converter.class})
 public abstract class AppDatabase extends RoomDatabase {
-
-    public abstract WalletDao walletDao();
-    public abstract TransactionDao transactionDao();
 
     private static AppDatabase INSTANCE;
 
@@ -34,6 +30,10 @@ public abstract class AppDatabase extends RoomDatabase {
         }
         return INSTANCE;
     }
+
+    public abstract WalletDao walletDao();
+
+    public abstract TransactionDao transactionDao();
 
     @NonNull
     @Override

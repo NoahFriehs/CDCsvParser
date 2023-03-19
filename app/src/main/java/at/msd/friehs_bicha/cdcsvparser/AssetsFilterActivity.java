@@ -1,12 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser;
 
 import static java.lang.Thread.sleep;
-
 import static at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper.getUseAndroidDB;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -18,12 +13,16 @@ import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 import at.msd.friehs_bicha.cdcsvparser.App.AppType;
+import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper;
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet;
@@ -34,9 +33,9 @@ public class AssetsFilterActivity extends AppCompatActivity {
     AppModel appModel;
     Context context;
 
-        /**
-         * sets the spinner and context the first time
-         */
+    /**
+     * sets the spinner and context the first time
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -103,17 +102,13 @@ public class AssetsFilterActivity extends AppCompatActivity {
         });
 
 
-
     }
 
 
     private void getAppModel() {
-        if ((PreferenceHelper.getSelectedType(getApplicationContext()) == AppType.CdCsvParser) && getUseAndroidDB(getApplicationContext()))
-        {
+        if ((PreferenceHelper.getSelectedType(getApplicationContext()) == AppType.CdCsvParser) && getUseAndroidDB(getApplicationContext())) {
             appModel = new AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), getApplicationContext());
-        }
-        else
-        {
+        } else {
             appModel = (AppModel) getIntent().getExtras().get("AppModel");
         }
     }
@@ -127,13 +122,13 @@ public class AssetsFilterActivity extends AppCompatActivity {
     @NonNull
     private String[] getWalletNames() {
         ArrayList<String> wallets = new ArrayList<>();
-        switch(appModel.appType) {
+        switch (appModel.appType) {
             case CdCsvParser:
                 appModel.txApp.wallets.forEach(wallet -> wallets.add(wallet.getCurrencyType()));
                 wallets.remove("EUR");
                 break;
             case CroCard:
-                appModel.txApp.wallets.forEach(wallet -> wallets.add(((CroCardWallet)wallet).getTransactionType()));
+                appModel.txApp.wallets.forEach(wallet -> wallets.add(((CroCardWallet) wallet).getTransactionType()));
                 break;
             default:
                 wallets.add("This should not happen");
@@ -148,7 +143,7 @@ public class AssetsFilterActivity extends AppCompatActivity {
      * Checks if there is an internet connection
      */
     private void testConnection() {
-        Thread t1 = new Thread(() ->{
+        Thread t1 = new Thread(() -> {
             try {
                 appModel.getValueOfAssets();
                 AppModel.asset.isRunning = true;
@@ -163,7 +158,7 @@ public class AssetsFilterActivity extends AppCompatActivity {
     /**
      * Displays the prices of specificWallet
      *
-     * @param specificWallet which should be displayed
+     * @param specificWallet   which should be displayed
      * @param all_regarding_tx the TextView which should be set
      */
     private void displayInformation(Wallet specificWallet, TextView all_regarding_tx) {
@@ -187,7 +182,7 @@ public class AssetsFilterActivity extends AppCompatActivity {
     private void displayTexts(Map<String, String> texts) {
         texts.forEach((key, value) -> {
             TextView textView = findViewById(getResources().getIdentifier(key, "id", getPackageName()));
-            if (value == null){
+            if (value == null) {
                 AssetsFilterActivity.this.runOnUiThread(() -> textView.setVisibility(View.INVISIBLE));
             } else {
                 AssetsFilterActivity.this.runOnUiThread(() -> textView.setText(value));
@@ -220,10 +215,10 @@ public class AssetsFilterActivity extends AppCompatActivity {
      */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-            if (item.getItemId() == android.R.id.home) {
-                this.finish();
-                return true;
-            }
+        if (item.getItemId() == android.R.id.home) {
+            this.finish();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 }

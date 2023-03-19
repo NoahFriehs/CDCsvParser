@@ -18,7 +18,7 @@ public class PreferenceHelper {
      * @param context the context
      * @return the selected app type
      */
-    public static AppType getSelectedType(Context context){
+    public static AppType getSelectedType(Context context) {
         SharedPreferences settings = context.getSharedPreferences(PREFS_NAME, 0);
         int storedType = settings.getInt(TYPE_KEY, 0);
         return AppType.values()[storedType];
@@ -31,13 +31,13 @@ public class PreferenceHelper {
      * @param context the context
      * @return if the strict type is used
      */
-    public static boolean getUseStrictType(Context context){
+    public static boolean getUseStrictType(Context context) {
         SharedPreferences settings = context.getSharedPreferences(PREFS_NAME, 0);
         return settings.getBoolean(USE_STRICT_TYPE_KEY, false);
     }
 
 
-    public static boolean getUseAndroidDB(Context context){
+    public static boolean getUseAndroidDB(Context context) {
         SharedPreferences settings = context.getSharedPreferences(PREFS_NAME, 0);
         return settings.getBoolean(USE_ANDROID_DB_KEY, false);
     }

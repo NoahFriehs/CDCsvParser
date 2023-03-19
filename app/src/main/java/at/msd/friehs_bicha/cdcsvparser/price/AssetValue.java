@@ -4,7 +4,10 @@ import static java.lang.Thread.sleep;
 
 import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.constant.Currency;
-import com.litesoftwares.coingecko.domain.Coins.*;
+import com.litesoftwares.coingecko.domain.Coins.CoinFullData;
+import com.litesoftwares.coingecko.domain.Coins.CoinList;
+import com.litesoftwares.coingecko.domain.Coins.CoinMarkets;
+import com.litesoftwares.coingecko.domain.Coins.MarketData;
 import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl;
 
 import java.io.Serializable;
@@ -17,12 +20,11 @@ import java.util.Objects;
 
 public class AssetValue implements Serializable {
 
+    final List<PriceCache> cache;
+    public boolean isRunning;
     List<CoinList> coinLists;
     List<CoinMarkets> coinMarkets;
     private Instant coinMarketsCreationTime;
-    final List<PriceCache> cache;
-    public boolean isRunning;
-
     private int tries = 0;
 
     public AssetValue() {
@@ -39,7 +41,7 @@ public class AssetValue implements Serializable {
     public Double getPrice(String symbol) throws InterruptedException {
         symbol = overrideSymbol(symbol);
         double price = checkCache(symbol);
-        if (price != -1.0){
+        if (price != -1.0) {
             isRunning = true;
             return price;
         }
@@ -64,12 +66,11 @@ public class AssetValue implements Serializable {
             isRunning = true;
             return getPriceTheOtherWay(symbol);
         } catch (Exception e) {
-            if (e.getMessage().contains("com.litesoftwares.coingecko.exception.CoinGeckoApiException: CoinGeckoApiError(code=1015, message=Rate limited)"))
-            {
+            if (e.getMessage().contains("com.litesoftwares.coingecko.exception.CoinGeckoApiException: CoinGeckoApiError(code=1015, message=Rate limited)")) {
                 sleep(1000);
                 return getPrice(symbol);
             }
-            if (tries < 3){
+            if (tries < 3) {
                 tries++;
                 sleep(1000);
                 return getPrice(symbol);
@@ -86,12 +87,12 @@ public class AssetValue implements Serializable {
      * @param symbol the symbol for which the price is needed
      * @return the price of the symbol
      */
-    private Double getPriceTheOtherWay(String symbol){
+    private Double getPriceTheOtherWay(String symbol) {
         CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
         if (coinLists == null) coinLists = client.getCoinList();
 
         for (CoinList coinList : coinLists) {
-            if (coinList.getSymbol().contains(symbol.toLowerCase())||coinList.getId().contains(symbol.toLowerCase())||coinList.getName().contains(symbol.toLowerCase())){
+            if (coinList.getSymbol().contains(symbol.toLowerCase()) || coinList.getId().contains(symbol.toLowerCase()) || coinList.getName().contains(symbol.toLowerCase())) {
                 CoinFullData bitcoinInfo = client.getCoinById(coinList.getId());
                 MarketData data = bitcoinInfo.getMarketData();
                 Map<String, Double> dataPrice = data.getCurrentPrice();
@@ -111,7 +112,7 @@ public class AssetValue implements Serializable {
      * @param symbol the symbol to be checked and if needed replaced
      * @return the if needed replaced symbol
      */
-    private String overrideSymbol(String symbol){
+    private String overrideSymbol(String symbol) {
         if (Objects.equals(symbol, "LUNA")) return "terra-luna";
         if (symbol.equals("LUNA2")) return "terra-luna-2";
         return symbol;
@@ -123,16 +124,15 @@ public class AssetValue implements Serializable {
      * @param symbol the symbol to be checked for
      * @return a price if it has it it else -1
      */
-    private double checkCache(String symbol){
+    private double checkCache(String symbol) {
 
-        for (int i = 0; i < cache.size(); i++)
-        {
+        for (int i = 0; i < cache.size(); i++) {
             if (cache.get(i).isOlderThanFiveMinutes()) {
                 cache.remove(i);
                 i--;
                 continue;
             }
-            if (cache.get(i).id.equals(symbol)){
+            if (cache.get(i).id.equals(symbol)) {
                 System.out.println("used cache");
                 return cache.get(i).price;
             }

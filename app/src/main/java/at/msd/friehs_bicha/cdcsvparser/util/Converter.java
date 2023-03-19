@@ -2,16 +2,15 @@ package at.msd.friehs_bicha.cdcsvparser.util;
 
 import androidx.room.TypeConverter;
 
-import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
-
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
+
 /**
  * Helper-class to convert types
- *
  */
 public class Converter {
 
@@ -80,6 +79,7 @@ public class Converter {
 
     /**
      * Converts a BigDecimal to a String
+     *
      * @param value the BigDecimal to be converted
      * @return the String of the BigDecimal
      */
@@ -91,6 +91,7 @@ public class Converter {
 
     /**
      * Converts a String to a BigDecimal
+     *
      * @param value the String to be converted
      * @return the BigDecimal of the String
      */
