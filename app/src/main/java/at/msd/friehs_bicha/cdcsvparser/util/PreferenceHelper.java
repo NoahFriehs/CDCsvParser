@@ -9,6 +9,7 @@ public class PreferenceHelper {
     public static final String PREFS_NAME = "settings_prefs";
     public static final String TYPE_KEY = "app_type";
     public static final String USE_STRICT_TYPE_KEY = "use_strict_app_type";
+    public static final String USE_ANDROID_DB_KEY = "use_android_db_for_storage";
 
 
     /**
@@ -34,5 +35,12 @@ public class PreferenceHelper {
         SharedPreferences settings = context.getSharedPreferences(PREFS_NAME, 0);
         return settings.getBoolean(USE_STRICT_TYPE_KEY, false);
     }
+
+
+    public static boolean getUseAndroidDB(Context context){
+        SharedPreferences settings = context.getSharedPreferences(PREFS_NAME, 0);
+        return settings.getBoolean(USE_ANDROID_DB_KEY, false);
+    }
+
 }
 

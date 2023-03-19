@@ -1,9 +1,16 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions;
 
 import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.ForeignKey;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
 
 import at.msd.friehs_bicha.cdcsvparser.util.Converter;
 import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -14,18 +21,55 @@ import java.util.Date;
  * Represents a Transaction object
  *
  */
+@Entity(tableName = "transactions")
+@TypeConverters({Converter.class})
 public class Transaction implements Serializable {
 
+    @PrimaryKey()
+    public int transactionId;
+
+    public static int uidCounter = 0;
+
+    @ColumnInfo(name = "date")
     Date date;
-    String description;
+
+    @ColumnInfo(name = "description")
+    public String description;
+
+    @ColumnInfo(name = "currencyType")
     String currencyType;
+
+    @ColumnInfo(name = "amount", typeAffinity = ColumnInfo.TEXT)
     BigDecimal amount;
+
+    @ColumnInfo(name = "nativeAmount", typeAffinity = ColumnInfo.TEXT)
     BigDecimal nativeAmount;
+
+    @ColumnInfo(name = "amountBonus", typeAffinity = ColumnInfo.TEXT)
+    BigDecimal amountBonus;
+
+    @ColumnInfo(name = "transactionType", typeAffinity = ColumnInfo.TEXT)
     TransactionType transactionType;
+
+    @ColumnInfo(name = "transHash")
     String transHash;
+
+    @ColumnInfo(name = "toCurrency")
     String toCurrency;
+
+    @ColumnInfo(name = "toAmount", typeAffinity = ColumnInfo.TEXT)
     BigDecimal toAmount;
 
+    @ColumnInfo(name = "walletId")
+    public int walletId;
+
+    @ColumnInfo(name = "fromWalletId")
+    public int fromWalletId;
+
+    @ColumnInfo(name = "isOutsideTransaction")
+    boolean isOutsideTransaction = false;
+
+    @Ignore
     public Transaction(String date, String description, String currencyType, BigDecimal amount, BigDecimal nativeAmount, TransactionType transactionType) {
 
         if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType);
@@ -38,6 +82,26 @@ public class Transaction implements Serializable {
         this.nativeAmount = BigDecimal.ZERO;
         this.nativeAmount = this.nativeAmount.add(nativeAmount);
         this.transactionType = transactionType;
+        this.amountBonus = BigDecimal.ZERO;
+        this.transactionId = ++uidCounter;
+    }
+
+    public Transaction(int transactionId, Date date, String description, String currencyType, BigDecimal amount, BigDecimal nativeAmount, BigDecimal amountBonus, TransactionType transactionType, String transHash, String toCurrency, BigDecimal toAmount, int walletId) {
+
+        if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType);
+
+        this.transactionId = transactionId;
+        this.date = date;
+        this.description = description;
+        this.currencyType = currencyType;
+        this.amount = amount;
+        this.nativeAmount = nativeAmount;
+        this.amountBonus = amountBonus;
+        this.transactionType = transactionType;
+        this.transHash = transHash;
+        this.toCurrency = toCurrency;
+        this.toAmount = toAmount;
+        this.walletId = walletId;
     }
 
     public Date getDate() {
@@ -86,6 +150,34 @@ public class Transaction implements Serializable {
 
     public void setToAmount(BigDecimal toAmount) {
         this.toAmount = toAmount;
+    }
+
+    public BigDecimal getAmountBonus() {
+        return amountBonus;
+    }
+
+    public void setAmountBonus(BigDecimal amountBonus) {
+        this.amountBonus = amountBonus;
+    }
+
+    public int getFromWalletId() {
+        return fromWalletId;
+    }
+
+    public void setFromWalletId(int fromWalletId) {
+        this.fromWalletId = fromWalletId;
+    }
+
+    public void setWalletId(int uid) {
+        this.walletId = uid;
+    }
+
+    public boolean isOutsideTransaction() {
+        return isOutsideTransaction;
+    }
+
+    public void setOutsideTransaction(boolean outsideTransaction) {
+        isOutsideTransaction = outsideTransaction;
     }
 
     @NonNull

@@ -2,8 +2,10 @@ package at.msd.friehs_bicha.cdcsvparser.App;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
 public class BaseApp implements Serializable {

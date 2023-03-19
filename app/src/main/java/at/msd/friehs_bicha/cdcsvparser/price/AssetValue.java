@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.price;
 
+import static java.lang.Thread.sleep;
+
 import com.litesoftwares.coingecko.CoinGeckoApiClient;
 import com.litesoftwares.coingecko.constant.Currency;
 import com.litesoftwares.coingecko.domain.Coins.*;
@@ -21,6 +23,8 @@ public class AssetValue implements Serializable {
     final List<PriceCache> cache;
     public boolean isRunning;
 
+    private int tries = 0;
+
     public AssetValue() {
         cache = new ArrayList<>();
         isRunning = true;
@@ -32,7 +36,7 @@ public class AssetValue implements Serializable {
      * @param symbol the symbol for which the price is needed
      * @return the price of the symbol
      */
-    public Double getPrice(String symbol){
+    public Double getPrice(String symbol) throws InterruptedException {
         symbol = overrideSymbol(symbol);
         double price = checkCache(symbol);
         if (price != -1.0){
@@ -41,13 +45,13 @@ public class AssetValue implements Serializable {
         }
         try {
             CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
-            client.ping();
+            //client.ping();
             if (coinMarkets == null || Instant.now().isAfter(coinMarketsCreationTime.plusSeconds(300))) {
                 coinMarkets = client.getCoinMarkets(Currency.EUR);
                 this.coinMarketsCreationTime = Instant.now();
             }
             try {
-                if (coinMarkets == null) coinMarkets = client.getCoinMarkets(Currency.EUR);
+                //if (coinMarkets == null) coinMarkets = client.getCoinMarkets(Currency.EUR);
                 for (CoinMarkets coinMarket : coinMarkets) {
                     if (coinMarket.getSymbol().contains(symbol.toLowerCase()) || coinMarket.getId().contains(symbol.toLowerCase())) {
                         cache.add(new PriceCache(symbol, coinMarket.getCurrentPrice()));
@@ -60,7 +64,18 @@ public class AssetValue implements Serializable {
             isRunning = true;
             return getPriceTheOtherWay(symbol);
         } catch (Exception e) {
+            if (e.getMessage().contains("com.litesoftwares.coingecko.exception.CoinGeckoApiException: CoinGeckoApiError(code=1015, message=Rate limited)"))
+            {
+                sleep(1000);
+                return getPrice(symbol);
+            }
+            if (tries < 3){
+                tries++;
+                sleep(1000);
+                return getPrice(symbol);
+            }
             isRunning = false;
+            tries = 0;
             return 0.0;
         }
     }

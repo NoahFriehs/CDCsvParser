@@ -11,6 +11,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
@@ -39,6 +40,20 @@ public class TxApp extends BaseApp implements Serializable {
         if (amountTxFailed > 0){
             throw new RuntimeException(amountTxFailed + " transaction(s) failed");
         }
+    }
+
+
+    public TxApp(List<Transaction> transactions, List<CDCWallet> wallets){
+        this.transactions = (ArrayList<Transaction>) transactions;
+        wallets.forEach(wallet -> {
+            wallet.setTxApp(this);
+            if (wallet.isOutsideWallet()){
+                this.outsideWallets.add(wallet);
+            }else{
+                this.wallets.add(wallet);
+            }
+        });
+        fillProcessedWallets(transactions);
     }
 
 
@@ -103,10 +118,10 @@ public class TxApp extends BaseApp implements Serializable {
      */
     private void createWallets() {
         for (String t : CurrencyType.currencys) {
-            wallets.add(new CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this));
+            wallets.add(new CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this, false));
         }
         for (String t : CurrencyType.currencys) {
-            outsideWallets.add(new CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this));
+            outsideWallets.add(new CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, this, true));
         }
     }
 
@@ -123,4 +138,20 @@ public class TxApp extends BaseApp implements Serializable {
     }
 
 
+    private void fillProcessedWallets(List<Transaction> txs)
+    {
+        for (Transaction t : txs) {
+            if (t.isOutsideTransaction())
+            {
+                outsideWallets.get((t.walletId - 1)).transactions.add(t);
+            }
+            if (t.fromWalletId == t.walletId)
+            {
+                wallets.get((t.walletId - 1)).transactions.add(t);
+            } else {
+                wallets.get((t.walletId - 1)).transactions.add(t);
+                wallets.get((t.fromWalletId - 1)).transactions.add(t);
+            }
+        }
+    }
 }

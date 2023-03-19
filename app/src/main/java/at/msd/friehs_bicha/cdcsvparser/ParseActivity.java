@@ -1,5 +1,8 @@
 package at.msd.friehs_bicha.cdcsvparser;
 
+import static java.lang.Thread.sleep;
+import static at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper.getUseAndroidDB;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -14,7 +17,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.math.BigDecimal;
 import java.util.Map;
 
+import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper;
 
 public class ParseActivity extends AppCompatActivity {
 
@@ -29,7 +34,7 @@ public class ParseActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
 
-        appModel = (AppModel) getIntent().getExtras().get("AppModel");
+        getAppModel();
 
         Button btnFilter = findViewById(R.id.btn_filter);
         Button btnTx = findViewById(R.id.btn_all_tx);
@@ -51,8 +56,27 @@ public class ParseActivity extends AppCompatActivity {
             }
         });
 
+        while (!appModel.isRunning) {
+            try {
+                sleep(500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         //trys to get the prices from api and the prints the values depending on the answer of coingeko api
         displayInformation();
+    }
+
+    private void getAppModel() {
+        if ((PreferenceHelper.getSelectedType(getApplicationContext()) == AppType.CdCsvParser) && getUseAndroidDB(getApplicationContext()))
+        {
+            appModel = new AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), getApplicationContext());
+        }
+        else
+        {
+            appModel = (AppModel) getIntent().getExtras().get("AppModel");
+        }
     }
 
 
@@ -62,7 +86,13 @@ public class ParseActivity extends AppCompatActivity {
      */
     private void displayInformation() {
         //get and set prices
-        Thread t = new Thread(() -> displayTexts(appModel.getParseMap()));
+        Thread t = new Thread(() -> {
+            try {
+                displayTexts(appModel.getParseMap());
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
         t.start();
     }
 
