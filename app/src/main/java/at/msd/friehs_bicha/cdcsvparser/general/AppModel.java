@@ -4,19 +4,6 @@ import static java.lang.Thread.sleep;
 
 import android.content.Context;
 
-import at.msd.friehs_bicha.cdcsvparser.App.AppType;
-import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp;
-import at.msd.friehs_bicha.cdcsvparser.App.TxApp;
-import at.msd.friehs_bicha.cdcsvparser.R;
-import at.msd.friehs_bicha.cdcsvparser.SettingsActivity;
-import at.msd.friehs_bicha.cdcsvparser.db.AppDatabase;
-import at.msd.friehs_bicha.cdcsvparser.price.AssetValue;
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.util.StringHelper;
-import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
-import at.msd.friehs_bicha.cdcsvparser.wallet.WalletWithTransactions;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -27,9 +14,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import at.msd.friehs_bicha.cdcsvparser.App.AppType;
+import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp;
+import at.msd.friehs_bicha.cdcsvparser.App.TxApp;
+import at.msd.friehs_bicha.cdcsvparser.R;
+import at.msd.friehs_bicha.cdcsvparser.db.AppDatabase;
+import at.msd.friehs_bicha.cdcsvparser.price.AssetValue;
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.util.StringHelper;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.WalletWithTransactions;
+
 /**
  * The parser control for the Parser
- *
  */
 public class AppModel extends BaseAppModel implements Serializable {
 
@@ -37,15 +35,16 @@ public class AppModel extends BaseAppModel implements Serializable {
 
     /**
      * Creates a new AppModel
-     *  @param file the file to parse
-     * @param appType which app to use
+     *
+     * @param file          the file to parse
+     * @param appType       which app to use
      * @param useStrictType
      */
     public AppModel(ArrayList<String> file, AppType appType, Boolean useStrictType) {
         super(appType);
         String exception = "";
         try {
-            switch(appType) {
+            switch (appType) {
                 case CdCsvParser:
                     this.txApp = new TxApp(file);
                     break;
@@ -53,14 +52,15 @@ public class AppModel extends BaseAppModel implements Serializable {
                     this.txApp = new CroCardTxApp(file, useStrictType);
                     break;
                 default:
-                    throw new RuntimeException("Usage not found");}
-        }catch (Exception e) {
+                    throw new RuntimeException("Usage not found");
+            }
+        } catch (Exception e) {
             exception = e.getMessage();
         }
         asset = new AssetValue();
         isRunning = true;
 
-        if (!exception.equals("")){
+        if (!exception.equals("")) {
             throw new RuntimeException(exception);
         }
     }
@@ -85,7 +85,7 @@ public class AppModel extends BaseAppModel implements Serializable {
 
         BigDecimal totalPrice = new BigDecimal(0);
 
-        switch(appType) {
+        switch (appType) {
             case CdCsvParser:
                 for (Wallet wallet : txApp.wallets) {
                     totalPrice = totalPrice.add(wallet.getMoneySpent());
@@ -99,7 +99,8 @@ public class AppModel extends BaseAppModel implements Serializable {
                 }
                 break;
             default:
-                throw new RuntimeException("Usage not found");}
+                throw new RuntimeException("Usage not found");
+        }
         return totalPrice;
     }
 
@@ -119,7 +120,7 @@ public class AppModel extends BaseAppModel implements Serializable {
             }
 
             return valueOfAll.get();
-        }catch (Exception e) {
+        } catch (Exception e) {
             return 0;
         }
 
@@ -138,7 +139,7 @@ public class AppModel extends BaseAppModel implements Serializable {
             valueOfAll.updateAndGet(v -> v + price * amount.doubleValue());
 
             return valueOfAll.get();
-        }catch (Exception e) {
+        } catch (Exception e) {
             return 0;
         }
     }
@@ -148,7 +149,7 @@ public class AppModel extends BaseAppModel implements Serializable {
      *
      * @return the total amount the assets are worth in EUR
      */
-    public double getValueOfAssets(){
+    public double getValueOfAssets() {
         try {
             double valueOfAll = (double) 0;
 
@@ -157,14 +158,13 @@ public class AppModel extends BaseAppModel implements Serializable {
                 double price = asset.getPrice(w.getCurrencyType());
                 BigDecimal amount = w.getAmount();
                 valueOfAll += price * amount.doubleValue();
-                if (valueOfAll < 0.0)
-                {
+                if (valueOfAll < 0.0) {
                     int i = 0;
                 }
             }
 
             return valueOfAll;
-        }catch (Exception e) {
+        } catch (Exception e) {
             return 0;
         }
     }
@@ -174,15 +174,15 @@ public class AppModel extends BaseAppModel implements Serializable {
      *
      * @return the amount the asset is worth in EUR
      */
-    public double getValueOfAssets(Wallet w){
+    public double getValueOfAssets(Wallet w) {
         try {
-        double valueOfWallet;
-        double price = asset.getPrice(w.getCurrencyType());
-        BigDecimal amount = w.getAmount();
-        valueOfWallet = price * amount.doubleValue();
+            double valueOfWallet;
+            double price = asset.getPrice(w.getCurrencyType());
+            BigDecimal amount = w.getAmount();
+            valueOfWallet = price * amount.doubleValue();
 
-        return valueOfWallet;
-        }catch (Exception e) {
+            return valueOfWallet;
+        } catch (Exception e) {
             return 0;
         }
     }
@@ -193,7 +193,7 @@ public class AppModel extends BaseAppModel implements Serializable {
         BigDecimal total = wallet.getMoneySpent().round(new MathContext(0));
 
         Map<String, String> map = new HashMap<>();
-        switch(appType) {
+        switch (appType) {
             case CdCsvParser:
                 double amountOfAsset = getValueOfAssets(wallet);
                 double rewardValue = getTotalBonus(wallet);
@@ -202,7 +202,7 @@ public class AppModel extends BaseAppModel implements Serializable {
                     map.put(String.valueOf(R.id.assets_value), Math.round(amountOfAsset * 100.0) / 100.0 + " €");
                     map.put(String.valueOf(R.id.rewards_value), Math.round(rewardValue * 100.0) / 100.0 + " €");
                     map.put(String.valueOf(R.id.profit_loss_value), Math.round((amountOfAsset - total.doubleValue()) * 100.0) / 100.0 + " €");
-                    map.put(String.valueOf(R.id.money_spent_value), total.toString() + " €");
+                    map.put(String.valueOf(R.id.money_spent_value), total + " €");
                 } else {
                     map.put(String.valueOf(R.id.assets_value), "no internet connection");
                     map.put(String.valueOf(R.id.rewards_value), "no internet connection");
@@ -266,14 +266,13 @@ public class AppModel extends BaseAppModel implements Serializable {
             }
 
             return map;
-        }catch (Exception e) {
+        } catch (Exception e) {
             return null;
         }
     }
 
 
-    public boolean setInAndroidDB(Context context)
-    {
+    public boolean setInAndroidDB(Context context) {
         Thread t = new Thread(() -> {
             try {
                 AppDatabase db = AppDatabase.getInstance(context);
@@ -304,7 +303,7 @@ public class AppModel extends BaseAppModel implements Serializable {
                 switch (appType) {
                     case CdCsvParser:
                         List<CDCWallet> ws = new ArrayList<>();
-                        wTXs.forEach(w ->{
+                        wTXs.forEach(w -> {
                             CDCWallet wallet = new CDCWallet(w.wallet);
                             ws.add(wallet);
                         });

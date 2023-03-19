@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 /**
  * Saves the currency types
- *
  */
 public class CurrencyType {
 

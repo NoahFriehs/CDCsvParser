@@ -14,15 +14,14 @@ import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    static AppType selectedType;
-    public static boolean useStrictType, useAndroidDB;
-    Spinner appTypeSpinner;
-    CheckBox useStrictTypeCheckbox, useAndroidDBCheckbox;
-
     private static final String PREFS_NAME = "settings_prefs";
     private static final String TYPE_KEY = "app_type";
     private static final String USE_STRICT_TYPE_KEY = "use_strict_app_type";
     private static final String USE_ANDROID_DB_KEY = "use_android_db_for_storage";
+    public static boolean useStrictType, useAndroidDB;
+    static AppType selectedType;
+    Spinner appTypeSpinner;
+    CheckBox useStrictTypeCheckbox, useAndroidDBCheckbox;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

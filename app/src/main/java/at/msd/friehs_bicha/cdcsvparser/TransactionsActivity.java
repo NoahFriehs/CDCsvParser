@@ -1,19 +1,17 @@
 package at.msd.friehs_bicha.cdcsvparser;
 
 import static java.lang.Thread.sleep;
-
 import static at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper.getUseAndroidDB;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import java.util.ArrayList;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.util.List;
 
 import at.msd.friehs_bicha.cdcsvparser.App.AppType;
@@ -57,12 +55,9 @@ public class TransactionsActivity extends AppCompatActivity {
 
 
     private void getAppModel() {
-        if ((PreferenceHelper.getSelectedType(getApplicationContext()) == AppType.CdCsvParser) && getUseAndroidDB(getApplicationContext()))
-        {
+        if ((PreferenceHelper.getSelectedType(getApplicationContext()) == AppType.CdCsvParser) && getUseAndroidDB(getApplicationContext())) {
             appModel = new AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), getApplicationContext());
-        }
-        else
-        {
+        } else {
             appModel = (AppModel) getIntent().getExtras().get("AppModel");
         }
     }

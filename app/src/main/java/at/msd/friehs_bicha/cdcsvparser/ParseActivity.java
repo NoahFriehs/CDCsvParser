@@ -14,7 +14,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
 import at.msd.friehs_bicha.cdcsvparser.App.AppType;
@@ -69,12 +68,9 @@ public class ParseActivity extends AppCompatActivity {
     }
 
     private void getAppModel() {
-        if ((PreferenceHelper.getSelectedType(getApplicationContext()) == AppType.CdCsvParser) && getUseAndroidDB(getApplicationContext()))
-        {
+        if ((PreferenceHelper.getSelectedType(getApplicationContext()) == AppType.CdCsvParser) && getUseAndroidDB(getApplicationContext())) {
             appModel = new AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), getApplicationContext());
-        }
-        else
-        {
+        } else {
             appModel = (AppModel) getIntent().getExtras().get("AppModel");
         }
     }
@@ -82,7 +78,6 @@ public class ParseActivity extends AppCompatActivity {
 
     /**
      * Displays the prices of all assets
-     *
      */
     private void displayInformation() {
         //get and set prices
@@ -105,7 +100,7 @@ public class ParseActivity extends AppCompatActivity {
     private void displayTexts(Map<String, String> texts) {
         texts.forEach((key, value) -> {
             TextView textView = findViewById(getResources().getIdentifier(key, "id", getPackageName()));
-            if (value == null){
+            if (value == null) {
                 ParseActivity.this.runOnUiThread(() -> textView.setVisibility(View.INVISIBLE));
             } else {
                 ParseActivity.this.runOnUiThread(() -> textView.setText(value));

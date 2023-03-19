@@ -1,9 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.App;
 
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
-import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
-import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
-import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
+import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -14,11 +11,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import static at.msd.friehs_bicha.cdcsvparser.util.Converter.ttConverter;
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
+import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType;
+import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet;
 
 /**
  * The main class of the parser
- *
  */
 public class TxApp extends BaseApp implements Serializable {
 
@@ -37,19 +36,19 @@ public class TxApp extends BaseApp implements Serializable {
         System.out.println("We have " + transactions.size() + " transaction(s).");
         createWallets();
         fillWallet(transactions);
-        if (amountTxFailed > 0){
+        if (amountTxFailed > 0) {
             throw new RuntimeException(amountTxFailed + " transaction(s) failed");
         }
     }
 
 
-    public TxApp(List<Transaction> transactions, List<CDCWallet> wallets){
+    public TxApp(List<Transaction> transactions, List<CDCWallet> wallets) {
         this.transactions = (ArrayList<Transaction>) transactions;
         wallets.forEach(wallet -> {
             wallet.setTxApp(this);
-            if (wallet.isOutsideWallet()){
+            if (wallet.isOutsideWallet()) {
                 this.outsideWallets.add(wallet);
-            }else{
+            } else {
                 this.wallets.add(wallet);
             }
         });
@@ -65,7 +64,7 @@ public class TxApp extends BaseApp implements Serializable {
      * @throws IllegalArgumentException when the file is not supported
      */
     private ArrayList<Transaction> getTransactions(ArrayList<String> input) {
-        if (!Objects.equals(input.get(0), "Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash")){
+        if (!Objects.equals(input.get(0), "Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash")) {
             throw new IllegalArgumentException("This file seems to be not supported yet.");
         }
         input.remove(0);
@@ -92,7 +91,7 @@ public class TxApp extends BaseApp implements Serializable {
                     } else {
                         t = new Transaction(sa[0], sa[1], sa[2], (BigDecimal) decimalFormat.parse(sa[3]), (BigDecimal) decimalFormat.parse(sa[7]), ttConverter(sa[9]));
                     }
-                    if (sa.length ==  11) t.setTransHash(sa[10]);
+                    if (sa.length == 11) t.setTransHash(sa[10]);
                     if (ttConverter(sa[9]) == TransactionType.viban_purchase) {
                         t.setToCurrency(sa[4]);
                         t.setToAmount(BigDecimal.valueOf(Double.parseDouble(sa[5])));
@@ -114,7 +113,6 @@ public class TxApp extends BaseApp implements Serializable {
 
     /**
      * Creates Wallets for every CurrencyType
-     *
      */
     private void createWallets() {
         for (String t : CurrencyType.currencys) {
@@ -138,15 +136,12 @@ public class TxApp extends BaseApp implements Serializable {
     }
 
 
-    private void fillProcessedWallets(List<Transaction> txs)
-    {
+    private void fillProcessedWallets(List<Transaction> txs) {
         for (Transaction t : txs) {
-            if (t.isOutsideTransaction())
-            {
+            if (t.isOutsideTransaction()) {
                 outsideWallets.get((t.walletId - 1)).transactions.add(t);
             }
-            if (t.fromWalletId == t.walletId)
-            {
+            if (t.fromWalletId == t.walletId) {
                 wallets.get((t.walletId - 1)).transactions.add(t);
             } else {
                 wallets.get((t.walletId - 1)).transactions.add(t);

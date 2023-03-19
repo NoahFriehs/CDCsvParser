@@ -18,32 +18,14 @@ import at.msd.friehs_bicha.cdcsvparser.util.Converter;
 
 /**
  * Represents a basic Wallet
- *
  */
 @Entity(tableName = "wallet")
 @TypeConverters({Converter.class})
 public class Wallet implements Serializable {
 
+    public static int uidCounter = 0;
     @PrimaryKey()
     public int walletId;
-
-    public static int uidCounter = 0;
-
-    @ColumnInfo(name = "currencyType")
-        String currencyType;
-
-    @ColumnInfo(name = "amount", typeAffinity = ColumnInfo.TEXT)
-    BigDecimal amount;
-
-    @ColumnInfo(name = "amountBonus", typeAffinity = ColumnInfo.TEXT)
-    BigDecimal amountBonus;
-
-    @ColumnInfo(name = "moneySpent", typeAffinity = ColumnInfo.TEXT)
-    BigDecimal moneySpent;
-
-    @ColumnInfo(name = "isOutsideWallet")
-    Boolean isOutsideWallet = false;
-
     @Relation(
             parentColumn = "walletId",
             entityColumn = "transactionId",
@@ -51,9 +33,19 @@ public class Wallet implements Serializable {
     )
     @Ignore
     public List<Transaction> transactions;
+    @ColumnInfo(name = "currencyType")
+    String currencyType;
+    @ColumnInfo(name = "amount", typeAffinity = ColumnInfo.TEXT)
+    BigDecimal amount;
+    @ColumnInfo(name = "amountBonus", typeAffinity = ColumnInfo.TEXT)
+    BigDecimal amountBonus;
+    @ColumnInfo(name = "moneySpent", typeAffinity = ColumnInfo.TEXT)
+    BigDecimal moneySpent;
+    @ColumnInfo(name = "isOutsideWallet")
+    Boolean isOutsideWallet = false;
 
     @Ignore
-    public Wallet(String  currencyType, BigDecimal amount, BigDecimal nativeAmount) {
+    public Wallet(String currencyType, BigDecimal amount, BigDecimal nativeAmount) {
         this.currencyType = currencyType;
         this.amount = new BigDecimal(0);
         this.amount = this.amount.add(amount);
