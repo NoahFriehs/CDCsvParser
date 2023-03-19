@@ -18,9 +18,15 @@ public class CDCWallet extends Wallet implements Serializable {
     TxApp txApp;
 
 
-    public CDCWallet(String  currencyType, BigDecimal amount, BigDecimal nativeAmount, TxApp txApp) {
+    public CDCWallet(String  currencyType, BigDecimal amount, BigDecimal nativeAmount, TxApp txApp, Boolean isOutsideWallet) {
         super(currencyType, amount, nativeAmount);
         this.txApp = txApp;
+        this.isOutsideWallet = isOutsideWallet;
+    }
+
+    public CDCWallet(Wallet wallet)
+    {
+        super(wallet);
     }
 
     /**
@@ -52,6 +58,20 @@ public class CDCWallet extends Wallet implements Serializable {
         this.amountBonus = this.amountBonus.add(amountBonus);
     }
 
+    /**
+     * Add a transaction to the CDCWallet
+     *
+     * @param transaction the transaction to be added
+     */
+    public void addToWallet(Transaction transaction) {
+        this.amount = this.amount.add(transaction.getAmount());
+        this.moneySpent = this.moneySpent.add(transaction.getNativeAmount());
+        this.amountBonus = this.amountBonus.add(transaction.getAmountBonus());
+        //transaction.setWalletIdFk(this.uid);
+        if (!this.transactions.contains(transaction)) {
+            this.transactions.add(transaction);
+        }
+    }
 
     /**
      * Remove a transaction from the CDCWallet
@@ -75,13 +95,16 @@ public class CDCWallet extends Wallet implements Serializable {
         //transactions.add(transaction);
         TransactionType t = transaction.getTransactionType();
         CDCWallet w = (CDCWallet) txApp.wallets.get(getWallet(transaction.getCurrencyType()));
+        transaction.setFromWalletId(w.walletId);
+        transaction.setWalletId(w.walletId);
         if (!w.transactions.contains(transaction)) {
             w.transactions.add(transaction);
         }
         switch (t) {
             case crypto_purchase:
             case dust_conversion_credited:
-                w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
+                //w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
+                w.addToWallet(transaction);
 
             case supercharger_deposit:
             case crypto_earn_program_created:
@@ -101,7 +124,9 @@ public class CDCWallet extends Wallet implements Serializable {
             case admin_wallet_credited:
             case crypto_wallet_swap_credited:
             case crypto_wallet_swap_debited:
-                w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
+                //w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
+                transaction.setAmountBonus(transaction.getAmount());
+                w.addToWallet(transaction);
                 break;
             case viban_purchase:
                 vibanPurchase(transaction);
@@ -138,6 +163,7 @@ public class CDCWallet extends Wallet implements Serializable {
             wt.transactions.add(transaction);
         }
         wt.removeFromWallet(transaction.getAmount(), BigDecimal.ZERO);
+        transaction.setOutsideTransaction(true);
     }
 
     /**
@@ -153,8 +179,19 @@ public class CDCWallet extends Wallet implements Serializable {
 
         CDCWallet wv = (CDCWallet) txApp.wallets.get(getWallet(transaction.getToCurrency()));
         wv.addToWallet(transaction.getToAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
+        //wv.addToWallet(transaction);
+        transaction.setWalletId(wv.walletId);
+            if (!this.transactions.contains(transaction)) {
+                this.transactions.add(transaction);
+            }
         }
     }
 
+    public TxApp getTxApp() {
+        return txApp;
+    }
 
+    public void setTxApp(TxApp txApp) {
+        this.txApp = txApp;
+    }
 }

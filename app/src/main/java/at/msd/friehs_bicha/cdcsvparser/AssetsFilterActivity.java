@@ -1,5 +1,9 @@
 package at.msd.friehs_bicha.cdcsvparser;
 
+import static java.lang.Thread.sleep;
+
+import static at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper.getUseAndroidDB;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,6 +25,7 @@ import java.util.Map;
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper;
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet;
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
 
@@ -47,10 +52,18 @@ public class AssetsFilterActivity extends AppCompatActivity {
         Spinner dropdown = findViewById(R.id.asset_spinner);
         //create a list of items for the spinner.
 
-        appModel = (AppModel) getIntent().getExtras().get("AppModel");
+        getAppModel();
 
         //test Internet connection
         //testConnection();
+
+        while (!appModel.isRunning) {
+            try {
+                sleep(500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         // make List with all Wallets
         String[] items = getWalletNames();
@@ -91,6 +104,18 @@ public class AssetsFilterActivity extends AppCompatActivity {
 
 
 
+    }
+
+
+    private void getAppModel() {
+        if ((PreferenceHelper.getSelectedType(getApplicationContext()) == AppType.CdCsvParser) && getUseAndroidDB(getApplicationContext()))
+        {
+            appModel = new AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), getApplicationContext());
+        }
+        else
+        {
+            appModel = (AppModel) getIntent().getExtras().get("AppModel");
+        }
     }
 
 
