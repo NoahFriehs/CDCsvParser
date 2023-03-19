@@ -16,10 +16,9 @@ public class BaseAppModel implements Serializable {
     /**
      * Creates a new AppModel
      *
-     * @param file the file to parse
      * @param appType which app to use
      */
-    public BaseAppModel(ArrayList<String> file, AppType appType) {
+    public BaseAppModel(AppType appType) {
         this.appType = appType;
     }
 

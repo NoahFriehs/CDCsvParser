@@ -119,6 +119,7 @@ public class CroCardWallet extends Wallet implements Serializable {
      * @param nativeAmount the amount in native currency to remove
      * @deprecated use {@link #removeFromWallet(Transaction)} instead
      */
+    @Deprecated
     public void removeFromWallet(BigDecimal amount, BigDecimal nativeAmount) {
         this.amount = this.amount.subtract(amount);
         this.moneySpent = this.moneySpent.subtract(nativeAmount);

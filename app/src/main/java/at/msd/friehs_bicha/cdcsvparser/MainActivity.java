@@ -27,9 +27,14 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
+import at.msd.friehs_bicha.cdcsvparser.db.AppDatabase;
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper;
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet;
+import at.msd.friehs_bicha.cdcsvparser.wallet.WalletWithTransactions;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -69,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
         }else{
             setSpinner(dropdown);
 
-
             btnHistory.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -78,10 +82,8 @@ public class MainActivity extends AppCompatActivity {
 
             });
         }
-
-
-
     }
+
 
     /**
      * gets all files from internal file storage and updates it
@@ -260,6 +262,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void callParseView() {
+        saveToDB();
         Intent intent = new Intent(MainActivity.this, ParseActivity.class);
         intent.putExtra("AppModel", appModel);
         startActivity(intent);
@@ -347,5 +350,11 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
             startActivity(intent);
         });
+    }
+
+
+    private boolean saveToDB()
+    {
+        return appModel.setInAndroidDB(getApplicationContext());
     }
 }
