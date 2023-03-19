@@ -1,7 +1,10 @@
 package at.msd.friehs_bicha.cdcsvparser.util;
 
+import androidx.room.TypeConverter;
+
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType;
 
+import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -63,6 +66,48 @@ public class Converter {
             System.out.println(s);
             return null;
         }
+    }
+
+
+    /**
+     * Converts a BigDecimal to a Double
+     */
+    @TypeConverter
+    public static Double bdToDouble(BigDecimal bd) {
+        return bd.doubleValue();
+    }
+
+
+    /**
+     * Converts a BigDecimal to a String
+     * @param value the BigDecimal to be converted
+     * @return the String of the BigDecimal
+     */
+    @TypeConverter
+    public static String toString(BigDecimal value) {
+        return value == null ? null : value.toString();
+    }
+
+
+    /**
+     * Converts a String to a BigDecimal
+     * @param value the String to be converted
+     * @return the BigDecimal of the String
+     */
+    @TypeConverter
+    public static BigDecimal toBigDecimal(String value) {
+        return value == null ? null : new BigDecimal(value);
+    }
+
+
+    @TypeConverter
+    public static Date fromTimestamp(Long value) {
+        return value == null ? null : new Date(value);
+    }
+
+    @TypeConverter
+    public static Long dateToTimestamp(Date date) {
+        return date == null ? null : date.getTime();
     }
 
 }

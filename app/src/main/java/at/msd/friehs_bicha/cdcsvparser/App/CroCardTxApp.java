@@ -91,7 +91,7 @@ public class CroCardTxApp extends BaseApp implements Serializable {
     }
 
     public ArrayList<Wallet> getWallets() {
-        return wallets;
+        return (ArrayList<Wallet>) wallets;
     }
 
     public void setWallets(ArrayList<Wallet> wallets) {

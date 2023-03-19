@@ -1,5 +1,9 @@
 package at.msd.friehs_bicha.cdcsvparser;
 
+import static java.lang.Thread.sleep;
+
+import static at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper.getUseAndroidDB;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,8 +16,10 @@ import android.widget.ListView;
 import java.util.ArrayList;
 import java.util.List;
 
+import at.msd.friehs_bicha.cdcsvparser.App.AppType;
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel;
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction;
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper;
 
 public class TransactionsActivity extends AppCompatActivity {
 
@@ -30,7 +36,14 @@ public class TransactionsActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
 
-        appModel = (AppModel) getIntent().getExtras().get("AppModel");
+        getAppModel();
+        while (!appModel.isRunning) {
+            try {
+                sleep(500);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
         List<Transaction> mTransactionList = appModel.txApp.transactions;
 
 
@@ -41,6 +54,19 @@ public class TransactionsActivity extends AppCompatActivity {
         // Set the adapter on the ListView
         listView.setAdapter(adapter);
     }
+
+
+    private void getAppModel() {
+        if ((PreferenceHelper.getSelectedType(getApplicationContext()) == AppType.CdCsvParser) && getUseAndroidDB(getApplicationContext()))
+        {
+            appModel = new AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), getApplicationContext());
+        }
+        else
+        {
+            appModel = (AppModel) getIntent().getExtras().get("AppModel");
+        }
+    }
+
 
     /**
      * Set the back button in action bar
