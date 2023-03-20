@@ -1,5 +1,7 @@
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
 }
 
 android {
@@ -33,9 +35,17 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'com.google.android.material:material:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.room:room-runtime:2.4.2'
+    //implementation 'androidx.room:room-runtime:2.4.2'
+    implementation 'androidx.core:core-ktx:1.8.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.4'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
-    annotationProcessor 'androidx.room:room-compiler:2.4.2'
+    //annotationProcessor 'androidx.room:room-compiler:2.4.2'
+    // Room
+    //implementation "android.arch.persistence.room:runtime:1.0.0"
+    //kapt "android.arch.persistence.room:compiler:1.0.0"
+    def room_version = "2.3.0" // check latest version from docs
+
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
 }
