@@ -260,6 +260,7 @@ public class AppModel extends BaseAppModel implements Serializable {
                     map.put(String.valueOf(R.id.assets_value_label), null);
                     map.put(String.valueOf(R.id.rewards_label), null);
                     map.put(String.valueOf(R.id.profit_loss_label), null);
+                    map.put(String.valueOf(R.id.coinGeckoApiLabel), null);
                     break;
                 default:
                     throw new RuntimeException("Usage not found");
