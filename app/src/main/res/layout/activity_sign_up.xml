@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".SignUpActivity">
+
+    <TextView
+        android:id="@+id/tv_email"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="16dp"
+        android:text="Email"
+        android:textAppearance="@android:style/TextAppearance.Medium" />
+
+    <EditText
+        android:id="@+id/et_email"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tv_email"
+        android:layout_marginTop="8dp"
+        android:inputType="textEmailAddress" />
+
+    <TextView
+        android:id="@+id/tv_password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/et_email"
+        android:layout_marginTop="16dp"
+        android:text="Password"
+        android:textAppearance="@android:style/TextAppearance.Medium" />
+
+    <EditText
+        android:id="@+id/et_password"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tv_password"
+        android:layout_marginTop="8dp"
+        android:inputType="textPassword" />
+
+    <Button
+        android:id="@+id/btn_signup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/et_password"
+        android:layout_marginTop="16dp"
+        android:text="Sign Up" />
+
+    <TextView
+        android:id="@+id/tv_error_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btn_signup"
+        android:layout_marginTop="16dp"
+        android:textColor="@color/design_default_color_error"
+        android:textStyle="bold" />
+
+</RelativeLayout>

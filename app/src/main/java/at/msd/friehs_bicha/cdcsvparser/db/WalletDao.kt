@@ -10,8 +10,8 @@ interface WalletDao {
     @get:Query("SELECT * FROM wallet")
     val all: List<WalletWithTransactions?>?
 
-    @Query("SELECT * FROM wallet WHERE walletId IN (:walletIds)")
-    fun loadAllByIds(walletIds: IntArray?): List<WalletWithTransactions?>?
+    //@Query("SELECT * FROM wallet WHERE walletId IN (:walletIds)")
+    //fun loadAllByIds(walletIds: IntArray?): List<WalletWithTransactions?>?
 
     @Transaction
     @Insert(onConflict = OnConflictStrategy.REPLACE)

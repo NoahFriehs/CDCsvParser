@@ -11,12 +11,28 @@ import android.widget.Button
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import at.msd.friehs_bicha.cdcsvparser.App.AppType
+import at.msd.friehs_bicha.cdcsvparser.App.TxApp
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
+import at.msd.friehs_bicha.cdcsvparser.transactions.DBTransaction
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
+import at.msd.friehs_bicha.cdcsvparser.wallet.DBWallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.ktx.app
 import java.io.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class MainActivity : AppCompatActivity() {
     var context: Context? = null
@@ -35,7 +51,9 @@ class MainActivity : AppCompatActivity() {
         val dropdown = findViewById<Spinner>(R.id.spinner_history)
         val btnParse = findViewById<Button>(R.id.btn_parse)
         val btnHistory = findViewById<Button>(R.id.btn_history)
+        val btnLoadFromDB = findViewById<Button>(R.id.btn_loadFromDb)
         btnParse.setOnClickListener { view -> onBtnUploadClick(view) }
+        btnLoadFromDB.setOnClickListener { loadFromFireBaseDB()}
         settingsButton()
         updateFiles()
 
@@ -209,8 +227,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun callParseView() {
-        saveToDB()
+    private fun callParseView(saveToDB: Boolean = true) {
+        //saveToDB()
+        if (saveToDB) saveToFireBaseDB()
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
         intent.putExtra("AppModel", appModel)
         startActivity(intent)
@@ -309,4 +328,125 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val PICKFILE_REQUEST_CODE = 1
     }
+
+
+    private fun saveToFireBaseDB()
+    {
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        //val database = FirebaseDatabase.getInstance()
+        val db = Firebase.firestore
+        //val userRef = database.reference.child(uid) //do it like this: FirebaseDatabase.getInstance("D-BLINK).getReference("user").child(uid)
+        // Add data to the txApp object
+        val txApp = appModel!!.txApp!!
+
+        //TEST CALL
+        //database.getReference("user").child("test").setValue("test")
+
+        val dbWallets = ArrayList<DBWallet>()
+        val dboutsideWallets = ArrayList<DBWallet>()
+        val dbTransactions = ArrayList<DBTransaction>()
+        txApp.wallets.forEach() {
+            dbWallets.add(DBWallet(it))
+        }
+        txApp.outsideWallets.forEach() {
+            dboutsideWallets.add(DBWallet(it))
+        }
+        txApp.transactions.forEach() {
+            dbTransactions.add(DBTransaction(it))
+        }
+
+
+        val txAppMap = hashMapOf<String, Any>(
+            "wallets" to dbWallets,
+            "outsideWallets" to dboutsideWallets,
+            "transactions" to dbTransactions,
+            "amountTxFailed" to txApp.amountTxFailed,
+            "appType" to PreferenceHelper.getSelectedType(this)
+        )
+
+        //db.collection("user").document(uid).delete()
+
+        db.collection("user").document(uid).set(txAppMap).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                // Data saved successfully
+            } else {
+                // Handle database error
+                val a = 0
+            }
+        }
+        /*userRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                val txAppMap = dataSnapshot.value as HashMap<String, Any>?
+                if (txAppMap != null) {
+                    val dbWallets = txAppMap["wallets"] as ArrayList<DBWallet?>? ?: ArrayList()
+                    val dbOutsideWallets = txAppMap["outsideWallets"] as ArrayList<DBWallet?>? ?: ArrayList()
+                    val dbTransactions = txAppMap["transactions"] as ArrayList<DBTransaction>? ?: ArrayList()
+                    appModel!!.txApp?.amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
+                    // Do something with the txApp object
+                    //txApp.wallets.clear()
+                    //txApp.outsideWallets.clear()
+                    //txApp.transactions.clear()
+                    /*dbWallets.forEach() {
+                        txApp.wallets.add(Wallet(it!!))
+                    }
+                    dbOutsideWallets.forEach() {
+                        txApp.outsideWallets.add(Wallet(it!!))
+                    }
+                    dbTransactions.forEach() {
+                        txApp.transactions.add(Transaction(it))
+                    }*/
+                }
+            }
+        })*/
+    }
+
+    private fun loadFromFireBaseDB() {
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        //val database = FirebaseDatabase.getInstance()
+        val db = Firebase.firestore
+        // Add data to the txApp object
+
+        val document = db.collection("user").document(uid)
+
+        document.get().addOnSuccessListener { document ->
+            if (true/*task.isSuccessful*/) {
+                //val document = task.result
+                if (document != null) {
+                    val txAppMap = document.data as HashMap<String, Any>?
+                    if (txAppMap != null) {
+                        val dbWallets = txAppMap["wallets"] //as ArrayList<DBWallet>? ?: ArrayList()
+                        val dbOutsideWallets =
+                            txAppMap["outsideWallets"] //as ArrayList<DBWallet>? ?: ArrayList()
+                        val dbTransactions =
+                            txAppMap["transactions"] //as ArrayList<DBTransaction>? ?: ArrayList()
+                        val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
+                        val appTypeString = txAppMap["appType"] as String? ?: ""
+                        val appType = AppType.valueOf(appTypeString)
+                        // Do something with the txApp object
+                        this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
+                            dbOutsideWallets as ArrayList<HashMap<String, *>>?,
+                            dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)
+                        callParseView(false)
+                    }
+                    else
+                    {
+                        // Handle database error
+                        val a = 0
+                    }
+                }
+                else
+                {
+                    // Handle database error
+                    val a = 0
+                }
+            }
+            else {
+                // Handle database error
+                val a = 0
+            }
+        }.addOnFailureListener { exception ->
+            val a = 0
+        }
+    }
+
 }

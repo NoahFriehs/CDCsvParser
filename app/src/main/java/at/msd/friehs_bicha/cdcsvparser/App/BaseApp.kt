@@ -8,5 +8,5 @@ open class BaseApp : Serializable {
     open var wallets = ArrayList<Wallet?>()
     var outsideWallets = ArrayList<Wallet?>()
     open var transactions = ArrayList<Transaction>()
-    var amountTxFailed = 0
+    var amountTxFailed : Long = 0
 }

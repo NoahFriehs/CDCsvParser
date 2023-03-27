@@ -24,7 +24,7 @@ class TxApp : BaseApp, Serializable {
      */
     constructor(file: ArrayList<String>) {
         transactions = try {
-            getTransactions(file)
+            transactionsFromList(file)
         } catch (e: Exception) {
             throw IllegalArgumentException("This file seems to be not supported yet.")
         }
@@ -49,6 +49,18 @@ class TxApp : BaseApp, Serializable {
         fillProcessedWallets(transactions)
     }
 
+    constructor(tXs: MutableList<Transaction>, wTXs: MutableList<CDCWallet>, wTXsOutside: MutableList<CDCWallet>, amountTxFailed: Long)
+    {
+        this.transactions = tXs as ArrayList<Transaction>
+        wTXs.forEach(Consumer { wallet: CDCWallet ->
+            wallet.txApp = this
+        })
+        this.wallets = ArrayList(wTXs)
+        this.outsideWallets = ArrayList(wTXsOutside)
+        this.amountTxFailed = amountTxFailed
+        //fillProcessedWallets(transactions)
+    }
+
     /**
      * Csv file to Transaction list
      *
@@ -56,7 +68,7 @@ class TxApp : BaseApp, Serializable {
      * @return Transactions list
      * @throws IllegalArgumentException when the file is not supported
      */
-    private fun getTransactions(input: ArrayList<String>): ArrayList<Transaction> {
+    private fun transactionsFromList(input: ArrayList<String>): ArrayList<Transaction> {
         require(input[0] == "Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash") { "This file seems to be not supported yet." }
         input.removeAt(0)
         val transactions = ArrayList<Transaction>()

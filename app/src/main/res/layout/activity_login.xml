@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tv_email"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/email"
+        android:textSize="18sp"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"/>
+
+    <EditText
+        android:id="@+id/et_email"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tv_email"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
+        android:inputType="textEmailAddress"/>
+
+    <TextView
+        android:id="@+id/tv_password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/password"
+        android:textSize="18sp"
+        android:layout_below="@id/et_email"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"/>
+
+    <EditText
+        android:id="@+id/et_password"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tv_password"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
+        android:inputType="textPassword"/>
+
+    <Button
+        android:id="@+id/btn_login"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/et_password"
+        android:text="@string/login"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="20dp"/>
+
+    <TextView
+        android:id="@+id/btn_signup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/signup"
+        android:textSize="16sp"
+        android:layout_below="@id/btn_login"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"/>
+
+    <TextView
+        android:id="@+id/tv_error_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btn_signup"
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="16sp"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"/>
+
+</RelativeLayout>

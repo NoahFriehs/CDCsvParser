@@ -109,7 +109,7 @@ class AssetsFilterActivity : AppCompatActivity() {
         val t1 = Thread {
             try {
                 appModel!!.valueOfAssets
-                AppModel.Companion.asset.isRunning = true
+                appModel!!.asset.isRunning = true
             } catch (e: Exception) {
                 println("no internet connection")
             }
@@ -158,7 +158,7 @@ class AssetsFilterActivity : AppCompatActivity() {
     private fun displayTxs(specificWallet: Wallet?) {
         // Get a reference to the ListView
         val listView = findViewById<ListView>(R.id.lv_txs)
-        val transactions: List<Transaction?>? = specificWallet!!.getTransactions()
+        val transactions: List<Transaction?>? = specificWallet!!.transactions
 
         val transactionsStringList: MutableList<String?> = ArrayList()
         for (tx in transactions!!) {

@@ -96,6 +96,29 @@ open class Wallet : Serializable {
         isOutsideWallet = wallet.isOutsideWallet
     }
 
+    constructor(wallet: DBWallet?) {
+        walletId = wallet!!.walletId.toInt()
+        currencyType = wallet.currencyType
+        amount = BigDecimal(wallet.amount)
+        amountBonus = BigDecimal(wallet.amountBonus)
+        moneySpent = BigDecimal(wallet.moneySpent)
+        wallet.transactions?.forEach { transaction ->
+            transactions?.add(transaction?.let { Transaction(it) }) }
+        if (transactions == null) transactions = ArrayList()
+        isOutsideWallet = wallet.isOutsideWallet
+    }
+
+    constructor(walletId: Long, currencyType: String?, amount: Double, amountBonus: Double, moneySpent: Double, outsideWallet: Boolean, transactions: ArrayList<Transaction?>)
+    {
+        this.walletId = walletId.toInt()
+        this.currencyType = currencyType
+        this.amount = BigDecimal(amount)
+        this.amountBonus = BigDecimal(amountBonus)
+        this.moneySpent = BigDecimal(moneySpent)
+        this.transactions = transactions
+        this.isOutsideWallet = outsideWallet
+    }
+
     /**
      * Get Wallet from CurrencyType String
      *
@@ -126,9 +149,6 @@ open class Wallet : Serializable {
         throw UnsupportedOperationException()
     }
 
-    fun getTransactions(): ArrayList<Transaction?>? {
-        return transactions as ArrayList<Transaction?>?
-    }
 
     companion object {
         var uidCounter = 0

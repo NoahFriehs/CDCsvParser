@@ -91,6 +91,56 @@ open class Transaction : Serializable {
         this.walletId = walletId
     }
 
+    constructor(transaction: DBTransaction) {
+        if (!CurrencyType.currencys.contains(transaction.currencyType)) CurrencyType.currencys.add(transaction.currencyType)
+        this.transactionId = transaction.transactionId.toInt()
+        this.date = transaction.date
+        this.description = transaction.description
+        this.currencyType = transaction.currencyType
+        this.amount = BigDecimal(transaction.amount)
+        this.nativeAmount = BigDecimal(transaction.nativeAmount)
+        this.amountBonus = transaction.amountBonus?.let { BigDecimal(it) }
+        this.transactionType = transaction.transactionType
+        this.transHash = transaction.transHash
+        this.toCurrency = transaction.toCurrency
+        this.toAmount = transaction.toAmount?.let { BigDecimal(it) }
+        this.walletId = transaction.walletId
+    }
+
+    constructor(
+        transactionId: Long,
+        description: String,
+        walletId: Int,
+        fromWalletId: Int,
+        date: Date?,
+        currencyType: String,
+        amount: Double,
+        nativeAmount: Double,
+        amountBonus: Double,
+        transactionType: TransactionType?,
+        transHash: String?,
+        toCurrency: String?,
+        toAmount: Double?,
+        outsideTransaction: Boolean
+    )
+    {
+        if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType)
+        this.transactionId = transactionId.toInt()
+        this.date = date
+        this.description = description
+        this.currencyType = currencyType
+        this.amount = BigDecimal(amount)
+        this.nativeAmount = BigDecimal(nativeAmount)
+        this.amountBonus = BigDecimal(amountBonus)
+        this.transactionType = transactionType
+        this.transHash = transHash
+        this.toCurrency = toCurrency
+        this.toAmount = toAmount?.let { BigDecimal(it) }
+        this.walletId = walletId
+        this.fromWalletId = fromWalletId
+        this.isOutsideTransaction = outsideTransaction
+    }
+
     fun setWalletId(uid: Int) {
         walletId = uid
     }

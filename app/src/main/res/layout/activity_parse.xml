@@ -21,7 +21,7 @@
         android:textColor="@color/black"
         />
     <TextView
-        android:id="@+id/assets_value"
+        android:id="@+id/assets_valueP"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/euro_sign"
@@ -42,7 +42,7 @@
         android:text="@string/money_spent_label"
         android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/assets_value"
+        app:layout_constraintTop_toBottomOf="@id/assets_valueP"
         android:layout_marginTop="14dp"
         android:layout_marginStart="14dp"
         android:textAlignment="center"

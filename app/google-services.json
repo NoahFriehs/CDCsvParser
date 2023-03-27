@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "670495312727",
+    "project_id": "cdcsv-parser",
+    "storage_bucket": "cdcsv-parser.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:670495312727:android:a69f88a19509085471cc12",
+        "android_client_info": {
+          "package_name": "at.msd.friehs_bicha.cdcsvparser"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "670495312727-7j60hsbroe2nbtulvigd93e029e5moe3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHuNv3KxqP90lANTOd_6CuHg_ElLlTkM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "670495312727-7j60hsbroe2nbtulvigd93e029e5moe3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

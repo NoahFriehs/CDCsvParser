@@ -19,6 +19,18 @@ class CDCWallet : Wallet, Serializable {
 
     constructor(wallet: Wallet?) : super(wallet) {}
 
+    constructor(DBWallet: DBWallet?) : super(DBWallet) {}
+    constructor(walletId: Long, currencyType: String?, amount: Double, amountBonus: Double, moneySpent: Double, outsideWallet: Boolean, transactions: ArrayList<Transaction?>): super(currencyType, BigDecimal(amount), BigDecimal(moneySpent))
+    {
+        this.walletId = walletId.toInt()
+        this.currencyType = currencyType
+        this.amount = BigDecimal(amount)
+        this.amountBonus = BigDecimal(amountBonus)
+        this.moneySpent = BigDecimal(moneySpent)
+        this.transactions = transactions
+        this.isOutsideWallet = outsideWallet
+    }
+
     /**
      * Get CDCWallet from CurrencyType String
      *

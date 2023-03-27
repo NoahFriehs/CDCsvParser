@@ -30,6 +30,9 @@ class AssetValue : Serializable {
      */
     @Throws(InterruptedException::class)
     fun getPrice(symbol: String?): Double? {
+        val prices = StaticPrices()
+        prices.setPrices()
+        return prices.prices[symbol]    //TODO!!!! replace with real data
         var symbol = symbol
         symbol = overrideSymbol(symbol)
         val price = checkCache(symbol)
@@ -56,8 +59,9 @@ class AssetValue : Serializable {
                 println("|" + e.message)
             }
             isRunning = true
-            getPriceTheOtherWay(symbol)
+            return getPriceTheOtherWay(symbol)
         } catch (e: Exception) {
+            print(e.message)
             if (e.message!!.contains("com.litesoftwares.coingecko.exception.CoinGeckoApiException: CoinGeckoApiError(code=1015, message=Rate limited)")) {
                 Thread.sleep(1000)
                 return getPrice(symbol)
@@ -83,7 +87,7 @@ class AssetValue : Serializable {
         val client: CoinGeckoApiClient = CoinGeckoApiClientImpl()
         if (coinLists == null) coinLists = client.coinList
         for (coinList in coinLists!!) {
-            if (coinList.symbol.contains(symbol!!.lowercase(Locale.getDefault())) || coinList.id.contains(symbol.lowercase(Locale.getDefault())) || coinList.name.contains(symbol.lowercase(Locale.getDefault()))) {
+            if (coinList.symbol.lowercase().contains(symbol!!.lowercase(Locale.getDefault())) || coinList.id.lowercase().contains(symbol.lowercase(Locale.getDefault())) || coinList.name.lowercase().contains(symbol.lowercase(Locale.getDefault()))) {
                 val bitcoinInfo = client.getCoinById(coinList.id)
                 val data = bitcoinInfo.marketData
                 val dataPrice = data.currentPrice
