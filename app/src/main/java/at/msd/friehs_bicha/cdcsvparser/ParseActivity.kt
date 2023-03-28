@@ -23,6 +23,8 @@ class ParseActivity : AppCompatActivity() {
         getAppModel()
         val btnFilter = findViewById<Button>(R.id.btn_filter)
         val btnTx = findViewById<Button>(R.id.btn_all_tx)
+        val apiInfo = findViewById<TextView>(R.id.coinGeckoApiLabel)
+        apiInfo.text = "All prices provided by \\n<a href=\"https://min-api.cryptocompare.com/\">CoinGecko API</a>"   //overwrites the link, bc we CG api is down atm
         btnFilter.setOnClickListener { view: View? ->
             if (appModel!!.isRunning) {
                 val intent = Intent(this@ParseActivity, AssetsFilterActivity::class.java)
@@ -39,7 +41,7 @@ class ParseActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         }
-        while (!appModel!!.isRunning) {
+        while (!appModel!!.isRunning) { //TODO: add loading icon
             try {
                 Thread.sleep(500)
             } catch (e: InterruptedException) {

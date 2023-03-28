@@ -36,7 +36,7 @@ class AssetsFilterActivity : AppCompatActivity() {
 
         //test Internet connection
         //testConnection();
-        while (!appModel!!.isRunning) {
+        while (!appModel!!.isRunning) { //TODO: add loading icon
             try {
                 Thread.sleep(500)
             } catch (e: InterruptedException) {
@@ -89,7 +89,7 @@ class AssetsFilterActivity : AppCompatActivity() {
      * @return the wallet names as String[]
      */
     private val walletNames: Array<String?>
-        private get() {
+        get() {
             val wallets = ArrayList<String?>()
             when (appModel!!.appType) {
                 AppType.CdCsvParser -> {
@@ -140,7 +140,7 @@ class AssetsFilterActivity : AppCompatActivity() {
      * @param texts the Map<String></String>, String> which should be displayed with id of View and text to set pairs
      */
     private fun displayTexts(texts: Map<String, String?>) {
-        texts!!.forEach { (key: String?, value: String?) ->
+        texts.forEach { (key: String?, value: String?) ->
             val textView = findViewById<TextView>(resources.getIdentifier(key, "id", packageName))
             if (value == null) {
                 runOnUiThread { textView.visibility = View.INVISIBLE }

@@ -29,10 +29,10 @@ class TransactionsActivity : AppCompatActivity() {
                 throw RuntimeException(e)
             }
         }
-        val mTransactionList: List<Transaction?>? = appModel!!.txApp!!.transactions
+        val mTransactionList: List<Transaction?> = appModel!!.txApp!!.transactions
 
         val transactionsStringList: MutableList<String?> = ArrayList()
-        for (tx in mTransactionList!!) {
+        for (tx in mTransactionList) {
             transactionsStringList.add(tx.toString())
         }
 

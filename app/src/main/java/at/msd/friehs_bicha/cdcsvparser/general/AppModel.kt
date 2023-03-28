@@ -106,7 +106,7 @@ class AppModel : BaseAppModel, Serializable {
                 if (wallet!!.currencyType == "EUR") continue
                 val price = asset.getPrice(wallet.currencyType)!!
                 val amount = wallet.amountBonus
-                valueOfAll.updateAndGet { v: Double -> v + price * amount!!.toDouble() }
+                valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
             }
             valueOfAll.get()
         } catch (e: Exception) {
@@ -123,7 +123,7 @@ class AppModel : BaseAppModel, Serializable {
             val valueOfAll = AtomicReference(0.0)
             val price = asset.getPrice(wallet!!.currencyType)!!
             val amount = wallet.amountBonus
-            valueOfAll.updateAndGet { v: Double -> v + price * amount!!.toDouble() }
+            valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
             valueOfAll.get()
         } catch (e: Exception) {
             0.0
@@ -142,7 +142,7 @@ class AppModel : BaseAppModel, Serializable {
                 if (w!!.currencyType == "EUR") continue
                 val price = asset.getPrice(w.currencyType)!!
                 val amount = w.amount
-                valueOfAll += price * amount!!.toDouble()
+                valueOfAll += price * amount.toDouble()
                 if (valueOfAll < 0.0) {
                     val i = 0
                 }
@@ -162,7 +162,7 @@ class AppModel : BaseAppModel, Serializable {
             val valueOfWallet: Double
             val price = asset.getPrice(w!!.currencyType)!!
             val amount = w.amount
-            valueOfWallet = price * amount!!.toDouble()
+            valueOfWallet = price * amount.toDouble()
             valueOfWallet
         } catch (e: Exception) {
             0.0
@@ -289,9 +289,7 @@ class AppModel : BaseAppModel, Serializable {
         return true
     }
 
-    companion object {
-
-    }
+    companion object
 
     fun initFromFirebase(dbWallets: ArrayList<HashMap<String, *>>, dbOutsideWallets: ArrayList<HashMap<String, *>>, dbTransactions: ArrayList<HashMap<String, *>>, appType: AppType, amountTxFailed: Long)
     {

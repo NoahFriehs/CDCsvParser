@@ -12,21 +12,13 @@ import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.App.AppType
-import at.msd.friehs_bicha.cdcsvparser.App.TxApp
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.DBTransaction
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.DBWallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.google.firebase.ktx.app
 import java.io.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -52,8 +44,8 @@ class MainActivity : AppCompatActivity() {
         val btnParse = findViewById<Button>(R.id.btn_parse)
         val btnHistory = findViewById<Button>(R.id.btn_history)
         val btnLoadFromDB = findViewById<Button>(R.id.btn_loadFromDb)
-        btnParse.setOnClickListener { view -> onBtnUploadClick(view) }
-        btnLoadFromDB.setOnClickListener { loadFromFireBaseDB()}
+        btnParse.setOnClickListener { view -> onBtnUploadClick() }
+        btnLoadFromDB.setOnClickListener { loadFromFireBaseDB()}    //TODO: only make button available if user has data in DB
         settingsButton()
         updateFiles()
 
@@ -92,7 +84,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun setHistory(type: String, dropdown: Spinner, btnHistory: Button) {
         val res = resources
-        val drawable = res.getDrawable(R.drawable.round_button_layer_list)
+        val drawable = res.getDrawable(R.drawable.round_button_layer_list)  //TODO is deprecated
         when (type) {
             "disabled" -> {
                 // Disable the button
@@ -238,7 +230,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * start action to let the user select a file
      */
-    fun onBtnUploadClick(view: View?) {
+    fun onBtnUploadClick() {
         // Create an Intent object to allow the user to select a file
         val chooseFile = Intent(Intent.ACTION_GET_CONTENT)
 
@@ -255,7 +247,7 @@ class MainActivity : AppCompatActivity() {
      * @param uri url to file
      * @return the content of the file in a ArrayList<Sting>
     </Sting> */
-    fun getFileContentFromUri(uri: Uri?): ArrayList<String> {
+    private fun getFileContentFromUri(uri: Uri?): ArrayList<String> {
         val fileContents = ArrayList<String>()
         try {
             // Get the ContentResolver for the current context.
@@ -290,7 +282,7 @@ class MainActivity : AppCompatActivity() {
      * @param file a file
      * @return the content of the file in a ArrayList<Sting>
     </Sting> */
-    fun getFileContent(file: File?): ArrayList<String> {
+    private fun getFileContent(file: File?): ArrayList<String> {
         val fileContents = ArrayList<String>()
         try {
 
@@ -313,7 +305,7 @@ class MainActivity : AppCompatActivity() {
         return fileContents
     }
 
-    fun settingsButton() {
+    private fun settingsButton() {
         val settingsButton = findViewById<Button>(R.id.settings_button)
         settingsButton.setOnClickListener { view: View? ->
             val intent = Intent(this@MainActivity, SettingsActivity::class.java)
@@ -322,7 +314,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveToDB(): Boolean {
-        return appModel!!.setInAndroidDB(applicationContext)
+        return appModel!!.setInAndroidDB(applicationContext)    //TODO: remove this
     }
 
     companion object {
@@ -333,25 +325,20 @@ class MainActivity : AppCompatActivity() {
     private fun saveToFireBaseDB()
     {
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
-        //val database = FirebaseDatabase.getInstance()
         val db = Firebase.firestore
-        //val userRef = database.reference.child(uid) //do it like this: FirebaseDatabase.getInstance("D-BLINK).getReference("user").child(uid)
         // Add data to the txApp object
         val txApp = appModel!!.txApp!!
-
-        //TEST CALL
-        //database.getReference("user").child("test").setValue("test")
 
         val dbWallets = ArrayList<DBWallet>()
         val dboutsideWallets = ArrayList<DBWallet>()
         val dbTransactions = ArrayList<DBTransaction>()
-        txApp.wallets.forEach() {
+        txApp.wallets.forEach {
             dbWallets.add(DBWallet(it))
         }
-        txApp.outsideWallets.forEach() {
+        txApp.outsideWallets.forEach {
             dboutsideWallets.add(DBWallet(it))
         }
-        txApp.transactions.forEach() {
+        txApp.transactions.forEach {
             dbTransactions.add(DBTransaction(it))
         }
 
@@ -364,40 +351,16 @@ class MainActivity : AppCompatActivity() {
             "appType" to PreferenceHelper.getSelectedType(this)
         )
 
-        //db.collection("user").document(uid).delete()
+        //db.collection("user").document(uid).delete()  //TODO: use this line in production but for testing it is better to not delete the data
 
         db.collection("user").document(uid).set(txAppMap).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 // Data saved successfully
             } else {
-                // Handle database error
+                // Handle database error    //TODO: handle error
                 val a = 0
             }
         }
-        /*userRef.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                val txAppMap = dataSnapshot.value as HashMap<String, Any>?
-                if (txAppMap != null) {
-                    val dbWallets = txAppMap["wallets"] as ArrayList<DBWallet?>? ?: ArrayList()
-                    val dbOutsideWallets = txAppMap["outsideWallets"] as ArrayList<DBWallet?>? ?: ArrayList()
-                    val dbTransactions = txAppMap["transactions"] as ArrayList<DBTransaction>? ?: ArrayList()
-                    appModel!!.txApp?.amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
-                    // Do something with the txApp object
-                    //txApp.wallets.clear()
-                    //txApp.outsideWallets.clear()
-                    //txApp.transactions.clear()
-                    /*dbWallets.forEach() {
-                        txApp.wallets.add(Wallet(it!!))
-                    }
-                    dbOutsideWallets.forEach() {
-                        txApp.outsideWallets.add(Wallet(it!!))
-                    }
-                    dbTransactions.forEach() {
-                        txApp.transactions.add(Transaction(it))
-                    }*/
-                }
-            }
-        })*/
     }
 
     private fun loadFromFireBaseDB() {
@@ -406,46 +369,39 @@ class MainActivity : AppCompatActivity() {
         val db = Firebase.firestore
         // Add data to the txApp object
 
-        val document = db.collection("user").document(uid)
+        val user = db.collection("user").document(uid)
 
-        document.get().addOnSuccessListener { document ->
-            if (true/*task.isSuccessful*/) {
-                //val document = task.result
-                if (document != null) {
-                    val txAppMap = document.data as HashMap<String, Any>?
-                    if (txAppMap != null) {
-                        val dbWallets = txAppMap["wallets"] //as ArrayList<DBWallet>? ?: ArrayList()
-                        val dbOutsideWallets =
-                            txAppMap["outsideWallets"] //as ArrayList<DBWallet>? ?: ArrayList()
-                        val dbTransactions =
-                            txAppMap["transactions"] //as ArrayList<DBTransaction>? ?: ArrayList()
-                        val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
-                        val appTypeString = txAppMap["appType"] as String? ?: ""
-                        val appType = AppType.valueOf(appTypeString)
-                        // Do something with the txApp object
-                        this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
-                            dbOutsideWallets as ArrayList<HashMap<String, *>>?,
-                            dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)
-                        callParseView(false)
-                    }
-                    else
-                    {
-                        // Handle database error
-                        val a = 0
-                    }
+        user.get().addOnSuccessListener { document ->   //TODO handle error(Exceptions wenn data nicht vorhanden ist/nicht passt)
+            if (document != null) {
+                val txAppMap = document.data as HashMap<String, Any>?
+                if (txAppMap != null) {
+                    val dbWallets = txAppMap["wallets"]
+                    val dbOutsideWallets =
+                        txAppMap["outsideWallets"]
+                    val dbTransactions =
+                        txAppMap["transactions"]
+                    val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
+                    val appTypeString = txAppMap["appType"] as String? ?: ""
+                    val appType = AppType.valueOf(appTypeString)
+                    // Do something with the txApp object
+                    this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
+                        dbOutsideWallets as ArrayList<HashMap<String, *>>?,
+                        dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)
+                    callParseView(false)
                 }
                 else
                 {
-                    // Handle database error
+                    // Handle database error    //TODO: handle error
                     val a = 0
                 }
             }
-            else {
-                // Handle database error
+            else
+            {
+                // Handle database error    //TODO: handle error
                 val a = 0
             }
         }.addOnFailureListener { exception ->
-            val a = 0
+            val a = 0   //TODO: handle error
         }
     }
 

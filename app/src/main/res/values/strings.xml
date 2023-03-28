@@ -27,4 +27,8 @@
     <string name="error_login_failed">Login failed</string>
     <string name="error_empty_fields">Please fill out all fileds</string>
     <string name="load_latest_from_database">Load latest from Database</string>
+    <string name="error_signup_email_empty">Signup failed: Email empty</string>
+    <string name="error_signup_pw_empty">Signup failed: Password empty</string>
+    <string name="error_signup_pw_to_short">Signup failed: Password too short, min 6 characters</string>
+    <string name="error_signup_failed">\"Signup failed: \"</string>
 </resources>

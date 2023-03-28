@@ -33,12 +33,21 @@ class AssetValue : Serializable {
         //val prices = StaticPrices()
         //return prices.prices[symbol]    //TODO!!!! replace with real data
 
+        var price = checkCache(symbol)
+        if (price != -1.0) {
+            isRunning = true
+            return price
+        }
+
         val cryptoPrices = CryptoPricesCryptoCompare()
-        val priceApi = symbol?.let { cryptoPrices.getPrice(it) }
-        if (priceApi != 0.0) return priceApi
+        val priceApi = cryptoPrices.getPrice(symbol!!)
+        if (priceApi != 0.0) {
+            cache.add(PriceCache(symbol, priceApi))
+            return priceApi
+        }
         var symbol = symbol
         symbol = overrideSymbol(symbol)
-        val price = checkCache(symbol)
+        price = checkCache(symbol)
         if (price != -1.0) {
             isRunning = true
             return price

@@ -28,8 +28,8 @@ class SettingsActivity : AppCompatActivity() {
         // set the selected app type
         selectedType = AppType.values()[storedType]
         appTypeSpinner.setSelection(storedType)
-        useStrictTypeCheckbox.setChecked(useStrictType)
-        useAndroidDBCheckbox.setChecked(useAndroidDB)
+        useStrictTypeCheckbox.isChecked = useStrictType
+        useAndroidDBCheckbox.isChecked = useAndroidDB
         useStrictTypeCheckbox.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
             useStrictType = isChecked
             val settings = getSharedPreferences(PREFS_NAME, 0)
@@ -44,7 +44,7 @@ class SettingsActivity : AppCompatActivity() {
             editor.putBoolean(USE_ANDROID_DB_KEY, useAndroidDB)
             editor.apply()
         })
-        appTypeSpinner.setOnItemSelectedListener(object : AdapterView.OnItemSelectedListener {
+        appTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View, position: Int, id: Long) {
                 selectedType = AppType.values()[position]
                 val settings = getSharedPreferences(PREFS_NAME, 0)
@@ -56,7 +56,7 @@ class SettingsActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {
                 // do nothing
             }
-        })
+        }
     }
 
     companion object {

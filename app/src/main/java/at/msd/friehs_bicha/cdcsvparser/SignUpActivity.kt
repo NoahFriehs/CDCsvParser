@@ -28,12 +28,12 @@ class SignUpActivity : AppCompatActivity() {
             val password = findViewById<EditText>(R.id.et_password).text.toString()
             if (TextUtils.isEmpty(email)) {
                 // Handle empty email field
-                findViewById<TextView>(R.id.tv_error_message).text = "Signup failed: Email empty"
+                findViewById<TextView>(R.id.tv_error_message).text = getString(R.string.error_signup_email_empty)
                 return@setOnClickListener
             }
             if (TextUtils.isEmpty(password)) {
                 // Handle empty password field
-                findViewById<TextView>(R.id.tv_error_message).text = "Signup failed: Password empty"
+                findViewById<TextView>(R.id.tv_error_message).text = getString(R.string.error_signup_pw_empty)
                 return@setOnClickListener
             }
             if (false) {
@@ -42,21 +42,21 @@ class SignUpActivity : AppCompatActivity() {
             }
             if (password.length < 6) {
                 // Handle password length
-                findViewById<TextView>(R.id.tv_error_message).text = "Signup failed: Password too short, min 6 characters"
+                findViewById<TextView>(R.id.tv_error_message).text = getString(R.string.error_signup_pw_to_short)
                 return@setOnClickListener
             }
 
             auth.createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(this, OnCompleteListener { task ->
+                    .addOnCompleteListener(this) { task ->
                         if (task.isSuccessful) {
                             // Signup successful
                             val user = auth.currentUser
-                            updateUI(user,"")
+                            updateUI(user, "")
                         } else {
                             // Signup failed
                             updateUI(null, task.exception?.message)
                         }
-                    })
+                    }
         }
 
     }
@@ -72,7 +72,7 @@ class SignUpActivity : AppCompatActivity() {
         } else {
             // Signup failed, show an error message
             // Replace tv_error_message with the ID of your error message TextView
-            findViewById<TextView>(R.id.tv_error_message).text = "Signup failed: " + errorText
+            findViewById<TextView>(R.id.tv_error_message).text = getString(R.string.error_signup_failed) + errorText
         }
     }
 
