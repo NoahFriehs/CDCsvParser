@@ -30,9 +30,12 @@ class AssetValue : Serializable {
      */
     @Throws(InterruptedException::class)
     fun getPrice(symbol: String?): Double? {
-        val prices = StaticPrices()
-        prices.setPrices()
-        return prices.prices[symbol]    //TODO!!!! replace with real data
+        //val prices = StaticPrices()
+        //return prices.prices[symbol]    //TODO!!!! replace with real data
+
+        val cryptoPrices = CryptoPricesCryptoCompare()
+        val priceApi = symbol?.let { cryptoPrices.getPrice(it) }
+        if (priceApi != 0.0) return priceApi
         var symbol = symbol
         symbol = overrideSymbol(symbol)
         val price = checkCache(symbol)
@@ -73,7 +76,13 @@ class AssetValue : Serializable {
             }
             isRunning = false
             tries = 0
-            0.0
+            try {
+                val prices = StaticPrices()
+                return prices.prices[symbol]
+            } catch (e: Exception) {
+                println("No price found for: $symbol")
+                return 0.0
+            }
         }
     }
 

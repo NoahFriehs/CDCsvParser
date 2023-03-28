@@ -3,19 +3,19 @@ package at.msd.friehs_bicha.cdcsvparser.price
 class StaticPrices{
     var prices : HashMap<String, Double> = HashMap()
 
-    fun setPrices()
+    init
     {
-        prices.put("DOGE", 0.07)
-        prices.put("CUDOS", 0.002)
-        prices.put("ETH", 1.300)
-        prices.put("BTC", 16700.0)
-        prices.put("CRO", 0.06)
-        prices.put("EUR", 1.0)
-        prices.put("ETHW", 0.0)
-        prices.put("LUNA2", 1.46)
-        prices.put("LUNC", 0.0002)
-        prices.put("LUNA", 0.0)
-        prices.put("ALGO", 0.20)
+        prices["DOGE"] = 0.07
+        prices["CUDOS"] = 0.002
+        prices["ETH"] = 1.300
+        prices["BTC"] = 16700.0
+        prices["CRO"] = 0.06
+        prices["EUR"] = 1.0
+        prices["ETHW"] = 0.0
+        prices["LUNA2"] = 1.46
+        prices["LUNC"] = 0.0002
+        prices["LUNA"] = 0.0
+        prices["ALGO"] = 0.20
     }
 
 }
