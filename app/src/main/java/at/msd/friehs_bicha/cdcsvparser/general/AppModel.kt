@@ -243,10 +243,14 @@ class AppModel : BaseAppModel, Serializable {
             }
         }
 
+
+    /**
+     * @deprecated
+     */
     fun setInAndroidDB(context: Context): Boolean {
         val t = Thread {
             try {
-                val db: AppDatabase? = AppDatabase.Companion.getInstance(context)
+                val db: AppDatabase? = AppDatabase.getInstance(context)
                 //clear db
                 db!!.clearAllTables()
                 db.walletDao().deleteAll()
@@ -262,10 +266,14 @@ class AppModel : BaseAppModel, Serializable {
         return true
     }
 
-    fun getFromAndroidDB(context: Context, useStrictType: Boolean?): Boolean {
+
+    /**
+     * @deprecated
+     */
+    private fun getFromAndroidDB(context: Context, useStrictType: Boolean?): Boolean {
         val t = Thread {
             try {
-                val db: AppDatabase? = AppDatabase.Companion.getInstance(context)
+                val db: AppDatabase? = AppDatabase.getInstance(context)
                 val tXs = db!!.transactionDao().all
                 val wTXs = db.walletDao().all
                 when (appType) {
@@ -289,9 +297,8 @@ class AppModel : BaseAppModel, Serializable {
         return true
     }
 
-    companion object
 
-    fun initFromFirebase(dbWallets: ArrayList<HashMap<String, *>>, dbOutsideWallets: ArrayList<HashMap<String, *>>, dbTransactions: ArrayList<HashMap<String, *>>, appType: AppType, amountTxFailed: Long)
+    private fun initFromFirebase(dbWallets: ArrayList<HashMap<String, *>>, dbOutsideWallets: ArrayList<HashMap<String, *>>, dbTransactions: ArrayList<HashMap<String, *>>, appType: AppType, amountTxFailed: Long)
     {
         val tXs: MutableList<Transaction> = ArrayList()
         val wTXs: MutableList<CDCWallet> = ArrayList()

@@ -190,9 +190,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: IOException) {
-                e.printStackTrace()
+                e.printStackTrace() // TODO error message
             }
-            //delete oldest file if alredy 7 files in array
+            //delete oldest file if already 7 files in array
             updateFiles()
             while (files!!.size > 7) {
                 files!![0].delete()
@@ -230,7 +230,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * start action to let the user select a file
      */
-    fun onBtnUploadClick() {
+    private fun onBtnUploadClick() {
         // Create an Intent object to allow the user to select a file
         val chooseFile = Intent(Intent.ACTION_GET_CONTENT)
 
@@ -271,7 +271,7 @@ class MainActivity : AppCompatActivity() {
             reader.close()
             inputStream!!.close()
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.printStackTrace() // TODO error message
         }
         return fileContents
     }
@@ -300,7 +300,7 @@ class MainActivity : AppCompatActivity() {
             // Close the BufferedReader and InputStream.
             reader.close()
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.printStackTrace() // TODO error message
         }
         return fileContents
     }

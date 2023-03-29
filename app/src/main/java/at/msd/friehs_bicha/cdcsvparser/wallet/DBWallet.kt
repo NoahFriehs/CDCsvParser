@@ -3,6 +3,9 @@ package at.msd.friehs_bicha.cdcsvparser.wallet
 import at.msd.friehs_bicha.cdcsvparser.transactions.DBTransaction
 import java.io.Serializable
 
+/**
+ * @deprecated("UseWallet instead") //todo
+ */
 class DBWallet(wallet: Wallet?) : Serializable {
 
     var walletId: Long
