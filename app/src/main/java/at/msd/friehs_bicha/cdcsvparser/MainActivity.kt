@@ -220,7 +220,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun callParseView(saveToDB: Boolean = true) {
-        //saveToDB()
         if (saveToDB) saveToFireBaseDB()
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
         intent.putExtra("AppModel", appModel)
@@ -313,9 +312,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveToDB(): Boolean {
-        return appModel!!.setInAndroidDB(applicationContext)    //TODO: remove this
-    }
 
     companion object {
         private const val PICKFILE_REQUEST_CODE = 1

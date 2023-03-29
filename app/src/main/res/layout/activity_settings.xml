@@ -18,10 +18,4 @@
         android:layout_height="wrap_content"
         android:text="@string/use_strict_wallet_type" />
 
-    <CheckBox
-        android:id="@+id/use_android_db_for_storage_checkbox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/use_android_db_for_storage" />
-
 </LinearLayout>

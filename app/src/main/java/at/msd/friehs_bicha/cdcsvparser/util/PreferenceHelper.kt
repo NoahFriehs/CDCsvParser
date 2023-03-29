@@ -7,7 +7,6 @@ object PreferenceHelper {
     const val PREFS_NAME = "settings_prefs"
     const val TYPE_KEY = "app_type"
     const val USE_STRICT_TYPE_KEY = "use_strict_app_type"
-    const val USE_ANDROID_DB_KEY = "use_android_db_for_storage"
 
     /**
      * returns the selected app type
@@ -32,8 +31,4 @@ object PreferenceHelper {
         return settings.getBoolean(USE_STRICT_TYPE_KEY, false)
     }
 
-    fun getUseAndroidDB(context: Context): Boolean {
-        val settings = context.getSharedPreferences(PREFS_NAME, 0)
-        return settings.getBoolean(USE_ANDROID_DB_KEY, false)
-    }
 }

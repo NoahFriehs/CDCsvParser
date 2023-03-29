@@ -5,7 +5,6 @@ import at.msd.friehs_bicha.cdcsvparser.App.AppType
 import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp
 import at.msd.friehs_bicha.cdcsvparser.App.TxApp
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.db.AppDatabase
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
@@ -13,17 +12,14 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.stringToTransactionType
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.WalletWithTransactions
 import com.google.firebase.Timestamp
 import java.io.Serializable
 import java.math.BigDecimal
-import java.math.MathContext
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
-import kotlin.math.roundToInt
 
 /**
  * The parser control for the Parser
@@ -57,11 +53,14 @@ class AppModel : BaseAppModel, Serializable {
         }
     }
 
-    constructor(appType: AppType?, useStrictType: Boolean?, context: Context) : super(appType) {
-        getFromAndroidDB(context, useStrictType)
-        asset = AssetValue()
-        //isRunning = true;
-    }
+    /**
+     * @deprecated do not use this constructor
+     */
+//    constructor(appType: AppType?, useStrictType: Boolean?, context: Context) : super(appType) {
+//        getFromAndroidDB(context, useStrictType)
+//        asset = AssetValue()
+//        //isRunning = true;
+//    }
 
     constructor(dbWallets: ArrayList<HashMap<String, *>>?, dbOutsideWallets: ArrayList<HashMap<String, *>>?, dbTransactions: ArrayList<HashMap<String, *>>?, appType: AppType, amountTxFailed: Long) : super(appType) {
         initFromFirebase(dbWallets!!, dbOutsideWallets!!, dbTransactions!!, appType, amountTxFailed)
@@ -178,7 +177,7 @@ class AppModel : BaseAppModel, Serializable {
                 val amountOfAsset = getValueOfAssets(wallet)
                 val rewardValue = getTotalBonus(wallet)
                 if (asset.isRunning) {
-                    map[R.id.assets_value.toString()] = StringHelper.formatAmountToString(amountOfAsset * 100.0)
+                    map[R.id.assets_value.toString()] = StringHelper.formatAmountToString(amountOfAsset)
                     map[R.id.rewards_value.toString()] = StringHelper.formatAmountToString(rewardValue)
                     map[R.id.profit_loss_value.toString()] = StringHelper.formatAmountToString(amountOfAsset - wallet.moneySpent.toDouble())
                     map[R.id.money_spent_value.toString()] = total
@@ -245,57 +244,57 @@ class AppModel : BaseAppModel, Serializable {
 
 
     /**
-     * @deprecated
+     * @deprecated not in use, leave it here to show how to use the database
      */
-    fun setInAndroidDB(context: Context): Boolean {
-        val t = Thread {
-            try {
-                val db: AppDatabase? = AppDatabase.getInstance(context)
-                //clear db
-                db!!.clearAllTables()
-                db.walletDao().deleteAll()
-                db.transactionDao().deleteAll()
-                db.transactionDao().insertAll(txApp!!.transactions)
-                db.walletDao().insertAll(txApp!!.wallets)
-                db.walletDao().insertAll(txApp!!.outsideWallets)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        t.start()
-        return true
-    }
+//    fun setInAndroidDB(context: Context): Boolean {
+//        val t = Thread {
+//            try {
+//                val db: AppDatabase? = AppDatabase.getInstance(context)
+//                //clear db
+//                db!!.clearAllTables()
+//                db.walletDao().deleteAll()
+//                db.transactionDao().deleteAll()
+//                db.transactionDao().insertAll(txApp!!.transactions)
+//                db.walletDao().insertAll(txApp!!.wallets)
+//                db.walletDao().insertAll(txApp!!.outsideWallets)
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//        }
+//        t.start()
+//        return true
+//    }
 
 
     /**
-     * @deprecated
+     * @deprecated not in use, leave it here to show how to use the database
      */
-    private fun getFromAndroidDB(context: Context, useStrictType: Boolean?): Boolean {
-        val t = Thread {
-            try {
-                val db: AppDatabase? = AppDatabase.getInstance(context)
-                val tXs = db!!.transactionDao().all
-                val wTXs = db.walletDao().all
-                when (appType) {
-                    AppType.CdCsvParser -> {
-                        val ws: MutableList<CDCWallet> = ArrayList()
-                        wTXs!!.forEach(Consumer { w: WalletWithTransactions? ->
-                            val wallet = CDCWallet(w!!.wallet)
-                            ws.add(wallet)
-                        })
-                        txApp = TxApp(tXs, ws)
-                        isRunning = true
-                    }
-                    AppType.CroCard -> throw RuntimeException("Usage not Implemented")
-                    else -> throw RuntimeException("Usage not found")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        t.start()
-        return true
-    }
+//    private fun getFromAndroidDB(context: Context, useStrictType: Boolean?): Boolean {
+//        val t = Thread {
+//            try {
+//                val db: AppDatabase? = AppDatabase.getInstance(context)
+//                val tXs = db!!.transactionDao().all
+//                val wTXs = db.walletDao().all
+//                when (appType) {
+//                    AppType.CdCsvParser -> {
+//                        val ws: MutableList<CDCWallet> = ArrayList()
+//                        wTXs!!.forEach(Consumer { w: WalletWithTransactions? ->
+//                            val wallet = CDCWallet(w!!.wallet)
+//                            ws.add(wallet)
+//                        })
+//                        txApp = TxApp(tXs, ws)
+//                        isRunning = true
+//                    }
+//                    AppType.CroCard -> throw RuntimeException("Usage not Implemented")
+//                    else -> throw RuntimeException("Usage not found")
+//                }
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//        }
+//        t.start()
+//        return true
+//    }
 
 
     private fun initFromFirebase(dbWallets: ArrayList<HashMap<String, *>>, dbOutsideWallets: ArrayList<HashMap<String, *>>, dbTransactions: ArrayList<HashMap<String, *>>, appType: AppType, amountTxFailed: Long)

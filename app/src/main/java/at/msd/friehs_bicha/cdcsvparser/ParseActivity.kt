@@ -54,11 +54,7 @@ class ParseActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
-        appModel = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser && PreferenceHelper.getUseAndroidDB(applicationContext)) {
-            AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), applicationContext)
-        } else {
-            intent.extras!!["AppModel"] as AppModel?
-        }
+        appModel = intent.extras!!["AppModel"] as AppModel?
     }
 
     /**

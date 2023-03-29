@@ -94,8 +94,8 @@ class CDCWallet : Wallet, Serializable {
         //transactions.add(transaction);
         val t = transaction.transactionType
         val w = txApp!!.wallets[getWallet(transaction.currencyType)] as CDCWallet
-        transaction.setFromWalletId(w.walletId)
-        transaction.setWalletId(w.walletId)
+        transaction.fromWalletId = w.walletId
+        transaction.walletId = w.walletId
         if (!w.transactions!!.contains(transaction)) {
             w.transactions!!.add(transaction)
         }
@@ -151,7 +151,7 @@ class CDCWallet : Wallet, Serializable {
             val wv = txApp!!.wallets[getWallet(transaction.toCurrency)] as CDCWallet
             wv.addToWallet(transaction.toAmount, transaction.nativeAmount, BigDecimal.ZERO)
             //wv.addToWallet(transaction);
-            transaction.setWalletId(wv.walletId)
+            transaction.walletId = wv.walletId
             if (!transactions!!.contains(transaction)) {
                 transactions!!.add(transaction)
             }

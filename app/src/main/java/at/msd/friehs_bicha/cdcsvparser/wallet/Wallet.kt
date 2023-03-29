@@ -1,41 +1,29 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
-import androidx.room.*
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
-import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import java.io.Serializable
 import java.math.BigDecimal
 
 /**
  * Represents a basic Wallet
  */
-@Entity(tableName = "wallet")
-@TypeConverters(Converter::class)
 open class Wallet : Serializable {
-    @JvmField
-    @PrimaryKey
+
     var walletId: Int
 
-    @Relation(parentColumn = "walletId", entityColumn = "transactionId", associateBy = Junction(WalletTransactionCrossRef::class))
-    @Ignore
+
     var transactions: MutableList<Transaction?>? = null
 
-    @ColumnInfo(name = "currencyType")
     var currencyType: String?
 
-    @ColumnInfo(name = "amount", typeAffinity = ColumnInfo.TEXT)
     var amount: BigDecimal
 
-    @ColumnInfo(name = "amountBonus", typeAffinity = ColumnInfo.TEXT)
     var amountBonus: BigDecimal
 
-    @ColumnInfo(name = "moneySpent", typeAffinity = ColumnInfo.TEXT)
     var moneySpent: BigDecimal
 
-    @ColumnInfo(name = "isOutsideWallet")
     var isOutsideWallet = false
 
-    @Ignore
     constructor(currencyType: String?, amount: BigDecimal?, nativeAmount: BigDecimal?) {
         this.currencyType = currencyType
         this.amount = BigDecimal(0)
@@ -47,7 +35,6 @@ open class Wallet : Serializable {
         walletId = ++uidCounter
     }
 
-    @Ignore
     constructor(currencyType: String?, amount: BigDecimal, amountBonus: BigDecimal, moneySpent: BigDecimal) {
         this.currencyType = currencyType
         this.amount = amount
@@ -57,7 +44,6 @@ open class Wallet : Serializable {
         walletId = ++uidCounter
     }
 
-    @Ignore
     constructor(currencyType: String?, amount: BigDecimal, amountBonus: BigDecimal, moneySpent: BigDecimal, transactions: ArrayList<Transaction?>?) {
         this.currencyType = currencyType
         this.amount = amount
@@ -76,7 +62,6 @@ open class Wallet : Serializable {
         this.transactions = transactions
     }
 
-    //@Ignore
     constructor(walletId: Int, currencyType: String?, amount: BigDecimal, amountBonus: BigDecimal, moneySpent: BigDecimal) {
         this.walletId = walletId
         this.currencyType = currencyType
