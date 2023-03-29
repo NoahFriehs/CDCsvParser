@@ -24,7 +24,7 @@ class ParseActivity : AppCompatActivity() {
         val btnFilter = findViewById<Button>(R.id.btn_filter)
         val btnTx = findViewById<Button>(R.id.btn_all_tx)
         val apiInfo = findViewById<TextView>(R.id.coinGeckoApiLabel)
-        apiInfo.text = "All prices provided by \\n<a href=\"https://min-api.cryptocompare.com/\">CoinGecko API</a>"   //overwrites the link, bc we CG api is down atm
+        apiInfo.text = "All prices provided by \n CryptoCompare API"   //overwrites the link, bc we CG api is down atm
         btnFilter.setOnClickListener { view: View? ->
             if (appModel!!.isRunning) {
                 val intent = Intent(this@ParseActivity, AssetsFilterActivity::class.java)

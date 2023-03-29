@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         val btnParse = findViewById<Button>(R.id.btn_parse)
         val btnHistory = findViewById<Button>(R.id.btn_history)
         val btnLoadFromDB = findViewById<Button>(R.id.btn_loadFromDb)
-        btnParse.setOnClickListener { view -> onBtnUploadClick() }
+        btnParse.setOnClickListener { onBtnUploadClick() }
         btnLoadFromDB.setOnClickListener { loadFromFireBaseDB()}    //TODO: only make button available if user has data in DB
         settingsButton()
         updateFiles()
@@ -384,6 +384,7 @@ class MainActivity : AppCompatActivity() {
                     val appTypeString = txAppMap["appType"] as String? ?: ""
                     val appType = AppType.valueOf(appTypeString)
                     // Do something with the txApp object
+                    //TODO check if data is valid
                     this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
                         dbOutsideWallets as ArrayList<HashMap<String, *>>?,
                         dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)

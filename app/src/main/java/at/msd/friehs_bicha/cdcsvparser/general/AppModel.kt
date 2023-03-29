@@ -101,7 +101,7 @@ class AppModel : BaseAppModel, Serializable {
      */
     val totalBonus: Double
         get() = try {
-            val valueOfAll = AtomicReference(0.0)
+            val valueOfAll = AtomicReference(0.0)   //TODO not necessary
             for (wallet in txApp!!.wallets) {
                 if (wallet!!.currencyType == "EUR") continue
                 val price = asset.getPrice(wallet.currencyType)!!
@@ -120,7 +120,7 @@ class AppModel : BaseAppModel, Serializable {
      */
     fun getTotalBonus(wallet: Wallet?): Double {
         return try {
-            val valueOfAll = AtomicReference(0.0)
+            val valueOfAll = AtomicReference(0.0)   //TODO not necessary
             val price = asset.getPrice(wallet!!.currencyType)!!
             val amount = wallet.amountBonus
             valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }

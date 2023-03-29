@@ -160,6 +160,8 @@
         android:textColorLink="#0000FF"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/assets_value_label"
+        app:layout_constraintRight_toRightOf="parent"
         android:layout_marginEnd="10dp"
         android:layout_marginTop="10dp"/>
 
