@@ -9,7 +9,6 @@ import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.App.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
-import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.util.function.Consumer

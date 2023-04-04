@@ -1,11 +1,11 @@
 package at.msd.friehs_bicha.cdcsvparser
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 
 class LoginActivity : AppCompatActivity() {
@@ -13,6 +13,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var etEmail: EditText
     private lateinit var etPassword: EditText
     private lateinit var btnLogin: Button
+    private lateinit var btnWithoutLogin: Button
     private lateinit var btnSignup: TextView
     private lateinit var tvErrorMessage: TextView
     private lateinit var auth: FirebaseAuth
@@ -21,13 +22,22 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        FirebaseAuth.getInstance().signOut()
+
         etEmail = findViewById(R.id.et_email)
         etPassword = findViewById(R.id.et_password)
         btnLogin = findViewById(R.id.btn_login)
         btnSignup = findViewById(R.id.btn_signup)
         tvErrorMessage = findViewById(R.id.tv_error_message)
+        btnWithoutLogin = findViewById(R.id.btn_without_login)
 
         auth = FirebaseAuth.getInstance()
+
+        btnWithoutLogin.setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
 
         btnLogin.setOnClickListener {
             val email = etEmail.text.toString()

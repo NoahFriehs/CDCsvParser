@@ -23,13 +23,12 @@ import java.io.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 
 class MainActivity : AppCompatActivity() {
     var context: Context? = null
     var appModel: AppModel? = null
     var files: Array<File>? = null
+    var user = FirebaseAuth.getInstance().currentUser
 
     /**
      * sets the buttons and spinner and also fills the global vars files and context the first time
@@ -39,11 +38,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         context = applicationContext
 
+        user = FirebaseAuth.getInstance().currentUser
+
         //get the elements from the xml.
         val dropdown = findViewById<Spinner>(R.id.spinner_history)
         val btnParse = findViewById<Button>(R.id.btn_parse)
         val btnHistory = findViewById<Button>(R.id.btn_history)
         val btnLoadFromDB = findViewById<Button>(R.id.btn_loadFromDb)
+        if (user == null) {
+            btnLoadFromDB.visibility = View.GONE
+            //TODO disable settings if no user singed in
+        } else {
+            btnLoadFromDB.visibility = View.VISIBLE
+        }
         btnParse.setOnClickListener { onBtnUploadClick() }
         btnLoadFromDB.setOnClickListener { loadFromFireBaseDB()}    //TODO: only make button available if user has data in DB
         settingsButton()
@@ -220,7 +227,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun callParseView(saveToDB: Boolean = true) {
-        if (saveToDB) saveToFireBaseDB()
+        if (saveToDB) {
+            if (user != null)saveToFireBaseDB()
+        }
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
         intent.putExtra("AppModel", appModel)
         startActivity(intent)

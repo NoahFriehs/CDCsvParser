@@ -72,4 +72,16 @@
         android:layout_marginTop="20dp"
         android:layout_marginLeft="20dp"/>
 
+    <Button
+        android:id="@+id/btn_without_login"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/use_app_without_login"
+        android:textStyle="bold"
+        android:layout_margin="10dp"
+        android:background="@drawable/round_button_layer_list"
+        android:textAllCaps="false"
+        android:layout_alignParentBottom="true"
+        />
+
 </RelativeLayout>

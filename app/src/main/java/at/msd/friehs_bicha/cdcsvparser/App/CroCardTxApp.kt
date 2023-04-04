@@ -1,15 +1,12 @@
 package at.msd.friehs_bicha.cdcsvparser.App
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.io.Serializable
 import java.math.BigDecimal
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
-import kotlin.collections.ArrayList
 
 class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean) : BaseApp(), Serializable {
     /**

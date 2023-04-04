@@ -1,6 +1,5 @@
 package at.msd.friehs_bicha.cdcsvparser.general
 
-import android.content.Context
 import at.msd.friehs_bicha.cdcsvparser.App.AppType
 import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp
 import at.msd.friehs_bicha.cdcsvparser.App.TxApp
@@ -18,8 +17,6 @@ import java.math.BigDecimal
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 
 /**
  * The parser control for the Parser
@@ -98,7 +95,7 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the total amount earned as a bonus
      */
-    val totalBonus: Double
+    private val totalBonus: Double
         get() = try {
             val valueOfAll = AtomicReference(0.0)   //TODO not necessary
             for (wallet in txApp!!.wallets) {
@@ -117,7 +114,7 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the total amount earned as a bonus
      */
-    fun getTotalBonus(wallet: Wallet?): Double {
+    private fun getTotalBonus(wallet: Wallet?): Double {
         return try {
             val valueOfAll = AtomicReference(0.0)   //TODO not necessary
             val price = asset.getPrice(wallet!!.currencyType)!!
@@ -156,7 +153,7 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the amount the asset is worth in EUR
      */
-    fun getValueOfAssets(w: Wallet?): Double {
+    private fun getValueOfAssets(w: Wallet?): Double {
         return try {
             val valueOfWallet: Double
             val price = asset.getPrice(w!!.currencyType)!!
