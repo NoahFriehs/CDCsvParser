@@ -223,7 +223,7 @@ class AppModel : BaseAppModel, Serializable {
                     }
                     AppType.CroCard -> {
                         map[R.id.money_spent_value.toString()] = totalMoneySpent
-                        map[R.id.assets_value.toString()] = null
+                        map[R.id.assets_valueP.toString()] = null
                         map[R.id.rewards_value.toString()] = null
                         map[R.id.profit_loss_value.toString()] = null
                         map[R.id.assets_value_label.toString()] = null

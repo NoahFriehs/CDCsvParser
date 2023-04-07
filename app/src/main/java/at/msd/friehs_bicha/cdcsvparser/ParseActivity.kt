@@ -78,8 +78,12 @@ class ParseActivity : AppCompatActivity() {
     private fun displayTexts(texts: Map<String, String?>?) {
         texts!!.forEach { (key: String?, value: String?) ->
             val textView = findViewById<TextView>(resources.getIdentifier(key, "id", packageName))
+            if (textView == null)
+            {
+                return  //TODO set here Breakpoint to see if there are any problems with the ids(should only occur if the xml file is changed or programmer error)
+            }
             if (value == null) {
-                runOnUiThread { textView.visibility = View.INVISIBLE }
+                runOnUiThread { textView.visibility = View.INVISIBLE }  //TODO does not work with Card app
             } else {
                 runOnUiThread { textView.text = value }
             }
