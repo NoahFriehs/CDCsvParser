@@ -301,7 +301,7 @@ class AppModel : BaseAppModel, Serializable {
         val tXs: MutableList<Transaction> = ArrayList()
         val wTXs: MutableList<CDCWallet> = ArrayList()
         val wTXsOutside: MutableList<CDCWallet> = ArrayList()
-        dbTransactions.forEach(Consumer { hashMap: HashMap<String, *> ->
+        dbTransactions.forEach(Consumer { hashMap: HashMap<String, *> ->    //TODO in den Transactions und Wallet Klassen selbst machen damit dann nur mehr val tx = Transaction(hashMap) und val wallet = CDCWallet(hashMap) ist
 
             val transactionId = hashMap["transactionId"] as Long
             val description = hashMap["description"] as String

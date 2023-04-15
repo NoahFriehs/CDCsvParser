@@ -3,6 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser.app
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 
 object AppModelManager {
+    @Volatile
     private var instance: AppModel? = null
 
     fun getInstance(): AppModel {

@@ -30,6 +30,12 @@ class MainActivity : AppCompatActivity() {
     var files: Array<File>? = null
     var user = FirebaseAuth.getInstance().currentUser
 
+
+    companion object {
+        private const val PICKFILE_REQUEST_CODE = 1
+    }
+
+
     /**
      * sets the buttons and spinner and also fills the global vars files and context the first time
      */
@@ -47,12 +53,11 @@ class MainActivity : AppCompatActivity() {
         val btnLoadFromDB = findViewById<Button>(R.id.btn_loadFromDb)
         if (user == null) {
             btnLoadFromDB.visibility = View.GONE
-            //TODO disable settings if no user singed in
         } else {
             btnLoadFromDB.visibility = View.VISIBLE
         }
         btnParse.setOnClickListener { onBtnUploadClick() }
-        btnLoadFromDB.setOnClickListener { loadFromFireBaseDB()}    //TODO: only make button available if user has data in DB
+        btnLoadFromDB.setOnClickListener { loadFromFireBaseDB()}
         settingsButton()
         updateFiles()
 
@@ -64,6 +69,7 @@ class MainActivity : AppCompatActivity() {
             btnHistory.setOnClickListener { onBtnHistoryClick(dropdown) }
         }
     }
+
 
     /**
      * gets all files from internal file storage and updates it
@@ -81,6 +87,7 @@ class MainActivity : AppCompatActivity() {
             btnHistory.setOnClickListener { view: View? -> onBtnHistoryClick(dropdown) }
         }
     }
+
 
     /**
      * disables or enbales and fills a spinner
@@ -178,12 +185,13 @@ class MainActivity : AppCompatActivity() {
      * is called on successful file select and saves it to storage.
      * Also reads the file and then calls the parse view
      */
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PICKFILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
             // Get the URI of the selected file
             val fileUri = data.data
-            //creat filename with format M-d-y-H-m-s
+            //create filename with format M-d-y-H-m-s
             val dateFormat = SimpleDateFormat("M-d-y-H-m-s")
             val now = Date()
             val time = dateFormat.format(now)
@@ -316,15 +324,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun settingsButton() {
         val settingsButton = findViewById<Button>(R.id.settings_button)
-        settingsButton.setOnClickListener { view: View? ->
+        settingsButton.setOnClickListener {
             val intent = Intent(this@MainActivity, SettingsActivity::class.java)
             startActivity(intent)
         }
-    }
-
-
-    companion object {
-        private const val PICKFILE_REQUEST_CODE = 1
     }
 
 
@@ -381,13 +384,14 @@ class MainActivity : AppCompatActivity() {
                     val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
                     val appTypeString = txAppMap["appType"] as String? ?: ""
                     val appType = AppType.valueOf(appTypeString)
-                    // Do something with the txApp object
+
                     //TODO check if data is valid
                     this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
-                        dbOutsideWallets,
-                        dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)
+                        dbOutsideWallets, dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)
+
                     PreferenceHelper.setSelectedType(this, appType)
                     PreferenceHelper.setUseStrictType(this, appSettings["useStrictType"] as Boolean)
+
                     callParseView(false)
                 }
                 else
