@@ -1,6 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
-import at.msd.friehs_bicha.cdcsvparser.App.TxApp
+import at.msd.friehs_bicha.cdcsvparser.app.TxApp
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import java.io.Serializable

@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.App
+package at.msd.friehs_bicha.cdcsvparser.app
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet

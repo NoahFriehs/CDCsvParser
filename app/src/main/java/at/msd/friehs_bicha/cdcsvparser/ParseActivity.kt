@@ -83,7 +83,7 @@ class ParseActivity : AppCompatActivity() {
                 return  //TODO set here Breakpoint to see if there are any problems with the ids(should only occur if the xml file is changed or programmer error)
             }
             if (value == null) {
-                runOnUiThread { textView.visibility = View.INVISIBLE }  //TODO does not work with Card app
+                runOnUiThread { textView.visibility = View.INVISIBLE }
             } else {
                 runOnUiThread { textView.text = value }
             }

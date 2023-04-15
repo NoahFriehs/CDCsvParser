@@ -6,7 +6,7 @@ import java.io.Serializable
 /**
  * @deprecated("UseWallet instead") //todo
  */
-class DBWallet(wallet: Wallet?) : Serializable {
+open class DBWallet(wallet: Wallet?, overridTX: Boolean = false) : Serializable {
 
     var walletId: Long
 
@@ -28,9 +28,12 @@ class DBWallet(wallet: Wallet?) : Serializable {
         amount = wallet.amount.toDouble()
         amountBonus = wallet.amountBonus.toDouble()
         moneySpent = wallet.moneySpent.toDouble()
-        transactions = ArrayList()
-        wallet.transactions?.forEach { transaction ->
-            transactions?.add(transaction?.let { DBTransaction(it) }) }
+        if (!overridTX) {
+            transactions = ArrayList()
+            wallet.transactions?.forEach { transaction ->
+                transactions?.add(transaction?.let { DBTransaction(it) })
+            }
+        }
         isOutsideWallet = wallet.isOutsideWallet
     }
 

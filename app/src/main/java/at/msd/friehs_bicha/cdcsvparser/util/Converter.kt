@@ -40,6 +40,13 @@ object Converter {
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
             sdf.parse(s)
         } catch (e: Exception) {
+            return try {
+                val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy")
+                sdf.parse(s)
+            } catch (e1: Exception) {
+                println(s)
+                null
+            }
             println(s)
             null
         }

@@ -11,11 +11,11 @@ import android.widget.Button
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.App.AppType
+import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
+import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
+import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
-import at.msd.friehs_bicha.cdcsvparser.transactions.DBTransaction
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
-import at.msd.friehs_bicha.cdcsvparser.wallet.DBWallet
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -230,6 +230,7 @@ class MainActivity : AppCompatActivity() {
         if (saveToDB) {
             if (user != null)saveToFireBaseDB()
         }
+        AppModelManager.setInstance(appModel!!)
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
         intent.putExtra("AppModel", appModel)
         startActivity(intent)
@@ -331,34 +332,18 @@ class MainActivity : AppCompatActivity() {
     {
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         val db = Firebase.firestore
-        // Add data to the txApp object
-        val txApp = appModel!!.txApp!!
 
-        val dbWallets = ArrayList<DBWallet>()
-        val dboutsideWallets = ArrayList<DBWallet>()
-        val dbTransactions = ArrayList<DBTransaction>()
-        txApp.wallets.forEach {
-            dbWallets.add(DBWallet(it))
-        }
-        txApp.outsideWallets.forEach {
-            dboutsideWallets.add(DBWallet(it))
-        }
-        txApp.transactions.forEach {
-            dbTransactions.add(DBTransaction(it))
-        }
+        db.collection("user").document(uid).delete()  //TODO: use this line in production but for testing it is better to not delete the data
 
+        val appSettings = AppSettings(uid,  PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this))
+        val appSettingsMap = appSettings.toHashMap()
 
-        val txAppMap = hashMapOf<String, Any>(
-            "wallets" to dbWallets,
-            "outsideWallets" to dboutsideWallets,
-            "transactions" to dbTransactions,
-            "amountTxFailed" to txApp.amountTxFailed,
-            "appType" to PreferenceHelper.getSelectedType(this)
+        val userMap = hashMapOf(
+            "appModel" to appModel!!.toHashMap(),
+            "appSettings" to appSettingsMap
         )
 
-        //db.collection("user").document(uid).delete()  //TODO: use this line in production but for testing it is better to not delete the data
-
-        db.collection("user").document(uid).set(txAppMap).addOnCompleteListener { task ->
+        db.collection("user").document(uid).set(userMap).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 // Data saved successfully
             } else {
@@ -378,11 +363,19 @@ class MainActivity : AppCompatActivity() {
 
         user.get().addOnSuccessListener { document ->   //TODO handle error(Exceptions wenn data nicht vorhanden ist/nicht passt)
             if (document != null) {
-                val txAppMap = document.data as HashMap<String, Any>?
+                val userMap = document.data as HashMap<String, Any>?
+                val appSettings = userMap!!["appSettings"] as HashMap<String, Any>?
+                val txAppMap = userMap["appModel"] as HashMap<String, Any>?
+                val appType = AppType.valueOf(appSettings!!["appType"] as String)
+
+                var dbOutsideWallets : ArrayList<HashMap<String, *>>? = null
+
                 if (txAppMap != null) {
                     val dbWallets = txAppMap["wallets"]
-                    val dbOutsideWallets =
-                        txAppMap["outsideWallets"]
+                    if (appType == AppType.CdCsvParser)
+                    {
+                        dbOutsideWallets = txAppMap["outsideWallets"] as ArrayList<HashMap<String, *>>?
+                    }
                     val dbTransactions =
                         txAppMap["transactions"]
                     val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
@@ -391,8 +384,10 @@ class MainActivity : AppCompatActivity() {
                     // Do something with the txApp object
                     //TODO check if data is valid
                     this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
-                        dbOutsideWallets as ArrayList<HashMap<String, *>>?,
+                        dbOutsideWallets,
                         dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)
+                    PreferenceHelper.setSelectedType(this, appType)
+                    PreferenceHelper.setUseStrictType(this, appSettings["useStrictType"] as Boolean)
                     callParseView(false)
                 }
                 else

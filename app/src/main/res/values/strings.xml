@@ -30,4 +30,5 @@
     <string name="error_signup_pw_to_short">Signup failed: Password too short, min 6 characters</string>
     <string name="error_signup_failed">\"Signup failed: \"</string>
     <string name="use_app_without_login">Use App without Login</string>
+    <string name="logout">Logout</string>
 </resources>
