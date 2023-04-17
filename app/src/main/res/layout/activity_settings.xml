@@ -30,4 +30,16 @@
         android:textAllCaps="false"
         />
 
+    <Button
+        android:id="@+id/btn_delete_account"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/delete_account"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:layout_margin="10dp"
+        android:background="@drawable/round_button_layer_list"
+        android:textAllCaps="false"
+        />
+
 </LinearLayout>

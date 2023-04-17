@@ -31,4 +31,5 @@
     <string name="error_signup_failed">\"Signup failed: \"</string>
     <string name="use_app_without_login">Use App without Login</string>
     <string name="logout">Logout</string>
+    <string name="delete_account">Delete Account</string>
 </resources>

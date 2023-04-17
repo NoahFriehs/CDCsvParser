@@ -7,18 +7,24 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 class SettingsActivity : AppCompatActivity() {
     lateinit var appTypeSpinner: Spinner
     lateinit var useStrictTypeCheckbox: CheckBox
     lateinit var btnLogout: Button
+    lateinit var btnDeleteUser: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+
         appTypeSpinner = findViewById(R.id.wallet_type_spinner)
         useStrictTypeCheckbox = findViewById(R.id.use_strict_wallet_type_checkbox)
         btnLogout = findViewById(R.id.btn_logout)
+        btnDeleteUser = findViewById(R.id.btn_delete_account)
+
         val settings = getSharedPreferences(PREFS_NAME, 0)
         // load the stored values for the spinner and checkbox
         val storedType = settings.getInt(TYPE_KEY, 0)
@@ -50,6 +56,15 @@ class SettingsActivity : AppCompatActivity() {
         }
         btnLogout.setOnClickListener {
             FirebaseAuth.getInstance().signOut()
+            val intent = Intent(this, LoginActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+        btnDeleteUser.setOnClickListener {
+            val db = Firebase.firestore
+            db.collection("users").document(FirebaseAuth.getInstance().currentUser!!.uid).delete()
+
+            FirebaseAuth.getInstance().currentUser?.delete()
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
             finish()
