@@ -111,7 +111,7 @@ class CDCWallet : Wallet, Serializable {
             TransactionType.rewards_platform_deposit_credited -> {}
             TransactionType.supercharger_reward_to_app_credited, TransactionType.crypto_earn_interest_paid, TransactionType.referral_card_cashback, TransactionType.reimbursement, TransactionType.card_cashback_reverted, TransactionType.admin_wallet_credited, TransactionType.crypto_wallet_swap_credited, TransactionType.crypto_wallet_swap_debited -> {
                 //w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-                transaction.amountBonus = transaction.amount    //TODO do we need this? //TODO!!!NF check this fast
+                transaction.amountBonus = transaction.amount
                 w.addToWallet(transaction)
             }
             TransactionType.viban_purchase -> vibanPurchase(transaction)
