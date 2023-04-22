@@ -2,6 +2,7 @@ package at.msd.friehs_bicha.cdcsvparser
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -29,6 +30,9 @@ class SettingsActivity : AppCompatActivity() {
         // load the stored values for the spinner and checkbox
         val storedType = settings.getInt(TYPE_KEY, 0)
         useStrictType = settings.getBoolean(USE_STRICT_TYPE_KEY, false)
+
+        val auth = FirebaseAuth.getInstance()
+        val user = auth.currentUser
 
         // set the selected app type
         selectedType = AppType.values()[storedType]
@@ -60,11 +64,37 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(intent)
             finish()
         }
+
+        if (user == null) {
+            btnDeleteUser.visibility = View.GONE
+        }
         btnDeleteUser.setOnClickListener {
             val db = Firebase.firestore
-            db.collection("users").document(FirebaseAuth.getInstance().currentUser!!.uid).delete()
+            db.collection("user").document(user!!.uid).delete().addOnCompleteListener() {
+                if (it.isSuccessful) {  //TODO does not work yet
+                    Log.d("TAG", "User deleted from database.")
+                }
+                else
+                {
+                    Log.d("TAG", "User could not be deleted from database.")
+                }
+            }
 
-            FirebaseAuth.getInstance().currentUser?.delete()
+            FirebaseAuth.getInstance().currentUser?.delete()?.addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Log.d("TAG", "User account deleted.")
+                }
+                else
+                {
+                    if (task.exception != null) {
+                        Log.d("TAG", task.exception.toString())
+                    }
+                    if (task.exception.toString().contains("requires recent authentication")) {
+                        Log.d("TAG", "User needs to reauthenticate.")   //TODO handle this(user has to relogin)
+                    }
+                }
+            }
+            FirebaseAuth.getInstance().signOut()
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
             finish()

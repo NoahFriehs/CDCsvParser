@@ -16,6 +16,7 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
+import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -368,6 +369,19 @@ class MainActivity : AppCompatActivity() {
             if (document != null) {
                 val userMap = document.data as HashMap<String, Any>?
                 val appSettings = userMap!!["appSettings"] as HashMap<String, Any>?
+
+                val dbVersion = appSettings?.get("dbVersion")
+
+                if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
+                    //when lower than this than it does not work with the db, has to switch to older version
+                    context = applicationContext
+                    val text: CharSequence = "Your database is not compatible with this version of the app. Please downgrade the app or delete the database."
+                    val duration = Toast.LENGTH_LONG
+                    val toast = Toast.makeText(context, text, duration)
+                    toast.show()
+                    return@addOnSuccessListener
+                }
+
                 val txAppMap = userMap["appModel"] as HashMap<String, Any>?
                 val appType = AppType.valueOf(appSettings!!["appType"] as String)
 

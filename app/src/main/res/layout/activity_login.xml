@@ -60,7 +60,22 @@
         android:textSize="16sp"
         android:layout_below="@id/btn_login"
         android:layout_marginTop="20dp"
-        android:layout_marginLeft="20dp"/>
+        android:layout_marginStart="20dp"
+        android:background="@color/browser_actions_bg_grey"
+        />
+
+    <TextView
+        android:id="@+id/btn_forgot_password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/password_forgotten"
+        android:textSize="16sp"
+        android:layout_below="@id/btn_login"
+        android:layout_toEndOf="@id/btn_signup"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="20dp"
+        android:background="@color/browser_actions_bg_grey"
+        />
 
     <TextView
         android:id="@+id/tv_error_message"

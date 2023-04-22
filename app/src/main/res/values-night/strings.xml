@@ -15,4 +15,6 @@
     <string name="use_app_without_login">Use App without Login</string>
     <string name="logout">Logout</string>
     <string name="delete_account">Delete Account</string>
+    <string name="password_forgotten">Password forgotten</string>
+    <string name="error_noEmail">Please enter your email address</string>
 </resources>

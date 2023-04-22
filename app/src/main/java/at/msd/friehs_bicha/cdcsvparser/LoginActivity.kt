@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 
@@ -14,6 +15,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var etPassword: EditText
     private lateinit var btnLogin: Button
     private lateinit var btnWithoutLogin: Button
+    private lateinit var btnForgotPassword: TextView
     private lateinit var btnSignup: TextView
     private lateinit var tvErrorMessage: TextView
     private lateinit var auth: FirebaseAuth
@@ -36,6 +38,7 @@ class LoginActivity : AppCompatActivity() {
         btnSignup = findViewById(R.id.btn_signup)
         tvErrorMessage = findViewById(R.id.tv_error_message)
         btnWithoutLogin = findViewById(R.id.btn_without_login)
+        btnForgotPassword = findViewById(R.id.btn_forgot_password)
 
         auth = FirebaseAuth.getInstance()
 
@@ -71,6 +74,29 @@ class LoginActivity : AppCompatActivity() {
         btnSignup.setOnClickListener {
             val intent = Intent(this, SignUpActivity::class.java)
             startActivity(intent)
+        }
+
+        btnForgotPassword.setOnClickListener {
+            // Get the email address entered by the user
+            val email = etEmail.text.toString()
+
+            if (email.isEmpty()) {
+                tvErrorMessage.text = getString(R.string.error_noEmail)
+                return@setOnClickListener
+            }
+
+            // Send a password reset email to the user's email address
+            FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        // Password reset email sent successfully
+                        Toast.makeText(this, "Password reset email sent", Toast.LENGTH_SHORT).show()
+                    } else {
+                        // Password reset email failed to send
+                        Toast.makeText(this, "Failed to send password reset email", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
         }
     }
 }

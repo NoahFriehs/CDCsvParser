@@ -12,6 +12,7 @@ class AppSettings(var userID: String, var appType: AppType, var useStrictType: B
     var placeholder8 : String = ""
     var placeholder9 : String = ""
     var placeholder10 : String = ""
+    var dbVersion : String = "1.0.0"
 
     init {
         this.placeholder1 = ""
@@ -44,6 +45,7 @@ class AppSettings(var userID: String, var appType: AppType, var useStrictType: B
         result.put("placeholder8", placeholder8)
         result.put("placeholder9", placeholder9)
         result.put("placeholder10", placeholder10)
+        result.put("dbVersion", dbVersion)
         return result
     }
 }
