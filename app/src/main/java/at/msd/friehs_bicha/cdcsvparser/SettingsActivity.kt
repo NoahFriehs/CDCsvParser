@@ -70,6 +70,8 @@ class SettingsActivity : AppCompatActivity() {
         }
         btnDeleteUser.setOnClickListener {
             val db = Firebase.firestore
+            db.collection("user").document(user!!.uid).set(hashMapOf("deleted" to true))
+
             db.collection("user").document(user!!.uid).delete().addOnCompleteListener() {
                 if (it.isSuccessful) {  //TODO does not work yet
                     Log.d("TAG", "User deleted from database.")
@@ -91,6 +93,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                     if (task.exception.toString().contains("requires recent authentication")) {
                         Log.d("TAG", "User needs to reauthenticate.")   //TODO handle this(user has to relogin)
+                        Toast.makeText(this, "User needs to reauthenticate.", Toast.LENGTH_LONG).show()
                     }
                 }
             }
