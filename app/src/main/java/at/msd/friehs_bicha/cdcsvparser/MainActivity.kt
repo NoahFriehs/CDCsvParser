@@ -11,8 +11,15 @@ import android.widget.Button
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
+import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
+import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
+import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import java.io.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -22,6 +29,13 @@ class MainActivity : AppCompatActivity() {
     var context: Context? = null
     var appModel: AppModel? = null
     var files: Array<File>? = null
+    var user = FirebaseAuth.getInstance().currentUser
+
+
+    companion object {
+        private const val PICKFILE_REQUEST_CODE = 1
+    }
+
 
     /**
      * sets the buttons and spinner and also fills the global vars files and context the first time
@@ -31,11 +45,20 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         context = applicationContext
 
+        user = FirebaseAuth.getInstance().currentUser
+
         //get the elements from the xml.
         val dropdown = findViewById<Spinner>(R.id.spinner_history)
         val btnParse = findViewById<Button>(R.id.btn_parse)
         val btnHistory = findViewById<Button>(R.id.btn_history)
-        btnParse.setOnClickListener { view -> onBtnUploadClick(view) }
+        val btnLoadFromDB = findViewById<Button>(R.id.btn_loadFromDb)
+        if (user == null) {
+            btnLoadFromDB.visibility = View.GONE
+        } else {
+            btnLoadFromDB.visibility = View.VISIBLE
+        }
+        btnParse.setOnClickListener { onBtnUploadClick() }
+        btnLoadFromDB.setOnClickListener { loadFromFireBaseDB()}
         settingsButton()
         updateFiles()
 
@@ -47,6 +70,7 @@ class MainActivity : AppCompatActivity() {
             btnHistory.setOnClickListener { onBtnHistoryClick(dropdown) }
         }
     }
+
 
     /**
      * gets all files from internal file storage and updates it
@@ -65,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
     /**
      * disables or enbales and fills a spinner
      *
@@ -74,7 +99,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun setHistory(type: String, dropdown: Spinner, btnHistory: Button) {
         val res = resources
-        val drawable = res.getDrawable(R.drawable.round_button_layer_list)
+        val drawable = res.getDrawable(R.drawable.round_button_layer_list)  //TODO is deprecated
         when (type) {
             "disabled" -> {
                 // Disable the button
@@ -161,12 +186,13 @@ class MainActivity : AppCompatActivity() {
      * is called on successful file select and saves it to storage.
      * Also reads the file and then calls the parse view
      */
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PICKFILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
             // Get the URI of the selected file
             val fileUri = data.data
-            //creat filename with format M-d-y-H-m-s
+            //create filename with format M-d-y-H-m-s
             val dateFormat = SimpleDateFormat("M-d-y-H-m-s")
             val now = Date()
             val time = dateFormat.format(now)
@@ -180,9 +206,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: IOException) {
-                e.printStackTrace()
+                e.printStackTrace() // TODO error message
             }
-            //delete oldest file if alredy 7 files in array
+            //delete oldest file if already 7 files in array
             updateFiles()
             while (files!!.size > 7) {
                 files!![0].delete()
@@ -209,8 +235,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun callParseView() {
-        saveToDB()
+    private fun callParseView(saveToDB: Boolean = true) {
+        if (saveToDB) {
+            if (user != null)saveToFireBaseDB()
+        }
+        AppModelManager.setInstance(appModel!!)
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
         intent.putExtra("AppModel", appModel)
         startActivity(intent)
@@ -219,7 +248,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * start action to let the user select a file
      */
-    fun onBtnUploadClick(view: View?) {
+    private fun onBtnUploadClick() {
         // Create an Intent object to allow the user to select a file
         val chooseFile = Intent(Intent.ACTION_GET_CONTENT)
 
@@ -236,7 +265,7 @@ class MainActivity : AppCompatActivity() {
      * @param uri url to file
      * @return the content of the file in a ArrayList<Sting>
     </Sting> */
-    fun getFileContentFromUri(uri: Uri?): ArrayList<String> {
+    private fun getFileContentFromUri(uri: Uri?): ArrayList<String> {
         val fileContents = ArrayList<String>()
         try {
             // Get the ContentResolver for the current context.
@@ -260,7 +289,7 @@ class MainActivity : AppCompatActivity() {
             reader.close()
             inputStream!!.close()
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.printStackTrace() // TODO error message
         }
         return fileContents
     }
@@ -271,7 +300,7 @@ class MainActivity : AppCompatActivity() {
      * @param file a file
      * @return the content of the file in a ArrayList<Sting>
     </Sting> */
-    fun getFileContent(file: File?): ArrayList<String> {
+    private fun getFileContent(file: File?): ArrayList<String> {
         val fileContents = ArrayList<String>()
         try {
 
@@ -289,24 +318,110 @@ class MainActivity : AppCompatActivity() {
             // Close the BufferedReader and InputStream.
             reader.close()
         } catch (e: IOException) {
-            e.printStackTrace()
+            e.printStackTrace() // TODO error message
         }
         return fileContents
     }
 
-    fun settingsButton() {
+    private fun settingsButton() {
         val settingsButton = findViewById<Button>(R.id.settings_button)
-        settingsButton.setOnClickListener { view: View? ->
+        settingsButton.setOnClickListener {
             val intent = Intent(this@MainActivity, SettingsActivity::class.java)
             startActivity(intent)
         }
     }
 
-    private fun saveToDB(): Boolean {
-        return appModel!!.setInAndroidDB(applicationContext)
+
+    private fun saveToFireBaseDB()
+    {
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        val db = Firebase.firestore
+
+        db.collection("user").document(uid).delete()  //TODO: use this line in production but for testing it is better to not delete the data
+
+        val appSettings = AppSettings(uid,  PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this))
+        val appSettingsMap = appSettings.toHashMap()
+
+        val userMap = hashMapOf(
+            "appModel" to appModel!!.toHashMap(),
+            "appSettings" to appSettingsMap
+        )
+
+        db.collection("user").document(uid).set(userMap).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                // Data saved successfully
+            } else {
+                // Handle database error    //TODO: handle error
+                val a = 0
+            }
+        }
     }
 
-    companion object {
-        private const val PICKFILE_REQUEST_CODE = 1
+    private fun loadFromFireBaseDB() {
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        //val database = FirebaseDatabase.getInstance()
+        val db = Firebase.firestore
+        // Add data to the txApp object
+
+        val user = db.collection("user").document(uid)
+
+        user.get().addOnSuccessListener { document ->   //TODO handle error(Exceptions wenn data nicht vorhanden ist/nicht passt)
+            if (document != null) {
+                val userMap = document.data as HashMap<String, Any>?
+                val appSettings = userMap!!["appSettings"] as HashMap<String, Any>?
+
+                val dbVersion = appSettings?.get("dbVersion")
+
+                if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
+                    //when lower than this than it does not work with the db, has to switch to older version
+                    context = applicationContext
+                    val text: CharSequence = "Your database is not compatible with this version of the app. Please downgrade the app or delete the database."
+                    val duration = Toast.LENGTH_LONG
+                    val toast = Toast.makeText(context, text, duration)
+                    toast.show()
+                    return@addOnSuccessListener
+                }
+
+                val txAppMap = userMap["appModel"] as HashMap<String, Any>?
+                val appType = AppType.valueOf(appSettings!!["appType"] as String)
+
+                var dbOutsideWallets : ArrayList<HashMap<String, *>>? = null
+
+                if (txAppMap != null) {
+                    val dbWallets = txAppMap["wallets"]
+                    if (appType == AppType.CdCsvParser)
+                    {
+                        dbOutsideWallets = txAppMap["outsideWallets"] as ArrayList<HashMap<String, *>>?
+                    }
+                    val dbTransactions =
+                        txAppMap["transactions"]
+                    val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
+                    val appTypeString = txAppMap["appType"] as String? ?: ""
+                    val appType = AppType.valueOf(appTypeString)
+
+                    //TODO check if data is valid
+                    this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
+                        dbOutsideWallets, dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)
+
+                    PreferenceHelper.setSelectedType(this, appType)
+                    PreferenceHelper.setUseStrictType(this, appSettings["useStrictType"] as Boolean)
+
+                    callParseView(false)
+                }
+                else
+                {
+                    // Handle database error    //TODO: handle error
+                    val a = 0
+                }
+            }
+            else
+            {
+                // Handle database error    //TODO: handle error
+                val a = 0
+            }
+        }.addOnFailureListener { exception ->
+            val a = 0   //TODO: handle error
+        }
     }
+
 }

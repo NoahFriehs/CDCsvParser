@@ -1,37 +1,49 @@
-package at.msd.friehs_bicha.cdcsvparser.App
+package at.msd.friehs_bicha.cdcsvparser.app
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.io.Serializable
 import java.math.BigDecimal
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
-import kotlin.collections.ArrayList
+import java.util.function.Consumer
 
-class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean) : BaseApp(), Serializable {
+class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) : BaseApp(), Serializable {
     /**
      * Can lead to some false wallets bc of Currencies TODO
      */
     var isUseStrictWalletType = false
 
     init {
-        isUseStrictWalletType = useStrictWallet
-        try {
-            this.transactions.addAll(getTransactions(file))
-        } catch (e: Exception) {
-            e.printStackTrace()
+        if (!fastInit) {
+            isUseStrictWalletType = useStrictWallet
+            try {
+                this.transactions.addAll(getTransactions(file))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            println("We have " + this.transactions.size + " transaction(s).")
+            try {
+                fillWallet()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            println("we have " + this.wallets.size + " different transactions.")
+            //((CroCardWallet)wallets.get(0)).writeAmount();
         }
-        println("We have " + this.transactions.size + " transaction(s).")
-        try {
-            fillWallet()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        println("we have " + this.wallets.size + " different transactions.")
-        //((CroCardWallet)wallets.get(0)).writeAmount();
+    }
+
+    constructor(tXs: MutableList<CroCardTransaction>, wTXs: MutableList<CroCardWallet>, amountTxFailed: Long) : this(ArrayList(), false, true)
+    {
+        this.transactions = tXs as ArrayList<Transaction>
+        wTXs.forEach(Consumer { wallet: CroCardWallet ->
+            wallet.txApp = this
+        })
+        this.wallets = ArrayList(wTXs)
+        this.amountTxFailed = amountTxFailed
     }
 
     /**
@@ -58,7 +70,7 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean) : BaseApp(
                     val t = CroCardTransaction(sa[0], sa[1], sa[2], decimalFormat.parse(sa[7]) as BigDecimal, decimalFormat.parse(sa[7]) as BigDecimal, sa[1])
                     transactions.add(t)
                 } else {
-                    println(Arrays.toString(sa))
+                    println(sa.contentToString())
                     println(sa.size)
                 }
             } catch (e: Exception) {

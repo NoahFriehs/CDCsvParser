@@ -7,9 +7,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.App.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
-import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 
 class ParseActivity : AppCompatActivity() {
     var appModel: AppModel? = null
@@ -23,6 +21,8 @@ class ParseActivity : AppCompatActivity() {
         getAppModel()
         val btnFilter = findViewById<Button>(R.id.btn_filter)
         val btnTx = findViewById<Button>(R.id.btn_all_tx)
+        val apiInfo = findViewById<TextView>(R.id.coinGeckoApiLabel)
+        apiInfo.text = "All prices provided by \n CryptoCompare API"   //overwrites the link, bc we CG api is down atm
         btnFilter.setOnClickListener { view: View? ->
             if (appModel!!.isRunning) {
                 val intent = Intent(this@ParseActivity, AssetsFilterActivity::class.java)
@@ -39,7 +39,7 @@ class ParseActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         }
-        while (!appModel!!.isRunning) {
+        while (!appModel!!.isRunning) { //TODO: add loading icon
             try {
                 Thread.sleep(500)
             } catch (e: InterruptedException) {
@@ -52,11 +52,7 @@ class ParseActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
-        appModel = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser && PreferenceHelper.getUseAndroidDB(applicationContext)) {
-            AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), applicationContext)
-        } else {
-            intent.extras!!["AppModel"] as AppModel?
-        }
+        appModel = intent.extras!!["AppModel"] as AppModel?
     }
 
     /**
@@ -82,6 +78,10 @@ class ParseActivity : AppCompatActivity() {
     private fun displayTexts(texts: Map<String, String?>?) {
         texts!!.forEach { (key: String?, value: String?) ->
             val textView = findViewById<TextView>(resources.getIdentifier(key, "id", packageName))
+            if (textView == null)
+            {
+                return  //TODO set here Breakpoint to see if there are any problems with the ids(should only occur if the xml file is changed or programmer error)
+            }
             if (value == null) {
                 runOnUiThread { textView.visibility = View.INVISIBLE }
             } else {

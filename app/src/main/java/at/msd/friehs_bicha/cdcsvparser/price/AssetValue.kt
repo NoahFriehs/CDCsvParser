@@ -30,9 +30,24 @@ class AssetValue : Serializable {
      */
     @Throws(InterruptedException::class)
     fun getPrice(symbol: String?): Double? {
+        //val prices = StaticPrices()
+        //return prices.prices[symbol]    //TODO!!!! replace with real data
+
+        var price = checkCache(symbol)
+        if (price != -1.0) {
+            isRunning = true
+            return price
+        }
+
+        val cryptoPrices = CryptoPricesCryptoCompare()
+        val priceApi = cryptoPrices.getPrice(symbol!!)
+        if (priceApi != 0.0) {
+            cache.add(PriceCache(symbol, priceApi))
+            return priceApi
+        }
         var symbol = symbol
         symbol = overrideSymbol(symbol)
-        val price = checkCache(symbol)
+        price = checkCache(symbol)
         if (price != -1.0) {
             isRunning = true
             return price
@@ -56,8 +71,9 @@ class AssetValue : Serializable {
                 println("|" + e.message)
             }
             isRunning = true
-            getPriceTheOtherWay(symbol)
+            return getPriceTheOtherWay(symbol)
         } catch (e: Exception) {
+            print(e.message)
             if (e.message!!.contains("com.litesoftwares.coingecko.exception.CoinGeckoApiException: CoinGeckoApiError(code=1015, message=Rate limited)")) {
                 Thread.sleep(1000)
                 return getPrice(symbol)
@@ -69,7 +85,13 @@ class AssetValue : Serializable {
             }
             isRunning = false
             tries = 0
-            0.0
+            try {
+                val prices = StaticPrices()
+                return prices.prices[symbol]
+            } catch (e: Exception) {
+                println("No price found for: $symbol")
+                return 0.0
+            }
         }
     }
 
@@ -83,7 +105,7 @@ class AssetValue : Serializable {
         val client: CoinGeckoApiClient = CoinGeckoApiClientImpl()
         if (coinLists == null) coinLists = client.coinList
         for (coinList in coinLists!!) {
-            if (coinList.symbol.contains(symbol!!.lowercase(Locale.getDefault())) || coinList.id.contains(symbol.lowercase(Locale.getDefault())) || coinList.name.contains(symbol.lowercase(Locale.getDefault()))) {
+            if (coinList.symbol.lowercase().contains(symbol!!.lowercase(Locale.getDefault())) || coinList.id.lowercase().contains(symbol.lowercase(Locale.getDefault())) || coinList.name.lowercase().contains(symbol.lowercase(Locale.getDefault()))) {
                 val bitcoinInfo = client.getCoinById(coinList.id)
                 val data = bitcoinInfo.marketData
                 val dataPrice = data.currentPrice

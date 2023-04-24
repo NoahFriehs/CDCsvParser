@@ -26,3 +26,15 @@ enum class TransactionType {
     crypto_viban_exchange,  //sell
     STRING //for Card und unknown things
 }
+
+fun stringToTransactionType(str: String?): TransactionType {
+    return try {
+        if (str != null) {
+            TransactionType.valueOf(str)
+        } else {
+            TransactionType.STRING
+        }
+    } catch (e: IllegalArgumentException) {
+        TransactionType.STRING
+    }
+}
