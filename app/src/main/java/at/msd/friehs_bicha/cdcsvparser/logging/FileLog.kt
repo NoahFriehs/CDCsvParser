@@ -35,9 +35,13 @@ class FileLog {
                 logFile.parentFile?.mkdirs()
                 logFile.createNewFile()
             }
+            else if (logFile.parentFile == null ||logFile.parentFile?.exists() == false){
+                logFile.parentFile?.mkdirs()
+            }
             else if (logFile.length() > 1000) {
-                logFile.delete()
-                logFile.createNewFile()
+                val lines = logFile.readLines()
+                val newLines = lines.subList(500, lines.size)
+                logFile.writeText(newLines.joinToString("\n"))
             }
 
             isInitialized = true
