@@ -133,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         val appDir = filesDir
         // Get a list of all files in the app's internal file directory
         files = appDir.listFiles() as Array<File>
+        files = files!!.filter { it.name.endsWith(".csv") }.toTypedArray()
     }
 
     /**
@@ -200,7 +201,7 @@ class MainActivity : AppCompatActivity() {
             val filename = "$time.csv"
             val list = getFileContentFromUri(fileUri)
             try {
-                context!!.openFileOutput(filename, MODE_APPEND).use { fos ->
+                applicationContext.openFileOutput(filename, MODE_APPEND).use { fos ->
                     for (element in list) {
                         fos.write(element.toByteArray())
                         fos.write("\n".toByteArray()) // add a newline after each element
@@ -384,7 +385,9 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 val txAppMap = userMap["appModel"] as HashMap<String, Any>?
-                val appType = AppType.valueOf(appSettings!!["appType"] as String)
+                val appType = AppType.valueOf(appSettings["appType"] as String)
+
+                val useStrictType = appSettings["useStrictType"] as Boolean
 
                 var dbOutsideWallets : ArrayList<HashMap<String, *>>? = null
 
@@ -402,7 +405,7 @@ class MainActivity : AppCompatActivity() {
 
                     //TODO check if data is valid
                     this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
-                        dbOutsideWallets, dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)
+                        dbOutsideWallets, dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed, useStrictType)
 
                     PreferenceHelper.setSelectedType(this, appType)
                     PreferenceHelper.setUseStrictType(this, appSettings["useStrictType"] as Boolean)

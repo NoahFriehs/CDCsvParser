@@ -97,20 +97,6 @@ class AssetsFilterActivity : AppCompatActivity() {
             return wallets.toTypedArray()
         }
 
-    /**
-     * Checks if there is an internet connection
-     */
-    private fun testConnection() {
-        val t1 = Thread {
-            try {
-                appModel!!.valueOfAssets
-                appModel!!.asset.isRunning = true
-            } catch (e: Exception) {
-                println("no internet connection")
-            }
-        }
-        t1.start()
-    }
 
     /**
      * Displays the prices of specificWallet

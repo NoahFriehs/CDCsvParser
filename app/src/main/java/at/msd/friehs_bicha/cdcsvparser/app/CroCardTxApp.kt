@@ -43,6 +43,11 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
             wallet.txApp = this
         })
         this.wallets = ArrayList(wTXs)
+        try {
+            fillWallet(true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         this.amountTxFailed = amountTxFailed
     }
 
@@ -80,14 +85,29 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
         return transactions
     }
 
-    private fun fillWallet() {
+    private fun fillWallet(walletsExisting: Boolean = false) {
         println("Filling Wallets")
-        wallets.add(CroCardWallet("EUR", BigDecimal.ZERO, "EUR -> EUR", this))
-        for (t in transactions) {
-            if ((t as CroCardTransaction).transactionTypeString == "EUR -> EUR") {
-                (wallets[0] as CroCardWallet).addToWallet(t)
-            } else {
-                wallets[0]?.addTransaction(t)
+        if (!walletsExisting) {
+            wallets.add(CroCardWallet("EUR", BigDecimal.ZERO, "EUR -> EUR", this))
+            for (t in transactions) {
+                if ((t as CroCardTransaction).transactionTypeString == "EUR -> EUR") {
+                    (wallets[0] as CroCardWallet).addToWallet(t)
+                } else {
+                    wallets[0]?.addTransaction(t)
+                }
+            }
+        }
+        else
+        {
+            for (t in transactions) {
+                for (w in wallets)
+                    if (w != null) {
+                        if (t.walletId == w.walletId)
+                        {
+                            w.addTransaction(t)
+                            break
+                        }
+                    }
             }
         }
         println("Wallets filled")

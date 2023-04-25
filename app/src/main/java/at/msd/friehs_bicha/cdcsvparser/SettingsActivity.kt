@@ -73,7 +73,7 @@ class SettingsActivity : AppCompatActivity() {
             val db = Firebase.firestore
             db.collection("user").document(user!!.uid).set(hashMapOf("deleted" to true))
 
-            db.collection("user").document(user!!.uid).delete().addOnCompleteListener() {
+            db.collection("user").document(user.uid).delete().addOnCompleteListener {
                 if (it.isSuccessful) {  //TODO does not work yet
                     FileLog.d("TAG", "User deleted from database.")
                 }
