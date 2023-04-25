@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
+import android.util.Log
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -9,7 +11,7 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     private val baseUrl = "https://min-api.cryptocompare.com/data/"
 
     override fun getPrice(symbol: String): Double {
-        try {
+        return try {
             val url = "${baseUrl}price?fsym=$symbol&tsyms=EUR"
             val request = Request.Builder()
                 .url(url)
@@ -18,10 +20,10 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
             val json = response.body?.string()
             val jsonObject = JSONObject(json)
             val price = jsonObject.getDouble("EUR")
-            return price
-        }
-        catch (e: Exception) {
-            return 0.0
+            price
+        } catch (e: Exception) {
+            FileLog.d("CryptoCompare", "Failed to get price for $symbol")
+            0.0
         }
     }
 }

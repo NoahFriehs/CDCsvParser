@@ -141,12 +141,13 @@ class MainActivity : AppCompatActivity() {
      * @param spinner spinner to fill
      */
     private fun setSpinner(spinner: Spinner) {
-        val fileNames = arrayOfNulls<String>(files!!.size)
+        val fileNames = ArrayList<String>()
         val sdf = SimpleDateFormat("M-d-yyyy-hh-mm-ss")
         val dateFormat = SimpleDateFormat("d.M hh:mm")
         var filename: String
         var date: Date?
         for (i in files!!.indices) {
+            if (files!![i].name.equals("log")) continue //TODO make a better override if more files exist
             filename = files!![i].name
             filename = filename.substring(0, filename.length - 4)
             try {
@@ -156,7 +157,7 @@ class MainActivity : AppCompatActivity() {
                 e.printStackTrace()
                 // TODO error message
             }
-            fileNames[i] = filename
+            fileNames.add(filename)
         }
         val fileNamesAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, fileNames)
         spinner.adapter = fileNamesAdapter
