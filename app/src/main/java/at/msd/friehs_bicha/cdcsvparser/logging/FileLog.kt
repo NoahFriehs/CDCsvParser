@@ -8,6 +8,15 @@ import java.io.File
 import java.io.FileWriter
 import java.util.*
 
+/*
+* TODO:
+*  when using logging:
+* For devs use FileLog.d
+* For errors use FileLog.e
+* For warnings use Log.w
+* For info use Log.i
+ */
+
 class FileLog {
 
     companion object {
@@ -39,6 +48,24 @@ class FileLog {
             Log.d(tag, message)
             if (!isInitialized) return
             writeToFile(tag, message)
+        }
+
+        fun i(tag: String?, message: String) {
+            Log.i(tag, message)
+            if (!isInitialized) return
+            writeToFile(tag, "Info: $message")
+        }
+
+        fun e(tag: String?, message: String) {
+            Log.e(tag, message)
+            if (!isInitialized) return
+            writeToFile(tag, "Error: $message")
+        }
+
+        fun w(tag: String?, message: String) {
+            Log.w(tag, message)
+            if (!isInitialized) return
+            writeToFile(tag, "Warning: $message")
         }
 
         private fun writeToFile(tag: String?, message: String) {
