@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
+import android.util.Log
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import com.litesoftwares.coingecko.CoinGeckoApiClient
 import com.litesoftwares.coingecko.constant.Currency
 import com.litesoftwares.coingecko.domain.Coins.CoinList
@@ -31,7 +33,7 @@ class AssetValue : Serializable {
     @Throws(InterruptedException::class)
     fun getPrice(symbol: String?): Double? {
         //val prices = StaticPrices()
-        //return prices.prices[symbol]    //TODO!!!! replace with real data
+        //return prices.prices[symbol]    //use this if api does nor work
 
         var price = checkCache(symbol)
         if (price != -1.0) {
@@ -52,7 +54,7 @@ class AssetValue : Serializable {
             isRunning = true
             return price
         }
-        return try {
+        try {
             val client: CoinGeckoApiClient = CoinGeckoApiClientImpl()
             //client.ping();
             if (coinMarkets == null || Instant.now().isAfter(coinMarketsCreationTime!!.plusSeconds(300))) {
@@ -69,12 +71,14 @@ class AssetValue : Serializable {
                 }
             } catch (e: Exception) {
                 println("|" + e.message)
+                FileLog.d("CoinGecko", "|" + e.message)
             }
             isRunning = true
             return getPriceTheOtherWay(symbol)
         } catch (e: Exception) {
             print(e.message)
             if (e.message!!.contains("com.litesoftwares.coingecko.exception.CoinGeckoApiException: CoinGeckoApiError(code=1015, message=Rate limited)")) {
+                FileLog.d("CoinGecko", "Rate limited")
                 Thread.sleep(1000)
                 return getPrice(symbol)
             }
@@ -90,6 +94,7 @@ class AssetValue : Serializable {
                 return prices.prices[symbol]
             } catch (e: Exception) {
                 println("No price found for: $symbol")
+                FileLog.d("CoinGecko", "No price found for: $symbol")
                 return 0.0
             }
         }

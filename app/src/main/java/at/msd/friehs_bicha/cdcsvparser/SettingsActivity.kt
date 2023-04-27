@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -72,27 +73,27 @@ class SettingsActivity : AppCompatActivity() {
             val db = Firebase.firestore
             db.collection("user").document(user!!.uid).set(hashMapOf("deleted" to true))
 
-            db.collection("user").document(user!!.uid).delete().addOnCompleteListener() {
+            db.collection("user").document(user.uid).delete().addOnCompleteListener {
                 if (it.isSuccessful) {  //TODO does not work yet
-                    Log.d("TAG", "User deleted from database.")
+                    FileLog.d("TAG", "User deleted from database.")
                 }
                 else
                 {
-                    Log.d("TAG", "User could not be deleted from database.")
+                    FileLog.d("TAG", "User could not be deleted from database.")
                 }
             }
 
             FirebaseAuth.getInstance().currentUser?.delete()?.addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    Log.d("TAG", "User account deleted.")
+                    FileLog.d("TAG", "User account deleted.")
                 }
                 else
                 {
                     if (task.exception != null) {
-                        Log.d("TAG", task.exception.toString())
+                        FileLog.d("TAG", task.exception.toString())
                     }
                     if (task.exception.toString().contains("requires recent authentication")) {
-                        Log.d("TAG", "User needs to reauthenticate.")   //TODO handle this(user has to relogin)
+                        FileLog.d("TAG", "User needs to reauthenticate.")   //TODO handle this(user has to relogin)
                         Toast.makeText(this, "User needs to reauthenticate.", Toast.LENGTH_LONG).show()
                     }
                 }

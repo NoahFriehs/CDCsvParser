@@ -32,7 +32,7 @@ class TxApp : BaseApp, Serializable {
         createWallets()
         fillWallet(transactions)
         if (amountTxFailed > 0) {
-            throw RuntimeException("$amountTxFailed transaction(s) failed")
+            //throw RuntimeException("$amountTxFailed transaction(s) failed")   //handled in AppModel now without exception needed here
         }
     }
 

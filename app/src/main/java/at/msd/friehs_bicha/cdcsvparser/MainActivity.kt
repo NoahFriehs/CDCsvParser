@@ -133,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         val appDir = filesDir
         // Get a list of all files in the app's internal file directory
         files = appDir.listFiles() as Array<File>
+        files = files!!.filter { it.name.endsWith(".csv") }.toTypedArray()
     }
 
     /**
@@ -141,12 +142,13 @@ class MainActivity : AppCompatActivity() {
      * @param spinner spinner to fill
      */
     private fun setSpinner(spinner: Spinner) {
-        val fileNames = arrayOfNulls<String>(files!!.size)
+        val fileNames = ArrayList<String>()
         val sdf = SimpleDateFormat("M-d-yyyy-hh-mm-ss")
         val dateFormat = SimpleDateFormat("d.M hh:mm")
         var filename: String
         var date: Date?
         for (i in files!!.indices) {
+            if (files!![i].name.equals("log")) continue //TODO make a better override if more files exist
             filename = files!![i].name
             filename = filename.substring(0, filename.length - 4)
             try {
@@ -156,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                 e.printStackTrace()
                 // TODO error message
             }
-            fileNames[i] = filename
+            fileNames.add(filename)
         }
         val fileNamesAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, fileNames)
         spinner.adapter = fileNamesAdapter
@@ -199,7 +201,7 @@ class MainActivity : AppCompatActivity() {
             val filename = "$time.csv"
             val list = getFileContentFromUri(fileUri)
             try {
-                context!!.openFileOutput(filename, MODE_APPEND).use { fos ->
+                applicationContext.openFileOutput(filename, MODE_APPEND).use { fos ->
                     for (element in list) {
                         fos.write(element.toByteArray())
                         fos.write("\n".toByteArray()) // add a newline after each element
@@ -383,7 +385,9 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 val txAppMap = userMap["appModel"] as HashMap<String, Any>?
-                val appType = AppType.valueOf(appSettings!!["appType"] as String)
+                val appType = AppType.valueOf(appSettings["appType"] as String)
+
+                val useStrictType = appSettings["useStrictType"] as Boolean
 
                 var dbOutsideWallets : ArrayList<HashMap<String, *>>? = null
 
@@ -401,7 +405,7 @@ class MainActivity : AppCompatActivity() {
 
                     //TODO check if data is valid
                     this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
-                        dbOutsideWallets, dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed)
+                        dbOutsideWallets, dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed, useStrictType)
 
                     PreferenceHelper.setSelectedType(this, appType)
                     PreferenceHelper.setUseStrictType(this, appSettings["useStrictType"] as Boolean)

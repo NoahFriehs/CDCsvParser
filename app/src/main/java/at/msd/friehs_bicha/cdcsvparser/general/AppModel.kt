@@ -1,9 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.general
 
-import at.msd.friehs_bicha.cdcsvparser.app.AppType
-import at.msd.friehs_bicha.cdcsvparser.app.CroCardTxApp
-import at.msd.friehs_bicha.cdcsvparser.app.TxApp
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
@@ -30,35 +28,17 @@ class AppModel : BaseAppModel, Serializable {
      * @param appType       which app to use
      * @param useStrictType
      */
-    constructor(file: ArrayList<String>, appType: AppType?, useStrictType: Boolean) : super(appType) {
-        var exception = ""
-        try {
-            when (appType) {
-                AppType.CdCsvParser -> txApp = TxApp(file)
-                AppType.CroCard -> txApp = CroCardTxApp(file, useStrictType)
-                else -> throw RuntimeException("Usage not found")
-            }
-        } catch (e: Exception) {
-            exception = e.message.toString()
-        }
+    constructor(file: ArrayList<String>, appType: AppType, useStrictType: Boolean) : super(appType) {
+        txApp = TxAppFactory.createTxApp(appType, AppStatus.NotStarted, useStrictType, hashMapOf(DataTypes.csvAsList to file))
         asset = AssetValue()
         isRunning = true
-        if (exception != "") {
-            throw RuntimeException(exception)
+        if (txApp!!.amountTxFailed > 0) {
+            throw RuntimeException("$txApp.amountTxFailed transaction(s) failed")
         }
     }
 
-    /**
-     * @deprecated do not use this constructor
-     */
-//    constructor(appType: AppType?, useStrictType: Boolean?, context: Context) : super(appType) {
-//        getFromAndroidDB(context, useStrictType)
-//        asset = AssetValue()
-//        //isRunning = true;
-//    }
-
-    constructor(dbWallets: ArrayList<HashMap<String, *>>?, dbOutsideWallets: ArrayList<HashMap<String, *>>?, dbTransactions: ArrayList<HashMap<String, *>>?, appType: AppType, amountTxFailed: Long) : super(appType) {
-        initFromFirebase(dbWallets!!, dbOutsideWallets, dbTransactions!!, appType, amountTxFailed)
+    constructor(dbWallets: ArrayList<HashMap<String, *>>?, dbOutsideWallets: ArrayList<HashMap<String, *>>?, dbTransactions: ArrayList<HashMap<String, *>>?, appType: AppType, amountTxFailed: Long, useStrictType: Boolean) : super(appType) {
+        txApp = TxAppFactory.createTxApp(appType, AppStatus.importFromFB, useStrictType, hashMapOf(DataTypes.dbWallets to dbWallets, DataTypes.dbOutsideWallets to dbOutsideWallets, DataTypes.dbTransactions to dbTransactions, DataTypes.amountTxFailed to amountTxFailed))
         asset = AssetValue()
         isRunning = true
     }
@@ -129,7 +109,7 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the total amount the assets are worth in EUR
      */
-    val valueOfAssets: Double
+    private val valueOfAssets: Double
         get() = try {
             var valueOfAll = 0.0
             for (w in txApp!!.wallets) {
@@ -290,189 +270,6 @@ class AppModel : BaseAppModel, Serializable {
 //        t.start()
 //        return true
 //    }
-
-
-    private fun initFromFirebase(dbWallets: ArrayList<HashMap<String, *>>, dbOutsideWallets: ArrayList<HashMap<String, *>>?, dbTransactions: ArrayList<HashMap<String, *>>, appType: AppType, amountTxFailed: Long)
-    {
-        if (appType == AppType.CroCard) {
-            processCroCardFromDB(dbWallets, dbTransactions, amountTxFailed)
-        }
-
-        val tXs: MutableList<Transaction> = ArrayList()
-        val wTXs: MutableList<CDCWallet> = ArrayList()
-        val wTXsOutside: MutableList<CDCWallet> = ArrayList()
-        dbTransactions.forEach(Consumer { hashMap: HashMap<String, *> ->    //TODO in den Transactions und Wallet Klassen selbst machen damit dann nur mehr val tx = Transaction(hashMap) und val wallet = CDCWallet(hashMap) ist
-
-            val transactionId = hashMap["transactionId"] as Long
-            val description = hashMap["description"] as String
-            val walletId = hashMap["walletId"] as Long
-            val fromWalletId = hashMap["fromWalletId"] as Long
-            val date = hashMap["date"] as Timestamp?
-            val currencyType = hashMap["currencyType"] as String
-            val amount = hashMap["amount"] as Double
-            val nativeAmount = hashMap["nativeAmount"] as Double
-            val amountBonus = hashMap["amountBonus"] as Double?
-            val transactionType = hashMap["transactionType"] as String?
-            val transHash = hashMap["transHash"] as String?
-            val toCurrency = hashMap["toCurrency"] as String?
-            val toAmount = hashMap["toAmount"] as Double?
-            val isOutsideTransaction = hashMap["outsideTransaction"] as Boolean
-
-            if (transactionType == null)
-            {
-                val i = 0
-            }
-
-            val transaction = Transaction(transactionId, description, walletId.toInt(), fromWalletId.toInt(), date!!.toDate(), currencyType, amount, nativeAmount, amountBonus!!,
-                stringToTransactionType(transactionType), transHash, toCurrency, toAmount, isOutsideTransaction)
-            tXs.add(transaction)
-        })
-        dbWallets.forEach(Consumer { hashMap: HashMap<String, *> ->
-
-            val walletId = hashMap["walletId"] as Long
-            val currencyType = hashMap["currencyType"] as String?
-            val amount = hashMap["amount"] as Double
-            val amountBonus = hashMap["amountBonus"] as Double
-            val moneySpent = hashMap["moneySpent"] as Double
-            val isOutsideWallet = hashMap["outsideWallet"] as Boolean
-
-            val transactionsList = hashMap["transactions"] as MutableList<HashMap<String, *>?>?
-            val transactions = ArrayList<Transaction?>()
-
-            transactionsList?.forEach { transactionMap ->
-                transactionMap?.let {
-                    val dbTransaction = Transaction(
-                        it["transactionId"] as Long,
-                        it["description"] as String,
-                        (it["walletId"] as Long).toInt(),
-                        (it["fromWalletId"] as Long).toInt(),
-                        (it["date"] as Timestamp?)?.toDate(),
-                        it["currencyType"] as String,
-                        it["amount"] as Double,
-                        it["nativeAmount"] as Double,
-                        it["amountBonus"] as Double,
-                        TransactionType.valueOf(it["transactionType"] as String),
-                        it["transHash"] as String?,
-                        it["toCurrency"] as String?,
-                        it["toAmount"] as Double?,
-                        it["outsideTransaction"] as Boolean
-
-                    )
-                    transactions.add(dbTransaction)
-                }
-            }
-
-            val wallet = CDCWallet(walletId, currencyType, amount, amountBonus, moneySpent, isOutsideWallet, transactions)
-            wTXs.add(wallet)
-        })
-        dbOutsideWallets?.forEach(Consumer { hashMap: HashMap<String, *> ->
-            val walletId = hashMap["walletId"] as Long
-            val currencyType = hashMap["currencyType"] as String?
-            val amount = hashMap["amount"] as Double
-            val amountBonus = hashMap["amountBonus"] as Double
-            val moneySpent = hashMap["moneySpent"] as Double
-            val isOutsideWallet = hashMap["outsideWallet"] as Boolean
-
-            val transactionsList = hashMap["transactions"] as MutableList<HashMap<String, *>?>?
-            val transactions = ArrayList<Transaction?>()
-
-            transactionsList?.forEach { transactionMap ->
-                transactionMap?.let {
-                    val dbTransaction = Transaction(
-                        it["transactionId"] as Long,
-                        it["description"] as String,
-                        (it["walletId"] as Long).toInt(),
-                        (it["fromWalletId"] as Long).toInt(),
-                        (it["date"] as Timestamp?)?.toDate(),
-                        it["currencyType"] as String,
-                        it["amount"] as Double,
-                        it["nativeAmount"] as Double,
-                        it["amountBonus"] as Double,
-                        TransactionType.valueOf(it["transactionType"] as String),
-                        it["transHash"] as String?,
-                        it["toCurrency"] as String?,
-                        it["toAmount"] as Double?,
-                        it["outsideTransaction"] as Boolean
-
-                    )
-                    transactions.add(dbTransaction)
-                }
-            }
-
-            val wallet = CDCWallet(walletId, currencyType, amount, amountBonus, moneySpent, isOutsideWallet, transactions)
-            wTXsOutside.add(wallet)
-        })
-        this.txApp = TxApp(tXs, wTXs, wTXsOutside, amountTxFailed)
-        this.isRunning = true
-    }
-
-    private fun processCroCardFromDB(dbWallets: ArrayList<HashMap<String, *>>, dbTransactions: ArrayList<HashMap<String, *>>, amountTxFailed: Long) {
-        val tXs: MutableList<CroCardTransaction> = ArrayList()
-        val wTXs: MutableList<CroCardWallet> = ArrayList()
-        dbTransactions.forEach(Consumer { hashMap: HashMap<String, *> ->
-
-            val transactionId = hashMap["transactionId"] as Long
-            val description = hashMap["description"] as String
-            val walletId = hashMap["walletId"] as Long
-            val fromWalletId = hashMap["fromWalletId"] as Long
-            val date = (hashMap["date"] as Timestamp).toDate()
-            val currencyType = hashMap["currencyType"] as String
-            val amount = hashMap["amount"] as Double
-            val nativeAmount = hashMap["nativeAmount"] as Double
-            val amountBonus = hashMap["amountBonus"] as Double?
-            val transactionType = hashMap["transactionType"] as String
-            val transHash = hashMap["transHash"] as String?
-            val toCurrency = hashMap["toCurrency"] as String?
-            val toAmount = hashMap["toAmount"] as Double?
-            val isOutsideTransaction = hashMap["outsideTransaction"] as Boolean
-            val transactionTypeString = hashMap["transactionTypeString"] as String
-
-            val transaction = CroCardTransaction(transactionId, description, walletId.toInt(), fromWalletId.toInt(), date, currencyType, amount, nativeAmount, amountBonus!!,
-                transactionType, transHash, toCurrency, toAmount, isOutsideTransaction, transactionTypeString)
-            tXs.add(transaction)
-        })
-        dbWallets.forEach(Consumer { hashMap: HashMap<String, *> ->
-
-            val walletId = hashMap["walletId"] as Long
-            val currencyType = hashMap["currencyType"] as String?
-            val amount = hashMap["amount"] as Double
-            val amountBonus = hashMap["amountBonus"] as Double
-            val moneySpent = hashMap["moneySpent"] as Double
-            val isOutsideWallet = hashMap["outsideWallet"] as Boolean
-
-            val transactionsList = hashMap["transactions"] as MutableList<HashMap<String, *>?>?
-            val transactions = ArrayList<CroCardTransaction?>()
-
-            transactionsList?.forEach { transactionMap ->
-                transactionMap?.let {
-                    val dbTransaction = CroCardTransaction(
-                        it["transactionId"] as Long,
-                        it["description"] as String,
-                        (it["walletId"] as Long).toInt(),
-                        (it["fromWalletId"] as Long).toInt(),
-                        (it["date"] as Timestamp).toDate(),
-                        it["currencyType"] as String,
-                        it["amount"] as Double,
-                        it["nativeAmount"] as Double,
-                        it["amountBonus"] as Double,
-                        it["transactionType"] as String,
-                        it["transHash"] as String?,
-                        it["toCurrency"] as String?,
-                        it["toAmount"] as Double?,
-                        it["outsideTransaction"] as Boolean,
-                        it["transactionTypeString"] as String
-                    )
-                    transactions.add(dbTransaction)
-                }
-            }
-
-            val wallet = CroCardWallet(walletId, currencyType, amount, amountBonus, moneySpent, isOutsideWallet, transactions)
-            wTXs.add(wallet)
-        })
-        this.txApp = CroCardTxApp(tXs, wTXs, amountTxFailed)
-        this.isRunning = true
-    }
-
 
     fun toHashMap(): HashMap<String, Any>
     {

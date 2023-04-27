@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.util
 
 import androidx.room.TypeConverter
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import java.math.BigDecimal
 import java.text.DateFormat
@@ -23,7 +24,7 @@ object Converter {
         return try {
             TransactionType.valueOf(s)
         } catch (e: Exception) {
-            println(s)
+            FileLog.d("Converter", "ttConverter: $s")
             throw IllegalArgumentException("Please give a correct TransactionType")
             //            return null;
         }
@@ -44,11 +45,9 @@ object Converter {
                 val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy")
                 sdf.parse(s)
             } catch (e1: Exception) {
-                println(s)
+                FileLog.d("Converter", "dateConverter: $s")
                 null
             }
-            println(s)
-            null
         }
     }
 
@@ -63,7 +62,7 @@ object Converter {
             val dateFormat: DateFormat = SimpleDateFormat("yyyy-MM-dd")
             dateFormat.format(s)
         } catch (e: Exception) {
-            println(s)
+            FileLog.d("Converter", "stringToDateConverter: $s")
             null
         }
     }
