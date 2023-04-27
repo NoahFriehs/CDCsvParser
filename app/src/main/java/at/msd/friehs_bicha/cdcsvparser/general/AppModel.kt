@@ -1,19 +1,16 @@
 package at.msd.friehs_bicha.cdcsvparser.general
 
-import android.content.Context
-import at.msd.friehs_bicha.cdcsvparser.App.AppType
-import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp
-import at.msd.friehs_bicha.cdcsvparser.App.TxApp
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.db.AppDatabase
+import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
+import at.msd.friehs_bicha.cdcsvparser.transactions.*
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
-import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.WalletWithTransactions
+import at.msd.friehs_bicha.cdcsvparser.wallet.*
+import com.google.firebase.Timestamp
 import java.io.Serializable
 import java.math.BigDecimal
-import java.math.MathContext
+import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
@@ -21,6 +18,9 @@ import java.util.function.Consumer
  * The parser control for the Parser
  */
 class AppModel : BaseAppModel, Serializable {
+
+    var asset: AssetValue = AssetValue()
+
     /**
      * Creates a new AppModel
      *
@@ -28,36 +28,28 @@ class AppModel : BaseAppModel, Serializable {
      * @param appType       which app to use
      * @param useStrictType
      */
-    constructor(file: ArrayList<String>, appType: AppType?, useStrictType: Boolean) : super(appType) {
-        var exception = ""
-        try {
-            when (appType) {
-                AppType.CdCsvParser -> txApp = TxApp(file)
-                AppType.CroCard -> txApp = CroCardTxApp(file, useStrictType)
-                else -> throw RuntimeException("Usage not found")
-            }
-        } catch (e: Exception) {
-            exception = e.message.toString()
-        }
+    constructor(file: ArrayList<String>, appType: AppType, useStrictType: Boolean) : super(appType) {
+        txApp = TxAppFactory.createTxApp(appType, AppStatus.NotStarted, useStrictType, hashMapOf(DataTypes.csvAsList to file))
         asset = AssetValue()
         isRunning = true
-        if (exception != "") {
-            throw RuntimeException(exception)
+        if (txApp!!.amountTxFailed > 0) {
+            throw RuntimeException("$txApp.amountTxFailed transaction(s) failed")
         }
     }
 
-    constructor(appType: AppType?, useStrictType: Boolean?, context: Context) : super(appType) {
-        getFromAndroidDB(context, useStrictType)
+    constructor(dbWallets: ArrayList<HashMap<String, *>>?, dbOutsideWallets: ArrayList<HashMap<String, *>>?, dbTransactions: ArrayList<HashMap<String, *>>?, appType: AppType, amountTxFailed: Long, useStrictType: Boolean) : super(appType) {
+        txApp = TxAppFactory.createTxApp(appType, AppStatus.importFromFB, useStrictType, hashMapOf(DataTypes.dbWallets to dbWallets, DataTypes.dbOutsideWallets to dbOutsideWallets, DataTypes.dbTransactions to dbTransactions, DataTypes.amountTxFailed to amountTxFailed))
         asset = AssetValue()
-        //isRunning = true;
+        isRunning = true
     }
+
 
     /**
      * Returns the total amount spent
      *
      * @return the total amount spent
      */
-    val totalPrice: BigDecimal
+    private val totalPrice: BigDecimal
         get() {
             var totalPrice = BigDecimal(0)
             when (appType) {
@@ -81,14 +73,14 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the total amount earned as a bonus
      */
-    val totalBonus: Double
+    private val totalBonus: Double
         get() = try {
-            val valueOfAll = AtomicReference(0.0)
+            val valueOfAll = AtomicReference(0.0)   //TODO not necessary
             for (wallet in txApp!!.wallets) {
                 if (wallet!!.currencyType == "EUR") continue
                 val price = asset.getPrice(wallet.currencyType)!!
                 val amount = wallet.amountBonus
-                valueOfAll.updateAndGet { v: Double -> v + price * amount!!.toDouble() }
+                valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
             }
             valueOfAll.get()
         } catch (e: Exception) {
@@ -100,12 +92,12 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the total amount earned as a bonus
      */
-    fun getTotalBonus(wallet: Wallet?): Double {
+    private fun getTotalBonus(wallet: Wallet?): Double {
         return try {
-            val valueOfAll = AtomicReference(0.0)
+            val valueOfAll = AtomicReference(0.0)   //TODO not necessary
             val price = asset.getPrice(wallet!!.currencyType)!!
             val amount = wallet.amountBonus
-            valueOfAll.updateAndGet { v: Double -> v + price * amount!!.toDouble() }
+            valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
             valueOfAll.get()
         } catch (e: Exception) {
             0.0
@@ -117,14 +109,14 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the total amount the assets are worth in EUR
      */
-    val valueOfAssets: Double
+    private val valueOfAssets: Double
         get() = try {
             var valueOfAll = 0.0
             for (w in txApp!!.wallets) {
                 if (w!!.currencyType == "EUR") continue
                 val price = asset.getPrice(w.currencyType)!!
                 val amount = w.amount
-                valueOfAll += price * amount!!.toDouble()
+                valueOfAll += price * amount.toDouble()
                 if (valueOfAll < 0.0) {
                     val i = 0
                 }
@@ -139,12 +131,12 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the amount the asset is worth in EUR
      */
-    fun getValueOfAssets(w: Wallet?): Double {
+    private fun getValueOfAssets(w: Wallet?): Double {
         return try {
             val valueOfWallet: Double
             val price = asset.getPrice(w!!.currencyType)!!
             val amount = w.amount
-            valueOfWallet = price * amount!!.toDouble()
+            valueOfWallet = price * amount.toDouble()
             valueOfWallet
         } catch (e: Exception) {
             0.0
@@ -153,26 +145,26 @@ class AppModel : BaseAppModel, Serializable {
 
     fun getAssetMap(wallet: Wallet?): Map<String, String?> {
         //TODO add sleep //if (!isRunning) sleep(1000);
-        val total = wallet!!.moneySpent.round(MathContext(0))
+        val total = StringHelper.formatAmountToString(wallet!!.moneySpent.toDouble())
         val map: MutableMap<String, String?> = HashMap()
         when (appType) {
             AppType.CdCsvParser -> {
                 val amountOfAsset = getValueOfAssets(wallet)
                 val rewardValue = getTotalBonus(wallet)
                 if (asset.isRunning) {
-                    map[R.id.assets_value.toString()] = (Math.round(amountOfAsset * 100.0) / 100.0).toString() + " €"
-                    map[R.id.rewards_value.toString()] = (Math.round(rewardValue * 100.0) / 100.0).toString() + " €"
-                    map[R.id.profit_loss_value.toString()] = (Math.round((amountOfAsset - total.toDouble()) * 100.0) / 100.0).toString() + " €"
-                    map[R.id.money_spent_value.toString()] = "$total €"
+                    map[R.id.assets_value.toString()] = StringHelper.formatAmountToString(amountOfAsset)
+                    map[R.id.rewards_value.toString()] = StringHelper.formatAmountToString(rewardValue)
+                    map[R.id.profit_loss_value.toString()] = StringHelper.formatAmountToString(amountOfAsset - wallet.moneySpent.toDouble())
+                    map[R.id.money_spent_value.toString()] = total
                 } else {
                     map[R.id.assets_value.toString()] = "no internet connection"
                     map[R.id.rewards_value.toString()] = "no internet connection"
                     map[R.id.profit_loss_value.toString()] = "no internet connection"
-                    map[R.id.money_spent_value.toString()] = "$total €"
+                    map[R.id.money_spent_value.toString()] = total
                 }
             }
             AppType.CroCard -> {
-                map[R.id.money_spent_value.toString()] = "$total €"
+                map[R.id.money_spent_value.toString()] = total
                 map[R.id.assets_value.toString()] = null
                 map[R.id.rewards_value.toString()] = null
                 map[R.id.profit_loss_value.toString()] = null
@@ -188,7 +180,7 @@ class AppModel : BaseAppModel, Serializable {
     @get:Throws(InterruptedException::class)
     val parseMap: Map<String, String?>?
         get() {
-            while (!isRunning) Thread.sleep(500)
+            while (!isRunning) Thread.sleep(500)    //TODO remove this
             return try {
                 val total = totalPrice
                 val amountOfAsset = valueOfAssets
@@ -197,19 +189,19 @@ class AppModel : BaseAppModel, Serializable {
                 val map: MutableMap<String, String?> = HashMap()
                 when (appType) {
                     AppType.CdCsvParser -> if (asset.isRunning) {
-                        map[R.id.assets_value.toString()] = StringHelper.formatAmountToString(amountOfAsset)
+                        map[R.id.assets_valueP.toString()] = StringHelper.formatAmountToString(amountOfAsset)
                         map[R.id.rewards_value.toString()] = StringHelper.formatAmountToString(rewardValue)
                         map[R.id.profit_loss_value.toString()] = StringHelper.formatAmountToString(amountOfAsset - total.toDouble())
                         map[R.id.money_spent_value.toString()] = totalMoneySpent
                     } else {
-                        map[R.id.assets_value.toString()] = "no internet connection"
+                        map[R.id.assets_valueP.toString()] = "no internet connection"
                         map[R.id.rewards_value.toString()] = "no internet connection"
                         map[R.id.profit_loss_value.toString()] = "no internet connection"
                         map[R.id.money_spent_value.toString()] = totalMoneySpent
                     }
                     AppType.CroCard -> {
                         map[R.id.money_spent_value.toString()] = totalMoneySpent
-                        map[R.id.assets_value.toString()] = null
+                        map[R.id.assets_valueP.toString()] = null
                         map[R.id.rewards_value.toString()] = null
                         map[R.id.profit_loss_value.toString()] = null
                         map[R.id.assets_value_label.toString()] = null
@@ -225,53 +217,109 @@ class AppModel : BaseAppModel, Serializable {
             }
         }
 
-    fun setInAndroidDB(context: Context): Boolean {
-        val t = Thread {
-            try {
-                val db: AppDatabase? = AppDatabase.Companion.getInstance(context)
-                //clear db
-                db!!.clearAllTables()
-                db.walletDao().deleteAll()
-                db.transactionDao().deleteAll()
-                db.transactionDao().insertAll(txApp!!.transactions)
-                db.walletDao().insertAll(txApp!!.wallets)
-                db.walletDao().insertAll(txApp!!.outsideWallets)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        t.start()
-        return true
-    }
 
-    fun getFromAndroidDB(context: Context, useStrictType: Boolean?): Boolean {
-        val t = Thread {
-            try {
-                val db: AppDatabase? = AppDatabase.Companion.getInstance(context)
-                val tXs = db!!.transactionDao().all
-                val wTXs = db.walletDao().all
-                when (appType) {
-                    AppType.CdCsvParser -> {
-                        val ws: MutableList<CDCWallet> = ArrayList()
-                        wTXs!!.forEach(Consumer { w: WalletWithTransactions? ->
-                            val wallet = CDCWallet(w!!.wallet)
-                            ws.add(wallet)
-                        })
-                        txApp = TxApp(tXs, ws)
-                        isRunning = true
-                    }
-                    AppType.CroCard -> throw RuntimeException("Usage not Implemented")
-                    else -> throw RuntimeException("Usage not found")
+    /**
+     * @deprecated not in use, leave it here to show how to use the database
+     */
+//    fun setInAndroidDB(context: Context): Boolean {
+//        val t = Thread {
+//            try {
+//                val db: AppDatabase? = AppDatabase.getInstance(context)
+//                //clear db
+//                db!!.clearAllTables()
+//                db.walletDao().deleteAll()
+//                db.transactionDao().deleteAll()
+//                db.transactionDao().insertAll(txApp!!.transactions)
+//                db.walletDao().insertAll(txApp!!.wallets)
+//                db.walletDao().insertAll(txApp!!.outsideWallets)
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//        }
+//        t.start()
+//        return true
+//    }
+
+
+    /**
+     * @deprecated not in use, leave it here to show how to use the database
+     */
+//    private fun getFromAndroidDB(context: Context, useStrictType: Boolean?): Boolean {
+//        val t = Thread {
+//            try {
+//                val db: AppDatabase? = AppDatabase.getInstance(context)
+//                val tXs = db!!.transactionDao().all
+//                val wTXs = db.walletDao().all
+//                when (appType) {
+//                    AppType.CdCsvParser -> {
+//                        val ws: MutableList<CDCWallet> = ArrayList()
+//                        wTXs!!.forEach(Consumer { w: WalletWithTransactions? ->
+//                            val wallet = CDCWallet(w!!.wallet)
+//                            ws.add(wallet)
+//                        })
+//                        txApp = TxApp(tXs, ws)
+//                        isRunning = true
+//                    }
+//                    AppType.CroCard -> throw RuntimeException("Usage not Implemented")
+//                    else -> throw RuntimeException("Usage not found")
+//                }
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//        }
+//        t.start()
+//        return true
+//    }
+
+    fun toHashMap(): HashMap<String, Any>
+    {
+        val appHashMap: HashMap<String, Any>
+        when (appType)
+        {
+            AppType.CdCsvParser ->
+            {
+                val dbWallets = ArrayList<DBWallet>()
+                val dboutsideWallets = ArrayList<DBWallet>()
+                val dbTransactions = ArrayList<DBTransaction>()
+                txApp!!.wallets.forEach {
+                    dbWallets.add(DBWallet(it))
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                txApp!!.outsideWallets.forEach {
+                    dboutsideWallets.add(DBWallet(it))
+                }
+                txApp!!.transactions.forEach {
+                    dbTransactions.add(DBTransaction(it))
+                }
+
+                appHashMap = hashMapOf<String, Any>(
+                    "wallets" to dbWallets,
+                    "outsideWallets" to dboutsideWallets,
+                    "transactions" to dbTransactions,
+                    "amountTxFailed" to txApp!!.amountTxFailed,
+                    "appType" to appType!!
+                )
             }
+            AppType.CroCard ->
+            {
+                val dbWallets = ArrayList<CCDBWallet>()
+                val dbTransactions = ArrayList<CCDBTransaction>()
+                txApp!!.wallets.forEach {
+                    dbWallets.add(CCDBWallet(it!!))
+                }
+                txApp!!.transactions.forEach {
+                    dbTransactions.add(CCDBTransaction(it))
+                }
+
+                appHashMap = hashMapOf<String, Any>(
+                    "wallets" to dbWallets,
+                    "transactions" to dbTransactions,
+                    "amountTxFailed" to txApp!!.amountTxFailed,
+                    "appType" to appType!!
+                )
+            }
+            else -> throw RuntimeException("Usage not found")
         }
-        t.start()
-        return true
+        return appHashMap
     }
 
-    companion object {
-        var asset: AssetValue = AssetValue()
-    }
 }

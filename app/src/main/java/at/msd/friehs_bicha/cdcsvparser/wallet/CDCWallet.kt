@@ -1,6 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
-import at.msd.friehs_bicha.cdcsvparser.App.TxApp
+import at.msd.friehs_bicha.cdcsvparser.app.TxApp
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import java.io.Serializable
@@ -17,7 +17,19 @@ class CDCWallet : Wallet, Serializable {
         this.isOutsideWallet = isOutsideWallet!!
     }
 
-    constructor(wallet: Wallet?) : super(wallet) {}
+    constructor(wallet: Wallet?) : super(wallet)
+
+    constructor(DBWallet: DBWallet?) : super(DBWallet)
+    constructor(walletId: Long, currencyType: String?, amount: Double, amountBonus: Double, moneySpent: Double, outsideWallet: Boolean, transactions: ArrayList<Transaction?>): super(currencyType, BigDecimal(amount), BigDecimal(moneySpent))
+    {
+        this.walletId = walletId.toInt()
+        this.currencyType = currencyType
+        this.amount = BigDecimal(amount)
+        this.amountBonus = BigDecimal(amountBonus)
+        this.moneySpent = BigDecimal(moneySpent)
+        this.transactions = transactions
+        this.isOutsideWallet = outsideWallet
+    }
 
     /**
      * Get CDCWallet from CurrencyType String
@@ -82,11 +94,16 @@ class CDCWallet : Wallet, Serializable {
         //transactions.add(transaction);
         val t = transaction.transactionType
         val w = txApp!!.wallets[getWallet(transaction.currencyType)] as CDCWallet
-        transaction.setFromWalletId(w.walletId)
-        transaction.setWalletId(w.walletId)
+        transaction.fromWalletId = w.walletId
+        transaction.walletId = w.walletId
         if (!w.transactions!!.contains(transaction)) {
             w.transactions!!.add(transaction)
         }
+        if (transaction.currencyType.contains("DOGE"))
+        {
+            val test = "test"
+        }
+
         when (t) {
             TransactionType.crypto_purchase, TransactionType.dust_conversion_credited ->                 //w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
                 w.addToWallet(transaction)
@@ -139,9 +156,9 @@ class CDCWallet : Wallet, Serializable {
             val wv = txApp!!.wallets[getWallet(transaction.toCurrency)] as CDCWallet
             wv.addToWallet(transaction.toAmount, transaction.nativeAmount, BigDecimal.ZERO)
             //wv.addToWallet(transaction);
-            transaction.setWalletId(wv.walletId)
-            if (!transactions!!.contains(transaction)) {
-                transactions!!.add(transaction)
+            transaction.walletId = wv.walletId
+            if (!wv.transactions!!.contains(transaction)) {
+                wv.transactions!!.add(transaction)
             }
         }
     }

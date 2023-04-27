@@ -6,10 +6,9 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.App.AppType
+import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
-import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.util.function.Consumer
@@ -36,7 +35,7 @@ class AssetsFilterActivity : AppCompatActivity() {
 
         //test Internet connection
         //testConnection();
-        while (!appModel!!.isRunning) {
+        while (!appModel!!.isRunning) { //TODO: add loading icon
             try {
                 Thread.sleep(500)
             } catch (e: InterruptedException) {
@@ -76,11 +75,7 @@ class AssetsFilterActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
-        appModel = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser && PreferenceHelper.getUseAndroidDB(applicationContext)) {
-            AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), applicationContext)
-        } else {
-            intent.extras!!["AppModel"] as AppModel?
-        }
+        appModel = intent.extras!!["AppModel"] as AppModel?
     }
 
     /**
@@ -89,7 +84,7 @@ class AssetsFilterActivity : AppCompatActivity() {
      * @return the wallet names as String[]
      */
     private val walletNames: Array<String?>
-        private get() {
+        get() {
             val wallets = ArrayList<String?>()
             when (appModel!!.appType) {
                 AppType.CdCsvParser -> {
@@ -102,20 +97,6 @@ class AssetsFilterActivity : AppCompatActivity() {
             return wallets.toTypedArray()
         }
 
-    /**
-     * Checks if there is an internet connection
-     */
-    private fun testConnection() {
-        val t1 = Thread {
-            try {
-                appModel!!.valueOfAssets
-                AppModel.Companion.asset.isRunning = true
-            } catch (e: Exception) {
-                println("no internet connection")
-            }
-        }
-        t1.start()
-    }
 
     /**
      * Displays the prices of specificWallet
@@ -140,7 +121,7 @@ class AssetsFilterActivity : AppCompatActivity() {
      * @param texts the Map<String></String>, String> which should be displayed with id of View and text to set pairs
      */
     private fun displayTexts(texts: Map<String, String?>) {
-        texts!!.forEach { (key: String?, value: String?) ->
+        texts.forEach { (key: String?, value: String?) ->
             val textView = findViewById<TextView>(resources.getIdentifier(key, "id", packageName))
             if (value == null) {
                 runOnUiThread { textView.visibility = View.INVISIBLE }
@@ -158,7 +139,7 @@ class AssetsFilterActivity : AppCompatActivity() {
     private fun displayTxs(specificWallet: Wallet?) {
         // Get a reference to the ListView
         val listView = findViewById<ListView>(R.id.lv_txs)
-        val transactions: List<Transaction?>? = specificWallet!!.getTransactions()
+        val transactions: List<Transaction?>? = specificWallet!!.transactions
 
         val transactionsStringList: MutableList<String?> = ArrayList()
         for (tx in transactions!!) {

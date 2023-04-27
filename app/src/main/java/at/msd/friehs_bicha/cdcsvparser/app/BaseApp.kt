@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.App
+package at.msd.friehs_bicha.cdcsvparser.app
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
@@ -8,5 +8,5 @@ open class BaseApp : Serializable {
     open var wallets = ArrayList<Wallet?>()
     var outsideWallets = ArrayList<Wallet?>()
     open var transactions = ArrayList<Transaction>()
-    var amountTxFailed = 0
+    var amountTxFailed : Long = 0
 }

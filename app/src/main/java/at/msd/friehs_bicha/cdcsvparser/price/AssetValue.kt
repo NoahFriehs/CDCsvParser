@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
+import android.util.Log
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import com.litesoftwares.coingecko.CoinGeckoApiClient
 import com.litesoftwares.coingecko.constant.Currency
 import com.litesoftwares.coingecko.domain.Coins.CoinList
@@ -30,14 +32,29 @@ class AssetValue : Serializable {
      */
     @Throws(InterruptedException::class)
     fun getPrice(symbol: String?): Double? {
-        var symbol = symbol
-        symbol = overrideSymbol(symbol)
-        val price = checkCache(symbol)
+        //val prices = StaticPrices()
+        //return prices.prices[symbol]    //use this if api does nor work
+
+        var price = checkCache(symbol)
         if (price != -1.0) {
             isRunning = true
             return price
         }
-        return try {
+
+        val cryptoPrices = CryptoPricesCryptoCompare()
+        val priceApi = cryptoPrices.getPrice(symbol!!)
+        if (priceApi != 0.0) {
+            cache.add(PriceCache(symbol, priceApi))
+            return priceApi
+        }
+        var symbol = symbol
+        symbol = overrideSymbol(symbol)
+        price = checkCache(symbol)
+        if (price != -1.0) {
+            isRunning = true
+            return price
+        }
+        try {
             val client: CoinGeckoApiClient = CoinGeckoApiClientImpl()
             //client.ping();
             if (coinMarkets == null || Instant.now().isAfter(coinMarketsCreationTime!!.plusSeconds(300))) {
@@ -54,11 +71,14 @@ class AssetValue : Serializable {
                 }
             } catch (e: Exception) {
                 println("|" + e.message)
+                FileLog.d("CoinGecko", "|" + e.message)
             }
             isRunning = true
-            getPriceTheOtherWay(symbol)
+            return getPriceTheOtherWay(symbol)
         } catch (e: Exception) {
+            print(e.message)
             if (e.message!!.contains("com.litesoftwares.coingecko.exception.CoinGeckoApiException: CoinGeckoApiError(code=1015, message=Rate limited)")) {
+                FileLog.d("CoinGecko", "Rate limited")
                 Thread.sleep(1000)
                 return getPrice(symbol)
             }
@@ -69,7 +89,14 @@ class AssetValue : Serializable {
             }
             isRunning = false
             tries = 0
-            0.0
+            try {
+                val prices = StaticPrices()
+                return prices.prices[symbol]
+            } catch (e: Exception) {
+                println("No price found for: $symbol")
+                FileLog.d("CoinGecko", "No price found for: $symbol")
+                return 0.0
+            }
         }
     }
 
@@ -83,7 +110,7 @@ class AssetValue : Serializable {
         val client: CoinGeckoApiClient = CoinGeckoApiClientImpl()
         if (coinLists == null) coinLists = client.coinList
         for (coinList in coinLists!!) {
-            if (coinList.symbol.contains(symbol!!.lowercase(Locale.getDefault())) || coinList.id.contains(symbol.lowercase(Locale.getDefault())) || coinList.name.contains(symbol.lowercase(Locale.getDefault()))) {
+            if (coinList.symbol.lowercase().contains(symbol!!.lowercase(Locale.getDefault())) || coinList.id.lowercase().contains(symbol.lowercase(Locale.getDefault())) || coinList.name.lowercase().contains(symbol.lowercase(Locale.getDefault()))) {
                 val bitcoinInfo = client.getCoinById(coinList.id)
                 val data = bitcoinInfo.marketData
                 val dataPrice = data.currentPrice

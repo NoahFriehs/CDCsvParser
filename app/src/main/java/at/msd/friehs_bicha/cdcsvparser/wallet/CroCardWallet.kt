@@ -1,19 +1,37 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
-import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp
+import at.msd.friehs_bicha.cdcsvparser.app.CroCardTxApp
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import java.io.Serializable
 import java.math.BigDecimal
 
-class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionType: String?, txApp: CroCardTxApp) : Wallet(currencyType, amount, amount), Serializable {
-    var txApp: CroCardTxApp
+class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionType: String?, txApp: CroCardTxApp?) : Wallet(currencyType, amount, amount), Serializable {
+    constructor(walletID: Long, currencyType: String?, amount: Double?, amountBonus: Double?, moneySpent: Double, outsideWallet: Boolean, transactions: MutableList<CroCardTransaction?>, transactionType: String?) : this(
+        currencyType,
+        amount?.let { BigDecimal(it) },
+        currencyType,
+        null
+    ) {
+        this.walletId = walletID.toInt()
+        this.currencyType = currencyType
+        this.transactionType = transactionType
+        amount?.let {this.amount = BigDecimal(it) }
+        amountBonus?.let {this.amountBonus = BigDecimal(it) }
+        this.moneySpent = BigDecimal(moneySpent)
+        this.transactions = transactions as MutableList<Transaction?>
+        this.isOutsideWallet = outsideWallet
+    }
+
+    lateinit var txApp: CroCardTxApp
 
     init {
         if (!tts.contains(transactionType)) {
             tts.add(transactionType)
         }
-        this.txApp = txApp
+        if (txApp != null) {
+            this.txApp = txApp
+        }
     }
 
     override fun addTransaction(transaction: Transaction) {
@@ -31,6 +49,7 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
             }
             w!!.addToWallet(transaction)
             w.transactions!!.add(cardTransaction)
+            transaction.walletId = w.walletId
         } else {
             if (!txApp.isUseStrictWalletType) {
                 w = getNonStrictWallet(tt)
@@ -38,12 +57,15 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
                     w = CroCardWallet("EUR", cardTransaction.amount, tt, txApp)
                     txApp.wallets.add(w)
                     w.transactions!!.add(cardTransaction)
+                    transaction.walletId = w.walletId
                 } else {
                     w.addToWallet(transaction)
+                    transaction.walletId = w.walletId
                 }
             } else {
                 w = CroCardWallet("EUR", cardTransaction.amount, tt, txApp)
                 w.transactions!!.add(cardTransaction)
+                transaction.walletId = w.walletId
                 txApp.wallets.add(w)
             }
             //w.addToWallet(transaction.getAmount());

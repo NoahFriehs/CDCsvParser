@@ -1,7 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.general
 
-import at.msd.friehs_bicha.cdcsvparser.App.AppType
-import at.msd.friehs_bicha.cdcsvparser.App.BaseApp
+import at.msd.friehs_bicha.cdcsvparser.app.AppType
+import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
 import java.io.Serializable
 
 open class BaseAppModel

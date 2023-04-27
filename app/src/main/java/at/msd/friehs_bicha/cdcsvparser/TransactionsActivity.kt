@@ -5,10 +5,8 @@ import android.view.MenuItem
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.App.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
-import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 
 class TransactionsActivity : AppCompatActivity() {
     var appModel: AppModel? = null
@@ -29,10 +27,10 @@ class TransactionsActivity : AppCompatActivity() {
                 throw RuntimeException(e)
             }
         }
-        val mTransactionList: List<Transaction?>? = appModel!!.txApp!!.transactions
+        val mTransactionList: List<Transaction?> = appModel!!.txApp!!.transactions
 
         val transactionsStringList: MutableList<String?> = ArrayList()
-        for (tx in mTransactionList!!) {
+        for (tx in mTransactionList) {
             transactionsStringList.add(tx.toString())
         }
 
@@ -45,11 +43,7 @@ class TransactionsActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
-        appModel = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser && PreferenceHelper.getUseAndroidDB(applicationContext)) {
-            AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), applicationContext)
-        } else {
-            intent.extras!!["AppModel"] as AppModel?
-        }
+        appModel = intent.extras!!["AppModel"] as AppModel?
     }
 
     /**
