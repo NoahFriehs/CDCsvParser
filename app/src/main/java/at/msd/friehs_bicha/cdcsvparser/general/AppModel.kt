@@ -4,22 +4,18 @@ import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
-import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.*
-import com.google.firebase.Timestamp
 import java.io.Serializable
 import java.math.BigDecimal
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.Consumer
 
 /**
  * The parser control for the Parser
  */
 class AppModel : BaseAppModel, Serializable {
 
-    var asset: AssetValue = AssetValue()
 
     /**
      * Creates a new AppModel
@@ -30,7 +26,6 @@ class AppModel : BaseAppModel, Serializable {
      */
     constructor(file: ArrayList<String>, appType: AppType, useStrictType: Boolean) : super(appType) {
         txApp = TxAppFactory.createTxApp(appType, AppStatus.NotStarted, useStrictType, hashMapOf(DataTypes.csvAsList to file))
-        asset = AssetValue()
         isRunning = true
         if (txApp!!.amountTxFailed > 0) {
             throw RuntimeException("$txApp.amountTxFailed transaction(s) failed")
@@ -39,7 +34,6 @@ class AppModel : BaseAppModel, Serializable {
 
     constructor(dbWallets: ArrayList<HashMap<String, *>>?, dbOutsideWallets: ArrayList<HashMap<String, *>>?, dbTransactions: ArrayList<HashMap<String, *>>?, appType: AppType, amountTxFailed: Long, useStrictType: Boolean) : super(appType) {
         txApp = TxAppFactory.createTxApp(appType, AppStatus.importFromFB, useStrictType, hashMapOf(DataTypes.dbWallets to dbWallets, DataTypes.dbOutsideWallets to dbOutsideWallets, DataTypes.dbTransactions to dbTransactions, DataTypes.amountTxFailed to amountTxFailed))
-        asset = AssetValue()
         isRunning = true
     }
 
@@ -78,7 +72,7 @@ class AppModel : BaseAppModel, Serializable {
             val valueOfAll = AtomicReference(0.0)   //TODO not necessary
             for (wallet in txApp!!.wallets) {
                 if (wallet!!.currencyType == "EUR") continue
-                val price = asset.getPrice(wallet.currencyType)!!
+                val price = AssetValue.getInstance()!!.getPrice(wallet.currencyType)!!
                 val amount = wallet.amountBonus
                 valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
             }
@@ -95,7 +89,7 @@ class AppModel : BaseAppModel, Serializable {
     private fun getTotalBonus(wallet: Wallet?): Double {
         return try {
             val valueOfAll = AtomicReference(0.0)   //TODO not necessary
-            val price = asset.getPrice(wallet!!.currencyType)!!
+            val price = AssetValue.getInstance()!!.getPrice(wallet!!.currencyType)!!
             val amount = wallet.amountBonus
             valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
             valueOfAll.get()
@@ -114,7 +108,7 @@ class AppModel : BaseAppModel, Serializable {
             var valueOfAll = 0.0
             for (w in txApp!!.wallets) {
                 if (w!!.currencyType == "EUR") continue
-                val price = asset.getPrice(w.currencyType)!!
+                val price = AssetValue.getInstance()!!.getPrice(w.currencyType)!!
                 val amount = w.amount
                 valueOfAll += price * amount.toDouble()
                 if (valueOfAll < 0.0) {
@@ -134,7 +128,7 @@ class AppModel : BaseAppModel, Serializable {
     private fun getValueOfAssets(w: Wallet?): Double {
         return try {
             val valueOfWallet: Double
-            val price = asset.getPrice(w!!.currencyType)!!
+            val price = AssetValue.getInstance()!!.getPrice(w!!.currencyType)!!
             val amount = w.amount
             valueOfWallet = price * amount.toDouble()
             valueOfWallet
@@ -151,7 +145,7 @@ class AppModel : BaseAppModel, Serializable {
             AppType.CdCsvParser -> {
                 val amountOfAsset = getValueOfAssets(wallet)
                 val rewardValue = getTotalBonus(wallet)
-                if (asset.isRunning) {
+                if (AssetValue.getInstance()!!.isRunning) {
                     map[R.id.assets_value.toString()] = StringHelper.formatAmountToString(amountOfAsset)
                     map[R.id.rewards_value.toString()] = StringHelper.formatAmountToString(rewardValue)
                     map[R.id.profit_loss_value.toString()] = StringHelper.formatAmountToString(amountOfAsset - wallet.moneySpent.toDouble())
@@ -188,7 +182,7 @@ class AppModel : BaseAppModel, Serializable {
                 val totalMoneySpent = StringHelper.formatAmountToString(total.toDouble())
                 val map: MutableMap<String, String?> = HashMap()
                 when (appType) {
-                    AppType.CdCsvParser -> if (asset.isRunning) {
+                    AppType.CdCsvParser -> if (AssetValue.getInstance()!!.isRunning) {
                         map[R.id.assets_valueP.toString()] = StringHelper.formatAmountToString(amountOfAsset)
                         map[R.id.rewards_value.toString()] = StringHelper.formatAmountToString(rewardValue)
                         map[R.id.profit_loss_value.toString()] = StringHelper.formatAmountToString(amountOfAsset - total.toDouble())

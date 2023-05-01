@@ -1,12 +1,14 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
-import at.msd.friehs_bicha.cdcsvparser.app.CroCardTxApp
+import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
+import at.msd.friehs_bicha.cdcsvparser.transactions.CurveCardTx
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import java.io.Serializable
 import java.math.BigDecimal
 
-class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionType: String?, txApp: CroCardTxApp?) : Wallet(currencyType, amount, amount), Serializable {
+class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionType: String?, txApp: BaseApp?) : Wallet(currencyType, amount, amount), Serializable {
     constructor(walletID: Long, currencyType: String?, amount: Double?, amountBonus: Double?, moneySpent: Double, outsideWallet: Boolean, transactions: MutableList<CroCardTransaction?>, transactionType: String?) : this(
         currencyType,
         amount?.let { BigDecimal(it) },
@@ -23,7 +25,7 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
         this.isOutsideWallet = outsideWallet
     }
 
-    lateinit var txApp: CroCardTxApp
+    lateinit var txApp: BaseApp
 
     init {
         if (!tts.contains(transactionType)) {
@@ -41,25 +43,43 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
         if (tt == "EUR -> EUR") {
             println("Found EUR -> EUR: $tt")
         }
+
+        var ignoreThisTx = false
+
+        if (transaction is CurveCardTx) {
+            if (transaction.txType == "REFUNDED") {
+                FileLog.i("CCW.addTx", "Ignoring CurveCardTx: $transaction")
+                ignoreThisTx = true
+            }
+            if (transaction.txType == "Declined") {
+                FileLog.i("CCW.addTx", "Ignoring CurveCardTx: $transaction")
+                ignoreThisTx = true
+            }
+        }
+
         var w = findWallet(tt)
         if (w != null) {
             w = findWallet(tt)
             if (!txApp.isUseStrictWalletType) {
                 w = getNonStrictWallet(tt)
             }
-            w!!.addToWallet(transaction)
+            if (w == null){
+                w = CroCardWallet("EUR", BigDecimal.ZERO, tt, txApp)
+            }
+            w!!.addToWallet(transaction, ignoreThisTx)
             w.transactions!!.add(cardTransaction)
             transaction.walletId = w.walletId
         } else {
             if (!txApp.isUseStrictWalletType) {
                 w = getNonStrictWallet(tt)
                 if (w == null) {
-                    w = CroCardWallet("EUR", cardTransaction.amount, tt, txApp)
+                    if (!ignoreThisTx) w = CroCardWallet("EUR", cardTransaction.amount, tt, txApp)
+                    else w = CroCardWallet("EUR", BigDecimal.ZERO, tt, txApp)
                     txApp.wallets.add(w)
                     w.transactions!!.add(cardTransaction)
                     transaction.walletId = w.walletId
                 } else {
-                    w.addToWallet(transaction)
+                    w.addToWallet(transaction, ignoreThisTx)
                     transaction.walletId = w.walletId
                 }
             } else {
@@ -79,10 +99,8 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
      * @return the index of the wallet
      */
     override fun getWallet(ct: String?): Int {
-        var i = 0
-        for (w in txApp.wallets) {
+        for ((i, w) in txApp.wallets.withIndex()) {
             if ((w as CroCardWallet).transactionType == ct) return i
-            i++
         }
         return -1
     }
@@ -101,10 +119,22 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
         println("Amount total spent: $amountSpent")
     }
 
-    fun addToWallet(transaction: Transaction) {
-        amount = amount.add(transaction.amount)
-        moneySpent = moneySpent.add(transaction.amount)
-        transactions!!.add(transaction)
+    fun addToWallet(transaction: Transaction, ignoreThisTx: Boolean = false) {
+        if (ignoreThisTx) {
+            FileLog.i("CCW.addToWallet", "Ignoring transaction: $transaction")
+            println("Ignoring transaction: $transaction")
+            transactions!!.add(transaction)
+            return
+        }
+        if (transaction.currencyType != "EUR") {
+            amount = amount.add(transaction.nativeAmount)
+            moneySpent = moneySpent.add(transaction.nativeAmount)
+            transactions!!.add(transaction)
+        } else {
+            amount = amount.add(transaction.amount)
+            moneySpent = moneySpent.add(transaction.amount)
+            transactions!!.add(transaction)
+        }
     }
 
     /**
@@ -140,6 +170,9 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
                     checkTTS(tt, tt.substring(0, tt.indexOf(" ")))
                     return w
                 }
+            }
+            else if ((w as CroCardWallet).transactionType!!.contains(tt)) {
+                return w
             }
         }
         return null

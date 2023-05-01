@@ -5,7 +5,7 @@ import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType
 import java.io.Serializable
 import java.math.BigDecimal
 import java.math.MathContext
-import java.util.*
+import java.util.Date
 
 /**
  * Represents a Transaction object
@@ -39,6 +39,8 @@ open class Transaction : Serializable {
     var toAmount: BigDecimal? = null
 
     var isOutsideTransaction = false
+
+    var notes: String = ""
 
     constructor(date: String?, description: String, currencyType: String, amount: BigDecimal?, nativeAmount: BigDecimal?, transactionType: TransactionType?) {
         if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType)

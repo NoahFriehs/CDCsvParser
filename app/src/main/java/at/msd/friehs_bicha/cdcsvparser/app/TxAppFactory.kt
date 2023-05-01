@@ -7,7 +7,6 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.stringToTransactionType
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import com.google.firebase.Timestamp
-import java.util.ArrayList
 import java.util.function.Consumer
 
 @Suppress("UNCHECKED_CAST")
@@ -40,7 +39,7 @@ class TxAppFactory {
                 }
                 AppType.CroCard -> {
                     when (appStatus) {
-                        AppStatus.NotStarted -> CroCardTxApp(
+                        AppStatus.NotStarted -> CardTxApp(
                             dataContainer[DataTypes.csvAsList] as ArrayList<String>,
                             useStrictType
                         )

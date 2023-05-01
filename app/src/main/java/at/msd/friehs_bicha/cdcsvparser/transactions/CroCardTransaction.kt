@@ -1,12 +1,11 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
-import com.google.firebase.Timestamp
 import java.io.Serializable
 import java.math.BigDecimal
 import java.math.MathContext
-import java.util.*
+import java.util.Date
 
-class CroCardTransaction(date: String?, description: String, currencyType: String, amount: BigDecimal?, nativeAmount: BigDecimal?, transactionType: String?) : Transaction(date, description, currencyType, amount, nativeAmount, TransactionType.STRING), Serializable {
+open class CroCardTransaction(date: String?, description: String, currencyType: String, amount: BigDecimal?, nativeAmount: BigDecimal?, transactionType: String?) : Transaction(date, description, currencyType, amount, nativeAmount, TransactionType.STRING), Serializable {
     constructor(
         transactionId: Long,
         description: String,
@@ -55,6 +54,14 @@ class CroCardTransaction(date: String?, description: String, currencyType: Strin
     }
 
     override fun toString(): String {
+        if (currencyType != "EUR") {
+            return """
+                $date
+                Description: $description
+                Amount: ${nativeAmount.round(MathContext(5))}$toCurrency
+                transactionType: $transactionTypeString
+                """.trimIndent()
+        }
         return """
             $date
             Description: $description

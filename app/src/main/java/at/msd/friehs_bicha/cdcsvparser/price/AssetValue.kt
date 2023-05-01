@@ -1,6 +1,5 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
-import android.util.Log
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import com.litesoftwares.coingecko.CoinGeckoApiClient
 import com.litesoftwares.coingecko.constant.Currency
@@ -22,6 +21,17 @@ class AssetValue : Serializable {
     init {
         cache = ArrayList()
         isRunning = true
+    }
+
+    companion object{
+        private var instance: AssetValue? = null
+
+        fun getInstance(): AssetValue? {
+            if (instance == null) {
+                instance = AssetValue()
+            }
+            return instance
+        }
     }
 
     /**

@@ -6,7 +6,8 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import java.math.BigDecimal
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 /**
  * Helper-class to convert types
@@ -24,7 +25,7 @@ object Converter {
         return try {
             TransactionType.valueOf(s)
         } catch (e: Exception) {
-            FileLog.d("Converter", "ttConverter: $s")
+            FileLog.w("Converter", "ttConverter: $s | ${e.message}")
             throw IllegalArgumentException("Please give a correct TransactionType")
             //            return null;
         }
@@ -45,8 +46,13 @@ object Converter {
                 val sdf = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy")
                 sdf.parse(s)
             } catch (e1: Exception) {
-                FileLog.d("Converter", "dateConverter: $s")
-                null
+                return try {
+                    val sdf = SimpleDateFormat("yyyy-mm-dd")
+                    sdf.parse(s)
+                } catch (e1: Exception) {
+                    FileLog.w("Converter", "dateConverter: $s | ${e.message}")
+                    null
+                }
             }
         }
     }
@@ -62,7 +68,7 @@ object Converter {
             val dateFormat: DateFormat = SimpleDateFormat("yyyy-MM-dd")
             dateFormat.format(s)
         } catch (e: Exception) {
-            FileLog.d("Converter", "stringToDateConverter: $s")
+            FileLog.w("Converter", "stringToDateConverter: $s | ${e.message}")
             null
         }
     }

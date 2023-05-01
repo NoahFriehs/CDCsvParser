@@ -1,15 +1,18 @@
 package at.msd.friehs_bicha.cdcsvparser.app
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.transactions.CurveCardTx
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import java.io.Serializable
 import java.math.BigDecimal
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
-import java.util.function.Consumer
 
-class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) : BaseApp(), Serializable {
+class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) : BaseApp(), Serializable {
+
+    var croTxString = "Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash"
+
+    var curveTxString = "Date (YYYY-MM-DD as UTC),Merchant,Txn Amount (Funding Card),Txn Currency (Funding Card),Txn Amount (Foreign Spend),Txn Currency (Foreign Spend),Card Name,Card Last 4 Digits,Type,Category,Notes"
 
     init {
         if (!fastInit) {
@@ -30,21 +33,6 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
         }
     }
 
-    constructor(tXs: MutableList<CroCardTransaction>, wTXs: MutableList<CroCardWallet>, amountTxFailed: Long) : this(ArrayList(), false, true)
-    {
-        this.transactions = tXs as ArrayList<Transaction>
-        wTXs.forEach(Consumer { wallet: CroCardWallet ->
-            wallet.txApp = this
-        })
-        this.wallets = ArrayList(wTXs)
-        try {
-            fillWallet(true)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        this.amountTxFailed = amountTxFailed
-    }
-
     /**
      * Csv file to CroCardTransaction list
      *
@@ -52,8 +40,57 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
      * @return CroCardTransaction list
      */
     private fun getTransactions(input: ArrayList<String>): ArrayList<CroCardTransaction> {
+        return when (input[0]) {
+            croTxString -> parseCroCard(input)
+            curveTxString -> {
+                parseCurveCard(input)
+                ArrayList<CroCardTransaction>()
+            }
+            else -> throw RuntimeException("Wrong file format")
+        }
+ }
+
+    private fun parseCurveCard(input: ArrayList<String>) {
         input.removeAt(0)
-        val transactions = ArrayList<CroCardTransaction>()
+        val transactions = ArrayList<CurveCardTx>()
+
+        // Create a DecimalFormat that fits your requirements
+        val symbols = DecimalFormatSymbols()
+        symbols.groupingSeparator = ','
+        symbols.decimalSeparator = '.'
+        val pattern = "#,##"
+        val decimalFormat = DecimalFormat(pattern, symbols)
+        decimalFormat.isParseBigDecimal = true
+        for (transaction in input) {
+            try {
+                transaction.replace(",,", ", ,")
+                val sa = transaction.split(",".toRegex())
+                if (sa.size == 11) {
+                    val t = CurveCardTx(
+                        sa[0],
+                        sa[1],
+                        decimalFormat.parse(sa[2]) as BigDecimal,
+                        sa[3],
+                        if (sa[4] != "") decimalFormat.parse(sa[4]) as BigDecimal else decimalFormat.parse(sa[2]) as BigDecimal,
+                        sa[5],
+                        sa[6] + sa[7],
+                        sa[8],
+                        sa[9] + ": " + sa[10])
+                    transactions.add(t)
+                } else {
+                    println(sa.toString())
+                    println(sa.size)
+                }
+            } catch (e: Exception) {
+                throw RuntimeException(e)
+            }
+        }
+        this.transactions.addAll(transactions)
+    }
+
+    private fun parseCroCard(input: java.util.ArrayList<String>): java.util.ArrayList<CroCardTransaction> {
+        input.removeAt(0)
+        val transactions = java.util.ArrayList<CroCardTransaction>()
 
         // Create a DecimalFormat that fits your requirements
         val symbols = DecimalFormatSymbols()
@@ -79,10 +116,11 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
         return transactions
     }
 
+
     private fun fillWallet(walletsExisting: Boolean = false) {
         println("Filling Wallets")
         if (!walletsExisting) {
-            wallets.add(CroCardWallet("EUR", BigDecimal.ZERO, "EUR -> EUR", this))
+            wallets.add(CroCardWallet("Test", BigDecimal.ZERO, "Test -> Test", this))
             for (t in transactions) {
                 if ((t as CroCardTransaction).transactionTypeString == "EUR -> EUR") {
                     (wallets[0] as CroCardWallet).addToWallet(t)
@@ -90,6 +128,8 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
                     wallets[0]?.addTransaction(t)
                 }
             }
+            if (wallets[0]?.getWallet("Test -> Test") != -1)
+                wallets.remove(wallets[wallets[0]?.getWallet("Test -> Test")!!])
         }
         else
         {
@@ -106,6 +146,7 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
         }
         println("Wallets filled")
     }
+
 
 
 }
