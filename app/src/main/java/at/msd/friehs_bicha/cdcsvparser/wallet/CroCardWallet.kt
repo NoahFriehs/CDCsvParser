@@ -120,9 +120,9 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
     }
 
     fun addToWallet(transaction: Transaction, ignoreThisTx: Boolean = false) {
+        transaction.walletId = walletId
         if (ignoreThisTx) {
             FileLog.i("CCW.addToWallet", "Ignoring transaction: $transaction")
-            println("Ignoring transaction: $transaction")
             transactions!!.add(transaction)
             return
         }
