@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 
 class ParseActivity : AppCompatActivity() {
     var appModel: AppModel? = null
@@ -80,6 +81,7 @@ class ParseActivity : AppCompatActivity() {
             val textView = findViewById<TextView>(resources.getIdentifier(key, "id", packageName))
             if (textView == null)
             {
+                FileLog.e("ParseActivity", "textView is null for key: $key")
                 return  //TODO set here Breakpoint to see if there are any problems with the ids(should only occur if the xml file is changed or programmer error)
             }
             if (value == null) {

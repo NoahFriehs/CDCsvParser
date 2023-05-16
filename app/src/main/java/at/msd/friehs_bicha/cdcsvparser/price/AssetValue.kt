@@ -75,8 +75,8 @@ class AssetValue : Serializable {
                 //if (coinMarkets == null) coinMarkets = client.getCoinMarkets(Currency.EUR);
                 for (coinMarket in coinMarkets!!) {
                     if (coinMarket.symbol.contains(symbol!!.lowercase(Locale.getDefault())) || coinMarket.id.contains(symbol.lowercase(Locale.getDefault()))) {
-                        cache.add(PriceCache(symbol, coinMarket.currentPrice))
-                        return coinMarket.currentPrice
+                        cache.add(PriceCache(symbol, coinMarket.currentPrice.toDouble()))
+                        return coinMarket.currentPrice.toDouble()
                     }
                 }
             } catch (e: Exception) {
