@@ -9,6 +9,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
 
 class ParseActivity : AppCompatActivity() {
     var appModel: AppModel? = null
@@ -26,7 +27,7 @@ class ParseActivity : AppCompatActivity() {
         apiInfo.text = "All prices provided by \n CryptoCompare API"   //overwrites the link, bc we CG api is down atm
         btnFilter.setOnClickListener { view: View? ->
             if (appModel!!.isRunning) {
-                val intent = Intent(this@ParseActivity, AssetsFilterActivity::class.java)
+                val intent = Intent(this@ParseActivity, WalletViewActivity::class.java)
                 //intent.putExtra("NAME_KEY","Value");
                 intent.putExtra("AppModel", appModel)
                 startActivity(intent)

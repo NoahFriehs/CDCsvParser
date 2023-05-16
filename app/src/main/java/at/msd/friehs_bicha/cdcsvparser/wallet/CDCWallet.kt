@@ -134,7 +134,7 @@ class CDCWallet : Wallet, Serializable {
      * @param transaction    the transaction to be made
      * @param outsideWallets all outsideWallets
      */
-    private fun cryptoWithdrawal(w: CDCWallet, transaction: Transaction, outsideWallets: ArrayList<Wallet?>?) {
+    private fun cryptoWithdrawal(w: CDCWallet, transaction: Transaction, outsideWallets: ArrayList<Wallet>?) {
         w.addToWallet(transaction.amount, BigDecimal.ZERO, BigDecimal.ZERO)
         val wt = outsideWallets!![getWallet(transaction.currencyType)] as CDCWallet?
         if (!wt!!.transactions!!.contains(transaction)) {
