@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -9,24 +10,100 @@
         android:id="@+id/walletId"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="ID: Test " />
+        />
 
     <TextView
         android:id="@+id/currencyType"
         android:layout_width="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="14dp"
+        android:textSize="16sp"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/walletId"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="Currency Type" />
+        android:text="BTC " />
 
     <TextView
         android:id="@+id/amount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
         app:layout_constraintTop_toBottomOf="@id/currencyType"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="Amount" />
+        android:text="Currency Type" />
+
+    <TextView
+        android:id="@+id/round"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        app:layout_constraintTop_toBottomOf="@id/currencyType"
+        app:layout_constraintLeft_toRightOf="@id/amount"
+        android:text="~" />
+
+    <TextView
+        android:id="@+id/amountValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:layout_marginEnd="14dp"
+        app:layout_constraintTop_toBottomOf="@id/currencyType"
+        app:layout_constraintLeft_toRightOf="@id/round"
+        android:text="amountValue" />
+
+    <TextView
+        android:id="@+id/percentProfit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="percentProfit" />
+
+    <TextView
+        android:id="@+id/inString"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toRightOf="@+id/percentProfit"
+        android:text="in" />
+
+    <TextView
+        android:id="@+id/amountTransactions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toRightOf="@+id/inString"
+        android:text="amountTransactions" />
+
+    <TextView
+        android:id="@+id/transactionSting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:layout_marginEnd="14dp"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toRightOf="@+id/amountTransactions"
+        android:text="transactions" />
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="326dp"
+        android:layout_height="1dp"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="14dp"
+        android:background="?android:attr/listDivider"
+        app:layout_constraintTop_toBottomOf="@id/percentProfit"
+        app:layout_constraintLeft_toLeftOf="parent"
+        tools:layout_editor_absoluteX="1dp"
+        tools:layout_editor_absoluteY="74dp" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

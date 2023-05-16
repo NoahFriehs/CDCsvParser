@@ -125,7 +125,7 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the amount the asset is worth in EUR
      */
-    private fun getValueOfAssets(w: Wallet?): Double {
+    public fun getValueOfAssets(w: Wallet?): Double {
         return try {
             val valueOfWallet: Double
             val price = AssetValue.getInstance()!!.getPrice(w!!.currencyType)!!
