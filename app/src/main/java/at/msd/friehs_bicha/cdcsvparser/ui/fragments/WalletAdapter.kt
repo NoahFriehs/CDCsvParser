@@ -10,13 +10,12 @@ import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.AssetsFilterActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
-import at.msd.friehs_bicha.cdcsvparser.ui.fragments.placeholder.PlaceholderContent.PlaceholderItem
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 /**
- * [RecyclerView.Adapter] that can display a [PlaceholderItem].
- * TODO: Replace the implementation with code for your data type.
+ *
+ * [RecyclerView.Adapter<WalletAdapter.WalletViewHolder>] that can display a [List<Wallet>].
  */
 class WalletAdapter(val wallets: List<Wallet>) : RecyclerView.Adapter<WalletAdapter.WalletViewHolder>() {
 
@@ -48,9 +47,9 @@ class WalletAdapter(val wallets: List<Wallet>) : RecyclerView.Adapter<WalletAdap
         val wallet = wallets[position]
         val appModel = AppModelManager.getInstance()
         val assetValue = appModel.getValueOfAssets(wallet)
-        val percentProfit = assetValue / wallet.moneySpent.toDouble() * 100;
+        val percentProfit = assetValue / wallet.moneySpent.toDouble() * 100
         val assetValueString = StringHelper.formatAmountToString(assetValue,5)
-        val amountString = StringHelper.formatAmountToString(wallet.amount.toDouble(),5,wallet.currencyType!!,)
+        val amountString = StringHelper.formatAmountToString(wallet.amount.toDouble(),5,wallet.currencyType!!)
         if(percentProfit > 100){
             holder.itemView.findViewById<TextView>(R.id.percentProfit).setTextColor(Color.GREEN)
         }else if(percentProfit == 100.0 ||  percentProfit == 0.0){

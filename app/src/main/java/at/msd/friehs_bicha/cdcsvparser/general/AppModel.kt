@@ -72,7 +72,7 @@ class AppModel : BaseAppModel, Serializable {
             val valueOfAll = AtomicReference(0.0)   //TODO not necessary
             for (wallet in txApp!!.wallets) {
                 if (wallet!!.currencyType == "EUR") continue
-                val price = AssetValue.getInstance()!!.getPrice(wallet.currencyType)!!
+                val price = wallet.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
                 val amount = wallet.amountBonus
                 valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
             }
@@ -89,7 +89,7 @@ class AppModel : BaseAppModel, Serializable {
     private fun getTotalBonus(wallet: Wallet?): Double {
         return try {
             val valueOfAll = AtomicReference(0.0)   //TODO not necessary
-            val price = AssetValue.getInstance()!!.getPrice(wallet!!.currencyType)!!
+            val price = wallet!!.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
             val amount = wallet.amountBonus
             valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
             valueOfAll.get()
@@ -108,7 +108,7 @@ class AppModel : BaseAppModel, Serializable {
             var valueOfAll = 0.0
             for (w in txApp!!.wallets) {
                 if (w!!.currencyType == "EUR") continue
-                val price = AssetValue.getInstance()!!.getPrice(w.currencyType)!!
+                val price = w.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
                 val amount = w.amount
                 valueOfAll += price * amount.toDouble()
                 if (valueOfAll < 0.0) {
@@ -128,7 +128,7 @@ class AppModel : BaseAppModel, Serializable {
     public fun getValueOfAssets(w: Wallet?): Double {
         return try {
             val valueOfWallet: Double
-            val price = AssetValue.getInstance()!!.getPrice(w!!.currencyType)!!
+            val price = w!!.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
             val amount = w.amount
             valueOfWallet = price * amount.toDouble()
             valueOfWallet

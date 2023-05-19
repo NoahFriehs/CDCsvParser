@@ -90,7 +90,7 @@
         android:layout_marginEnd="14dp"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toRightOf="@+id/amountTransactions"
-        android:text="transactions" />
+        android:text="transaction(s)" />
 
     <View
         android:id="@+id/divider"

@@ -41,9 +41,11 @@ class AssetValue : Serializable {
      * @return the price of the symbol
      */
     @Throws(InterruptedException::class)
-    fun getPrice(symbol: String?): Double? {
+    fun getPrice(symbol: String): Double? {
         //val prices = StaticPrices()
         //return prices.prices[symbol]    //use this if api does nor work
+
+        if (symbol == "EUR") return 1.0
 
         var price = checkCache(symbol)
         if (price != -1.0) {
@@ -138,7 +140,7 @@ class AssetValue : Serializable {
      * @param symbol the symbol to be checked and if needed replaced
      * @return the if needed replaced symbol
      */
-    private fun overrideSymbol(symbol: String?): String? {
+    private fun overrideSymbol(symbol: String): String {
         if (symbol == "LUNA") return "terra-luna"
         return if (symbol == "LUNA2") "terra-luna-2" else symbol
     }
@@ -149,7 +151,7 @@ class AssetValue : Serializable {
      * @param symbol the symbol to be checked for
      * @return a price if it has it it else -1
      */
-    private fun checkCache(symbol: String?): Double {
+    private fun checkCache(symbol: String): Double {
         var i = 0
         while (i < cache.size) {
             if (cache[i].isOlderThanFiveMinutes) {
