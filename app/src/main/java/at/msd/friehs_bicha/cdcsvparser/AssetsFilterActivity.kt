@@ -4,8 +4,13 @@ import android.content.Context
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
@@ -52,7 +57,14 @@ class AssetsFilterActivity : AppCompatActivity() {
 
         //get the specific wallet
         val indexObj = dropdown.selectedItem ?: return
-        val specificWallet = appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0]!!.getWallet(indexObj.toString())]
+        var specificWallet = appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0]!!.getWallet(indexObj.toString())]
+
+        val wallet = intent.extras?.get("wallet")
+        if (wallet is Wallet)
+        {
+            specificWallet = wallet
+            dropdown.setSelection(items.indexOf(specificWallet.currencyType))
+        }
 
         // display prices
         displayInformation(specificWallet, findViewById(R.id.all_regarding_tx))
@@ -75,7 +87,7 @@ class AssetsFilterActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
-        appModel = intent.extras!!["AppModel"] as AppModel?
+        appModel = AppModelManager.getInstance()    //intent.extras!!["AppModel"] as AppModel?
     }
 
     /**

@@ -316,4 +316,16 @@ class AppModel : BaseAppModel, Serializable {
         return appHashMap
     }
 
+
+    fun getWalletByID(id: Int) : Wallet?
+    {
+        txApp?.wallets?.forEach {
+            if (it.walletId == id)
+            {
+                return it
+            }
+        }
+        return null
+    }
+
 }

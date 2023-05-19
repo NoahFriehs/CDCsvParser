@@ -1,22 +1,15 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.fragments
 
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.graphics.Color
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.TextView
-import androidx.core.content.ContextCompat.startActivity
+import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.AssetsFilterActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
-import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
-import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
-
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.placeholder.PlaceholderContent.PlaceholderItem
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
@@ -28,6 +21,18 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 class WalletAdapter(val wallets: List<Wallet>) : RecyclerView.Adapter<WalletAdapter.WalletViewHolder>() {
 
     class WalletViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+    {
+        init {
+            itemView.setOnClickListener {
+                val walletId = itemView.findViewById<TextView>(R.id.walletId).text.toString().toInt()
+                val appModel = AppModelManager.getInstance()
+                val wallet = appModel.txApp!!.wallets.find { it.walletId == walletId }
+                val intent = Intent(itemView.context, AssetsFilterActivity::class.java)
+                intent.putExtra("wallet", wallet)
+                itemView.context.startActivity(intent)
+            }
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): WalletViewHolder {
         return WalletViewHolder(
