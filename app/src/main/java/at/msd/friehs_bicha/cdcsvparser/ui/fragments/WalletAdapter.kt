@@ -1,7 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.fragments
 
+import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,8 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.AssetsFilterActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
-import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
-import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 /**
@@ -46,28 +45,38 @@ class WalletAdapter(val wallets: List<Wallet>) : RecyclerView.Adapter<WalletAdap
 
     override fun onBindViewHolder(holder: WalletViewHolder, position: Int) {
         val wallet = wallets[position]
-        val appModel = AppModelManager.getInstance()
-        val assetValue = appModel.getValueOfAssets(wallet)
-        val percentProfit = assetValue / wallet.moneySpent.toDouble() * 100
-        val assetValueString = StringHelper.formatAmountToString(assetValue,5)
-        val amountString = StringHelper.formatAmountToString(wallet.amount.toDouble(),5,wallet.currencyType!!)
-        if(percentProfit > 100){
-            holder.itemView.findViewById<TextView>(R.id.percentProfit).setTextColor(Color.GREEN)
-        }else if(percentProfit == 100.0 ||  percentProfit == 0.0){
-            holder.itemView.findViewById<TextView>(R.id.percentProfit).setTextColor(Color.GRAY)
-        }else{
-            holder.itemView.findViewById<TextView>(R.id.percentProfit).setTextColor(Color.RED)
-        }
-
-        holder.itemView.findViewById<TextView>(R.id.walletId).text = wallet.walletId.toString()
-        if (wallet is CroCardWallet) holder.itemView.findViewById<TextView>(R.id.currencyType).text = wallet.transactionType
-        else holder.itemView.findViewById<TextView>(R.id.currencyType).text = wallet.currencyType
-        holder.itemView.findViewById<TextView>(R.id.amount).text = amountString
-        holder.itemView.findViewById<TextView>(R.id.amountValue).text = assetValueString
-        holder.itemView.findViewById<TextView>(R.id.percentProfit).text = StringHelper.formatAmountToString(percentProfit - 100,2,"%")
-        holder.itemView.findViewById<TextView>(R.id.amountTransactions).text = wallet.transactions?.count().toString()
-
+        val waMap = AppModelManager.getInstance().getWalletAdapter(wallet)
+        displayTexts(waMap, holder, holder.itemView.context)
     }
+
+
+    /**
+     * Displays the prices of wallet
+     *
+     * @param texts the Map<String></String>, String> which should be displayed with id of View and text to set pairs
+     */
+    private fun displayTexts(texts: Map<String, String?>?, holder: WalletViewHolder, context: Context){
+        texts!!.forEach { (key: String?, value: String?) ->
+            if (key == "COLOR")
+            {
+                val color = value!!.toInt()
+                holder.itemView.findViewById<TextView>(R.id.percentProfit).setTextColor(color)
+                return@forEach
+            }
+            val textView = holder.itemView.findViewById<TextView>(holder.itemView.resources.getIdentifier(key, "id", context.packageName))
+            if (textView == null)
+            {
+                FileLog.e("WalletAdapter", "textView is null for key: $key")
+                return@forEach
+            }
+            if (value == null) {
+                textView.visibility = View.INVISIBLE
+            } else {
+                textView.text = value
+            }
+        }
+    }
+
 
     override fun getItemCount() = wallets.size
 }

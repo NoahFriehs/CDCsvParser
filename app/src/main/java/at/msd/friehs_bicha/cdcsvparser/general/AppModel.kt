@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.general
 
+import android.graphics.Color
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -328,6 +329,34 @@ class AppModel : BaseAppModel, Serializable {
             }
         }
         return null
+    }
+
+
+    fun getWalletAdapter(wallet: Wallet): MutableMap<String, String?> {
+        val assetValue = getValueOfAssets(wallet)
+        val percentProfit = assetValue / wallet.moneySpent.toDouble() * 100
+        val assetValueString = StringHelper.formatAmountToString(assetValue,5)
+        val amountString = StringHelper.formatAmountToString(wallet.amount.toDouble(),5,wallet.currencyType!!)
+        val color: Int = if(percentProfit > 100){
+            Color.GREEN
+        }else if(percentProfit == 100.0 ||  percentProfit == 0.0){
+            Color.GRAY
+        }else{
+            Color.RED
+        }
+
+        val walletName: String = if (wallet is CroCardWallet) wallet.transactionType.toString()
+        else wallet.currencyType!!
+
+        val map: MutableMap<String, String?> = HashMap()
+        map[R.id.walletId.toString()] = wallet.walletId.toString()
+        map[R.id.currencyType.toString()] = walletName
+        map[R.id.amount.toString()] = amountString
+        map[R.id.amountValue.toString()] = assetValueString
+        map[R.id.percentProfit.toString()] = StringHelper.formatAmountToString(percentProfit - 100,2,"%", true)
+        map[R.id.amountTransactions.toString()] = wallet.transactions?.count().toString()
+        map["COLOR"] = color.toString()
+        return map
     }
 
 }
