@@ -61,8 +61,7 @@ class WalletAdapter(val wallets: List<Wallet>) : RecyclerView.Adapter<WalletAdap
 
         holder.itemView.findViewById<TextView>(R.id.walletId).text = wallet.walletId.toString()
         if (wallet is CroCardWallet) holder.itemView.findViewById<TextView>(R.id.currencyType).text = wallet.transactionType
-        else
-        holder.itemView.findViewById<TextView>(R.id.currencyType).text = wallet.currencyType
+        else holder.itemView.findViewById<TextView>(R.id.currencyType).text = wallet.currencyType
         holder.itemView.findViewById<TextView>(R.id.amount).text = amountString
         holder.itemView.findViewById<TextView>(R.id.amountValue).text = assetValueString
         holder.itemView.findViewById<TextView>(R.id.percentProfit).text = StringHelper.formatAmountToString(percentProfit - 100,2,"%")
