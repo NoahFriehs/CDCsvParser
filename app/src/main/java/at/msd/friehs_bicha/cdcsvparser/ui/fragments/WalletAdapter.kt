@@ -11,6 +11,7 @@ import at.msd.friehs_bicha.cdcsvparser.AssetsFilterActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
+import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 /**
@@ -59,6 +60,8 @@ class WalletAdapter(val wallets: List<Wallet>) : RecyclerView.Adapter<WalletAdap
         }
 
         holder.itemView.findViewById<TextView>(R.id.walletId).text = wallet.walletId.toString()
+        if (wallet is CroCardWallet) holder.itemView.findViewById<TextView>(R.id.currencyType).text = wallet.transactionType
+        else
         holder.itemView.findViewById<TextView>(R.id.currencyType).text = wallet.currencyType
         holder.itemView.findViewById<TextView>(R.id.amount).text = amountString
         holder.itemView.findViewById<TextView>(R.id.amountValue).text = assetValueString

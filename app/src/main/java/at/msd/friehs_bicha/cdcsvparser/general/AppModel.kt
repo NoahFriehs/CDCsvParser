@@ -2,6 +2,7 @@ package at.msd.friehs_bicha.cdcsvparser.general
 
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.*
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
@@ -207,6 +208,7 @@ class AppModel : BaseAppModel, Serializable {
                 }
                 map
             } catch (e: Exception) {
+                e.message?.let { FileLog.w("ParseMap", it) }
                 null
             }
         }

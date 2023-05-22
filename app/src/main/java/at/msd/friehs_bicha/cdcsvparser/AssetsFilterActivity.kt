@@ -63,7 +63,8 @@ class AssetsFilterActivity : AppCompatActivity() {
         if (wallet is Wallet)
         {
             specificWallet = wallet
-            dropdown.setSelection(items.indexOf(specificWallet.currencyType))
+            if (wallet is CroCardWallet) dropdown.setSelection(items.indexOf(wallet.transactionType))
+            else dropdown.setSelection(items.indexOf(specificWallet.currencyType))
         }
 
         // display prices
