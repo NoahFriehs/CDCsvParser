@@ -54,7 +54,7 @@ class AssetValue : Serializable {
         }
 
         val cryptoPrices = CryptoPricesCryptoCompare()
-        val priceApi = cryptoPrices.getPrice(symbol!!)
+        val priceApi = cryptoPrices.getPrice(symbol)
         if (priceApi != 0.0) {
             cache.add(PriceCache(symbol, priceApi))
             return priceApi
@@ -76,7 +76,7 @@ class AssetValue : Serializable {
             try {
                 //if (coinMarkets == null) coinMarkets = client.getCoinMarkets(Currency.EUR);
                 for (coinMarket in coinMarkets!!) {
-                    if (coinMarket.symbol.contains(symbol!!.lowercase(Locale.getDefault())) || coinMarket.id.contains(symbol.lowercase(Locale.getDefault()))) {
+                    if (coinMarket.symbol.contains(symbol.lowercase(Locale.getDefault())) || coinMarket.id.contains(symbol.lowercase(Locale.getDefault()))) {
                         cache.add(PriceCache(symbol, coinMarket.currentPrice.toDouble()))
                         return coinMarket.currentPrice.toDouble()
                     }

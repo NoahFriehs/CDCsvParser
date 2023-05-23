@@ -3,13 +3,13 @@ package at.msd.friehs_bicha.cdcsvparser.price
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
-import java.util.*
+import java.util.Locale
 
 class CryptoPriceCoingecko : BaseCryptoPrices() {
     private val client = OkHttpClient()
     private val baseUrl = "https://api.coingecko.com/api/v3/"
 
-    override fun getPrice(symbol: String): Double? {
+    override fun getPrice(symbol: String): Double {
         val url = "${baseUrl}simple/price?ids=$symbol&vs_currencies=eur"
         val request = Request.Builder()
             .url(url)

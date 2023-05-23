@@ -1,6 +1,5 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
-import android.util.Log
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import okhttp3.OkHttpClient
 import okhttp3.Request

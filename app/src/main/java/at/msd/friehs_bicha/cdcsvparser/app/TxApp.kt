@@ -9,7 +9,6 @@ import java.io.Serializable
 import java.math.BigDecimal
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
-import java.util.*
 import java.util.function.Consumer
 
 /**
@@ -31,9 +30,6 @@ class TxApp : BaseApp, Serializable {
         println("We have " + transactions.size + " transaction(s).")
         createWallets()
         fillWallet(transactions)
-        if (amountTxFailed > 0) {
-            //throw RuntimeException("$amountTxFailed transaction(s) failed")   //handled in AppModel now without exception needed here
-        }
     }
 
     constructor(transactions: List<Transaction?>?, wallets: List<CDCWallet>) {
@@ -82,8 +78,7 @@ class TxApp : BaseApp, Serializable {
             try {
                 val sa = transaction.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 if (sa.size == 10 || sa.size == 11) {
-                    var t: Transaction
-                    t = if (sa[3].toDouble() == 0.0) {
+                    var t: Transaction = if (sa[3].toDouble() == 0.0) {
                         if (sa[7].toDouble() == 0.0) {
                             Transaction(sa[0], sa[1], sa[2], BigDecimal.ZERO, BigDecimal.ZERO, Converter.ttConverter(sa[9]))
                         } else {
@@ -99,7 +94,7 @@ class TxApp : BaseApp, Serializable {
                     }
                     transactions.add(t)
                 } else {
-                    println(Arrays.toString(sa))
+                    println(sa.contentToString())
                     println(sa.size)
                 }
             } catch (e: Exception) {
@@ -130,7 +125,7 @@ class TxApp : BaseApp, Serializable {
      */
     private fun fillWallet(tr: ArrayList<Transaction>) {
         for (t in tr) {
-            wallets[0]!!.addTransaction(t)
+            wallets[0].addTransaction(t)
         }
         println("We have " + wallets.size + " Wallets")
     }
@@ -138,13 +133,13 @@ class TxApp : BaseApp, Serializable {
     private fun fillProcessedWallets(txs: List<Transaction?>?) {
         for (t in txs!!) {
             if (t!!.isOutsideTransaction) {
-                outsideWallets[t.walletId - 1]?.transactions!!.add(t)
+                outsideWallets[t.walletId - 1].transactions!!.add(t)
             }
             if (t.fromWalletId == t.walletId) {
-                wallets[t.walletId - 1]!!.transactions!!.add(t)
+                wallets[t.walletId - 1].transactions!!.add(t)
             } else {
-                wallets[t.walletId - 1]!!.transactions!!.add(t)
-                wallets[t.fromWalletId - 1]!!.transactions!!.add(t)
+                wallets[t.walletId - 1].transactions!!.add(t)
+                wallets[t.fromWalletId - 1].transactions!!.add(t)
             }
         }
     }

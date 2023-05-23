@@ -66,7 +66,7 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
             if (w == null){
                 w = CroCardWallet("EUR", BigDecimal.ZERO, tt, txApp)
             }
-            w!!.addToWallet(transaction, ignoreThisTx)
+            w.addToWallet(transaction, ignoreThisTx)
             w.transactions!!.add(cardTransaction)
             transaction.walletId = w.walletId
         } else {

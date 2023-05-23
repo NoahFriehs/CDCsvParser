@@ -50,7 +50,7 @@ class AppModel : BaseAppModel, Serializable {
             var totalPrice = BigDecimal(0)
             when (appType) {
                 AppType.CdCsvParser -> for (wallet in txApp!!.wallets) {
-                    totalPrice = totalPrice.add(wallet?.moneySpent)
+                    totalPrice = totalPrice.add(wallet.moneySpent)
                 }
                 AppType.CroCard -> {
                     val wallets = txApp!!.wallets.clone() as ArrayList<Wallet>
@@ -73,7 +73,7 @@ class AppModel : BaseAppModel, Serializable {
         get() = try {
             val valueOfAll = AtomicReference(0.0)   //TODO not necessary
             for (wallet in txApp!!.wallets) {
-                if (wallet!!.currencyType == "EUR") continue
+                if (wallet.currencyType == "EUR") continue
                 val price = wallet.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
                 val amount = wallet.amountBonus
                 valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
@@ -109,7 +109,7 @@ class AppModel : BaseAppModel, Serializable {
         get() = try {
             var valueOfAll = 0.0
             for (w in txApp!!.wallets) {
-                if (w!!.currencyType == "EUR") continue
+                if (w.currencyType == "EUR") continue
                 val price = w.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
                 val amount = w.amount
                 valueOfAll += price * amount.toDouble()
@@ -127,7 +127,7 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return the amount the asset is worth in EUR
      */
-    public fun getValueOfAssets(w: Wallet?): Double {
+    fun getValueOfAssets(w: Wallet?): Double {
         return try {
             val valueOfWallet: Double
             val price = w!!.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
@@ -301,7 +301,7 @@ class AppModel : BaseAppModel, Serializable {
                 val dbWallets = ArrayList<CCDBWallet>()
                 val dbTransactions = ArrayList<CCDBTransaction>()
                 txApp!!.wallets.forEach {
-                    dbWallets.add(CCDBWallet(it!!))
+                    dbWallets.add(CCDBWallet(it))
                 }
                 txApp!!.transactions.forEach {
                     dbTransactions.add(CCDBTransaction(it))
@@ -320,6 +320,7 @@ class AppModel : BaseAppModel, Serializable {
     }
 
 
+    @Suppress("SameReturnValue")
     fun getWalletByID(id: Int) : Wallet?
     {
         txApp?.wallets?.forEach {

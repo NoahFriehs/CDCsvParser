@@ -1,7 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
 import java.io.Serializable
-import java.util.*
+import java.util.Date
 
 open class DBTransaction(transaction: Transaction) : Serializable {
 

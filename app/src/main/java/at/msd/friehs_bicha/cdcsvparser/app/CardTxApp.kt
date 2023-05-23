@@ -125,11 +125,11 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
                 if ((t as CroCardTransaction).transactionTypeString == "EUR -> EUR") {
                     (wallets[0] as CroCardWallet).addToWallet(t)
                 } else {
-                    wallets[0]?.addTransaction(t)
+                    wallets[0].addTransaction(t)
                 }
             }
-            if (wallets[0]?.getWallet("Test -> Test") != -1)
-                wallets.remove(wallets[wallets[0]?.getWallet("Test -> Test")!!])
+            if (wallets[0].getWallet("Test -> Test") != -1)
+                wallets.remove(wallets[wallets[0].getWallet("Test -> Test")])
         }
         else
         {

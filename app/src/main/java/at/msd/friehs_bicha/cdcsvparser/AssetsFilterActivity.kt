@@ -57,7 +57,7 @@ class AssetsFilterActivity : AppCompatActivity() {
 
         //get the specific wallet
         val indexObj = dropdown.selectedItem ?: return
-        var specificWallet = appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0]!!.getWallet(indexObj.toString())]
+        var specificWallet = appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0].getWallet(indexObj.toString())]
 
         val wallet = intent.extras?.get("wallet")
         if (wallet is Wallet)
@@ -75,7 +75,7 @@ class AssetsFilterActivity : AppCompatActivity() {
         dropdown.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
                 //get the specific wallet
-                val specificWallet = appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0]!!.getWallet(dropdown.selectedItem.toString())]
+                val specificWallet = appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0].getWallet(dropdown.selectedItem.toString())]
 
                 //display Transactions
                 displayTxs(specificWallet)

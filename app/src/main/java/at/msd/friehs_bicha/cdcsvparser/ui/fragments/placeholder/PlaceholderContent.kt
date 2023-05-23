@@ -1,8 +1,5 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.fragments.placeholder
 
-import java.util.ArrayList
-import java.util.HashMap
-
 /**
  * Helper class for providing sample content for user interfaces created by
  * Android template wizards.
