@@ -13,6 +13,18 @@ import java.util.function.Consumer
 class TxAppFactory {
 
     companion object {
+
+        /**
+         * Create tx app
+         *
+         * @param appType
+         * @param appStatus
+         * @param useStrictType
+         * @param dataContainer HashMap with data:
+         *                     - For not started: csvAsList
+         *                     - For importFromFB: dbWallets, dbOutsideWallets, dbTransactions, amountTxFailed
+         * @return
+         */
         fun createTxApp(
             appType: AppType,
             appStatus: AppStatus,

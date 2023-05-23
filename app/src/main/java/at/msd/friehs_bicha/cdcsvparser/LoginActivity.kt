@@ -7,7 +7,6 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import com.google.firebase.auth.FirebaseAuth
 
 class LoginActivity : AppCompatActivity() {
@@ -24,16 +23,6 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
-
-        FileLog.init(applicationContext)
-
-        val user = FirebaseAuth.getInstance().currentUser
-
-        if (user != null) {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
 
         etEmail = findViewById(R.id.et_email)
         etPassword = findViewById(R.id.et_password)
