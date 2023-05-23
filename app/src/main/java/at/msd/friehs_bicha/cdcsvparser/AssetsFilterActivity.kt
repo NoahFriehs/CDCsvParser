@@ -102,7 +102,7 @@ class AssetsFilterActivity : AppCompatActivity() {
             when (appModel!!.appType) {
                 AppType.CdCsvParser -> {
                     appModel!!.txApp!!.wallets.forEach(Consumer { wallet: Wallet? -> wallets.add(wallet?.currencyType) })
-                    wallets.remove("EUR")
+                    //wallets.remove("EUR")
                 }
                 AppType.CroCard -> appModel!!.txApp!!.wallets.forEach(Consumer { wallet: Wallet? -> wallets.add((wallet as CroCardWallet?)?.transactionType) })
                 else -> wallets.add("This should not happen")

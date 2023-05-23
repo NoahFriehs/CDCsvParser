@@ -50,6 +50,7 @@ class AppModel : BaseAppModel, Serializable {
             var totalPrice = BigDecimal(0)
             when (appType) {
                 AppType.CdCsvParser -> for (wallet in txApp!!.wallets) {
+                    if (wallet.currencyType == "EUR") continue
                     totalPrice = totalPrice.add(wallet.moneySpent)
                 }
                 AppType.CroCard -> {

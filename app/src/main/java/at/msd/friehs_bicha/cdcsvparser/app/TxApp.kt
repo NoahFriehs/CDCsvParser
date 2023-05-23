@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.app
 
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import at.msd.friehs_bicha.cdcsvparser.util.Converter
@@ -96,9 +97,15 @@ class TxApp : BaseApp, Serializable {
                 } else {
                     println(sa.contentToString())
                     println(sa.size)
+                    FileLog.e("TxApp",
+                        "Error while processing the following transaction: $transaction"
+                    )
                 }
             } catch (e: Exception) {
                 println("Error while processing the following transaction: " + transaction + " | " + e.message)
+                FileLog.e("TxApp",
+                    "Error while processing the following transaction: $transaction"
+                )
                 amountTxFailed++
                 //                throw new RuntimeException(e);
             }

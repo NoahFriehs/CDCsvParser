@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
 import at.msd.friehs_bicha.cdcsvparser.app.TxApp
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import java.io.Serializable
@@ -122,6 +123,7 @@ class CDCWallet : Wallet, Serializable {
                 w.removeFromWallet(transaction.amount, transaction.nativeAmount)
                 val eur = txApp!!.wallets[getWallet("EUR")] as CDCWallet
                 eur.addToWallet(transaction.nativeAmount, transaction.nativeAmount, BigDecimal.ZERO)
+                eur.transactions?.add(transaction)
             }
             else -> println("This is an unsupported TransactionType: $t")
         }
@@ -145,18 +147,25 @@ class CDCWallet : Wallet, Serializable {
     }
 
     /**
-     * Hadles crypto viban purchase
+     * Handles crypto viban purchase
      *
      * @param transaction the transaction which is a vibanPurchase
      */
     private fun vibanPurchase(transaction: Transaction) {
         if (getWallet(transaction.toCurrency) == -1) {
             println("Tx failed: $transaction")
+            FileLog.w("CDCWallet", "Tx failed: $transaction")
         } else {
-            val wv = txApp!!.wallets[getWallet(transaction.toCurrency)] as CDCWallet
+            var wv = txApp!!.wallets[getWallet(transaction.toCurrency)] as CDCWallet
             wv.addToWallet(transaction.toAmount, transaction.nativeAmount, BigDecimal.ZERO)
             //wv.addToWallet(transaction);
             transaction.walletId = wv.walletId
+            if (!wv.transactions!!.contains(transaction)) {
+                wv.transactions!!.add(transaction)
+            }
+            wv = txApp!!.wallets[getWallet(transaction.currencyType)] as CDCWallet
+            wv.addToWallet(transaction.amount, transaction.nativeAmount, BigDecimal.ZERO)
+            transaction.fromWalletId = wv.walletId
             if (!wv.transactions!!.contains(transaction)) {
                 wv.transactions!!.add(transaction)
             }
