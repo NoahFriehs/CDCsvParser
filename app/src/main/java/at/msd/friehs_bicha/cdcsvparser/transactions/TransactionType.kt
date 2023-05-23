@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+
 /**
  * All different TransactionTypes
  */
@@ -35,6 +37,7 @@ fun stringToTransactionType(str: String?): TransactionType {
             TransactionType.STRING
         }
     } catch (e: IllegalArgumentException) {
+        FileLog.e("TransactionType", "Unknown TransactionType: $str")
         TransactionType.STRING
     }
 }

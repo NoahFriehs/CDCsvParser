@@ -26,6 +26,12 @@ class FileLog {
         private var LOG_FILENAME = "CDCsvParser.log"
         private val TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS"
 
+
+        /**
+         * Initialize the FileLog
+         * @param context The context of the application
+         * @param logFilename The filename of the log file
+         */
         fun init(context: Context, logFilename: String = "log/CDCsvParser.log") {
             m_context = context
             LOG_FILENAME = logFilename
@@ -50,24 +56,52 @@ class FileLog {
             d("FileLog", "Initialized")
         }
 
+
+        /**
+         * Send a DEBUG log message.
+         * @param tag Used to identify the source of a log message.  It usually identifies
+         *        the class or activity where the log call occurs.
+         * @param message The message you would like logged.
+         */
         fun d(tag: String?, message: String) {
             Log.d(tag, message)
             if (!isInitialized) return
             writeToFile(tag, message)
         }
 
+
+        /**
+         * Send a INFO log message.
+         * @param tag Used to identify the source of a log message.  It usually identifies
+         *        the class or activity where the log call occurs.
+         * @param message The message you would like logged.
+         */
         fun i(tag: String?, message: String) {
             Log.i(tag, message)
             if (!isInitialized) return
             writeToFile(tag, "Info: $message")
         }
 
+
+        /**
+         * Send a ERROR log message.
+         * @param tag Used to identify the source of a log message.  It usually identifies
+         *        the class or activity where the log call occurs.
+         * @param message The message you would like logged.
+         */
         fun e(tag: String?, message: String) {
             Log.e(tag, message)
             if (!isInitialized) return
             writeToFile(tag, "Error: $message")
         }
 
+
+        /**
+         * Send a WARN log message.
+         * @param tag Used to identify the source of a log message.  It usually identifies
+         *        the class or activity where the log call occurs.
+         * @param message The message you would like logged.
+         */
         fun w(tag: String?, message: String) {
             Log.w(tag, message)
             if (!isInitialized) return
