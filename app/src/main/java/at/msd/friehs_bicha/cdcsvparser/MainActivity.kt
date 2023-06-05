@@ -15,6 +15,7 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import com.google.firebase.auth.FirebaseAuth
@@ -414,8 +415,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 else
                 {
-                    // Handle database error    //TODO: handle error
-                    val a = 0
+                    FileLog.w("MainActivity", "loadFromFireBaseDB: txAppMap is null: userMap: $userMap")
                 }
             }
             else

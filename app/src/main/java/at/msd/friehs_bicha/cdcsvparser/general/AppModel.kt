@@ -55,7 +55,7 @@ class AppModel : BaseAppModel, Serializable {
                 }
                 AppType.CroCard -> {
                     val wallets = txApp!!.wallets.clone() as ArrayList<Wallet>
-                    wallets.removeAt(0)
+                    //wallets.removeAt(0)
                     for (wallet in wallets) {
                         totalPrice = totalPrice.add(wallet.amount)
                     }
@@ -115,11 +115,12 @@ class AppModel : BaseAppModel, Serializable {
                 val amount = w.amount
                 valueOfAll += price * amount.toDouble()
                 if (valueOfAll < 0.0) {
-                    val i = 0
+                    FileLog.i("AppModel.valueOfAssets", "valueOfAll < 0: $valueOfAll")
                 }
             }
             valueOfAll
         } catch (e: Exception) {
+            FileLog.e("AppModel.valueOfAssets", "Exception: $e")
             0.0
         }
 
@@ -321,7 +322,6 @@ class AppModel : BaseAppModel, Serializable {
     }
 
 
-    @Suppress("SameReturnValue")
     fun getWalletByID(id: Int) : Wallet?
     {
         txApp?.wallets?.forEach {
@@ -336,7 +336,10 @@ class AppModel : BaseAppModel, Serializable {
 
     fun getWalletAdapter(wallet: Wallet): MutableMap<String, String?> {
         val assetValue = getValueOfAssets(wallet)
-        val percentProfit = assetValue / wallet.moneySpent.toDouble() * 100
+        var percentProfit = assetValue / wallet.moneySpent.toDouble() * 100
+        if (percentProfit.isNaN()) {
+            percentProfit = 0.0
+        }
         val assetValueString = StringHelper.formatAmountToString(assetValue,5)
         val amountString = StringHelper.formatAmountToString(wallet.amount.toDouble(),5,wallet.currencyType!!)
         val color: Int = if(percentProfit > 100){

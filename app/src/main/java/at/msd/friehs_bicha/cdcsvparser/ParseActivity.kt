@@ -13,6 +13,11 @@ import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
 
 class ParseActivity : AppCompatActivity() {
     var appModel: AppModel? = null
+
+    @JvmField
+    @Volatile
+    var isReady = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_parse)
@@ -44,6 +49,7 @@ class ParseActivity : AppCompatActivity() {
         while (!appModel!!.isRunning) { //TODO: add loading icon
             try {
                 Thread.sleep(500)
+                FileLog.d("ParseActivity", "waiting for appModel to be ready")
             } catch (e: InterruptedException) {
                 throw RuntimeException(e)
             }
@@ -65,6 +71,7 @@ class ParseActivity : AppCompatActivity() {
         val t = Thread {
             try {
                 displayTexts(appModel?.parseMap)
+                isReady = true
             } catch (e: InterruptedException) {
                 throw RuntimeException(e)
             }

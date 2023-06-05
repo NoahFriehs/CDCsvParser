@@ -45,6 +45,9 @@ object StringHelper {
             {
                 return amountParts[0] + "." + lastPart.substring(0, lastZeroIndex + 1)
             }
+            //if string has only zeros after the point
+            if (lastZeroIndex == -1)
+            return amountParts[0] + ".00"
         }
         return amount
     }

@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -31,73 +32,68 @@ class SettingsActivity : AppCompatActivity() {
         btnLogout = findViewById(R.id.btn_logout)
         btnDeleteUser = findViewById(R.id.btn_delete_account)
 
-        val settings = getSharedPreferences(PREFS_NAME, 0)
         // load the stored values for the spinner and checkbox
-        val storedType = settings.getInt(TYPE_KEY, 0)
-        useStrictType = settings.getBoolean(USE_STRICT_TYPE_KEY, false)
+        selectedType = PreferenceHelper.getSelectedType(this)
+        useStrictType = PreferenceHelper.getUseStrictType(this)
 
         val auth = FirebaseAuth.getInstance()
         val user = auth.currentUser
 
         // set the selected app type
-        selectedType = AppType.values()[storedType]
-        appTypeSpinner.setSelection(storedType)
+        appTypeSpinner.setSelection(selectedType!!.ordinal)
+        useStrictTypeCheckbox.isEnabled = selectedType != AppType.CroCard
         useStrictTypeCheckbox.isChecked = useStrictType
         useStrictTypeCheckbox.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { _, isChecked ->
             useStrictType = isChecked
-            val settings = getSharedPreferences(PREFS_NAME, 0)
-            val editor = settings.edit()
-            editor.putBoolean(USE_STRICT_TYPE_KEY, useStrictType)
-            editor.apply()
+            PreferenceHelper.setUseStrictType(this@SettingsActivity, isChecked)
         })
+
         appTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View, position: Int, id: Long) {
                 selectedType = AppType.values()[position]
-                val settings = getSharedPreferences(PREFS_NAME, 0)
-                val editor = settings.edit()
-                editor.putInt(TYPE_KEY, position)
-                editor.apply()
+                if (selectedType is AppType)PreferenceHelper.setSelectedType(this@SettingsActivity,
+                    selectedType!!
+                )
+                useStrictTypeCheckbox.isEnabled = position != 0
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // do nothing
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+
         btnLogout.setOnClickListener {
-            FirebaseAuth.getInstance().signOut()
+            auth.signOut()
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
             finish()
         }
 
         if (user == null) {
+            btnLogout.visibility = View.GONE
             btnDeleteUser.visibility = View.GONE
         }
+
         btnDeleteUser.setOnClickListener {
             val db = Firebase.firestore
             db.collection("user").document(user!!.uid).set(hashMapOf("deleted" to true))
 
             db.collection("user").document(user.uid).delete().addOnCompleteListener {
                 if (it.isSuccessful) {  //TODO does not work yet
-                    FileLog.d("TAG", "User deleted from database.")
+                    FileLog.d("Settings-DeleteUser", "User deleted from database.")
                 }
                 else
                 {
-                    FileLog.d("TAG", "User could not be deleted from database.")
+                    FileLog.d("Settings-DeleteUser", "User could not be deleted from database.")
                 }
             }
 
-            FirebaseAuth.getInstance().currentUser?.delete()?.addOnCompleteListener { task ->
+            user.delete().addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    FileLog.d("TAG", "User account deleted.")
-                }
-                else
-                {
+                    FileLog.d("Settings-DeleteUser", "User account deleted.")
+                } else {
                     if (task.exception != null) {
-                        FileLog.d("TAG", task.exception.toString())
+                        FileLog.d("Settings-DeleteUser", task.exception.toString())
                     }
                     if (task.exception.toString().contains("requires recent authentication")) {
-                        FileLog.d("TAG", "User needs to reauthenticate.")   //TODO handle this(user has to relogin)
+                        FileLog.d("Settings-DeleteUser", "User needs to reauthenticate.")   //TODO handle this(user has to relogin)
                         Toast.makeText(this, "User needs to reauthenticate.", Toast.LENGTH_LONG).show()
                     }
                 }
@@ -110,10 +106,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val PREFS_NAME = "settings_prefs"
-        private const val TYPE_KEY = "app_type"
-        private const val USE_STRICT_TYPE_KEY = "use_strict_app_type"
         var useStrictType = false
-        var selectedType: AppType? = null
+        var selectedType: AppType = AppType.CdCsvParser
     }
 }
