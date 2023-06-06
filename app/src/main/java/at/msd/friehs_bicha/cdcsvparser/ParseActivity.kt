@@ -85,7 +85,11 @@ class ParseActivity : AppCompatActivity() {
      * @param texts the Map<String></String>, String> which should be displayed with id of View and text to set pairs
      */
     private fun displayTexts(texts: Map<String, String?>?) {
-        texts!!.forEach { (key: String?, value: String?) ->
+        if (texts == null) {
+            FileLog.e("ParseActivity", "texts is null")
+            return
+        }
+        texts.forEach { (key: String?, value: String?) ->
             val textView = findViewById<TextView>(resources.getIdentifier(key, "id", packageName))
             if (textView == null)
             {

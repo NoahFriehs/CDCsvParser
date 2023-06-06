@@ -51,8 +51,8 @@ class SettingsActivity : AppCompatActivity() {
         appTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View, position: Int, id: Long) {
                 selectedType = AppType.values()[position]
-                if (selectedType is AppType)PreferenceHelper.setSelectedType(this@SettingsActivity,
-                    selectedType!!
+                PreferenceHelper.setSelectedType(this@SettingsActivity,
+                    selectedType
                 )
                 useStrictTypeCheckbox.isEnabled = position != 0
             }

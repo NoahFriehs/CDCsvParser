@@ -79,7 +79,7 @@ class TxApp : BaseApp, Serializable {
             try {
                 val sa = transaction.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 if (sa.size == 10 || sa.size == 11) {
-                    var t: Transaction = if (sa[3].toDouble() == 0.0) {
+                    val t: Transaction = if (sa[3].toDouble() == 0.0) {
                         if (sa[7].toDouble() == 0.0) {
                             Transaction(sa[0], sa[1], sa[2], BigDecimal.ZERO, BigDecimal.ZERO, Converter.ttConverter(sa[9]))
                         } else {

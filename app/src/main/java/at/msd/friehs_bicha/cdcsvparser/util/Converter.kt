@@ -116,4 +116,13 @@ object Converter {
     fun dateToTimestamp(date: Date?): Long? {
         return date?.time
     }
+
+    fun amountConverter(s: String): BigDecimal? {
+        return try {
+            BigDecimal(s)
+        } catch (e: Exception) {
+            FileLog.w("Converter", "amountConverter: $s | ${e.message}")
+            null
+        }
+    }
 }

@@ -1,6 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
-import at.msd.friehs_bicha.cdcsvparser.app.TxApp
+import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
@@ -11,9 +11,9 @@ import java.math.BigDecimal
  * Represents a CDCWallet object
  */
 class CDCWallet : Wallet, Serializable {
-    var txApp: TxApp? = null
+    var txApp: BaseApp? = null
 
-    constructor(currencyType: String?, amount: BigDecimal?, nativeAmount: BigDecimal?, txApp: TxApp?, isOutsideWallet: Boolean?) : super(currencyType, amount, nativeAmount) {
+    constructor(currencyType: String?, amount: BigDecimal?, nativeAmount: BigDecimal?, txApp: BaseApp?, isOutsideWallet: Boolean?) : super(currencyType, amount, nativeAmount) {
         this.txApp = txApp
         this.isOutsideWallet = isOutsideWallet!!
     }

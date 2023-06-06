@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
+import at.msd.friehs_bicha.cdcsvparser.app.AppType
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType
 import java.io.Serializable
@@ -138,6 +140,96 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
     }
 
     companion object {
+
+        /**
+         * @exception does not work yet, because of the different csv formats
+         *
+         * @param line
+         * @param appType
+         * @return
+         */
+        fun fromCsvLine(line: String, appType: AppType): Transaction? {
+
+            return when (appType) {
+                AppType.CdCsvParser -> fromCdCsvParserCsvLine(line)
+//                AppType.COINBASE -> fromCoinbaseCsvLine(line)
+//                AppType.BLOCKCHAIN_INFO -> fromBlockchainInfoCsvLine(line)
+//                AppType.BITPANDA -> fromBitpandaCsvLine(line)
+//                AppType.BINANCE -> fromBinanceCsvLine(line)
+//                AppType.BITCOIN_DE -> fromBitcoinDeCsvLine(line)
+//                AppType.KRAKEN -> fromKrakenCsvLine(line)
+//                AppType.BITFINEX -> fromBitfinexCsvLine(line)
+                else -> {
+                    throw IllegalArgumentException("AppType not supported")
+                }
+            }
+        }
+
+        private fun fromCdCsvParserCsvLine(line: String): Transaction? {
+
+            val sa = line.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            if (sa.size == 10 || sa.size == 11) {
+                val t = Transaction(sa[0], sa[1], sa[2], Converter.amountConverter(sa[3]), Converter.amountConverter(sa[7]), Converter.ttConverter(sa[9]))
+                if (sa.size == 11) t.transHash = sa[10]
+                if (Converter.ttConverter(sa[9]) == TransactionType.viban_purchase) {
+                    t.toCurrency = sa[4]
+                    t.toAmount = Converter.amountConverter(sa[5])
+                }
+                return t
+            } else {
+                println(sa.contentToString())
+                println(sa.size)
+                FileLog.e("TxApp",
+                    "Error while processing the following transaction: $line"
+                )
+            }
+            return null //throw IllegalArgumentException("Error while processing the following transaction: $line")
+        }
+
+        private fun fromBitfinexCsvLine(line: String): Transaction {
+            val split = line.split(",")
+            val date = Converter.dateConverter(split[0])
+            val description = split[1]
+            val currencyType = split[2]
+            val amount = Converter.amountConverter(split[3])
+            val nativeAmount = Converter.amountConverter(split[4])
+            val transactionType = TransactionType.valueOf(split[5])
+            return Transaction(split[0], description, currencyType, amount, nativeAmount, transactionType)
+        }
+
+        private fun fromKrakenCsvLine(line: String): Transaction {
+            val split = line.split(",")
+            val date = Converter.dateConverter(split[0])
+            val description = split[1]
+            val currencyType = split[2]
+            val amount = Converter.amountConverter(split[3])
+            val nativeAmount = Converter.amountConverter(split[4])
+            val transactionType = TransactionType.valueOf(split[5])
+            return Transaction(split[0], description, currencyType, amount, nativeAmount, transactionType)
+        }
+
+        private fun fromBitcoinDeCsvLine(line: String): Transaction {
+            val split = line.split(",")
+            val date = Converter.dateConverter(split[0])
+            val description = split[1]
+            val currencyType = split[2]
+            val amount = Converter.amountConverter(split[3])
+            val nativeAmount = Converter.amountConverter(split[4])
+            val transactionType = TransactionType.valueOf(split[5])
+            return Transaction(split[0], description, currencyType, amount, nativeAmount, transactionType)
+        }
+
+        private fun fromBinanceCsvLine(line: String): Transaction {
+            val split = line.split(",")
+            val date = Converter.dateConverter(split[0])
+            val description = split[1]
+            val currencyType = split[2]
+            val amount = Converter.amountConverter(split[3])
+            val nativeAmount = Converter.amountConverter(split[4])
+            val transactionType = TransactionType.valueOf(split[5])
+            return Transaction(split[0], description, currencyType, amount, nativeAmount, transactionType)
+        }
+
         var uidCounter = 0
     }
 }
