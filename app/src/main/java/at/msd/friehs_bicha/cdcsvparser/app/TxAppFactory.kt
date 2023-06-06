@@ -66,6 +66,8 @@ class TxAppFactory {
                         else -> throw RuntimeException("Usage not found")
                     }
                 }
+
+                else -> throw RuntimeException("Usage not found")
             }
             return txApp
         }
