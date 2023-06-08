@@ -269,7 +269,6 @@ class MainActivity : AppCompatActivity() {
         }
         AppModelManager.setInstance(appModel!!)
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
-        intent.putExtra("AppModel", appModel)
         hideProgressDialog()
         startActivity(intent)
     }
@@ -438,9 +437,11 @@ class MainActivity : AppCompatActivity() {
         db.collection("user").document(uid).set(userMap).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 // Data saved successfully
+                Toast.makeText(this, "Data saved successfully", Toast.LENGTH_SHORT).show()
             } else {
-                // Handle database error    //TODO: handle error
-                val a = 0
+                // Handle database error
+                Toast.makeText(this, "Error saving data", Toast.LENGTH_SHORT).show()
+                FileLog.e("MainActivity", "Error saving data to database ${task.exception}")
             }
         }
     }
@@ -464,7 +465,7 @@ class MainActivity : AppCompatActivity() {
                     if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
                         //when lower than this than it does not work with the db, has to switch to older version
                         context = applicationContext
-                        val text: CharSequence =
+                        val text =
                             "Your database is not compatible with this version of the app. Please downgrade the app or delete the database."
                         val duration = Toast.LENGTH_LONG
                         val toast = Toast.makeText(context, text, duration)

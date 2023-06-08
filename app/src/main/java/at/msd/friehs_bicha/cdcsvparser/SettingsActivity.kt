@@ -81,9 +81,18 @@ class SettingsActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        btnPermissionRequest.setOnClickListener {
-            requestExternalStoragePermission()
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+        {
+            btnPermissionRequest.visibility = View.GONE
         }
+        else
+        {
+            btnPermissionRequest.visibility = View.VISIBLE
+            btnPermissionRequest.setOnClickListener {
+                requestExternalStoragePermission()
+            }
+        }
+
 
         btnAboutUs.setOnClickListener {
             val intent = Intent(this, AboutUsActivity::class.java)

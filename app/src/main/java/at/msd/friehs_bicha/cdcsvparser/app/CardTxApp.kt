@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.app
 
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.CurveCardTx
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
@@ -19,14 +20,13 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            println("We have " + this.transactions.size + " transaction(s).")
+            FileLog.i("CardTxApp", "We have " + this.transactions.size + " transaction(s).")
             try {
                 fillWallet()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            println("we have " + this.wallets.size + " different transactions.")
-            //((CroCardWallet)wallets.get(0)).writeAmount();
+            FileLog.i("CardTxApp", "we have " + this.wallets.size + " different transactions.")
         }
     }
 
@@ -79,10 +79,10 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
                     )
                     transactions.add(t)
                 } else {
-                    println(sa.toString())
-                    println(sa.size)
+                    FileLog.e("CardTxApp", "Wrong number of columns in CurveCard file")
                 }
             } catch (e: Exception) {
+                FileLog.e("CardTxApp", "Error parsing CurveCard file: " + e.message)
                 throw RuntimeException(e)
             }
         }

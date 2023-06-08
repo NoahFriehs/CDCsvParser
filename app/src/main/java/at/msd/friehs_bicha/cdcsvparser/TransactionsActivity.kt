@@ -2,13 +2,11 @@ package at.msd.friehs_bicha.cdcsvparser
 
 import android.os.Bundle
 import android.view.MenuItem
-import android.widget.ArrayAdapter
-import android.widget.ListView
 import androidx.appcompat.app.AppCompatActivity
+import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionFragment
-import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
 
 class TransactionsActivity : AppCompatActivity() {
     var appModel: AppModel? = null
@@ -37,7 +35,7 @@ class TransactionsActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
-        appModel = intent.extras!!["AppModel"] as AppModel?
+        appModel = AppModelManager.getInstance()
     }
 
     /**

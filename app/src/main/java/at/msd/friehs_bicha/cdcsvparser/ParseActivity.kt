@@ -38,16 +38,12 @@ class ParseActivity : AppCompatActivity() {
         btnFilter.setOnClickListener { view: View? ->
             if (appModel!!.isRunning) {
                 val intent = Intent(this@ParseActivity, WalletViewActivity::class.java)
-                //intent.putExtra("NAME_KEY","Value");
-                intent.putExtra("AppModel", appModel)
                 startActivity(intent)
             }
         }
         btnTx.setOnClickListener { view: View? ->
             if (appModel!!.isRunning) {
                 val intent = Intent(this@ParseActivity, TransactionsActivity::class.java)
-                //intent.putExtra("NAME_KEY","Value");
-                intent.putExtra("AppModel", appModel)
                 startActivity(intent)
             }
         }

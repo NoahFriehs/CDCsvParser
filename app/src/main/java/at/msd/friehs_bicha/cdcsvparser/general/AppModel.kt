@@ -6,7 +6,6 @@ import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
-import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import at.msd.friehs_bicha.cdcsvparser.wallet.*
 import java.io.Serializable
@@ -172,7 +171,7 @@ class AppModel : BaseAppModel, Serializable {
 
     fun getAssetMap(wallet: Wallet?): Map<String, String?> {
         //TODO add sleep //if (!isRunning) sleep(1000);
-        val total = StringHelper.formatAmountToString(wallet!!.moneySpent.toDouble())
+        val total = formatAmountToString(wallet!!.moneySpent.toDouble())
         val map: MutableMap<String, String?> = HashMap()
         when (appType) {
             AppType.CdCsvParser -> {
@@ -180,11 +179,11 @@ class AppModel : BaseAppModel, Serializable {
                 val rewardValue = getTotalBonus(wallet)
                 if (AssetValue.getInstance()!!.isRunning) {
                     map[R.id.assets_value.toString()] =
-                        StringHelper.formatAmountToString(amountOfAsset)
+                        formatAmountToString(amountOfAsset)
                     map[R.id.rewards_value.toString()] =
-                        StringHelper.formatAmountToString(rewardValue)
+                        formatAmountToString(rewardValue)
                     map[R.id.profit_loss_value.toString()] =
-                        StringHelper.formatAmountToString(amountOfAsset - wallet.moneySpent.toDouble())
+                        formatAmountToString(amountOfAsset - wallet.moneySpent.toDouble())
                     map[R.id.money_spent_value.toString()] = total
                 } else {
                     map[R.id.assets_value.toString()] = "no internet connection"
@@ -217,16 +216,16 @@ class AppModel : BaseAppModel, Serializable {
                 val total = totalPrice
                 val amountOfAsset = valueOfAssets
                 val rewardValue = totalBonus
-                val totalMoneySpent = StringHelper.formatAmountToString(total.toDouble())
+                val totalMoneySpent = formatAmountToString(total.toDouble())
                 val map: MutableMap<String, String?> = HashMap()
                 when (appType) {
                     AppType.CdCsvParser -> if (AssetValue.getInstance()!!.isRunning) {
                         map[R.id.assets_valueP.toString()] =
-                            StringHelper.formatAmountToString(amountOfAsset)
+                            formatAmountToString(amountOfAsset)
                         map[R.id.rewards_value.toString()] =
-                            StringHelper.formatAmountToString(rewardValue)
+                            formatAmountToString(rewardValue)
                         map[R.id.profit_loss_value.toString()] =
-                            StringHelper.formatAmountToString(amountOfAsset - total.toDouble())
+                            formatAmountToString(amountOfAsset - total.toDouble())
                         map[R.id.money_spent_value.toString()] = totalMoneySpent
                     } else {
                         map[R.id.assets_valueP.toString()] = "no internet connection"
@@ -375,9 +374,9 @@ class AppModel : BaseAppModel, Serializable {
         if (percentProfit.isNaN()) {
             percentProfit = 0.0
         }
-        val assetValueString = StringHelper.formatAmountToString(assetValue, 5)
+        val assetValueString = formatAmountToString(assetValue, 5)
         val amountString =
-            StringHelper.formatAmountToString(wallet.amount.toDouble(), 5, wallet.currencyType!!)
+            formatAmountToString(wallet.amount.toDouble(), 5, wallet.currencyType!!)
         val color: Int = if (percentProfit > 100) {
             Color.GREEN
         } else if (percentProfit == 100.0 || percentProfit == 0.0) {
@@ -395,7 +394,7 @@ class AppModel : BaseAppModel, Serializable {
         map[R.id.amount.toString()] = amountString
         map[R.id.amountValue.toString()] = assetValueString
         map[R.id.percentProfit.toString()] =
-            StringHelper.formatAmountToString(percentProfit - 100, 2, "%", true)
+            formatAmountToString(percentProfit - 100, 2, "%", true)
         map[R.id.amountTransactions.toString()] = wallet.transactions?.count().toString()
         map["COLOR"] = color.toString()
         return map

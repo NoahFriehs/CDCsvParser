@@ -6,7 +6,6 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.ListView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -38,16 +37,6 @@ class AssetsFilterActivity : AppCompatActivity() {
         val dropdown = findViewById<Spinner>(R.id.asset_spinner)
         //create a list of items for the spinner.
         getAppModel()
-
-        //test Internet connection
-        //testConnection();
-        while (!appModel!!.isRunning) { //TODO: add loading icon
-            try {
-                Thread.sleep(500)
-            } catch (e: InterruptedException) {
-                throw RuntimeException(e)
-            }
-        }
 
         // make List with all Wallets
         val items = walletNames
@@ -104,7 +93,7 @@ class AssetsFilterActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
-        appModel = AppModelManager.getInstance()    //intent.extras!!["AppModel"] as AppModel?
+        appModel = AppModelManager.getInstance()
     }
 
     /**

@@ -1,22 +1,12 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
-import com.litesoftwares.coingecko.CoinGeckoApiClient
-import com.litesoftwares.coingecko.constant.Currency
-import com.litesoftwares.coingecko.domain.Coins.CoinList
-import com.litesoftwares.coingecko.domain.Coins.CoinMarkets
-import com.litesoftwares.coingecko.impl.CoinGeckoApiClientImpl
 import java.io.Serializable
-import java.time.Instant
 import java.util.*
 
 class AssetValue : Serializable {
     val cache: MutableList<PriceCache>
     var isRunning: Boolean
-    var coinLists: List<CoinList>? = null
-    var coinMarkets: List<CoinMarkets>? = null
-    private var coinMarketsCreationTime: Instant? = null
-    private var tries = 0
 
     init {
         cache = ArrayList()
@@ -66,82 +56,10 @@ class AssetValue : Serializable {
             isRunning = true
             return price
         }
-        try {
-            val client: CoinGeckoApiClient = CoinGeckoApiClientImpl()
-            //client.ping();
-            if (coinMarkets == null || Instant.now()
-                    .isAfter(coinMarketsCreationTime!!.plusSeconds(300))
-            ) {
-                coinMarkets = client.getCoinMarkets(Currency.EUR)
-                coinMarketsCreationTime = Instant.now()
-            }
-            try {
-                //if (coinMarkets == null) coinMarkets = client.getCoinMarkets(Currency.EUR);
-                for (coinMarket in coinMarkets!!) {
-                    if (coinMarket.symbol.contains(symbol.lowercase(Locale.getDefault())) || coinMarket.id.contains(
-                            symbol.lowercase(Locale.getDefault())
-                        )
-                    ) {
-                        cache.add(PriceCache(symbol, coinMarket.currentPrice.toDouble()))
-                        return coinMarket.currentPrice.toDouble()
-                    }
-                }
-            } catch (e: Exception) {
-                println("|" + e.message)
-                FileLog.d("CoinGecko", "|" + e.message)
-            }
-            isRunning = true
-            return getPriceTheOtherWay(symbol)
-        } catch (e: Exception) {
-            print(e.message)
-            if (e.message!!.contains("com.litesoftwares.coingecko.exception.CoinGeckoApiException: CoinGeckoApiError(code=1015, message=Rate limited)")) {
-                FileLog.d("CoinGecko", "Rate limited")
-                Thread.sleep(1000)
-                return getPrice(symbol)
-            }
-            if (tries < 3) {
-                tries++
-                Thread.sleep(1000)
-                return getPrice(symbol)
-            }
-            isRunning = false
-            tries = 0
-            try {
-                val prices = StaticPrices()
-                return prices.prices[symbol]
-            } catch (e: Exception) {
-                println("No price found for: $symbol")
-                FileLog.d("CoinGecko", "No price found for: $symbol")
-                return 0.0
-            }
-        }
-    }
-
-    /**
-     * Returns the price of the entered symbol in a more complicate way
-     *
-     * @param symbol the symbol for which the price is needed
-     * @return the price of the symbol
-     */
-    private fun getPriceTheOtherWay(symbol: String?): Double? {
-        val client: CoinGeckoApiClient = CoinGeckoApiClientImpl()
-        if (coinLists == null) coinLists = client.coinList
-        for (coinList in coinLists!!) {
-            if (coinList.symbol.lowercase()
-                    .contains(symbol!!.lowercase(Locale.getDefault())) || coinList.id.lowercase()
-                    .contains(symbol.lowercase(Locale.getDefault())) || coinList.name.lowercase()
-                    .contains(symbol.lowercase(Locale.getDefault()))
-            ) {
-                val bitcoinInfo = client.getCoinById(coinList.id)
-                val data = bitcoinInfo.marketData
-                val dataPrice = data.currentPrice
-                cache.add(PriceCache(symbol, dataPrice["eur"]!!))
-                return dataPrice["eur"]
-            }
-        }
-        println("No price found for: $symbol")
+        FileLog.e("AssetValue", "No price found for: $symbol")
         return 0.0
     }
+
 
     /**
      * Replaces symbols with the right ones
@@ -164,13 +82,13 @@ class AssetValue : Serializable {
         var i = 0
         while (i < cache.size) {
             if (cache[i].isOlderThanFiveMinutes) {
+                FileLog.d("AssetValue", "removed cache for ${cache[i].id}")
                 cache.removeAt(i)
                 i--
-                i++
                 continue
             }
             if (cache[i].id == symbol) {
-                println("used cache")
+                FileLog.d("AssetValue", "used cache for $symbol")
                 return cache[i].price
             }
             i++
