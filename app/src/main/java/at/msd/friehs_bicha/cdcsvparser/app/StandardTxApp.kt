@@ -16,6 +16,9 @@ class StandardTxApp : BaseApp, Serializable {
         FileLog.i("TxApp", "Wallets: " + wallets.size)
         FileLog.i("TxApp", "Outside Wallets: " + outsideWallets.size)
         FileLog.i("TxApp", "Failed Transactions: $amountTxFailed")
+        if (amountTxFailed > 0) {
+            FileLog.w("TxApp", "Failed Transactions: $failedTxs")
+        }
     }
 
     constructor(
