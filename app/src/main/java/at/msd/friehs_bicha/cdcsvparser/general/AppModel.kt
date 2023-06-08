@@ -7,6 +7,7 @@ import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
+import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import at.msd.friehs_bicha.cdcsvparser.wallet.*
 import java.io.Serializable
 import java.math.BigDecimal
@@ -397,6 +398,18 @@ class AppModel : BaseAppModel, Serializable {
             StringHelper.formatAmountToString(percentProfit - 100, 2, "%", true)
         map[R.id.amountTransactions.toString()] = wallet.transactions?.count().toString()
         map["COLOR"] = color.toString()
+        return map
+    }
+
+    fun getTransactionAdapter(transaction: Transaction): MutableMap<String, String?> {
+
+
+        val map: MutableMap<String, String?> = HashMap()
+        map[R.id.tv_transactionId.toString()] = transaction.transactionId.toString()
+        map[R.id.tv_date.toString()] = transaction.date.toString()
+        map[R.id.tv_descriptionValue.toString()] = transaction.description
+        map[R.id.tv_amountValue.toString()] = formatAmountToString(transaction.nativeAmount.toDouble())
+        map[R.id.tv_assetAmountValue.toString()] = formatAmountToString(transaction.amount.toDouble(), 6)
         return map
     }
 

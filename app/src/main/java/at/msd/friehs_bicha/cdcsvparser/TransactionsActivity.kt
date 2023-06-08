@@ -7,6 +7,8 @@ import android.widget.ListView
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionFragment
+import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
 
 class TransactionsActivity : AppCompatActivity() {
     var appModel: AppModel? = null
@@ -27,20 +29,11 @@ class TransactionsActivity : AppCompatActivity() {
                 throw RuntimeException(e)
             }
         }
-        val mTransactionList: List<Transaction?> = appModel!!.txApp!!.transactions
+        val mTransactionList: ArrayList<Transaction> = appModel!!.txApp!!.transactions
 
-        val transactionsStringList: MutableList<String?> = ArrayList()
-        for (tx in mTransactionList) {
-            transactionsStringList.add(tx.toString())
-        }
-
-        // Get a reference to the ListView
-        val listView = findViewById<ListView>(R.id.lv_tx)
-        // Create an adapter for the ListView
-        val adapter =
-            ArrayAdapter(this, android.R.layout.simple_list_item_1, transactionsStringList)
-        // Set the adapter on the ListView
-        listView.adapter = adapter
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, TransactionFragment(mTransactionList))
+            .commit()
     }
 
     private fun getAppModel() {

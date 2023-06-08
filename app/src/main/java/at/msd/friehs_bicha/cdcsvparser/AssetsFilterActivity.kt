@@ -14,6 +14,7 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionFragment
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.util.function.Consumer
@@ -68,9 +69,15 @@ class AssetsFilterActivity : AppCompatActivity() {
             else dropdown.setSelection(items.indexOf(specificWallet.currencyType))
         }
 
+
+
         // display prices
         displayInformation(specificWallet, findViewById(R.id.all_regarding_tx))
-        displayTxs(specificWallet)
+
+        //displays transactions
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, TransactionFragment(specificWallet.transactions as ArrayList<Transaction>))
+            .commit()
 
         //if spinner item gets changed
         dropdown.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -85,7 +92,9 @@ class AssetsFilterActivity : AppCompatActivity() {
                     appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0].getWallet(dropdown.selectedItem.toString())]
 
                 //display Transactions
-                displayTxs(specificWallet)
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, TransactionFragment(specificWallet.transactions as ArrayList<Transaction>))
+                    .commit()
                 //display prices
                 displayInformation(specificWallet, findViewById(R.id.all_regarding_tx))
             }
@@ -166,7 +175,7 @@ class AssetsFilterActivity : AppCompatActivity() {
      * Displays the Transactions of specificWallet
      *
      * @param specificWallet the CDCWallet which should be displayed
-     */
+
     private fun displayTxs(specificWallet: Wallet?) {
         // Get a reference to the ListView
         val listView = findViewById<ListView>(R.id.lv_txs)
@@ -184,7 +193,7 @@ class AssetsFilterActivity : AppCompatActivity() {
         // Set the adapter on the ListView
         listView.adapter = adapterLV
     }
-
+     */
     /**
      * Set the back button in action bar
      */
