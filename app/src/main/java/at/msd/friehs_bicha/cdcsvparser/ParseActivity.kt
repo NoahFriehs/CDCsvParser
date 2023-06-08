@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser
 
+import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
@@ -13,6 +14,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
 
 class ParseActivity : AppCompatActivity() {
     var appModel: AppModel? = null
+    private lateinit var progressDialog: Dialog
 
     @JvmField
     @Volatile
@@ -20,6 +22,7 @@ class ParseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        showProgressDialog()
         setContentView(R.layout.activity_parse)
 
         // calling the action bar
@@ -73,6 +76,7 @@ class ParseActivity : AppCompatActivity() {
             try {
                 displayTexts(appModel?.parseMap)
                 isReady = true
+                hideProgressDialog()
             } catch (e: InterruptedException) {
                 throw RuntimeException(e)
             }
@@ -113,5 +117,17 @@ class ParseActivity : AppCompatActivity() {
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    fun showProgressDialog (){
+        progressDialog = Dialog(this)
+        progressDialog.setContentView(R.layout.progress_icon)
+        progressDialog.setCancelable(false)
+        progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.show()
+    }
+
+    fun hideProgressDialog(){
+        progressDialog.dismiss()
     }
 }

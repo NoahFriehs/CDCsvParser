@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser
 
 import android.Manifest
+import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -8,10 +9,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.Spinner
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -35,7 +33,7 @@ class MainActivity : AppCompatActivity() {
     var appModel: AppModel? = null
     var files: Array<File>? = null
     var user = FirebaseAuth.getInstance().currentUser
-
+    private lateinit var progressDialog: Dialog
 
     companion object {
         private const val PICKFILE_REQUEST_CODE = 1
@@ -179,6 +177,7 @@ class MainActivity : AppCompatActivity() {
      * @param spinner the spinner to look at
      */
     private fun onBtnHistoryClick(spinner: Spinner) {
+        showProgressDialog()
         val position = spinner.selectedItemPosition
         val selectedFile = files!![position]
         val list = getFileContent(selectedFile)
@@ -190,6 +189,7 @@ class MainActivity : AppCompatActivity() {
             )
             callParseView()
         } catch (e: Exception) {
+            hideProgressDialog()
             val text: CharSequence? = e.message
             val duration = Toast.LENGTH_SHORT
             val toast = Toast.makeText(context, text, duration)
@@ -204,7 +204,9 @@ class MainActivity : AppCompatActivity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
         if (requestCode == PICKFILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            showProgressDialog()
             // Get the URI of the selected file
             val fileUri = data.data
             //create filename with format M-d-y-H-m-s
@@ -237,6 +239,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 callParseView()
             } catch (e: IllegalArgumentException) {
+                hideProgressDialog()
                 context = applicationContext
                 val text: CharSequence? = e.message
                 val duration = Toast.LENGTH_SHORT
@@ -251,6 +254,7 @@ class MainActivity : AppCompatActivity() {
                 println(e.message)
                 callParseView()
             }
+
         }
     }
 
@@ -261,6 +265,7 @@ class MainActivity : AppCompatActivity() {
         AppModelManager.setInstance(appModel!!)
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
         intent.putExtra("AppModel", appModel)
+        hideProgressDialog()
         startActivity(intent)
     }
 
@@ -436,13 +441,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadFromFireBaseDB() {
+        showProgressDialog()
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         //val database = FirebaseDatabase.getInstance()
         val db = Firebase.firestore
         // Add data to the txApp object
 
         val user = db.collection("user").document(uid)
-
         user.get()
             .addOnSuccessListener { document ->   //TODO handle error(Exceptions wenn data nicht vorhanden ist/nicht passt)
                 if (document != null) {
@@ -496,7 +501,6 @@ class MainActivity : AppCompatActivity() {
                             this,
                             appSettings["useStrictType"] as Boolean
                         )
-
                         callParseView(false)
                     } else {
                         FileLog.w(
@@ -511,6 +515,18 @@ class MainActivity : AppCompatActivity() {
             }.addOnFailureListener { exception ->
             val a = 0   //TODO: handle error
         }
+    }
+
+    fun showProgressDialog (){
+        progressDialog = Dialog(this)
+        progressDialog.setContentView(R.layout.progress_icon)
+        progressDialog.setCancelable(false)
+        progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.show()
+    }
+
+    fun hideProgressDialog(){
+        progressDialog.dismiss()
     }
 
 }
