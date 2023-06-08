@@ -4,6 +4,7 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType
+import com.google.firebase.Timestamp
 import java.io.Serializable
 import java.math.BigDecimal
 import java.math.MathContext
@@ -191,18 +192,18 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
             return Transaction(
                 transaction["transactionId"] as Long,
                 transaction["description"] as String,
-                transaction["walletId"] as Int,
-                transaction["fromWalletId"] as Int,
-                transaction["date"] as Date?,
+                (transaction["walletId"] as Long).toInt(),
+                (transaction["fromWalletId"] as Long).toInt(),
+                (transaction["date"] as Timestamp).toDate(),
                 transaction["currencyType"] as String,
                 transaction["amount"] as Double,
                 transaction["nativeAmount"] as Double,
                 transaction["amountBonus"] as Double,
-                transaction["transactionType"] as TransactionType?,
+                stringToTransactionType(transaction["transactionType"] as String?),
                 transaction["transHash"] as String?,
                 transaction["toCurrency"] as String?,
                 transaction["toAmount"] as Double?,
-                transaction["isOutsideTransaction"] as Boolean
+                transaction["outsideTransaction"] as Boolean
             )
         }
 

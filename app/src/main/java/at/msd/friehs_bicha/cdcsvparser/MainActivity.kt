@@ -287,14 +287,14 @@ class MainActivity : AppCompatActivity() {
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-                    Companion.readExternalStorageRequestCode
+                    readExternalStorageRequestCode
                 )
             } else {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-                    Companion.readExternalStorageRequestCode
+                    readExternalStorageRequestCode
                 )
             }
         } else {
