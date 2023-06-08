@@ -2,6 +2,8 @@ package at.msd.friehs_bicha.cdcsvparser.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import at.msd.friehs_bicha.cdcsvparser.LoginActivity
 import at.msd.friehs_bicha.cdcsvparser.MainActivity
@@ -17,15 +19,16 @@ class StartingActivity : ComponentActivity() {
         FileLog.init(applicationContext)
 
         val user = FirebaseAuth.getInstance().currentUser
-
+        var intent: Intent
         if (user != null) {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            finish()
+            intent = Intent(this, MainActivity::class.java)
         } else {
-            val intent = Intent(this, LoginActivity::class.java)
+            intent = Intent(this, LoginActivity::class.java)
+        }
+
+        Handler(Looper.getMainLooper()).postDelayed({
             startActivity(intent)
             finish()
-        }
+        },1000)
     }
 }
