@@ -17,4 +17,5 @@
     <string name="delete_account">Delete Account</string>
     <string name="password_forgotten">Password forgotten</string>
     <string name="error_noEmail">Please enter your email address</string>
+    <string name="allow_permissions_for_storage">Allow Permissions for Storage</string>
 </resources>

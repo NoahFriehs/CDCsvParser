@@ -1,7 +1,9 @@
 package at.msd.friehs_bicha.cdcsvparser
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -11,6 +13,8 @@ import android.widget.Button
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
@@ -35,6 +39,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val PICKFILE_REQUEST_CODE = 1
+        const val readExternalStorageRequestCode: Int = 102
     }
 
 
@@ -259,10 +264,46 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+
     /**
      * start action to let the user select a file
      */
     private fun onBtnUploadClick() {
+
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                )
+            ) {
+                // Show an explanation to the user
+                Toast.makeText(this, "Permission needed to read files to be able to load the file", Toast.LENGTH_SHORT).show()
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    Companion.readExternalStorageRequestCode
+                )
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    Companion.readExternalStorageRequestCode
+                )
+            }
+        } else {
+            startChooseFile()
+        }
+    }
+
+
+    private fun startChooseFile() {
         // Create an Intent object to allow the user to select a file
         val chooseFile = Intent(Intent.ACTION_GET_CONTENT)
 
@@ -271,6 +312,25 @@ class MainActivity : AppCompatActivity() {
 
         // Start the activity to let the user select a file
         startActivityForResult(chooseFile, PICKFILE_REQUEST_CODE)
+    }
+
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == Companion.readExternalStorageRequestCode) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission is granted. Continue the action or workflow
+                // in your app.
+                startChooseFile()
+            } else {
+                // TODO show error message
+                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     /**

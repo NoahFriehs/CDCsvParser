@@ -18,6 +18,20 @@
         android:layout_height="wrap_content"
         android:text="@string/use_strict_wallet_type" />
 
+
+    <Button
+        android:id="@+id/btn_permission_request"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/allow_permissions_for_storage"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:layout_margin="10dp"
+        android:background="@drawable/round_button_layer_list"
+        android:textAllCaps="false"
+        />
+
+
     <Button
         android:id="@+id/btn_logout"
         android:layout_width="match_parent"
