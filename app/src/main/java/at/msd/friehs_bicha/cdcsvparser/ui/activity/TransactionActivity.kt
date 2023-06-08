@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.activity
 
 import android.os.Bundle
+import android.view.MenuItem
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.R
@@ -18,6 +19,10 @@ class TransactionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_transaction)
+
+        // calling the action bar
+        val actionBar = supportActionBar
+        actionBar!!.setDisplayHomeAsUpEnabled(true)
 
         appModel = AppModelManager.getInstance()
 
@@ -51,4 +56,15 @@ class TransactionActivity : AppCompatActivity() {
 
     }
 
+
+    /**
+     * Set the back button in action bar
+     */
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
 }
