@@ -13,7 +13,13 @@ import java.math.BigDecimal
 class CDCWallet : Wallet, Serializable {
     var txApp: BaseApp? = null
 
-    constructor(currencyType: String?, amount: BigDecimal?, nativeAmount: BigDecimal?, txApp: BaseApp?, isOutsideWallet: Boolean?) : super(currencyType, amount, nativeAmount) {
+    constructor(
+        currencyType: String?,
+        amount: BigDecimal?,
+        nativeAmount: BigDecimal?,
+        txApp: BaseApp?,
+        isOutsideWallet: Boolean?
+    ) : super(currencyType, amount, nativeAmount) {
         this.txApp = txApp
         this.isOutsideWallet = isOutsideWallet!!
     }
@@ -21,8 +27,15 @@ class CDCWallet : Wallet, Serializable {
     constructor(wallet: Wallet?) : super(wallet)
 
     constructor(DBWallet: DBWallet?) : super(DBWallet)
-    constructor(walletId: Long, currencyType: String?, amount: Double, amountBonus: Double, moneySpent: Double, outsideWallet: Boolean, transactions: ArrayList<Transaction?>): super(currencyType, BigDecimal(amount), BigDecimal(moneySpent))
-    {
+    constructor(
+        walletId: Long,
+        currencyType: String?,
+        amount: Double,
+        amountBonus: Double,
+        moneySpent: Double,
+        outsideWallet: Boolean,
+        transactions: ArrayList<Transaction?>
+    ) : super(currencyType, BigDecimal(amount), BigDecimal(moneySpent)) {
         this.walletId = walletId.toInt()
         this.currencyType = currencyType
         this.amount = BigDecimal(amount)
@@ -100,14 +113,14 @@ class CDCWallet : Wallet, Serializable {
         if (!w.transactions!!.contains(transaction)) {
             w.transactions!!.add(transaction)
         }
-        if (transaction.currencyType.contains("DOGE"))
-        {
+        if (transaction.currencyType.contains("DOGE")) {
             val test = "test"
         }
 
         when (t) {
             TransactionType.crypto_purchase, TransactionType.dust_conversion_credited ->                 //w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
                 w.addToWallet(transaction)
+
             TransactionType.supercharger_deposit, TransactionType.crypto_earn_program_created, TransactionType.lockup_lock, TransactionType.supercharger_withdrawal, TransactionType.crypto_earn_program_withdrawn -> {}
             TransactionType.rewards_platform_deposit_credited -> {}
             TransactionType.supercharger_reward_to_app_credited, TransactionType.crypto_earn_interest_paid, TransactionType.referral_card_cashback, TransactionType.reimbursement, TransactionType.card_cashback_reverted, TransactionType.admin_wallet_credited, TransactionType.crypto_wallet_swap_credited, TransactionType.crypto_wallet_swap_debited -> {
@@ -115,16 +128,27 @@ class CDCWallet : Wallet, Serializable {
                 transaction.amountBonus = transaction.amount
                 w.addToWallet(transaction)
             }
+
             TransactionType.viban_purchase -> vibanPurchase(transaction)
-            TransactionType.crypto_withdrawal -> cryptoWithdrawal(w, transaction, txApp!!.outsideWallets)
+            TransactionType.crypto_withdrawal -> cryptoWithdrawal(
+                w,
+                transaction,
+                txApp!!.outsideWallets
+            )
+
             TransactionType.crypto_deposit -> cryptoWithdrawal(w, transaction, txApp!!.wallets)
-            TransactionType.dust_conversion_debited -> w.removeFromWallet(transaction.amount, transaction.nativeAmount)
+            TransactionType.dust_conversion_debited -> w.removeFromWallet(
+                transaction.amount,
+                transaction.nativeAmount
+            )
+
             TransactionType.crypto_viban_exchange -> {
                 w.removeFromWallet(transaction.amount, transaction.nativeAmount)
                 val eur = txApp!!.wallets[getWallet("EUR")] as CDCWallet
                 eur.addToWallet(transaction.nativeAmount, transaction.nativeAmount, BigDecimal.ZERO)
                 eur.transactions?.add(transaction)
             }
+
             else -> println("This is an unsupported TransactionType: $t")
         }
     }
@@ -136,7 +160,11 @@ class CDCWallet : Wallet, Serializable {
      * @param transaction    the transaction to be made
      * @param outsideWallets all outsideWallets
      */
-    private fun cryptoWithdrawal(w: CDCWallet, transaction: Transaction, outsideWallets: ArrayList<Wallet>?) {
+    private fun cryptoWithdrawal(
+        w: CDCWallet,
+        transaction: Transaction,
+        outsideWallets: ArrayList<Wallet>?
+    ) {
         w.addToWallet(transaction.amount, BigDecimal.ZERO, BigDecimal.ZERO)
         val wt = outsideWallets!![getWallet(transaction.currencyType)] as CDCWallet?
         if (!wt!!.transactions!!.contains(transaction)) {

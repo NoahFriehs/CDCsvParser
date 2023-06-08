@@ -49,6 +49,7 @@ class TxAppFactory {
                         else -> throw RuntimeException("Usage not found")
                     }
                 }
+
                 AppType.CroCard -> {
                     when (appStatus) {
                         AppStatus.NotStarted -> CardTxApp(
@@ -63,6 +64,7 @@ class TxAppFactory {
                             dataContainer[DataTypes.dbTransactions] as ArrayList<java.util.HashMap<String, *>>,
                             dataContainer[DataTypes.amountTxFailed] as Long
                         )
+
                         else -> throw RuntimeException("Usage not found")
                     }
                 }

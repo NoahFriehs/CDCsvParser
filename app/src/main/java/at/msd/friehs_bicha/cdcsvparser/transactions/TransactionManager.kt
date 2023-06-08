@@ -5,7 +5,6 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppTypeIdentifier
 import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -23,10 +22,9 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
     private fun calculateCumulativeAmounts() {
         var balance = BigDecimal.ZERO
         if (transactions != null) {
-            for (transaction in transactions)
-            {
-                    balance += transaction.amount
-                    cumulativeAmounts[transaction.date!!] = balance
+            for (transaction in transactions) {
+                balance += transaction.amount
+                cumulativeAmounts[transaction.date!!] = balance
             }
         }
     }
@@ -51,13 +49,14 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
 
     companion object {
 
-        fun txFromCsvList(_input: ArrayList<String>, _appType: AppType?, app : BaseApp): ArrayList<Transaction> {
+        fun txFromCsvList(
+            _input: ArrayList<String>,
+            _appType: AppType?,
+            app: BaseApp
+        ): ArrayList<Transaction> {
             val transactions = ArrayList<Transaction>()
             val currencys = ArrayList<String>()
-            var appType = _appType
-            if (appType == null) {
-                appType = AppTypeIdentifier.getAppType(_input)
-            }
+            val appType = _appType ?: AppTypeIdentifier.getAppType(_input)
             app.appType = appType
             val input = prepareInput(_input, appType, app)
             for (line in input) {
@@ -76,14 +75,18 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             return transactions
         }
 
-        private fun prepareInput(input: ArrayList<String>, appType: AppType, app: BaseApp): ArrayList<String> {
+        private fun prepareInput(
+            input: ArrayList<String>,
+            appType: AppType,
+            app: BaseApp
+        ): ArrayList<String> {
             return when (appType) {
-                AppType.CdCsvParser -> prepareCDCInput(input, app)
+                AppType.CdCsvParser -> prepareCDCInput(input)
                 else -> throw IllegalArgumentException("Unknown app type")
             }
         }
 
-        private fun prepareCDCInput(input: ArrayList<String>, app: BaseApp): ArrayList<String> {
+        private fun prepareCDCInput(input: ArrayList<String>): ArrayList<String> {
             input.removeAt(0)
             return input
         }
@@ -127,28 +130,52 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                 w.transactions!!.add(transaction)
             }
             when (t) {
-                TransactionType.crypto_purchase, TransactionType.dust_conversion_credited -> w.addToWallet(transaction)
+                TransactionType.crypto_purchase, TransactionType.dust_conversion_credited -> w.addToWallet(
+                    transaction
+                )
+
                 TransactionType.supercharger_deposit, TransactionType.crypto_earn_program_created, TransactionType.lockup_lock, TransactionType.supercharger_withdrawal, TransactionType.crypto_earn_program_withdrawn,
-                TransactionType.rewards_platform_deposit_credited -> {}
+                TransactionType.rewards_platform_deposit_credited -> {
+                }
+
                 TransactionType.supercharger_reward_to_app_credited, TransactionType.crypto_earn_interest_paid, TransactionType.referral_card_cashback, TransactionType.reimbursement, TransactionType.card_cashback_reverted, TransactionType.admin_wallet_credited, TransactionType.crypto_wallet_swap_credited, TransactionType.crypto_wallet_swap_debited -> {
                     transaction.amountBonus = transaction.amount
                     w.addToWallet(transaction)
                 }
+
                 TransactionType.viban_purchase -> vibanPurchase(transaction, app)
-                TransactionType.crypto_withdrawal -> cryptoWithdrawal(w, transaction, app.outsideWallets, app)
-                TransactionType.crypto_deposit -> cryptoWithdrawal(w, transaction, app.wallets, app)
-                TransactionType.dust_conversion_debited -> w.removeFromWallet(transaction.amount, transaction.nativeAmount)
+                TransactionType.crypto_withdrawal -> cryptoWithdrawal(
+                    w,
+                    transaction,
+                    app
+                )
+
+                TransactionType.crypto_deposit -> cryptoWithdrawal(w, transaction, app)
+                TransactionType.dust_conversion_debited -> w.removeFromWallet(
+                    transaction.amount,
+                    transaction.nativeAmount
+                )
+
                 TransactionType.crypto_viban_exchange -> {
                     w.removeFromWallet(transaction.amount, transaction.nativeAmount)
                     val eur = getWallet("EUR", app)
-                    eur.addToWallet(transaction.nativeAmount, transaction.nativeAmount, BigDecimal.ZERO)
+                    eur.addToWallet(
+                        transaction.nativeAmount,
+                        transaction.nativeAmount,
+                        BigDecimal.ZERO
+                    )
                     eur.transactions?.add(transaction)
                 }
+
                 else -> println("This is an unsupported TransactionType: $t")
             }
         }
 
-        private fun getWallet(currencyType: String, app: BaseApp,getOutsideWallet: Boolean = false): CDCWallet {
+        private fun getWallet(
+            currencyType: String,
+            app: BaseApp,
+            getOutsideWallet: Boolean = false
+        ): CDCWallet {
             var ws = app.wallets
             if (getOutsideWallet) ws = app.outsideWallets
             for (wallet in ws) {
@@ -164,11 +191,14 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
          *
          * @param w              the wallet from which crypto is withdrawn
          * @param transaction    the transaction to be made
-         * @param outsideWallets all outsideWallets
          */
-        private fun cryptoWithdrawal(w: CDCWallet, transaction: Transaction, outsideWallets: ArrayList<Wallet>?, app: BaseApp) {
+        private fun cryptoWithdrawal(
+            w: CDCWallet,
+            transaction: Transaction,
+            app: BaseApp
+        ) {
             w.addToWallet(transaction.amount, BigDecimal.ZERO, BigDecimal.ZERO)
-            val wt = getWallet(transaction.currencyType, app, true) as CDCWallet
+            val wt = getWallet(transaction.currencyType, app, true)
             if (!wt.transactions!!.contains(transaction)) {
                 wt.transactions!!.add(transaction)
             }

@@ -8,7 +8,8 @@ import java.math.BigDecimal
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 
-class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) : BaseApp(), Serializable {
+class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) :
+    BaseApp(), Serializable {
 
     init {
         if (!fastInit) {
@@ -42,9 +43,10 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
                 parseCurveCard(input)
                 ArrayList<CroCardTransaction>()
             }
+
             else -> throw RuntimeException("Wrong file format")
         }
- }
+    }
 
     private fun parseCurveCard(input: ArrayList<String>) {
         input.removeAt(0)
@@ -67,11 +69,14 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
                         sa[1],
                         decimalFormat.parse(sa[2]) as BigDecimal,
                         sa[3],
-                        if (sa[4] != "") decimalFormat.parse(sa[4]) as BigDecimal else decimalFormat.parse(sa[2]) as BigDecimal,
+                        if (sa[4] != "") decimalFormat.parse(sa[4]) as BigDecimal else decimalFormat.parse(
+                            sa[2]
+                        ) as BigDecimal,
                         sa[5],
                         sa[6] + sa[7],
                         sa[8],
-                        sa[9] + ": " + sa[10])
+                        sa[9] + ": " + sa[10]
+                    )
                     transactions.add(t)
                 } else {
                     println(sa.toString())
@@ -97,9 +102,17 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
         decimalFormat.isParseBigDecimal = true
         for (transaction in input) {
             try {
-                val sa = transaction.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val sa =
+                    transaction.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 if (sa.size == 9) {
-                    val t = CroCardTransaction(sa[0], sa[1], sa[2], decimalFormat.parse(sa[7]) as BigDecimal, decimalFormat.parse(sa[7]) as BigDecimal, sa[1])
+                    val t = CroCardTransaction(
+                        sa[0],
+                        sa[1],
+                        sa[2],
+                        decimalFormat.parse(sa[7]) as BigDecimal,
+                        decimalFormat.parse(sa[7]) as BigDecimal,
+                        sa[1]
+                    )
                     transactions.add(t)
                 } else {
                     println(sa.contentToString())
@@ -126,14 +139,11 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
             }
             if (wallets[0].getWallet("Test -> Test") != -1)
                 wallets.remove(wallets[wallets[0].getWallet("Test -> Test")])
-        }
-        else
-        {
+        } else {
             for (t in transactions) {
                 for (w in wallets)
                     if (w != null) {
-                        if (t.walletId == w.walletId)
-                        {
+                        if (t.walletId == w.walletId) {
                             w.addTransaction(t)
                             break
                         }
@@ -142,7 +152,6 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
         }
         println("Wallets filled")
     }
-
 
 
 }

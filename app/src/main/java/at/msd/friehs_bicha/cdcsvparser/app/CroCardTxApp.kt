@@ -9,7 +9,8 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.function.Consumer
 
-class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) : BaseApp(), Serializable {
+class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) :
+    BaseApp(), Serializable {
 
     init {
         if (!fastInit) {
@@ -30,8 +31,11 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
         }
     }
 
-    constructor(tXs: MutableList<CroCardTransaction>, wTXs: MutableList<CroCardWallet>, amountTxFailed: Long) : this(ArrayList(), false, true)
-    {
+    constructor(
+        tXs: MutableList<CroCardTransaction>,
+        wTXs: MutableList<CroCardWallet>,
+        amountTxFailed: Long
+    ) : this(ArrayList(), false, true) {
         this.transactions = tXs as ArrayList<Transaction>
         wTXs.forEach(Consumer { wallet: CroCardWallet ->
             wallet.txApp = this
@@ -64,9 +68,17 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
         decimalFormat.isParseBigDecimal = true
         for (transaction in input) {
             try {
-                val sa = transaction.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val sa =
+                    transaction.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 if (sa.size == 9) {
-                    val t = CroCardTransaction(sa[0], sa[1], sa[2], decimalFormat.parse(sa[7]) as BigDecimal, decimalFormat.parse(sa[7]) as BigDecimal, sa[1])
+                    val t = CroCardTransaction(
+                        sa[0],
+                        sa[1],
+                        sa[2],
+                        decimalFormat.parse(sa[7]) as BigDecimal,
+                        decimalFormat.parse(sa[7]) as BigDecimal,
+                        sa[1]
+                    )
                     transactions.add(t)
                 } else {
                     println(sa.contentToString())
@@ -90,14 +102,11 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
                     wallets[0].addTransaction(t)
                 }
             }
-        }
-        else
-        {
+        } else {
             for (t in transactions) {
                 for (w in wallets)
                     if (w != null) {
-                        if (t.walletId == w.walletId)
-                        {
+                        if (t.walletId == w.walletId) {
                             w.addTransaction(t)
                             break
                         }

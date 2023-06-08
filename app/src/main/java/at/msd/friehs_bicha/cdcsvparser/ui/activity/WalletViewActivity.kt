@@ -24,21 +24,29 @@ class WalletViewActivity : AppCompatActivity() {
         val wallets = appModel.txApp!!.wallets
 
         val spinnerValueSpinner = findViewById<Spinner>(R.id.sorting_value)
-        val sortingValues = listOf<String>("amount €", "amount Asset","percent","transactions")
-        val sortingValuesAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,sortingValues)
+        val sortingValues = listOf<String>("amount €", "amount Asset", "percent", "transactions")
+        val sortingValuesAdapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sortingValues)
         spinnerValueSpinner.adapter = sortingValuesAdapter
 
         val spinnerTypeSpinner = findViewById<Spinner>(R.id.sorting_type)
         val sortingTypes = listOf<String>("DESC", "ASC")
-        val sortingTypesAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,sortingTypes)
+        val sortingTypesAdapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sortingTypes)
         spinnerTypeSpinner.adapter = sortingTypesAdapter
 
         var sortedWallets = wallets
 
         spinnerValueSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 val typePosition = spinnerTypeSpinner.selectedItemPosition
-                sortedWallets = sortWallets(sortedWallets, sortingValues[position], sortingTypes[typePosition])
+                sortedWallets =
+                    sortWallets(sortedWallets, sortingValues[position], sortingTypes[typePosition])
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, WalletListFragment(sortedWallets))
                     .commit()
@@ -50,9 +58,15 @@ class WalletViewActivity : AppCompatActivity() {
         }
 
         spinnerTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 val valuePosition = spinnerValueSpinner.selectedItemPosition
-                sortedWallets = sortWallets(sortedWallets, sortingValues[valuePosition], sortingTypes[position])
+                sortedWallets =
+                    sortWallets(sortedWallets, sortingValues[valuePosition], sortingTypes[position])
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, WalletListFragment(sortedWallets))
                     .commit()
@@ -64,7 +78,10 @@ class WalletViewActivity : AppCompatActivity() {
         }
 
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, WalletListFragment(sortWallets(wallets, "amount €", "DESC")))
+            .replace(
+                R.id.fragment_container,
+                WalletListFragment(sortWallets(wallets, "amount €", "DESC"))
+            )
             .commit()
     }
 
@@ -75,8 +92,11 @@ class WalletViewActivity : AppCompatActivity() {
     }
 
 
-    fun sortWallets(wallets: ArrayList<Wallet>, sortingValue: String, sortingType: String): ArrayList<Wallet>
-    {
+    fun sortWallets(
+        wallets: ArrayList<Wallet>,
+        sortingValue: String,
+        sortingType: String
+    ): ArrayList<Wallet> {
         var sortedWallets = wallets
         val isDesc = sortingType == "DESC"
         when (sortingValue) {

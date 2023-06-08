@@ -5,7 +5,15 @@ import java.math.BigDecimal
 import java.math.MathContext
 import java.util.Date
 
-open class CroCardTransaction(date: String?, description: String, currencyType: String, amount: BigDecimal?, nativeAmount: BigDecimal?, transactionType: String?) : Transaction(date, description, currencyType, amount, nativeAmount, TransactionType.STRING), Serializable {
+open class CroCardTransaction(
+    date: String?,
+    description: String,
+    currencyType: String,
+    amount: BigDecimal?,
+    nativeAmount: BigDecimal?,
+    transactionType: String?
+) : Transaction(date, description, currencyType, amount, nativeAmount, TransactionType.STRING),
+    Serializable {
     constructor(
         transactionId: Long,
         description: String,
@@ -29,8 +37,7 @@ open class CroCardTransaction(date: String?, description: String, currencyType: 
         BigDecimal(amount),
         BigDecimal(nativeAmount),
         transactionType
-    )
-    {
+    ) {
         this.transactionId = transactionId.toInt()
         this.walletId = walletID
         this.fromWalletId = fromWalletID

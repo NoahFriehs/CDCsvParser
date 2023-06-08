@@ -44,7 +44,14 @@ open class Transaction : Serializable {
 
     var notes: String = ""
 
-    constructor(date: String?, description: String, currencyType: String, amount: BigDecimal?, nativeAmount: BigDecimal?, transactionType: TransactionType?) {
+    constructor(
+        date: String?,
+        description: String,
+        currencyType: String,
+        amount: BigDecimal?,
+        nativeAmount: BigDecimal?,
+        transactionType: TransactionType?
+    ) {
         if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType)
         this.date = Converter.dateConverter(date)
         this.description = description
@@ -58,7 +65,20 @@ open class Transaction : Serializable {
         transactionId = ++uidCounter
     }
 
-    constructor(transactionId: Int, date: Date?, description: String, currencyType: String, amount: BigDecimal, nativeAmount: BigDecimal, amountBonus: BigDecimal?, transactionType: TransactionType?, transHash: String?, toCurrency: String?, toAmount: BigDecimal?, walletId: Int) {
+    constructor(
+        transactionId: Int,
+        date: Date?,
+        description: String,
+        currencyType: String,
+        amount: BigDecimal,
+        nativeAmount: BigDecimal,
+        amountBonus: BigDecimal?,
+        transactionType: TransactionType?,
+        transHash: String?,
+        toCurrency: String?,
+        toAmount: BigDecimal?,
+        walletId: Int
+    ) {
         if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType)
         this.transactionId = transactionId
         this.date = date
@@ -75,7 +95,9 @@ open class Transaction : Serializable {
     }
 
     constructor(transaction: DBTransaction) {
-        if (!CurrencyType.currencys.contains(transaction.currencyType)) CurrencyType.currencys.add(transaction.currencyType)
+        if (!CurrencyType.currencys.contains(transaction.currencyType)) CurrencyType.currencys.add(
+            transaction.currencyType
+        )
         this.transactionId = transaction.transactionId.toInt()
         this.date = transaction.date
         this.description = transaction.description
@@ -105,8 +127,7 @@ open class Transaction : Serializable {
         toCurrency: String?,
         toAmount: Double?,
         outsideTransaction: Boolean
-    )
-    {
+    ) {
         if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType)
         this.transactionId = transactionId.toInt()
         this.date = date
@@ -169,7 +190,14 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
 
             val sa = line.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             if (sa.size == 10 || sa.size == 11) {
-                val t = Transaction(sa[0], sa[1], sa[2], Converter.amountConverter(sa[3]), Converter.amountConverter(sa[7]), Converter.ttConverter(sa[9]))
+                val t = Transaction(
+                    sa[0],
+                    sa[1],
+                    sa[2],
+                    Converter.amountConverter(sa[3]),
+                    Converter.amountConverter(sa[7]),
+                    Converter.ttConverter(sa[9])
+                )
                 if (sa.size == 11) t.transHash = sa[10]
                 if (Converter.ttConverter(sa[9]) == TransactionType.viban_purchase) {
                     t.toCurrency = sa[4]
@@ -179,7 +207,8 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
             } else {
                 println(sa.contentToString())
                 println(sa.size)
-                FileLog.e("TxApp",
+                FileLog.e(
+                    "TxApp",
                     "Error while processing the following transaction: $line"
                 )
             }
@@ -194,7 +223,14 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
             val amount = Converter.amountConverter(split[3])
             val nativeAmount = Converter.amountConverter(split[4])
             val transactionType = TransactionType.valueOf(split[5])
-            return Transaction(split[0], description, currencyType, amount, nativeAmount, transactionType)
+            return Transaction(
+                split[0],
+                description,
+                currencyType,
+                amount,
+                nativeAmount,
+                transactionType
+            )
         }
 
         private fun fromKrakenCsvLine(line: String): Transaction {
@@ -205,7 +241,14 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
             val amount = Converter.amountConverter(split[3])
             val nativeAmount = Converter.amountConverter(split[4])
             val transactionType = TransactionType.valueOf(split[5])
-            return Transaction(split[0], description, currencyType, amount, nativeAmount, transactionType)
+            return Transaction(
+                split[0],
+                description,
+                currencyType,
+                amount,
+                nativeAmount,
+                transactionType
+            )
         }
 
         private fun fromBitcoinDeCsvLine(line: String): Transaction {
@@ -216,7 +259,14 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
             val amount = Converter.amountConverter(split[3])
             val nativeAmount = Converter.amountConverter(split[4])
             val transactionType = TransactionType.valueOf(split[5])
-            return Transaction(split[0], description, currencyType, amount, nativeAmount, transactionType)
+            return Transaction(
+                split[0],
+                description,
+                currencyType,
+                amount,
+                nativeAmount,
+                transactionType
+            )
         }
 
         private fun fromBinanceCsvLine(line: String): Transaction {
@@ -227,7 +277,14 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
             val amount = Converter.amountConverter(split[3])
             val nativeAmount = Converter.amountConverter(split[4])
             val transactionType = TransactionType.valueOf(split[5])
-            return Transaction(split[0], description, currencyType, amount, nativeAmount, transactionType)
+            return Transaction(
+                split[0],
+                description,
+                currencyType,
+                amount,
+                nativeAmount,
+                transactionType
+            )
         }
 
         var uidCounter = 0

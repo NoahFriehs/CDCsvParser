@@ -37,7 +37,8 @@ class TransactionsActivity : AppCompatActivity() {
         // Get a reference to the ListView
         val listView = findViewById<ListView>(R.id.lv_tx)
         // Create an adapter for the ListView
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, transactionsStringList)
+        val adapter =
+            ArrayAdapter(this, android.R.layout.simple_list_item_1, transactionsStringList)
         // Set the adapter on the ListView
         listView.adapter = adapter
     }

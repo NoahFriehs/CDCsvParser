@@ -11,7 +11,7 @@ open class BaseApp : Serializable {
     var outsideWallets = ArrayList<Wallet>()
     open var transactions = ArrayList<Transaction>()
     var failedTxs = ArrayList<String>()
-    var amountTxFailed : Long = 0
+    var amountTxFailed: Long = 0
     var isUseStrictWalletType = false
 
 

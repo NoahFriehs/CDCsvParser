@@ -5,8 +5,13 @@ import java.text.DecimalFormat
 object StringHelper {
 
 
-    fun formatAmountToString(amount: Double, decimalNumbers: Int = 2, symbol: String = "€", writePlusIfPositive: Boolean = false): String {
-        val df = DecimalFormat("#0."+"0".repeat(decimalNumbers))
+    fun formatAmountToString(
+        amount: Double,
+        decimalNumbers: Int = 2,
+        symbol: String = "€",
+        writePlusIfPositive: Boolean = false
+    ): String {
+        val df = DecimalFormat("#0." + "0".repeat(decimalNumbers))
         if (writePlusIfPositive && amount > 0)
             return "+" + removeLastZeros(df.format(amount)) + " $symbol"
         return removeLastZeros(df.format(amount)) + " $symbol"
@@ -30,24 +35,20 @@ object StringHelper {
     }
 
 
-    fun removeLastZeros(amount: String) : String
-    {
+    fun removeLastZeros(amount: String): String {
         val amountParts = amount.split(".")
-        if (amountParts.size == 2)
-        {
+        if (amountParts.size == 2) {
             val lastPart = amountParts[1]
             var lastZeroIndex = lastPart.length - 1
-            while (lastZeroIndex >= 0 && lastPart[lastZeroIndex] == '0')
-            {
+            while (lastZeroIndex >= 0 && lastPart[lastZeroIndex] == '0') {
                 lastZeroIndex--
             }
-            if (lastZeroIndex >= 0)
-            {
+            if (lastZeroIndex >= 0) {
                 return amountParts[0] + "." + lastPart.substring(0, lastZeroIndex + 1)
             }
             //if string has only zeros after the point
             if (lastZeroIndex == -1)
-            return amountParts[0] + ".00"
+                return amountParts[0] + ".00"
         }
         return amount
     }

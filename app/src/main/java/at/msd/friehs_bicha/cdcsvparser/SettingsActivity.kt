@@ -40,7 +40,7 @@ class SettingsActivity : AppCompatActivity() {
         val user = auth.currentUser
 
         // set the selected app type
-        appTypeSpinner.setSelection(selectedType!!.ordinal)
+        appTypeSpinner.setSelection(selectedType.ordinal)
         useStrictTypeCheckbox.isEnabled = selectedType != AppType.CroCard
         useStrictTypeCheckbox.isChecked = useStrictType
         useStrictTypeCheckbox.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { _, isChecked ->
@@ -49,13 +49,20 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         appTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View,
+                position: Int,
+                id: Long
+            ) {
                 selectedType = AppType.values()[position]
-                PreferenceHelper.setSelectedType(this@SettingsActivity,
+                PreferenceHelper.setSelectedType(
+                    this@SettingsActivity,
                     selectedType
                 )
                 useStrictTypeCheckbox.isEnabled = position != 0
             }
+
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
@@ -78,9 +85,7 @@ class SettingsActivity : AppCompatActivity() {
             db.collection("user").document(user.uid).delete().addOnCompleteListener {
                 if (it.isSuccessful) {  //TODO does not work yet
                     FileLog.d("Settings-DeleteUser", "User deleted from database.")
-                }
-                else
-                {
+                } else {
                     FileLog.d("Settings-DeleteUser", "User could not be deleted from database.")
                 }
             }
@@ -93,8 +98,12 @@ class SettingsActivity : AppCompatActivity() {
                         FileLog.d("Settings-DeleteUser", task.exception.toString())
                     }
                     if (task.exception.toString().contains("requires recent authentication")) {
-                        FileLog.d("Settings-DeleteUser", "User needs to reauthenticate.")   //TODO handle this(user has to relogin)
-                        Toast.makeText(this, "User needs to reauthenticate.", Toast.LENGTH_LONG).show()
+                        FileLog.d(
+                            "Settings-DeleteUser",
+                            "User needs to reauthenticate."
+                        )   //TODO handle this(user has to relogin)
+                        Toast.makeText(this, "User needs to reauthenticate.", Toast.LENGTH_LONG)
+                            .show()
                     }
                 }
             }

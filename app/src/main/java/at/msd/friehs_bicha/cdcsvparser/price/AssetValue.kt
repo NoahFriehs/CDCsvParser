@@ -23,7 +23,7 @@ class AssetValue : Serializable {
         isRunning = true
     }
 
-    companion object{
+    companion object {
         private var instance: AssetValue? = null
 
         fun getInstance(): AssetValue? {
@@ -69,14 +69,19 @@ class AssetValue : Serializable {
         try {
             val client: CoinGeckoApiClient = CoinGeckoApiClientImpl()
             //client.ping();
-            if (coinMarkets == null || Instant.now().isAfter(coinMarketsCreationTime!!.plusSeconds(300))) {
+            if (coinMarkets == null || Instant.now()
+                    .isAfter(coinMarketsCreationTime!!.plusSeconds(300))
+            ) {
                 coinMarkets = client.getCoinMarkets(Currency.EUR)
                 coinMarketsCreationTime = Instant.now()
             }
             try {
                 //if (coinMarkets == null) coinMarkets = client.getCoinMarkets(Currency.EUR);
                 for (coinMarket in coinMarkets!!) {
-                    if (coinMarket.symbol.contains(symbol.lowercase(Locale.getDefault())) || coinMarket.id.contains(symbol.lowercase(Locale.getDefault()))) {
+                    if (coinMarket.symbol.contains(symbol.lowercase(Locale.getDefault())) || coinMarket.id.contains(
+                            symbol.lowercase(Locale.getDefault())
+                        )
+                    ) {
                         cache.add(PriceCache(symbol, coinMarket.currentPrice.toDouble()))
                         return coinMarket.currentPrice.toDouble()
                     }
@@ -122,7 +127,11 @@ class AssetValue : Serializable {
         val client: CoinGeckoApiClient = CoinGeckoApiClientImpl()
         if (coinLists == null) coinLists = client.coinList
         for (coinList in coinLists!!) {
-            if (coinList.symbol.lowercase().contains(symbol!!.lowercase(Locale.getDefault())) || coinList.id.lowercase().contains(symbol.lowercase(Locale.getDefault())) || coinList.name.lowercase().contains(symbol.lowercase(Locale.getDefault()))) {
+            if (coinList.symbol.lowercase()
+                    .contains(symbol!!.lowercase(Locale.getDefault())) || coinList.id.lowercase()
+                    .contains(symbol.lowercase(Locale.getDefault())) || coinList.name.lowercase()
+                    .contains(symbol.lowercase(Locale.getDefault()))
+            ) {
                 val bitcoinInfo = client.getCoinById(coinList.id)
                 val data = bitcoinInfo.marketData
                 val dataPrice = data.currentPrice

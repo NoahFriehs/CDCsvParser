@@ -26,16 +26,42 @@ class AppModel : BaseAppModel, Serializable {
      * @param appType       which app to use
      * @param useStrictType
      */
-    constructor(file: ArrayList<String>, appType: AppType, useStrictType: Boolean) : super(appType) {
-        txApp = TxAppFactory.createTxApp(appType, AppStatus.NotStarted, useStrictType, hashMapOf(DataTypes.csvAsList to file))
+    constructor(
+        file: ArrayList<String>,
+        appType: AppType,
+        useStrictType: Boolean
+    ) : super(appType) {
+        txApp = TxAppFactory.createTxApp(
+            appType,
+            AppStatus.NotStarted,
+            useStrictType,
+            hashMapOf(DataTypes.csvAsList to file)
+        )
         isRunning = true
         if (txApp!!.amountTxFailed > 0) {
             throw RuntimeException("$txApp.amountTxFailed transaction(s) failed")
         }
     }
 
-    constructor(dbWallets: ArrayList<HashMap<String, *>>?, dbOutsideWallets: ArrayList<HashMap<String, *>>?, dbTransactions: ArrayList<HashMap<String, *>>?, appType: AppType, amountTxFailed: Long, useStrictType: Boolean) : super(appType) {
-        txApp = TxAppFactory.createTxApp(appType, AppStatus.importFromFB, useStrictType, hashMapOf(DataTypes.dbWallets to dbWallets, DataTypes.dbOutsideWallets to dbOutsideWallets, DataTypes.dbTransactions to dbTransactions, DataTypes.amountTxFailed to amountTxFailed))
+    constructor(
+        dbWallets: ArrayList<HashMap<String, *>>?,
+        dbOutsideWallets: ArrayList<HashMap<String, *>>?,
+        dbTransactions: ArrayList<HashMap<String, *>>?,
+        appType: AppType,
+        amountTxFailed: Long,
+        useStrictType: Boolean
+    ) : super(appType) {
+        txApp = TxAppFactory.createTxApp(
+            appType,
+            AppStatus.importFromFB,
+            useStrictType,
+            hashMapOf(
+                DataTypes.dbWallets to dbWallets,
+                DataTypes.dbOutsideWallets to dbOutsideWallets,
+                DataTypes.dbTransactions to dbTransactions,
+                DataTypes.amountTxFailed to amountTxFailed
+            )
+        )
         isRunning = true
     }
 
@@ -53,6 +79,7 @@ class AppModel : BaseAppModel, Serializable {
                     if (wallet.currencyType == "EUR") continue
                     totalPrice = totalPrice.add(wallet.moneySpent)
                 }
+
                 AppType.CroCard -> {
                     val wallets = txApp!!.wallets.clone() as ArrayList<Wallet>
                     //wallets.removeAt(0)
@@ -60,6 +87,7 @@ class AppModel : BaseAppModel, Serializable {
                         totalPrice = totalPrice.add(wallet.amount)
                     }
                 }
+
                 else -> throw RuntimeException("Usage not found")
             }
             return totalPrice
@@ -150,9 +178,12 @@ class AppModel : BaseAppModel, Serializable {
                 val amountOfAsset = getValueOfAssets(wallet)
                 val rewardValue = getTotalBonus(wallet)
                 if (AssetValue.getInstance()!!.isRunning) {
-                    map[R.id.assets_value.toString()] = StringHelper.formatAmountToString(amountOfAsset)
-                    map[R.id.rewards_value.toString()] = StringHelper.formatAmountToString(rewardValue)
-                    map[R.id.profit_loss_value.toString()] = StringHelper.formatAmountToString(amountOfAsset - wallet.moneySpent.toDouble())
+                    map[R.id.assets_value.toString()] =
+                        StringHelper.formatAmountToString(amountOfAsset)
+                    map[R.id.rewards_value.toString()] =
+                        StringHelper.formatAmountToString(rewardValue)
+                    map[R.id.profit_loss_value.toString()] =
+                        StringHelper.formatAmountToString(amountOfAsset - wallet.moneySpent.toDouble())
                     map[R.id.money_spent_value.toString()] = total
                 } else {
                     map[R.id.assets_value.toString()] = "no internet connection"
@@ -161,6 +192,7 @@ class AppModel : BaseAppModel, Serializable {
                     map[R.id.money_spent_value.toString()] = total
                 }
             }
+
             AppType.CroCard -> {
                 map[R.id.money_spent_value.toString()] = total
                 map[R.id.assets_value.toString()] = null
@@ -170,6 +202,7 @@ class AppModel : BaseAppModel, Serializable {
                 map[R.id.rewards_label.toString()] = null
                 map[R.id.profit_loss_label.toString()] = null
             }
+
             else -> throw RuntimeException("Usage not found")
         }
         return map
@@ -187,9 +220,12 @@ class AppModel : BaseAppModel, Serializable {
                 val map: MutableMap<String, String?> = HashMap()
                 when (appType) {
                     AppType.CdCsvParser -> if (AssetValue.getInstance()!!.isRunning) {
-                        map[R.id.assets_valueP.toString()] = StringHelper.formatAmountToString(amountOfAsset)
-                        map[R.id.rewards_value.toString()] = StringHelper.formatAmountToString(rewardValue)
-                        map[R.id.profit_loss_value.toString()] = StringHelper.formatAmountToString(amountOfAsset - total.toDouble())
+                        map[R.id.assets_valueP.toString()] =
+                            StringHelper.formatAmountToString(amountOfAsset)
+                        map[R.id.rewards_value.toString()] =
+                            StringHelper.formatAmountToString(rewardValue)
+                        map[R.id.profit_loss_value.toString()] =
+                            StringHelper.formatAmountToString(amountOfAsset - total.toDouble())
                         map[R.id.money_spent_value.toString()] = totalMoneySpent
                     } else {
                         map[R.id.assets_valueP.toString()] = "no internet connection"
@@ -197,6 +233,7 @@ class AppModel : BaseAppModel, Serializable {
                         map[R.id.profit_loss_value.toString()] = "no internet connection"
                         map[R.id.money_spent_value.toString()] = totalMoneySpent
                     }
+
                     AppType.CroCard -> {
                         map[R.id.money_spent_value.toString()] = totalMoneySpent
                         map[R.id.assets_valueP.toString()] = null
@@ -207,6 +244,7 @@ class AppModel : BaseAppModel, Serializable {
                         map[R.id.profit_loss_label.toString()] = null
                         map[R.id.coinGeckoApiLabel.toString()] = null
                     }
+
                     else -> throw RuntimeException("Usage not found")
                 }
                 map
@@ -270,13 +308,10 @@ class AppModel : BaseAppModel, Serializable {
 //        return true
 //    }
 
-    fun toHashMap(): HashMap<String, Any>
-    {
+    fun toHashMap(): HashMap<String, Any> {
         val appHashMap: HashMap<String, Any>
-        when (appType)
-        {
-            AppType.CdCsvParser ->
-            {
+        when (appType) {
+            AppType.CdCsvParser -> {
                 val dbWallets = ArrayList<DBWallet>()
                 val dboutsideWallets = ArrayList<DBWallet>()
                 val dbTransactions = ArrayList<DBTransaction>()
@@ -298,8 +333,8 @@ class AppModel : BaseAppModel, Serializable {
                     "appType" to appType!!
                 )
             }
-            AppType.CroCard ->
-            {
+
+            AppType.CroCard -> {
                 val dbWallets = ArrayList<CCDBWallet>()
                 val dbTransactions = ArrayList<CCDBTransaction>()
                 txApp!!.wallets.forEach {
@@ -316,17 +351,16 @@ class AppModel : BaseAppModel, Serializable {
                     "appType" to appType!!
                 )
             }
+
             else -> throw RuntimeException("Usage not found")
         }
         return appHashMap
     }
 
 
-    fun getWalletByID(id: Int) : Wallet?
-    {
+    fun getWalletByID(id: Int): Wallet? {
         txApp?.wallets?.forEach {
-            if (it.walletId == id)
-            {
+            if (it.walletId == id) {
                 return it
             }
         }
@@ -340,13 +374,14 @@ class AppModel : BaseAppModel, Serializable {
         if (percentProfit.isNaN()) {
             percentProfit = 0.0
         }
-        val assetValueString = StringHelper.formatAmountToString(assetValue,5)
-        val amountString = StringHelper.formatAmountToString(wallet.amount.toDouble(),5,wallet.currencyType!!)
-        val color: Int = if(percentProfit > 100){
+        val assetValueString = StringHelper.formatAmountToString(assetValue, 5)
+        val amountString =
+            StringHelper.formatAmountToString(wallet.amount.toDouble(), 5, wallet.currencyType!!)
+        val color: Int = if (percentProfit > 100) {
             Color.GREEN
-        }else if(percentProfit == 100.0 ||  percentProfit == 0.0){
+        } else if (percentProfit == 100.0 || percentProfit == 0.0) {
             Color.GRAY
-        }else{
+        } else {
             Color.RED
         }
 
@@ -358,7 +393,8 @@ class AppModel : BaseAppModel, Serializable {
         map[R.id.currencyType.toString()] = walletName
         map[R.id.amount.toString()] = amountString
         map[R.id.amountValue.toString()] = assetValueString
-        map[R.id.percentProfit.toString()] = StringHelper.formatAmountToString(percentProfit - 100,2,"%", true)
+        map[R.id.percentProfit.toString()] =
+            StringHelper.formatAmountToString(percentProfit - 100, 2, "%", true)
         map[R.id.amountTransactions.toString()] = wallet.transactions?.count().toString()
         map["COLOR"] = color.toString()
         return map

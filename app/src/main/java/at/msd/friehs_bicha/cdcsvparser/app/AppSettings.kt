@@ -2,17 +2,17 @@ package at.msd.friehs_bicha.cdcsvparser.app
 
 class AppSettings(var userID: String, var appType: AppType, var useStrictType: Boolean) {
 
-    var placeholder1 : String = ""
-    var placeholder2 : String = ""
-    var placeholder3 : String = ""
-    var placeholder4 : String = ""
-    var placeholder5 : String = ""
-    var placeholder6 : String = ""
-    var placeholder7 : String = ""
-    var placeholder8 : String = ""
-    var placeholder9 : String = ""
-    var placeholder10 : String = ""
-    var dbVersion : String = "1.0.0"
+    var placeholder1: String = ""
+    var placeholder2: String = ""
+    var placeholder3: String = ""
+    var placeholder4: String = ""
+    var placeholder5: String = ""
+    var placeholder6: String = ""
+    var placeholder7: String = ""
+    var placeholder8: String = ""
+    var placeholder9: String = ""
+    var placeholder10: String = ""
+    var dbVersion: String = "1.0.0"
 
     init {
         this.placeholder1 = ""

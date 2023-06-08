@@ -12,14 +12,19 @@ class StandardTxApp : BaseApp, Serializable {
     constructor(file: ArrayList<String>) {
 
         transactions = TransactionManager.txFromCsvList(file, null, this)
-        FileLog.i("TxApp","Transactions: " + transactions.size)
-        FileLog.i("TxApp","Wallets: " + wallets.size)
-        FileLog.i("TxApp","Outside Wallets: " + outsideWallets.size)
+        FileLog.i("TxApp", "Transactions: " + transactions.size)
+        FileLog.i("TxApp", "Wallets: " + wallets.size)
+        FileLog.i("TxApp", "Outside Wallets: " + outsideWallets.size)
         FileLog.i("TxApp", "Failed Transactions: $amountTxFailed")
     }
 
-    constructor(tXs: MutableList<Transaction>, wTXs: MutableList<CDCWallet>, wTXsOutside: MutableList<CDCWallet>, amountTxFailed: Long, appType: AppType)
-    {
+    constructor(
+        tXs: MutableList<Transaction>,
+        wTXs: MutableList<CDCWallet>,
+        wTXsOutside: MutableList<CDCWallet>,
+        amountTxFailed: Long,
+        appType: AppType
+    ) {
         this.transactions = tXs as ArrayList<Transaction>
         wTXs.forEach(Consumer { wallet: CDCWallet ->
             wallet.txApp = this

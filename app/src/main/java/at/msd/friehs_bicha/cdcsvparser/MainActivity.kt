@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
             btnLoadFromDB.visibility = View.VISIBLE
         }
         btnParse.setOnClickListener { onBtnUploadClick() }
-        btnLoadFromDB.setOnClickListener { loadFromFireBaseDB()}
+        btnLoadFromDB.setOnClickListener { loadFromFireBaseDB() }
         settingsButton()
         updateFiles()
 
@@ -110,10 +110,12 @@ class MainActivity : AppCompatActivity() {
                 btnHistory.background = drawable
                 //Disable the dropdown
                 val items = arrayOf("No History")
-                val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
+                val adapter =
+                    ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
                 dropdown.adapter = adapter
                 dropdown.isEnabled = false
             }
+
             "enabled" -> {
                 // Enable the button
                 btnHistory.isEnabled = true
@@ -161,7 +163,8 @@ class MainActivity : AppCompatActivity() {
             }
             fileNames.add(filename)
         }
-        val fileNamesAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, fileNames)
+        val fileNamesAdapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, fileNames)
         spinner.adapter = fileNamesAdapter
     }
 
@@ -175,7 +178,11 @@ class MainActivity : AppCompatActivity() {
         val selectedFile = files!![position]
         val list = getFileContent(selectedFile)
         try {
-            appModel = AppModel(list, PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this))
+            appModel = AppModel(
+                list,
+                PreferenceHelper.getSelectedType(this),
+                PreferenceHelper.getUseStrictType(this)
+            )
             callParseView()
         } catch (e: Exception) {
             val text: CharSequence? = e.message
@@ -218,7 +225,11 @@ class MainActivity : AppCompatActivity() {
                 updateFiles()
             }
             try {
-                appModel = AppModel(list, PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this))
+                appModel = AppModel(
+                    list,
+                    PreferenceHelper.getSelectedType(this),
+                    PreferenceHelper.getUseStrictType(this)
+                )
                 callParseView()
             } catch (e: IllegalArgumentException) {
                 context = applicationContext
@@ -240,7 +251,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun callParseView(saveToDB: Boolean = true) {
         if (saveToDB) {
-            if (user != null)saveToFireBaseDB()
+            if (user != null) saveToFireBaseDB()
         }
         AppModelManager.setInstance(appModel!!)
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
@@ -335,14 +346,18 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun saveToFireBaseDB()
-    {
+    private fun saveToFireBaseDB() {
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         val db = Firebase.firestore
 
-        db.collection("user").document(uid).delete()  //TODO: use this line in production but for testing it is better to not delete the data
+        db.collection("user").document(uid)
+            .delete()  //TODO: use this line in production but for testing it is better to not delete the data
 
-        val appSettings = AppSettings(uid,  PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this))
+        val appSettings = AppSettings(
+            uid,
+            PreferenceHelper.getSelectedType(this),
+            PreferenceHelper.getUseStrictType(this)
+        )
         val appSettingsMap = appSettings.toHashMap()
 
         val userMap = hashMapOf(
@@ -368,62 +383,72 @@ class MainActivity : AppCompatActivity() {
 
         val user = db.collection("user").document(uid)
 
-        user.get().addOnSuccessListener { document ->   //TODO handle error(Exceptions wenn data nicht vorhanden ist/nicht passt)
-            if (document != null) {
-                val userMap = document.data as HashMap<String, Any>?
-                val appSettings = userMap!!["appSettings"] as HashMap<String, Any>?
+        user.get()
+            .addOnSuccessListener { document ->   //TODO handle error(Exceptions wenn data nicht vorhanden ist/nicht passt)
+                if (document != null) {
+                    val userMap = document.data as HashMap<String, Any>?
+                    val appSettings = userMap!!["appSettings"] as HashMap<String, Any>?
 
-                val dbVersion = appSettings?.get("dbVersion")
+                    val dbVersion = appSettings?.get("dbVersion")
 
-                if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
-                    //when lower than this than it does not work with the db, has to switch to older version
-                    context = applicationContext
-                    val text: CharSequence = "Your database is not compatible with this version of the app. Please downgrade the app or delete the database."
-                    val duration = Toast.LENGTH_LONG
-                    val toast = Toast.makeText(context, text, duration)
-                    toast.show()
-                    return@addOnSuccessListener
-                }
-
-                val txAppMap = userMap["appModel"] as HashMap<String, Any>?
-                val appType = AppType.valueOf(appSettings["appType"] as String)
-
-                val useStrictType = appSettings["useStrictType"] as Boolean
-
-                var dbOutsideWallets : ArrayList<HashMap<String, *>>? = null
-
-                if (txAppMap != null) {
-                    val dbWallets = txAppMap["wallets"]
-                    if (appType == AppType.CdCsvParser)
-                    {
-                        dbOutsideWallets = txAppMap["outsideWallets"] as ArrayList<HashMap<String, *>>?
+                    if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
+                        //when lower than this than it does not work with the db, has to switch to older version
+                        context = applicationContext
+                        val text: CharSequence =
+                            "Your database is not compatible with this version of the app. Please downgrade the app or delete the database."
+                        val duration = Toast.LENGTH_LONG
+                        val toast = Toast.makeText(context, text, duration)
+                        toast.show()
+                        return@addOnSuccessListener
                     }
-                    val dbTransactions =
-                        txAppMap["transactions"]
-                    val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
-                    val appTypeString = txAppMap["appType"] as String? ?: ""
-                    val appType = AppType.valueOf(appTypeString)
 
-                    //TODO check if data is valid
-                    this.appModel = AppModel(dbWallets as ArrayList<HashMap<String, *>>?,
-                        dbOutsideWallets, dbTransactions as ArrayList<HashMap<String, *>>?, appType, amountTxFailed, useStrictType)
+                    val txAppMap = userMap["appModel"] as HashMap<String, Any>?
+                    val appType = AppType.valueOf(appSettings["appType"] as String)
 
-                    PreferenceHelper.setSelectedType(this, appType)
-                    PreferenceHelper.setUseStrictType(this, appSettings["useStrictType"] as Boolean)
+                    val useStrictType = appSettings["useStrictType"] as Boolean
 
-                    callParseView(false)
+                    var dbOutsideWallets: ArrayList<HashMap<String, *>>? = null
+
+                    if (txAppMap != null) {
+                        val dbWallets = txAppMap["wallets"]
+                        if (appType == AppType.CdCsvParser) {
+                            dbOutsideWallets =
+                                txAppMap["outsideWallets"] as ArrayList<HashMap<String, *>>?
+                        }
+                        val dbTransactions =
+                            txAppMap["transactions"]
+                        val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
+                        val appTypeString = txAppMap["appType"] as String? ?: ""
+                        val appType = AppType.valueOf(appTypeString)
+
+                        //TODO check if data is valid
+                        this.appModel = AppModel(
+                            dbWallets as ArrayList<HashMap<String, *>>?,
+                            dbOutsideWallets,
+                            dbTransactions as ArrayList<HashMap<String, *>>?,
+                            appType,
+                            amountTxFailed,
+                            useStrictType
+                        )
+
+                        PreferenceHelper.setSelectedType(this, appType)
+                        PreferenceHelper.setUseStrictType(
+                            this,
+                            appSettings["useStrictType"] as Boolean
+                        )
+
+                        callParseView(false)
+                    } else {
+                        FileLog.w(
+                            "MainActivity",
+                            "loadFromFireBaseDB: txAppMap is null: userMap: $userMap"
+                        )
+                    }
+                } else {
+                    // Handle database error    //TODO: handle error
+                    val a = 0
                 }
-                else
-                {
-                    FileLog.w("MainActivity", "loadFromFireBaseDB: txAppMap is null: userMap: $userMap")
-                }
-            }
-            else
-            {
-                // Handle database error    //TODO: handle error
-                val a = 0
-            }
-        }.addOnFailureListener { exception ->
+            }.addOnFailureListener { exception ->
             val a = 0   //TODO: handle error
         }
     }

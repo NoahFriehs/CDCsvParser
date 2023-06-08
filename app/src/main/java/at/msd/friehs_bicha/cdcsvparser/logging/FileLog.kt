@@ -40,11 +40,9 @@ class FileLog {
             if (!logFile.exists()) {
                 logFile.parentFile?.mkdirs()
                 logFile.createNewFile()
-            }
-            else if (logFile.parentFile == null ||logFile.parentFile?.exists() == false){
+            } else if (logFile.parentFile == null || logFile.parentFile?.exists() == false) {
                 logFile.parentFile?.mkdirs()
-            }
-            else {
+            } else {
                 val lines = logFile.readLines()
                 if (lines.size > 1000) {
                     val newLines = lines.subList(500, lines.size)

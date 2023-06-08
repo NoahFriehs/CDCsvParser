@@ -2,7 +2,24 @@ package at.msd.friehs_bicha.cdcsvparser.transactions
 
 import java.math.BigDecimal
 
-class CurveCardTx(date: String, transactionTypeString: String, amount: BigDecimal, currencyType: String, nativeAmount: BigDecimal?, toCurrency: String?, transHash: String, txType: String?, notes: String?) : CroCardTransaction(date, transactionTypeString, currencyType, amount, nativeAmount, transactionTypeString) {
+class CurveCardTx(
+    date: String,
+    transactionTypeString: String,
+    amount: BigDecimal,
+    currencyType: String,
+    nativeAmount: BigDecimal?,
+    toCurrency: String?,
+    transHash: String,
+    txType: String?,
+    notes: String?
+) : CroCardTransaction(
+    date,
+    transactionTypeString,
+    currencyType,
+    amount,
+    nativeAmount,
+    transactionTypeString
+) {
 
     var txType: String = ""
 

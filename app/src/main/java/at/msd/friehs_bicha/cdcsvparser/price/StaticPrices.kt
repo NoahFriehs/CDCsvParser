@@ -1,10 +1,9 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
-class StaticPrices{
-    var prices : HashMap<String, Double> = HashMap()
+class StaticPrices {
+    var prices: HashMap<String, Double> = HashMap()
 
-    init
-    {
+    init {
         prices["DOGE"] = 0.07
         prices["CUDOS"] = 0.002
         prices["ETH"] = 1.300

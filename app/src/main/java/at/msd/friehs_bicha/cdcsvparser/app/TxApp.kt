@@ -46,8 +46,12 @@ class TxApp : BaseApp, Serializable {
         fillProcessedWallets(transactions)
     }
 
-    constructor(tXs: MutableList<Transaction>, wTXs: MutableList<CDCWallet>, wTXsOutside: MutableList<CDCWallet>, amountTxFailed: Long)
-    {
+    constructor(
+        tXs: MutableList<Transaction>,
+        wTXs: MutableList<CDCWallet>,
+        wTXsOutside: MutableList<CDCWallet>,
+        amountTxFailed: Long
+    ) {
         this.transactions = tXs as ArrayList<Transaction>
         wTXs.forEach(Consumer { wallet: CDCWallet ->
             wallet.txApp = this
@@ -77,16 +81,38 @@ class TxApp : BaseApp, Serializable {
         decimalFormat.isParseBigDecimal = true
         for (transaction in input) {
             try {
-                val sa = transaction.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val sa =
+                    transaction.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 if (sa.size == 10 || sa.size == 11) {
                     val t: Transaction = if (sa[3].toDouble() == 0.0) {
                         if (sa[7].toDouble() == 0.0) {
-                            Transaction(sa[0], sa[1], sa[2], BigDecimal.ZERO, BigDecimal.ZERO, Converter.ttConverter(sa[9]))
+                            Transaction(
+                                sa[0],
+                                sa[1],
+                                sa[2],
+                                BigDecimal.ZERO,
+                                BigDecimal.ZERO,
+                                Converter.ttConverter(sa[9])
+                            )
                         } else {
-                            Transaction(sa[0], sa[1], sa[2], BigDecimal.ZERO, decimalFormat.parse(sa[7]) as BigDecimal, Converter.ttConverter(sa[9]))
+                            Transaction(
+                                sa[0],
+                                sa[1],
+                                sa[2],
+                                BigDecimal.ZERO,
+                                decimalFormat.parse(sa[7]) as BigDecimal,
+                                Converter.ttConverter(sa[9])
+                            )
                         }
                     } else {
-                        Transaction(sa[0], sa[1], sa[2], decimalFormat.parse(sa[3]) as BigDecimal, decimalFormat.parse(sa[7]) as BigDecimal, Converter.ttConverter(sa[9]))
+                        Transaction(
+                            sa[0],
+                            sa[1],
+                            sa[2],
+                            decimalFormat.parse(sa[3]) as BigDecimal,
+                            decimalFormat.parse(sa[7]) as BigDecimal,
+                            Converter.ttConverter(sa[9])
+                        )
                     }
                     if (sa.size == 11) t.transHash = sa[10]
                     if (Converter.ttConverter(sa[9]) == TransactionType.viban_purchase) {
@@ -97,13 +123,15 @@ class TxApp : BaseApp, Serializable {
                 } else {
                     println(sa.contentToString())
                     println(sa.size)
-                    FileLog.e("TxApp",
+                    FileLog.e(
+                        "TxApp",
                         "Error while processing the following transaction: $transaction"
                     )
                 }
             } catch (e: Exception) {
                 println("Error while processing the following transaction: " + transaction + " | " + e.message)
-                FileLog.e("TxApp",
+                FileLog.e(
+                    "TxApp",
                     "Error while processing the following transaction: $transaction"
                 )
                 amountTxFailed++

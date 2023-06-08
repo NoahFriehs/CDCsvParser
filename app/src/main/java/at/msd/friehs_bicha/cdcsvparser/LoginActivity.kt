@@ -85,7 +85,11 @@ class LoginActivity : AppCompatActivity() {
                         Toast.makeText(this, "Password reset email sent", Toast.LENGTH_SHORT).show()
                     } else {
                         // Password reset email failed to send
-                        Toast.makeText(this, "Failed to send password reset email", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            "Failed to send password reset email",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
 

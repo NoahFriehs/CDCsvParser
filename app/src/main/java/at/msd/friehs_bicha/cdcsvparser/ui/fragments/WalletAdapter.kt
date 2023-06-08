@@ -17,13 +17,14 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
  *
  * [RecyclerView.Adapter<WalletAdapter.WalletViewHolder>] that can display a [List<Wallet>].
  */
-class WalletAdapter(val wallets: List<Wallet>) : RecyclerView.Adapter<WalletAdapter.WalletViewHolder>() {
+class WalletAdapter(val wallets: List<Wallet>) :
+    RecyclerView.Adapter<WalletAdapter.WalletViewHolder>() {
 
-    class WalletViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
-    {
+    class WalletViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         init {
             itemView.setOnClickListener {
-                val walletId = itemView.findViewById<TextView>(R.id.walletId).text.toString().toInt()
+                val walletId =
+                    itemView.findViewById<TextView>(R.id.walletId).text.toString().toInt()
                 val appModel = AppModelManager.getInstance()
                 val wallet = appModel.txApp!!.wallets.find { it.walletId == walletId }
                 val intent = Intent(itemView.context, AssetsFilterActivity::class.java)
@@ -55,17 +56,25 @@ class WalletAdapter(val wallets: List<Wallet>) : RecyclerView.Adapter<WalletAdap
      *
      * @param texts the Map<String></String>, String> which should be displayed with id of View and text to set pairs
      */
-    private fun displayTexts(texts: Map<String, String?>?, holder: WalletViewHolder, context: Context){
+    private fun displayTexts(
+        texts: Map<String, String?>?,
+        holder: WalletViewHolder,
+        context: Context
+    ) {
         texts!!.forEach { (key: String?, value: String?) ->
-            if (key == "COLOR")
-            {
+            if (key == "COLOR") {
                 val color = value!!.toInt()
                 holder.itemView.findViewById<TextView>(R.id.percentProfit).setTextColor(color)
                 return@forEach
             }
-            val textView = holder.itemView.findViewById<TextView>(holder.itemView.resources.getIdentifier(key, "id", context.packageName))
-            if (textView == null)
-            {
+            val textView = holder.itemView.findViewById<TextView>(
+                holder.itemView.resources.getIdentifier(
+                    key,
+                    "id",
+                    context.packageName
+                )
+            )
+            if (textView == null) {
                 FileLog.e("WalletAdapter", "textView is null for key: $key")
                 return@forEach
             }

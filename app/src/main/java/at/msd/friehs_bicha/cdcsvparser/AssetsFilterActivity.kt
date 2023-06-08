@@ -51,17 +51,18 @@ class AssetsFilterActivity : AppCompatActivity() {
         // make List with all Wallets
         val items = walletNames
         //create an adapter to describe how the items are displayed
-        val assetNamesAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
+        val assetNamesAdapter =
+            ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
         //set the spinners adapter to the previously created one.
         dropdown.adapter = assetNamesAdapter
 
         //get the specific wallet
         val indexObj = dropdown.selectedItem ?: return
-        var specificWallet = appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0].getWallet(indexObj.toString())]
+        var specificWallet =
+            appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0].getWallet(indexObj.toString())]
 
         val wallet = intent.extras?.get("wallet")
-        if (wallet is Wallet)
-        {
+        if (wallet is Wallet) {
             specificWallet = wallet
             if (wallet is CroCardWallet) dropdown.setSelection(items.indexOf(wallet.transactionType))
             else dropdown.setSelection(items.indexOf(specificWallet.currencyType))
@@ -73,9 +74,15 @@ class AssetsFilterActivity : AppCompatActivity() {
 
         //if spinner item gets changed
         dropdown.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
+            override fun onItemSelected(
+                parentView: AdapterView<*>?,
+                selectedItemView: View,
+                position: Int,
+                id: Long
+            ) {
                 //get the specific wallet
-                val specificWallet = appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0].getWallet(dropdown.selectedItem.toString())]
+                val specificWallet =
+                    appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0].getWallet(dropdown.selectedItem.toString())]
 
                 //display Transactions
                 displayTxs(specificWallet)
@@ -101,10 +108,20 @@ class AssetsFilterActivity : AppCompatActivity() {
             val wallets = ArrayList<String?>()
             when (appModel!!.appType) {
                 AppType.CdCsvParser -> {
-                    appModel!!.txApp!!.wallets.forEach(Consumer { wallet: Wallet? -> wallets.add(wallet?.currencyType) })
+                    appModel!!.txApp!!.wallets.forEach(Consumer { wallet: Wallet? ->
+                        wallets.add(
+                            wallet?.currencyType
+                        )
+                    })
                     //wallets.remove("EUR")
                 }
-                AppType.CroCard -> appModel!!.txApp!!.wallets.forEach(Consumer { wallet: Wallet? -> wallets.add((wallet as CroCardWallet?)?.transactionType) })
+
+                AppType.CroCard -> appModel!!.txApp!!.wallets.forEach(Consumer { wallet: Wallet? ->
+                    wallets.add(
+                        (wallet as CroCardWallet?)?.transactionType
+                    )
+                })
+
                 else -> wallets.add("This should not happen")
             }
             return wallets.toTypedArray()
@@ -120,7 +137,8 @@ class AssetsFilterActivity : AppCompatActivity() {
     private fun displayInformation(specificWallet: Wallet?, all_regarding_tx: TextView) {
         all_regarding_tx.text = "All transactions regarding " + specificWallet?.currencyType
         if (appModel!!.appType == AppType.CroCard) {
-            all_regarding_tx.text = "All transactions regarding " + (specificWallet as CroCardWallet?)?.transactionType
+            all_regarding_tx.text =
+                "All transactions regarding " + (specificWallet as CroCardWallet?)?.transactionType
         }
 
         //get and set prices
@@ -160,7 +178,8 @@ class AssetsFilterActivity : AppCompatActivity() {
         }
 
         // Create an adapter for the ListView
-        val adapterLV = ArrayAdapter(context!!, android.R.layout.simple_list_item_1, transactionsStringList)
+        val adapterLV =
+            ArrayAdapter(context!!, android.R.layout.simple_list_item_1, transactionsStringList)
 
         // Set the adapter on the ListView
         listView.adapter = adapterLV

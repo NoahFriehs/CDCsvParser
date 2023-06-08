@@ -10,7 +10,8 @@ class CCDBWallet(wallet: Wallet) : DBWallet(wallet, true) {
         wallet as CroCardWallet
         transactionType = wallet.transactionType!!
         wallet.transactions?.forEach { transaction ->
-            transactions?.add(transaction?.let { CCDBTransaction(it) }) }
+            transactions?.add(transaction?.let { CCDBTransaction(it) })
+        }
     }
 
 }
