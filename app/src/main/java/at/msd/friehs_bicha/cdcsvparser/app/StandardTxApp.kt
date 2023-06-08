@@ -9,9 +9,9 @@ import java.util.function.Consumer
 
 class StandardTxApp : BaseApp, Serializable {
 
-    constructor(file: ArrayList<String>) {
+    constructor(file: ArrayList<String>, appType: AppType) {
 
-        transactions = TransactionManager.txFromCsvList(file, null, this)
+        transactions = TransactionManager.txFromCsvList(file, appType, this)
         FileLog.i("TxApp", "Transactions: " + transactions.size)
         FileLog.i("TxApp", "Wallets: " + wallets.size)
         FileLog.i("TxApp", "Outside Wallets: " + outsideWallets.size)
@@ -26,9 +26,15 @@ class StandardTxApp : BaseApp, Serializable {
         appType: AppType
     ) {
         this.transactions = tXs as ArrayList<Transaction>
-        wTXs.forEach(Consumer { wallet: CDCWallet ->
-            wallet.txApp = this
-        })
+        when (appType) {
+            AppType.CdCsvParser -> {
+                wTXs.forEach(Consumer { wallet: CDCWallet ->
+                    wallet.txApp = this
+                })
+            }
+            else -> throw NotImplementedError("AppType $appType not implemented")
+        }
+
         this.wallets = ArrayList(wTXs)
         this.outsideWallets = ArrayList(wTXsOutside)
         this.amountTxFailed = amountTxFailed

@@ -186,6 +186,26 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
             }
         }
 
+        fun fromDb(transaction: HashMap<String, *>): Transaction
+        {
+            return Transaction(
+                transaction["transactionId"] as Long,
+                transaction["description"] as String,
+                transaction["walletId"] as Int,
+                transaction["fromWalletId"] as Int,
+                transaction["date"] as Date?,
+                transaction["currencyType"] as String,
+                transaction["amount"] as Double,
+                transaction["nativeAmount"] as Double,
+                transaction["amountBonus"] as Double,
+                transaction["transactionType"] as TransactionType?,
+                transaction["transHash"] as String?,
+                transaction["toCurrency"] as String?,
+                transaction["toAmount"] as Double?,
+                transaction["isOutsideTransaction"] as Boolean
+            )
+        }
+
         private fun fromCdCsvParserCsvLine(line: String): Transaction? {
 
             val sa = line.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()

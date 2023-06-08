@@ -167,7 +167,7 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                     eur.transactions?.add(transaction)
                 }
 
-                else -> println("This is an unsupported TransactionType: $t")
+                else -> throw IllegalArgumentException("Unknown transaction type")
             }
         }
 
