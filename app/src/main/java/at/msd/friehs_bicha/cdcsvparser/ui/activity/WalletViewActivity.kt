@@ -1,9 +1,13 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.activity
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.R
@@ -57,6 +61,7 @@ class WalletViewActivity : AppCompatActivity() {
             }
         }
 
+
         spinnerTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
                 adapterView: AdapterView<*>?,
@@ -76,6 +81,35 @@ class WalletViewActivity : AppCompatActivity() {
                 return
             }
         }
+
+        val editText = findViewById<EditText>(R.id.search_bar)
+
+
+        editText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+                // This method is invoked before the text is changed.
+            }
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                // This method is invoked while the text is being changed.
+            }
+
+            override fun afterTextChanged(s: Editable) {
+                val text = editText.text.toString()
+
+                if(text == ""){
+                    sortedWallets = sortWallets(wallets, spinnerValueSpinner.selectedItem.toString(), spinnerTypeSpinner.selectedItem.toString())
+                }else{
+                    sortedWallets.clear()
+                    sortedWallets.addAll(filterWalletsByUserSearch(wallets,text))
+                    sortedWallets = sortWallets(sortedWallets, spinnerValueSpinner.selectedItem.toString(), spinnerTypeSpinner.selectedItem.toString())
+                }
+
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, WalletListFragment(sortedWallets))
+                    .commit()
+            }
+        })
 
         supportFragmentManager.beginTransaction()
             .replace(
@@ -97,6 +131,10 @@ class WalletViewActivity : AppCompatActivity() {
         sortingValue: String,
         sortingType: String
     ): ArrayList<Wallet> {
+
+        if(wallets.size <= 1){
+            return  wallets;
+        }
         var sortedWallets = wallets
         val isDesc = sortingType == "DESC"
         when (sortingValue) {
@@ -129,5 +167,9 @@ class WalletViewActivity : AppCompatActivity() {
         if (!isDesc)
             sortedWallets.reverse()
         return sortedWallets
+    }
+
+    fun filterWalletsByUserSearch(wallets: ArrayList<Wallet>, query: String): List<Wallet> {
+        return wallets.filter { it.currencyType?.contains(query, ignoreCase = true) == true }
     }
 }
