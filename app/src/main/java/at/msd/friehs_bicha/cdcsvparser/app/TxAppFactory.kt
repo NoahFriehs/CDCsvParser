@@ -34,7 +34,7 @@ class TxAppFactory {
             val txApp = when (appType) {
                 AppType.CdCsvParser -> {
                     when (appStatus) {
-                        AppStatus.NotStarted -> TxApp(dataContainer[DataTypes.csvAsList] as ArrayList<String>)
+                        AppStatus.NotStarted -> StandardTxApp(dataContainer[DataTypes.csvAsList] as ArrayList<String>)
 //                    AppStatus.Running -> BaseApp() //TxApp(data)
 //                    AppStatus.Finished -> BaseApp() //TxApp(data)
 //                    AppStatus.Error -> BaseApp()    //TxApp(data)
@@ -174,7 +174,7 @@ class TxAppFactory {
             dbTransactions: ArrayList<java.util.HashMap<String, *>>,
             appType: AppType,
             amountTxFailed: Long
-        ): TxApp {
+        ): StandardTxApp {
             val tXs: MutableList<Transaction> = ArrayList()
             val wTXs: MutableList<CDCWallet> = ArrayList()
             val wTXsOutside: MutableList<CDCWallet> = ArrayList()
@@ -310,7 +310,7 @@ class TxAppFactory {
                 )
                 wTXsOutside.add(wallet)
             })
-            return TxApp(tXs, wTXs, wTXsOutside, amountTxFailed)
+            return StandardTxApp(tXs, wTXs, wTXsOutside, amountTxFailed, appType)
         }
     }
 }
