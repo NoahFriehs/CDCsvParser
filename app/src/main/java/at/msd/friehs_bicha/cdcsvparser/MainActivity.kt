@@ -259,6 +259,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun callParseView(saveToDB: Boolean = true) {
+        if (appModel == null) {
+            Toast.makeText(context, "No valid data loaded", Toast.LENGTH_LONG).show()
+            FileLog.e("MainActivity", "No valid data loaded")
+            return
+        }
         if (saveToDB) {
             if (user != null) saveToFireBaseDB()
         }

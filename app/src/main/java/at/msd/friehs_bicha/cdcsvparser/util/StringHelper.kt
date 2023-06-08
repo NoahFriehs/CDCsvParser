@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.util
 
+import java.math.BigDecimal
 import java.text.DecimalFormat
 
 object StringHelper {
@@ -15,6 +16,15 @@ object StringHelper {
         if (writePlusIfPositive && amount > 0)
             return "+" + removeLastZeros(df.format(amount)) + " $symbol"
         return removeLastZeros(df.format(amount)) + " $symbol"
+    }
+
+    fun formatAmountToString(
+        amount: BigDecimal,
+        decimalNumbers: Int = 2,
+        symbol: String = "€",
+        writePlusIfPositive: Boolean = false
+    ): String {
+        return formatAmountToString(amount.toDouble(), decimalNumbers, symbol, writePlusIfPositive)
     }
 
 

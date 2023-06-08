@@ -2,19 +2,16 @@ package at.msd.friehs_bicha.cdcsvparser.ui.fragments
 
 import android.content.Context
 import android.content.Intent
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import at.msd.friehs_bicha.cdcsvparser.AssetsFilterActivity
+import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
-
-import at.msd.friehs_bicha.cdcsvparser.placeholder.PlaceholderContent.PlaceholderItem
-import at.msd.friehs_bicha.cdcsvparser.databinding.FragmentTransactionBinding
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.ui.activity.TransactionActivity
 
 /**
  * [RecyclerView.Adapter] that can display a [PlaceholderItem].
@@ -29,7 +26,7 @@ class TransactionAdapter(private val transactions: List<Transaction>) : Recycler
                     itemView.findViewById<TextView>(R.id.tv_transactionId).text.toString().toInt()
                 val appModel = AppModelManager.getInstance()
                 val transaction = appModel.txApp!!.transactions.find{ it.transactionId == transactionId }
-                val intent = Intent(itemView.context, AssetsFilterActivity::class.java)
+                val intent = Intent(itemView.context, TransactionActivity::class.java)
                 intent.putExtra("transaction", transaction)
                 itemView.context.startActivity(intent)
             }

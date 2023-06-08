@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import at.msd.friehs_bicha.cdcsvparser.MainActivity.Companion.readExternalStorageRequestCode
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.ui.activity.AboutUsActivity
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
@@ -29,6 +30,7 @@ class SettingsActivity : AppCompatActivity() {
     lateinit var btnLogout: Button
     lateinit var btnDeleteUser: Button
     lateinit var btnPermissionRequest: Button
+    lateinit var btnAboutUs: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +39,7 @@ class SettingsActivity : AppCompatActivity() {
         appTypeSpinner = findViewById(R.id.wallet_type_spinner)
         useStrictTypeCheckbox = findViewById(R.id.use_strict_wallet_type_checkbox)
         btnPermissionRequest = findViewById(R.id.btn_permission_request)
+        btnAboutUs = findViewById(R.id.btn_about_us)
         btnLogout = findViewById(R.id.btn_logout)
         btnDeleteUser = findViewById(R.id.btn_delete_account)
 
@@ -76,6 +79,11 @@ class SettingsActivity : AppCompatActivity() {
 
         btnPermissionRequest.setOnClickListener {
             requestExternalStoragePermission()
+        }
+
+        btnAboutUs.setOnClickListener {
+            val intent = Intent(this, AboutUsActivity::class.java)
+            startActivity(intent)
         }
 
         btnLogout.setOnClickListener {

@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
@@ -64,7 +65,7 @@ class ParseActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
-        appModel = intent.extras!!["AppModel"] as AppModel?
+        appModel = AppModelManager.getInstance()
     }
 
     /**

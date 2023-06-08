@@ -16,9 +16,18 @@
         android:theme="@style/Theme.CDCsvParser"
         tools:targetApi="31">
         <activity
+            android:name=".ui.activity.AboutUsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.CDCsvParser" />
+        <activity
+            android:name=".ui.activity.TransactionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.CDCsvParser" />
+        <activity
             android:name=".ui.activity.StartingActivity"
             android:exported="true"
             android:label="@string/title_activity_starting"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.CDCsvParser">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

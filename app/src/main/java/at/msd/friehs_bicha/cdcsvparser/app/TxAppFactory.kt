@@ -32,7 +32,7 @@ class TxAppFactory {
             val txApp = when (appType) {
                 AppType.CdCsvParser -> {
                     when (appStatus) {
-                        AppStatus.NotStarted -> StandardTxApp(dataContainer[DataTypes.csvAsList] as ArrayList<String>, appType)
+                        AppStatus.NotStarted -> TxApp(dataContainer[DataTypes.csvAsList] as ArrayList<String>)
                         AppStatus.importFromFB -> initFromFirebase(
                             dataContainer[DataTypes.dbWallets] as ArrayList<java.util.HashMap<String, *>>,
                             dataContainer[DataTypes.dbOutsideWallets] as ArrayList<java.util.HashMap<String, *>>,

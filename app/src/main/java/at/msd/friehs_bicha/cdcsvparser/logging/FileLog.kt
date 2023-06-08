@@ -8,15 +8,14 @@ import java.io.File
 import java.io.FileWriter
 import java.util.*
 
-/*
-* TODO:
+/**
+* This class is used to log to a file
 *  when using logging:
 * For devs use FileLog.d
 * For errors use FileLog.e
-* For warnings use Log.w
-* For info use Log.i
+* For warnings use FileLog.w
+* For info use FileLog.i
  */
-
 class FileLog {
 
     companion object {
