@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.Button
@@ -35,6 +36,9 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+
+        val actionBar = supportActionBar
+        actionBar!!.setDisplayHomeAsUpEnabled(true)
 
         appTypeSpinner = findViewById(R.id.wallet_type_spinner)
         useStrictTypeCheckbox = findViewById(R.id.use_strict_wallet_type_checkbox)
@@ -199,5 +203,17 @@ class SettingsActivity : AppCompatActivity() {
     companion object {
         var useStrictType = false
         var selectedType: AppType = AppType.CdCsvParser
+    }
+
+
+    /**
+     * Set the back button in action bar
+     */
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 }

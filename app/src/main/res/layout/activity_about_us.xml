@@ -7,6 +7,148 @@
     android:fitsSystemWindows="true"
     tools:context=".ui.activity.AboutUsActivity">
 
+    <TextView
+        android:id="@+id/tv_contributers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="14dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="Contributers:"
+        />
+    <TextView
+        android:id="@+id/nameString"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_contributers"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="Names:"
+        />
+    <TextView
+        android:id="@+id/tv_contributers_names"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="34dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/nameString"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="Bicha Stefan, Friehs Noah, Dennig Rosa"
+        />
+    <TextView
+        android:id="@+id/gitString"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_contributers_names"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="Git:"
+        />
+    <TextView
+        android:id="@+id/tv_contributers_git_stefan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="34dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/gitString"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="https://git-iit.fh-joanneum.at/bichaste20"
+        />
+    <TextView
+        android:id="@+id/tv_contributers_git_noah"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="34dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_contributers_git_stefan"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="https://git-iit.fh-joanneum.at/d01m67"
+        />
+    <TextView
+        android:id="@+id/tv_contributers_git_rosa"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="34dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_contributers_git_noah"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="https://git-iit.fh-joanneum.at/s63q65"
+        />
+    <TextView
+        android:id="@+id/tv_supportString"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="40dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_contributers_git_rosa"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="If you want to support us (the contributers) please use the BTC or ETH adresses provided below. "
+        />
+    <TextView
+        android:id="@+id/tv_BTCadress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="15dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_supportString"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="BTC: bc1qcw8gyljlwhcndq62mhtsktg6n7j7mp83carnjc"
+        />
+    <TextView
+        android:id="@+id/tv_ETHadress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_BTCadress"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="ETH: 0xAF88D27efeF8a656a2ce7044847445467a8a9C7b"
+        />
+
+
+
+    <TextView
+        android:id="@+id/tv_hopesString"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="40dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_ETHadress"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="We hope our app is userful and easy to use! :)"
+        />
+
+    <TextView
+        android:id="@+id/tv_whishesString"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_hopesString"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="If you found a bug or ran into a problem feel free to contact us under:"
+        />
+    <TextView
+        android:id="@+id/tv_mailString"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintTop_toBottomOf="@+id/tv_whishesString"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="cdcsvparser@gmail.com"
+        />
+
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

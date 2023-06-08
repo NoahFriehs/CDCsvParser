@@ -51,14 +51,6 @@ class ParseActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         }
-        while (!appModel!!.isRunning) { //TODO: add loading icon
-            try {
-                Thread.sleep(500)
-                FileLog.d("ParseActivity", "waiting for appModel to be ready")
-            } catch (e: InterruptedException) {
-                throw RuntimeException(e)
-            }
-        }
 
         //trys to get the prices from api and the prints the values depending on the answer of coingeko api
         displayInformation()
