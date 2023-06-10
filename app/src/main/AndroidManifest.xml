@@ -26,7 +26,6 @@
         <activity
             android:name=".ui.activity.StartingActivity"
             android:exported="true"
-            android:label="@string/title_activity_starting"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.CDCsvParser">
             <intent-filter>
