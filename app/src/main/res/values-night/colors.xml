@@ -8,5 +8,4 @@
     <color name="black">#FFFFFFFF</color>
     <color name="white">#FF000000</color>
     <color name="link_blue"> #000033</color>
-    <color name="login_screen_gray">#CCCCCC</color>
 </resources>
