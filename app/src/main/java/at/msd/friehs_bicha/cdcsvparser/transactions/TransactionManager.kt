@@ -105,7 +105,10 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             return when (appType) {
                 AppType.CdCsvParser -> prepareCDCInput(input)
                 AppType.Default -> prepareCDCInput(input)
-                else -> throw IllegalArgumentException("Unknown app type")
+                else -> {
+                    FileLog.e("TransactionManager", "prepareInput: Unknown app type, AppType: $appType")
+                    throw IllegalArgumentException("Unknown app type")
+                }
             }
         }
 
@@ -134,7 +137,10 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
         ) {
             when (app.appType) {
                 AppType.CdCsvParser -> createCDCWallets(currencies, app)
-                else -> throw IllegalArgumentException("Unknown app type")
+                else -> {
+                    FileLog.e("TransactionManager", "createWallets: Unknown app type, AppType: ${app.appType}")
+                    throw IllegalArgumentException("Unknown app type")
+                }
             }
         }
 
@@ -162,7 +168,10 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             when (app.appType) {
                 AppType.CdCsvParser -> addCDCTransaction(transaction, app)
                 AppType.Default -> addDefaultTransaction(transaction, app)
-                else -> throw IllegalArgumentException("Unknown app type")
+                else -> {
+                    FileLog.e("TransactionManager", "addTransaction: Unknown app type, AppType: ${app.appType}")
+                    throw IllegalArgumentException("Unknown app type")
+                }
             }
         }
 
@@ -225,7 +234,10 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                     eur.transactions?.add(transaction)
                 }
 
-                else -> throw IllegalArgumentException("Unknown transaction type")
+                else -> {
+                    FileLog.e("TransactionManager", "ddCDCTransaction: Unknown app type, TransactionType: ${t}")
+                    throw IllegalArgumentException("Unknown transaction type")
+                }
             }
         }
 

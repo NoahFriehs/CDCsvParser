@@ -54,7 +54,11 @@ class StandardTxApp : BaseApp, Serializable {
                 })
             }
 
-            else -> throw NotImplementedError("AppType $appType not implemented")
+            else -> {
+                FileLog.e("TxApp:dbConstructor", "not implemented: $appType")
+                throw NotImplementedError("AppType $appType not implemented")
+            }
+
         }
 
         this.wallets = ArrayList(wTXs)

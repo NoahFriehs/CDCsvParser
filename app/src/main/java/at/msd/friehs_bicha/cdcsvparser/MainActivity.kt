@@ -162,7 +162,7 @@ class MainActivity : AppCompatActivity() {
                 filename = dateFormat.format(date)
             } catch (e: ParseException) {
                 e.printStackTrace()
-                // TODO error message
+                FileLog.e("MainActivity", "setSpinner: Date parse error: $e")
             }
             fileNames.add(filename)
         }
@@ -223,7 +223,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: IOException) {
-                e.printStackTrace() // TODO error message
+                e.printStackTrace()
+                FileLog.e("MainActivity", ":  Error while writing to file : $e")
             }
             //delete oldest file if already 7 files in array
             updateFiles()
@@ -376,7 +377,9 @@ class MainActivity : AppCompatActivity() {
             reader.close()
             inputStream!!.close()
         } catch (e: IOException) {
-            e.printStackTrace() // TODO error message
+            e.printStackTrace()
+            FileLog.e("MainActivity", ":  Error while getting file content from Uri : $e")
+
         }
         return fileContents
     }
