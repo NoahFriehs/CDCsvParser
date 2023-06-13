@@ -5,6 +5,10 @@ import java.math.BigDecimal
 import java.math.MathContext
 import java.util.Date
 
+/**
+ * Cro card transaction
+ *
+ */
 open class CroCardTransaction(
     date: String?,
     description: String,

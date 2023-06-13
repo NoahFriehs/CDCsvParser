@@ -3,6 +3,9 @@ package at.msd.friehs_bicha.cdcsvparser.util
 import android.content.Context
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 
+/**
+ * Helper class for the shared preferences
+ */
 object PreferenceHelper {
     const val PREFS_NAME = "settings_prefs"
     const val TYPE_KEY = "app_type"

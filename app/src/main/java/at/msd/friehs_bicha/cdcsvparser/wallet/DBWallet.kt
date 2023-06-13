@@ -4,7 +4,7 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.DBTransaction
 import java.io.Serializable
 
 /**
- * @deprecated("UseWallet instead") //todo
+ * Represents a basic DBWallet
  */
 open class DBWallet(wallet: Wallet?, overridTX: Boolean = false) : Serializable {
 

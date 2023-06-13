@@ -14,8 +14,8 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.TransactionActivity
 
 /**
- * [RecyclerView.Adapter] that can display a [PlaceholderItem].
- * TODO: Replace the implementation with code for your data type.
+ * [TransactionAdapter] that can display a [List<Transaction>].
+ * The [TransactionAdapter] is used in [TransactionFragment].
  */
 class TransactionAdapter(private val transactions: List<Transaction>) : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
 

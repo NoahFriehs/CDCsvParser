@@ -11,7 +11,7 @@ import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 /**
- * A fragment representing a list of Items.
+ * A fragment representing a list of Wallets.
  */
 class WalletListFragment(val wallets: List<Wallet>) : Fragment() {
 

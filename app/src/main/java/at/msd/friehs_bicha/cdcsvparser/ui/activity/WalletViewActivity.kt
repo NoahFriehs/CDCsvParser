@@ -3,7 +3,6 @@ package at.msd.friehs_bicha.cdcsvparser.ui.activity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.KeyEvent
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -16,6 +15,9 @@ import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 
+/**
+ * Activity for the wallet view page (wallet list)
+ */
 class WalletViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

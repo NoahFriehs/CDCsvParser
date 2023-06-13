@@ -8,6 +8,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 
+/**
+ * Activity for the about us page
+ */
 class AboutUsActivity : AppCompatActivity() {
 
 

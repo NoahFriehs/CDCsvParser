@@ -50,10 +50,8 @@ class CDCWallet : Wallet, Serializable {
      * @return the index of the wallet
      */
     override fun getWallet(ct: String?): Int {
-        var i = 0
-        for (w in txApp!!.wallets) {
+        for ((i, w) in txApp!!.wallets.withIndex()) {
             if (w.currencyType == ct) return i
-            i++
         }
         return -1
     }

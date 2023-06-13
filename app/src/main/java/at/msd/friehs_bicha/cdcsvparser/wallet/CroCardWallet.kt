@@ -8,6 +8,9 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import java.io.Serializable
 import java.math.BigDecimal
 
+/**
+ * Represents a CroCardWallet object
+ */
 class CroCardWallet(
     currencyType: String?,
     amount: BigDecimal?,
@@ -53,7 +56,6 @@ class CroCardWallet(
     override fun addTransaction(transaction: Transaction) {
         val cardTransaction = transaction as CroCardTransaction
         val tt = cardTransaction.transactionTypeString
-        //tt = checkForRefund(tt);
         if (tt == "EUR -> EUR") {
             println("Found EUR -> EUR: $tt")
         }
@@ -102,7 +104,6 @@ class CroCardWallet(
                 transaction.walletId = w.walletId
                 txApp.wallets.add(w)
             }
-            //w.addToWallet(transaction.getAmount());
         }
     }
 

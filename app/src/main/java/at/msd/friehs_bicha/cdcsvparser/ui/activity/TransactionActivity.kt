@@ -11,6 +11,9 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 
+/**
+ * Activity for the transaction page that shows the details of a transaction
+ */
 class TransactionActivity : AppCompatActivity() {
 
     lateinit var appModel: AppModel
