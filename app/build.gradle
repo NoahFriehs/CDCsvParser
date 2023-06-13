@@ -7,16 +7,19 @@ plugins {
 
 android {
     namespace 'at.msd.friehs_bicha.cdcsvparser'
-    compileSdk 32
+    compileSdk 33
 
     defaultConfig {
         applicationId "at.msd.friehs_bicha.cdcsvparser"
-        minSdk 28
-        targetSdk 32
+        minSdk 26
+        targetSdk 33
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary true
+        }
     }
 
     buildTypes {
@@ -65,4 +68,6 @@ dependencies {
 
     implementation "androidx.room:room-runtime:$room_version"
     kapt "androidx.room:room-compiler:$room_version"
+
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 }
