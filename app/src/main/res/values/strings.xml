@@ -86,4 +86,19 @@
         libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
         vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
     </string>
+    <string name="cdcsvparser">CDCsvParser</string>
+    <string name="please_wait">Please Wait...</string>
+    <string name="contributers">Contributers:</string>
+    <string name="names">Names:</string>
+    <string name="bicha_stefan_friehs_noah_dennig_rosa">Bicha Stefan, Friehs Noah, Dennig Rosa</string>
+    <string name="git">Git:</string>
+    <string name="git_bicha">https://git-iit.fh-joanneum.at/bichaste20</string>
+    <string name="git_noah">https://git-iit.fh-joanneum.at/d01m67</string>
+    <string name="git_rosa">https://git-iit.fh-joanneum.at/s63q65</string>
+    <string name="support_string">If you want to support us (the contributers) please use the BTC or ETH adresses provided below.</string>
+    <string name="btc_adress">BTC: bc1qcw8gyljlwhcndq62mhtsktg6n7j7mp83carnjc</string>
+    <string name="eth_adress">ETH: 0xAF88D27efeF8a656a2ce7044847445467a8a9C7b</string>
+    <string name="hope_useful_string">We hope our app is userful and easy to use! :)</string>
+    <string name="problem_contact_string">If you found a bug or ran into a problem feel free to contact us under:</string>
+    <string name="cdcsvparser_gmail">cdcsvparser@gmail.com</string>
 </resources>

@@ -16,8 +16,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:textColor="@color/white"
-        android:textSize="30sp"
-        android:text="CDCsvParser"
+        android:textSize="@dimen/splash_font"
+        android:text="@string/cdcsvparser"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

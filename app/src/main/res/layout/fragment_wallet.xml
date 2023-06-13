@@ -18,10 +18,10 @@
     <TextView
         android:id="@+id/currencyType"
         android:layout_width="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginTop="14dp"
-        android:textSize="16sp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/basic_text_start_end_margin"
+        android:textSize="@dimen/basic_labels_fontsize"
         android:textColor="@color/black"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
@@ -32,7 +32,7 @@
         android:id="@+id/amount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/currencyType"
         app:layout_constraintLeft_toLeftOf="parent"
         android:text="Currency Type" />
@@ -41,7 +41,7 @@
         android:id="@+id/round"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
         app:layout_constraintTop_toBottomOf="@id/currencyType"
         app:layout_constraintLeft_toRightOf="@id/amount"
         android:text="~" />
@@ -50,8 +50,8 @@
         android:id="@+id/amountValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginEnd="14dp"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/currencyType"
         app:layout_constraintLeft_toRightOf="@id/round"
         android:text="amountValue" />
@@ -60,7 +60,7 @@
         android:id="@+id/percentProfit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toLeftOf="parent"
         android:text="percentProfit" />
@@ -69,7 +69,7 @@
         android:id="@+id/inString"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toRightOf="@+id/percentProfit"
         android:text="in" />
@@ -78,7 +78,7 @@
         android:id="@+id/amountTransactions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toRightOf="@+id/inString"
         android:text="amountTransactions" />
@@ -87,24 +87,23 @@
         android:id="@+id/transactionSting"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginEnd="14dp"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toRightOf="@+id/amountTransactions"
         android:text="transaction(s)" />
 
     <View
         android:id="@+id/divider"
-        android:layout_width="326dp"
-        android:layout_height="1dp"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginTop="14dp"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/divider_height"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginEnd="@dimen/divider_margin_end"
+        android:layout_marginTop="@dimen/divider_margin_top"
         android:background="?android:attr/listDivider"
         app:layout_constraintTop_toBottomOf="@id/percentProfit"
         app:layout_constraintLeft_toLeftOf="parent"
-        tools:layout_editor_absoluteX="1dp"
-        tools:layout_editor_absoluteY="74dp" />
+        app:layout_constraintRight_toRightOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

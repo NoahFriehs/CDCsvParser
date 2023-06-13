@@ -18,9 +18,9 @@
     <TextView
         android:id="@+id/tv_date"
         android:layout_width="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/basic_text_start_end_margin"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -30,7 +30,7 @@
         android:id="@+id/tv_description"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/tv_date"
         app:layout_constraintLeft_toLeftOf="parent"
         android:text="Description:" />
@@ -40,8 +40,8 @@
         android:id="@+id/tv_descriptionValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginEnd="14dp"
+        android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/tv_date"
         app:layout_constraintLeft_toRightOf="@id/tv_description"
         android:text="descriptionValue" />
@@ -50,7 +50,7 @@
         android:id="@+id/amount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/tv_description"
         app:layout_constraintLeft_toLeftOf="parent"
         android:text="Amount:" />
@@ -59,8 +59,8 @@
         android:id="@+id/tv_amountValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginEnd="14dp"
+        android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/tv_description"
         app:layout_constraintLeft_toRightOf="@+id/amount"
         android:text="amountValue" />
@@ -69,7 +69,7 @@
         android:id="@+id/tv_assetAmount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toLeftOf="parent"
         android:text="Asset Amount:" />
@@ -78,24 +78,24 @@
         android:id="@+id/tv_assetAmountValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginEnd="14dp"
+        android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toRightOf="@+id/tv_assetAmount"
         android:text="assetValue" />
 
     <View
         android:id="@+id/divider"
-        android:layout_width="326dp"
-        android:layout_height="1dp"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginTop="14dp"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/divider_height"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginEnd="@dimen/divider_margin_end"
+        android:layout_marginTop="@dimen/divider_margin_top"
         android:background="?android:attr/listDivider"
         app:layout_constraintTop_toBottomOf="@id/tv_assetAmount"
         app:layout_constraintLeft_toLeftOf="parent"
-        tools:layout_editor_absoluteX="1dp"
-        tools:layout_editor_absoluteY="74dp" />
+        app:layout_constraintRight_toRightOf="parent"
+         />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

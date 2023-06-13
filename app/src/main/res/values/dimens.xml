@@ -2,4 +2,79 @@
 <resources>
     <dimen name="text_margin">16dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
+
+    <!--basic dimensions -->
+    <dimen name="basic_start_end_margin">10dp</dimen>
+    <dimen name="basic_text_start_end_margin">14dp</dimen>
+    <dimen name="basic_text_second_level_start_margin">24dp</dimen>
+    <dimen name="basic_text_third_level_start_margin">34dp</dimen>
+    <dimen name="basic_frame_layout_height">0dp</dimen>
+    <dimen name="divider_height">1dp</dimen>
+    <dimen name="divider_margin_end">120dp</dimen>
+    <dimen name="divider_margin_top">14dp</dimen>
+
+    <dimen name="basic_labels_fontsize">16sp</dimen>
+    <dimen name="basic_value_fontsize">14sp</dimen>
+    <dimen name="basic_button_font">20sp</dimen>
+
+
+    <!--about_us dimensions -->
+    <dimen name="about_us_small_margin_top">5dp</dimen>
+    <dimen name="about_us_middle_margin_top">15dp</dimen>
+    <dimen name="about_us_big_margin_top">40dp</dimen>
+
+    <!--assets_filter dimensions -->
+    <dimen name="asset_label_padding">16dp</dimen>
+    <dimen name="asset_label_fontsize">12sp</dimen>
+    <dimen name="labels_values_margin_top">14dp</dimen>
+
+    <!--login dimensions -->
+    <dimen name="login_basic_start_end_margin">20dp</dimen>
+    <dimen name="login_small_font">16sp</dimen>
+    <dimen name="login_middle_font">18sp</dimen>
+    <dimen name="login_small_top_margin">10dp</dimen>
+    <dimen name="login_middle_top_margin">20dp</dimen>
+
+    <!--main dimensions -->
+    <dimen name="main_headline_font">40sp</dimen>
+    <dimen name="main_middle_font">16sp</dimen>
+    <dimen name="main_small_font">12sp</dimen>
+    <dimen name="main_headline_padding_margin">16dp</dimen>
+    <dimen name="main_small_margin_bottom">10dp</dimen>
+    <dimen name="main_middle_margin_bottom">15dp</dimen>
+    <dimen name="main_big_margin_bottom">20dp</dimen>
+    <dimen name="main_extreme_bottom_margin">40dp</dimen>
+
+    <!--parse dimensions -->
+    <dimen name="parse_label_value_top_margin">14dp</dimen>
+
+    <!--settings dimensions -->
+    <dimen name="settings_spinner_height">40dp</dimen>
+    <dimen name="settings_margin_top_bottom">20dp</dimen>
+
+    <!--sign_up dimensions -->
+    <dimen name="sign_up_small_margin_top">8dp</dimen>
+    <dimen name="sign_up_medium_margin_top">16dp</dimen>
+
+    <!--starting dimensions -->
+    <dimen name="splash_font">30sp</dimen>
+
+    <!--transaction dimensions -->
+    <dimen name="transaction_font">14sp</dimen>
+    <dimen name="transaction_font_padding">16dp</dimen>
+
+    <!--wallet_view dimensions -->
+    <dimen name="wallet_spinner_margin_top">5dp</dimen>
+    <dimen name="wallet_frame_margin_top">10dp</dimen>
+    <dimen name="wallet_sortBy_margin_top">12dp</dimen>
+
+    <!--fragment_transaction dimensions -->
+    <dimen name="fragment_transaction_value_margin_start">5dp</dimen>
+
+    <!--fragment_wallet dimensions -->
+    <dimen name="fragment_wallet_small_margin_left">5dp</dimen>
+
+    <!--progress_icon dimensions -->
+    <dimen name="progress_icon_text_margin_left">5dp</dimen>
+
 </resources>
