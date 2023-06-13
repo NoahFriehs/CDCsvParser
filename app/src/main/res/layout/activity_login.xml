@@ -72,7 +72,7 @@
         app:layout_constraintLeft_toLeftOf="parent"
         android:layout_marginTop="@dimen/login_middle_top_margin"
         android:layout_marginStart="@dimen/login_basic_start_end_margin"
-        android:background="@color/browser_actions_bg_grey"
+        android:background="@color/login_screen_gray"
         />
 
     <TextView
@@ -85,7 +85,7 @@
         app:layout_constraintLeft_toRightOf="@+id/btn_signup"
         android:layout_marginTop="@dimen/login_middle_top_margin"
         android:layout_marginStart="@dimen/login_basic_start_end_margin"
-        android:background="@color/browser_actions_bg_grey"
+        android:background="@color/login_screen_gray"
         />
 
     <TextView

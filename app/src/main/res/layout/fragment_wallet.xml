@@ -98,7 +98,7 @@
         android:layout_width="match_parent"
         android:layout_height="@dimen/divider_height"
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        android:layout_marginEnd="@dimen/divider_margin_end"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         android:layout_marginTop="@dimen/divider_margin_top"
         android:background="?android:attr/listDivider"
         app:layout_constraintTop_toBottomOf="@id/percentProfit"

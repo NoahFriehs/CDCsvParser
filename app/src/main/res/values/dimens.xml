@@ -10,7 +10,6 @@
     <dimen name="basic_text_third_level_start_margin">34dp</dimen>
     <dimen name="basic_frame_layout_height">0dp</dimen>
     <dimen name="divider_height">1dp</dimen>
-    <dimen name="divider_margin_end">120dp</dimen>
     <dimen name="divider_margin_top">14dp</dimen>
 
     <dimen name="basic_labels_fontsize">16sp</dimen>
