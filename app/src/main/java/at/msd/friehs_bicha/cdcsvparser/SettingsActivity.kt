@@ -81,12 +81,13 @@ class SettingsActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
-        {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             btnPermissionRequest.visibility = View.GONE
-        }
-        else
-        {
+        } else {
             btnPermissionRequest.visibility = View.VISIBLE
             btnPermissionRequest.setOnClickListener {
                 requestExternalStoragePermission()
@@ -203,7 +204,11 @@ class SettingsActivity : AppCompatActivity() {
                 // Perform your required action here
             } else {
                 // Permission denied
-                Toast.makeText(this, "Permission denied, you can't use the App without it.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Permission denied, you can't use the App without it.",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }

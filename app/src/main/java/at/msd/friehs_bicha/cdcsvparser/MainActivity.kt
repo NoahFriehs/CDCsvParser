@@ -292,7 +292,11 @@ class MainActivity : AppCompatActivity() {
                 )
             ) {
                 // Show an explanation to the user
-                Toast.makeText(this, "Permission needed to read files to be able to load the file", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    "Permission needed to read files to be able to load the file",
+                    Toast.LENGTH_SHORT
+                ).show()
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
@@ -519,11 +523,11 @@ class MainActivity : AppCompatActivity() {
                     val a = 0
                 }
             }.addOnFailureListener { exception ->
-            val a = 0   //TODO: handle error
-        }
+                val a = 0   //TODO: handle error
+            }
     }
 
-    fun showProgressDialog (){
+    fun showProgressDialog() {
         progressDialog = Dialog(this)
         progressDialog.setContentView(R.layout.progress_icon)
         progressDialog.setCancelable(false)
@@ -531,7 +535,7 @@ class MainActivity : AppCompatActivity() {
         progressDialog.show()
     }
 
-    fun hideProgressDialog(){
+    fun hideProgressDialog() {
         progressDialog.dismiss()
     }
 

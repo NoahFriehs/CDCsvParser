@@ -59,13 +59,15 @@ class AssetsFilterActivity : AppCompatActivity() {
         }
 
 
-
         // display prices
         displayInformation(specificWallet, findViewById(R.id.all_regarding_tx))
 
         //displays transactions
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, TransactionFragment(specificWallet.transactions as ArrayList<Transaction>))
+            .replace(
+                R.id.fragment_container,
+                TransactionFragment(specificWallet.transactions as ArrayList<Transaction>)
+            )
             .commit()
 
         //if spinner item gets changed
@@ -82,7 +84,10 @@ class AssetsFilterActivity : AppCompatActivity() {
 
                 //display Transactions
                 supportFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, TransactionFragment(specificWallet.transactions as ArrayList<Transaction>))
+                    .replace(
+                        R.id.fragment_container,
+                        TransactionFragment(specificWallet.transactions as ArrayList<Transaction>)
+                    )
                     .commit()
                 //display prices
                 displayInformation(specificWallet, findViewById(R.id.all_regarding_tx))
@@ -166,21 +171,21 @@ class AssetsFilterActivity : AppCompatActivity() {
      * @param specificWallet the CDCWallet which should be displayed
 
     private fun displayTxs(specificWallet: Wallet?) {
-        // Get a reference to the ListView
-        val listView = findViewById<ListView>(R.id.lv_txs)
-        val transactions: List<Transaction?>? = specificWallet!!.transactions
+    // Get a reference to the ListView
+    val listView = findViewById<ListView>(R.id.lv_txs)
+    val transactions: List<Transaction?>? = specificWallet!!.transactions
 
-        val transactionsStringList: MutableList<String?> = ArrayList()
-        for (tx in transactions!!) {
-            transactionsStringList.add(tx.toString())
-        }
+    val transactionsStringList: MutableList<String?> = ArrayList()
+    for (tx in transactions!!) {
+    transactionsStringList.add(tx.toString())
+    }
 
-        // Create an adapter for the ListView
-        val adapterLV =
-            ArrayAdapter(context!!, android.R.layout.simple_list_item_1, transactionsStringList)
+    // Create an adapter for the ListView
+    val adapterLV =
+    ArrayAdapter(context!!, android.R.layout.simple_list_item_1, transactionsStringList)
 
-        // Set the adapter on the ListView
-        listView.adapter = adapterLV
+    // Set the adapter on the ListView
+    listView.adapter = adapterLV
     }
      */
     /**

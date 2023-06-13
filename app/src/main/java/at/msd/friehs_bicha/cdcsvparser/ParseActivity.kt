@@ -108,7 +108,7 @@ class ParseActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    fun showProgressDialog (){
+    fun showProgressDialog() {
         progressDialog = Dialog(this)
         progressDialog.setContentView(R.layout.progress_icon)
         progressDialog.setCancelable(false)
@@ -116,7 +116,7 @@ class ParseActivity : AppCompatActivity() {
         progressDialog.show()
     }
 
-    fun hideProgressDialog(){
+    fun hideProgressDialog() {
         progressDialog.dismiss()
     }
 }

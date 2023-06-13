@@ -17,7 +17,8 @@ import at.msd.friehs_bicha.cdcsvparser.ui.activity.TransactionActivity
  * [TransactionAdapter] that can display a [List<Transaction>].
  * The [TransactionAdapter] is used in [TransactionFragment].
  */
-class TransactionAdapter(private val transactions: List<Transaction>) : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
+class TransactionAdapter(private val transactions: List<Transaction>) :
+    RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
 
     class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         init {
@@ -25,7 +26,8 @@ class TransactionAdapter(private val transactions: List<Transaction>) : Recycler
                 val transactionId =
                     itemView.findViewById<TextView>(R.id.tv_transactionId).text.toString().toInt()
                 val appModel = AppModelManager.getInstance()
-                val transaction = appModel.txApp!!.transactions.find{ it.transactionId == transactionId }
+                val transaction =
+                    appModel.txApp!!.transactions.find { it.transactionId == transactionId }
                 val intent = Intent(itemView.context, TransactionActivity::class.java)
                 intent.putExtra("transaction", transaction)
                 itemView.context.startActivity(intent)
@@ -55,7 +57,7 @@ class TransactionAdapter(private val transactions: List<Transaction>) : Recycler
 
     private fun displayTexts(
         texts: Map<String, String?>?,
-        holder: TransactionAdapter.TransactionViewHolder,
+        holder: TransactionViewHolder,
         context: Context
     ) {
         texts!!.forEach { (key: String?, value: String?) ->

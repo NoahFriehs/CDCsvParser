@@ -99,12 +99,20 @@ class WalletViewActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable) {
                 val text = editText.text.toString()
 
-                if(text == ""){
-                    sortedWallets = sortWallets(wallets, spinnerValueSpinner.selectedItem.toString(), spinnerTypeSpinner.selectedItem.toString())
-                }else{
+                if (text == "") {
+                    sortedWallets = sortWallets(
+                        wallets,
+                        spinnerValueSpinner.selectedItem.toString(),
+                        spinnerTypeSpinner.selectedItem.toString()
+                    )
+                } else {
                     sortedWallets.clear()
-                    sortedWallets.addAll(filterWalletsByUserSearch(wallets,text))
-                    sortedWallets = sortWallets(sortedWallets, spinnerValueSpinner.selectedItem.toString(), spinnerTypeSpinner.selectedItem.toString())
+                    sortedWallets.addAll(filterWalletsByUserSearch(wallets, text))
+                    sortedWallets = sortWallets(
+                        sortedWallets,
+                        spinnerValueSpinner.selectedItem.toString(),
+                        spinnerTypeSpinner.selectedItem.toString()
+                    )
                 }
 
                 supportFragmentManager.beginTransaction()
@@ -134,8 +142,8 @@ class WalletViewActivity : AppCompatActivity() {
         sortingType: String
     ): ArrayList<Wallet> {
 
-        if(wallets.size <= 1){
-            return  wallets;
+        if (wallets.size <= 1) {
+            return wallets
         }
         var sortedWallets = wallets
         val isDesc = sortingType == "DESC"

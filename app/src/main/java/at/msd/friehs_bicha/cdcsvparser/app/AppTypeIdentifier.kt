@@ -5,7 +5,7 @@ package at.msd.friehs_bicha.cdcsvparser.app
  */
 object AppTypeIdentifier {
 
-/**
+    /**
      * Returns the app type.
      *
      * @param input the input from the file

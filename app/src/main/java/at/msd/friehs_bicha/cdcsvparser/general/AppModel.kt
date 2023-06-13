@@ -426,8 +426,10 @@ class AppModel : BaseAppModel, Serializable {
         map[R.id.tv_transactionId.toString()] = transaction.transactionId.toString()
         map[R.id.tv_date.toString()] = transaction.date.toString()
         map[R.id.tv_descriptionValue.toString()] = transaction.description
-        map[R.id.tv_amountValue.toString()] = formatAmountToString(transaction.nativeAmount.toDouble())
-        map[R.id.tv_assetAmountValue.toString()] = formatAmountToString(transaction.amount.toDouble(), 6,transaction.currencyType)
+        map[R.id.tv_amountValue.toString()] =
+            formatAmountToString(transaction.nativeAmount.toDouble())
+        map[R.id.tv_assetAmountValue.toString()] =
+            formatAmountToString(transaction.amount.toDouble(), 6, transaction.currencyType)
         return map
     }
 

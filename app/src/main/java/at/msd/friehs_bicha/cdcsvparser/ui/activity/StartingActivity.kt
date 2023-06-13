@@ -31,6 +31,6 @@ class StartingActivity : ComponentActivity() {
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(intent)
             finish()
-        },1000)
+        }, 1000)
     }
 }

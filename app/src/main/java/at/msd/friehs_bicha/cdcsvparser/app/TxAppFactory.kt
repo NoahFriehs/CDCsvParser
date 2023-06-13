@@ -36,7 +36,11 @@ class TxAppFactory {
             val txApp = when (appType) {
                 AppType.CdCsvParser -> {
                     when (appStatus) {
-                        AppStatus.NotStarted -> StandardTxApp(dataContainer[DataTypes.csvAsList] as ArrayList<String>, appType)
+                        AppStatus.NotStarted -> StandardTxApp(
+                            dataContainer[DataTypes.csvAsList] as ArrayList<String>,
+                            appType
+                        )
+
                         AppStatus.importFromFB -> initFromFirebase(
                             dataContainer[DataTypes.dbWallets] as ArrayList<java.util.HashMap<String, *>>,
                             dataContainer[DataTypes.dbOutsideWallets] as ArrayList<java.util.HashMap<String, *>>,
@@ -55,18 +59,24 @@ class TxAppFactory {
                             dataContainer[DataTypes.csvAsList] as ArrayList<String>,
                             useStrictType
                         )
+
                         AppStatus.importFromFB -> processCroCardFromDB(
                             dataContainer[DataTypes.dbWallets] as ArrayList<java.util.HashMap<String, *>>,
                             dataContainer[DataTypes.dbTransactions] as ArrayList<java.util.HashMap<String, *>>,
                             dataContainer[DataTypes.amountTxFailed] as Long
                         )
+
                         else -> throw RuntimeException("Usage not found")
                     }
                 }
 
                 AppType.Default -> {
                     when (appStatus) {
-                        AppStatus.NotStarted -> StandardTxApp(dataContainer[DataTypes.csvAsList] as ArrayList<String>, appType)
+                        AppStatus.NotStarted -> StandardTxApp(
+                            dataContainer[DataTypes.csvAsList] as ArrayList<String>,
+                            appType
+                        )
+
                         else -> throw RuntimeException("Usage not found")
                     }
                 }

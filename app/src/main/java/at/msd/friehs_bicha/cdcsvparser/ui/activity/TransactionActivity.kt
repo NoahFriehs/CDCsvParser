@@ -41,16 +41,19 @@ class TransactionActivity : AppCompatActivity() {
         val tvTxHash = findViewById<TextView>(R.id.tv_txHash)
         val tvTxHashValue = findViewById<TextView>(R.id.tv_txHashValue)
 
-        tvType.text = if (transaction is CroCardTransaction) (transaction as CroCardTransaction).transactionTypeString else transaction.transactionType.toString()
+        tvType.text =
+            if (transaction is CroCardTransaction) (transaction as CroCardTransaction).transactionTypeString else transaction.transactionType.toString()
         tvDate.text = transaction.date.toString()
         tvDescription.text = transaction.description
-        tvAmountValue.text = StringHelper.formatAmountToString(transaction.amount, 6, transaction.currencyType)
-        if (transaction.toAmount != null && transaction.toCurrency != null)
-        {
-            tvToAmountValue.text = StringHelper.formatAmountToString(transaction.toAmount!!, 6, transaction.toCurrency!!)
-        }
-        else
-        {
+        tvAmountValue.text =
+            StringHelper.formatAmountToString(transaction.amount, 6, transaction.currencyType)
+        if (transaction.toAmount != null && transaction.toCurrency != null) {
+            tvToAmountValue.text = StringHelper.formatAmountToString(
+                transaction.toAmount!!,
+                6,
+                transaction.toCurrency!!
+            )
+        } else {
             tvToAmount.visibility = TextView.GONE
         }
         if (transaction.transHash != null)
