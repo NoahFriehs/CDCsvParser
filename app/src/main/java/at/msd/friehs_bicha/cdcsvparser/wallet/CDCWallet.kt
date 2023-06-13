@@ -105,7 +105,7 @@ class CDCWallet : Wallet, Serializable {
          * @return
          */
         fun fromDb(wallet: HashMap<String, *>): CDCWallet {
-            val walletId = wallet["walletId"] as Int
+            val walletId = wallet["walletId"] as Long
             val currencyType = wallet["currencyType"] as String
             val amount = wallet["amount"] as Double
             val amountBonus = wallet["amountBonus"] as Double
@@ -121,7 +121,7 @@ class CDCWallet : Wallet, Serializable {
                 }
             }
             return CDCWallet(
-                walletId.toLong(),
+                walletId,
                 currencyType,
                 amount,
                 amountBonus,

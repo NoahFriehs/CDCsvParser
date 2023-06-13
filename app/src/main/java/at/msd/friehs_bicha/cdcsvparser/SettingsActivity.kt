@@ -158,7 +158,7 @@ class SettingsActivity : AppCompatActivity() {
                         "Settings-DeleteUser",
                         "User needs to reauthenticate."
                     )   //TODO handle this(user has to relogin)
-                    Toast.makeText(this, "User needs to reauthenticate.", Toast.LENGTH_LONG)
+                    Toast.makeText(this, resources.getString(R.string.user_needs_to_autheticate), Toast.LENGTH_LONG)
                         .show()
                 }
             }

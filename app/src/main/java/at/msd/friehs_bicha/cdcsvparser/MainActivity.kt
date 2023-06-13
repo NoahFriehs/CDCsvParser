@@ -461,7 +461,11 @@ class MainActivity : AppCompatActivity() {
             .addOnSuccessListener { document ->   //TODO handle error(Exceptions wenn data nicht vorhanden ist/nicht passt)
                 if (document != null) {
                     val userMap = document.data as HashMap<String, Any>?
-                    val appSettings = userMap!!["appSettings"] as HashMap<String, Any>?
+                    if (userMap == null) {
+                        Toast.makeText(this, "Error loading data", Toast.LENGTH_SHORT).show()
+                        return@addOnSuccessListener
+                    }
+                    val appSettings = userMap["appSettings"] as HashMap<String, Any>?
 
                     val dbVersion = appSettings?.get("dbVersion")
 
