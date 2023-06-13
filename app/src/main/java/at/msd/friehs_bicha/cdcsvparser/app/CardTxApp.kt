@@ -25,12 +25,14 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
             try {
                 this.transactions.addAll(getTransactions(file))
             } catch (e: Exception) {
+                FileLog.e("CardTxApp", " Error: $e")
                 e.printStackTrace()
             }
             FileLog.i("CardTxApp", "We have " + this.transactions.size + " transaction(s).")
             try {
                 fillWallet()
             } catch (e: Exception) {
+                FileLog.e("CardTxApp", " Error: $e")
                 e.printStackTrace()
             }
             FileLog.i("CardTxApp", "we have " + this.wallets.size + " different transactions.")
@@ -51,7 +53,10 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
                 ArrayList<CroCardTransaction>()
             }
 
-            else -> throw RuntimeException("Wrong file format")
+            else -> {
+                FileLog.e("cardTxApp", "getTransactions: Wrong file format, AppType: ${AppTypeIdentifier.getAppType(input)}")
+                throw RuntimeException("Wrong file format")
+            }
         }
     }
 

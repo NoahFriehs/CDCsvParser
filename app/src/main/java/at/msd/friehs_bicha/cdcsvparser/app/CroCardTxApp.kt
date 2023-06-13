@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.app
 
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
@@ -25,12 +26,14 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
             try {
                 this.transactions.addAll(getTransactions(file))
             } catch (e: Exception) {
+                FileLog.e("CroCardTxApp", " Error: $e")
                 e.printStackTrace()
             }
             println("We have " + this.transactions.size + " transaction(s).")
             try {
                 fillWallet()
             } catch (e: Exception) {
+                FileLog.e("CroCardTxApp", " Error: $e")
                 e.printStackTrace()
             }
             println("we have " + this.wallets.size + " different transactions.")
@@ -58,6 +61,7 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
         try {
             fillWallet(true)
         } catch (e: Exception) {
+            FileLog.e("CroCardTxApp", " Error: $e")
             e.printStackTrace()
         }
         this.amountTxFailed = amountTxFailed

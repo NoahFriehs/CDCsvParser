@@ -38,6 +38,7 @@ class AppModel : BaseAppModel, Serializable {
         )
         isRunning = true
         if (txApp!!.amountTxFailed > 0) {
+            FileLog.e("AppModel", "txApp: amountTxFailed, AppType: $appType")
             throw RuntimeException("$txApp.amountTxFailed transaction(s) failed")
         }
     }
@@ -96,7 +97,10 @@ class AppModel : BaseAppModel, Serializable {
                     }
                 }
 
-                else -> throw RuntimeException("Usage not found")
+                else  ->{
+                    FileLog.e("AppModel", "CroCard: Usage not found, AppType: $appType")
+                    throw RuntimeException("Usage not found")
+                }
             }
             return totalPrice
         }
@@ -117,6 +121,7 @@ class AppModel : BaseAppModel, Serializable {
             }
             valueOfAll
         } catch (e: Exception) {
+            FileLog.e("AppModel.totalBonus", "Exception: $e")
             0.0
         }
 
@@ -133,6 +138,7 @@ class AppModel : BaseAppModel, Serializable {
             valueOfAll += price * amount.toDouble()
             valueOfAll
         } catch (e: Exception) {
+            FileLog.e("AppModel.getTotalBonus", "Exception: $e")
             0.0
         }
     }
@@ -173,6 +179,7 @@ class AppModel : BaseAppModel, Serializable {
             valueOfWallet = price * amount.toDouble()
             valueOfWallet
         } catch (e: Exception) {
+            FileLog.e("AppModel.getValueOfAssets", "Exception: $e")
             0.0
         }
     }
@@ -262,7 +269,10 @@ class AppModel : BaseAppModel, Serializable {
                         map[R.id.coinGeckoApiLabel.toString()] = null
                     }
 
-                    else -> throw RuntimeException("Usage not found")
+                    else ->{
+                        FileLog.e("AppModel", "ParseMap: AppType not found, AppType: $appType" )
+                        throw RuntimeException("Usage not found")
+                    }
                 }
                 map
             } catch (e: Exception) {
@@ -369,9 +379,12 @@ class AppModel : BaseAppModel, Serializable {
                 )
             }
 
-            else -> throw RuntimeException("Usage not found")
+            else -> {
+                FileLog.e("AppModel", "CroCard: Usage not found, AppType: $appType")
+                throw RuntimeException("Usage not found")
+            }
         }
-        return appHashMap
+                return appHashMap
     }
 
 

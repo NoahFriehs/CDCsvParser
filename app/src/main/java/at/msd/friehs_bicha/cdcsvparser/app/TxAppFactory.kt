@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.app
 
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
@@ -48,7 +49,9 @@ class TxAppFactory {
                             dataContainer[DataTypes.amountTxFailed] as Long
                         )
 
-                        else -> throw RuntimeException("Usage not found")
+                        else ->{
+                            FileLog.e("TxAppFactory", "CdCsvParser: Usage not found, AppStatus: $appStatus")
+                            throw RuntimeException("Usage not found")}
                     }
                 }
 
@@ -65,7 +68,10 @@ class TxAppFactory {
                             dataContainer[DataTypes.amountTxFailed] as Long
                         )
 
-                        else -> throw RuntimeException("Usage not found")
+                        else -> {
+                            FileLog.e("TxAppFactory", "CroCard: Usage not found, AppStatus: $appStatus")
+                            throw RuntimeException("Usage not found")
+                        }
                     }
                 }
 
@@ -75,11 +81,17 @@ class TxAppFactory {
                             dataContainer[DataTypes.csvAsList] as ArrayList<String>, appType
                         )
 
-                        else -> throw RuntimeException("Usage not found")
+                        else -> {
+                            FileLog.e("TxAppFactory", "Default: Usage not found, AppStatus: $appStatus")
+                            throw RuntimeException("Usage not found")
+                        }
                     }
                 }
 
-                else -> throw RuntimeException("Usage not found")
+                else -> {
+                    FileLog.e("TxAppFactory", "createTxApp: Usage not found, AppType: $appType")
+                    throw RuntimeException("Usage not found")
+                }
             }
             return txApp
         }
