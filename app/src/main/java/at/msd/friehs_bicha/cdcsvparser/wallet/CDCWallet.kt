@@ -95,4 +95,41 @@ class CDCWallet : Wallet, Serializable {
         moneySpent = moneySpent.subtract(nativeAmount)
     }
 
+
+    companion object {
+
+        /**
+         * Converts a HashMap<String, *> to a CDCWallet object
+         *
+         * @param wallet
+         * @return
+         */
+        fun fromDb(wallet: HashMap<String, *>): CDCWallet {
+            val walletId = wallet["walletId"] as Int
+            val currencyType = wallet["currencyType"] as String
+            val amount = wallet["amount"] as Double
+            val amountBonus = wallet["amountBonus"] as Double
+            val moneySpent = wallet["moneySpent"] as Double
+            val outsideWallet = wallet["outsideWallet"] as Boolean
+            val transactionsList =
+                wallet["transactions"] as MutableList<java.util.HashMap<String, *>?>?
+            val transactions = ArrayList<Transaction?>()
+
+            transactionsList?.forEach { transactionMap ->
+                transactionMap?.let {
+                    transactions.add(Transaction.fromDb(it))
+                }
+            }
+            return CDCWallet(
+                walletId.toLong(),
+                currencyType,
+                amount,
+                amountBonus,
+                moneySpent,
+                outsideWallet,
+                transactions
+            )
+        }
+    }
+
 }

@@ -38,6 +38,13 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
         }
     }
 
+    /**
+     * CroCardTxApp constructor
+     *
+     * @param tXs CroCardTransaction list
+     * @param wTXs CroCardWallet list
+     * @param amountTxFailed amount of failed transactions
+     */
     constructor(
         tXs: MutableList<CroCardTransaction>,
         wTXs: MutableList<CroCardWallet>,
@@ -98,6 +105,11 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
         return transactions
     }
 
+    /**
+     * Fill wallets with transactions
+     *
+     * @param walletsExisting wallets existing
+     */
     private fun fillWallet(walletsExisting: Boolean = false) {
         println("Filling Wallets")
         if (!walletsExisting) {

@@ -173,10 +173,46 @@ open class Transaction : Serializable {
 
             return when (appType) {
                 AppType.CdCsvParser -> fromCdCsvParserCsvLine(line)
+                AppType.Default -> fromDefaultCsvLine(line)
                 else -> {
                     throw IllegalArgumentException("AppType not supported")
                 }
             }
+        }
+
+
+        /**
+         * Converts a line from the CSV file to a Transaction object
+         *
+         * @param line
+         * @return
+         */
+        private fun fromDefaultCsvLine(line: String): Transaction? {
+            val sa = line.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            if (sa.size == 10 || sa.size == 11) {
+                val t = Transaction(
+                    sa[0],
+                    sa[1],
+                    sa[2],
+                    Converter.amountConverter(sa[3]),
+                    Converter.amountConverter(sa[7]),
+                    Converter.ttConverter(sa[9])
+                )
+                if (sa.size == 11) t.transHash = sa[10]
+                if (Converter.ttConverter(sa[9]) == TransactionType.viban_purchase) {
+                    t.toCurrency = sa[4]
+                    t.toAmount = Converter.amountConverter(sa[5])
+                }
+                return t
+            } else {
+                println(sa.contentToString())
+                println(sa.size)
+                FileLog.e(
+                    "TxApp",
+                    "Error while processing the following transaction: $line"
+                )
+            }
+            return null
         }
 
 

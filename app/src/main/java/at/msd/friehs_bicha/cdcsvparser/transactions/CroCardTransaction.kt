@@ -80,4 +80,33 @@ open class CroCardTransaction(
             transactionType: $transactionTypeString
             """.trimIndent()
     }
+
+    companion object {
+
+        /**
+         * Converts a HashMap<String, *> to a CroCardTransaction object
+         *
+         * @param transaction
+         * @return
+         */
+        fun fromDb(transaction: HashMap<String, *>): CroCardTransaction {
+            return CroCardTransaction(
+                transaction["transactionId"] as Long,
+                transaction["description"] as String,
+                (transaction["walletId"] as Long).toInt(),
+                (transaction["fromWalletId"] as Long).toInt(),
+                (transaction["date"] as Date),
+                transaction["currencyType"] as String,
+                transaction["amount"] as Double,
+                transaction["nativeAmount"] as Double,
+                transaction["amountBonus"] as Double,
+                transaction["transactionType"] as String,
+                transaction["transHash"] as String?,
+                transaction["toCurrency"] as String?,
+                transaction["toAmount"] as Double?,
+                transaction["outsideTransaction"] as Boolean,
+                transaction["transactionTypeString"] as String
+            )
+        }
+    }
 }

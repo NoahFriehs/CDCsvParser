@@ -36,10 +36,6 @@ class SignUpActivity : AppCompatActivity() {
                     getString(R.string.error_signup_pw_empty)
                 return@setOnClickListener
             }
-            if (false) {
-                // Handle email format //TODO
-                return@setOnClickListener
-            }
             if (password.length < 6) {
                 // Handle password length
                 findViewById<TextView>(R.id.tv_error_message).text =

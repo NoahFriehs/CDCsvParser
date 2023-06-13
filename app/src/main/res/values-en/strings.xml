@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CDCsvParser</string>
+    <string name="welcome_message">Welcome to CDCsvParser</string>
+    <string name="upload_file">Upload new File</string>
+    <string name="history_text">Or select one of your old uploads:</string>
+    <string name="history">History</string>
+    <string name="assets_value_label">Value of assets:</string>
+    <string name="money_spent_label">Money spent</string>
+    <string name="profit_loss">Profit/Loss</string>
+    <string name="rewards_earned">Rewards earned</string>
+    <string name="filter_by_asset">Filter by asset</string>
+    <string name="all_transactions">All transactions</string>
+    <string name="choose_asset">choose asset</string>
+    <string name="amount_of_asset">Amount of asset</string>
+    <string name="all_transactions_regarding">All transactions regarding BTC</string>
+    <string name="show_history">Show history</string>
+    <string name="coinGeckoAttribution">All prices provided by \n<a href="https://min-api.cryptocompare.com/">CryptoCompare API</a></string>
+    <string name="settings">Settings</string>
+    <string name="use_strict_wallet_type">Use strict wallet type(Only for card)</string>
+    <string name="email">Email:</string>
+    <string name="password">Password:</string>
+    <string name="login">Login</string>
+    <string name="signup">Signup</string>
+    <string name="error_login_failed">Login failed</string>
+    <string name="error_empty_fields">Please fill out all fileds</string>
+    <string name="load_latest_from_database">Load latest from Database</string>
+    <string name="error_signup_email_empty">Signup failed: Email empty</string>
+    <string name="error_signup_pw_empty">Signup failed: Password empty</string>
+    <string name="error_signup_pw_to_short">Signup failed: Password too short, min 6 characters</string>
+    <string name="error_signup_failed">\"Signup failed: \"</string>
+    <string name="use_app_without_login">Use App without Login</string>
+    <string name="logout">Logout</string>
+    <string name="delete_account">Delete Account</string>
+    <string name="password_forgotten">Password forgotten</string>
+    <string name="error_noEmail">Please enter your email address</string>
+    <string name="title_activity_starting">StartingActivity</string>
+    <string name="allow_permissions_for_storage">Allow Permissions for Storage</string>
+    <string name="title_activity_transaction">TransactionActivity</string>
+    <string name="transaction_type">Type</string>
+    <string name="amount">Amount:</string>
+    <string name="to_amount">to Amount:</string>
+    <string name="transaction_hash">Transaction Hash:</string>
+    <string name="about_us">About Us</string>
+    <string name="title_activity_about_us">AboutUsActivity</string>
+    <string name="contributers">Contributers:</string>
+    <string name="names">Names:</string>
+    <string name="git">Git:</string>
+    <string name="if_you_want_to_support_us_the_contributers_please_use_the_btc_or_eth_adresses_provided_below">If you want to support us (the contributers) please use the BTC or ETH adresses provided below.</string>
+    <string name="we_hope_our_app_is_useful_and_easy_to_use">We hope our app is useful and easy to use! :)</string>
+    <string name="if_you_found_a_bug_or_ran_into_a_problem_feel_free_to_contact_us_under">If you found a bug or ran into a problem feel free to contact us under:</string>
+    <string name="no_internet_connection">No Internet Connection</string>
+</resources>

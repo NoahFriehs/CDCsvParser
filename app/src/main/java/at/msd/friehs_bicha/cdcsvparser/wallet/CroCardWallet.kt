@@ -225,5 +225,41 @@ class CroCardWallet(
 
     companion object {
         var tts = ArrayList<String?>()
+
+        /**
+         * Converts a HashMap<String, *> to a CroCardWallet object
+         *
+         * @param wallet
+         * @return
+         */
+        fun fromDb(wallet: HashMap<String, *>): CroCardWallet {
+            val walletId = wallet["walletId"] as Long
+            val currencyType = wallet["currencyType"] as String?
+            val amount = wallet["amount"] as Double
+            val amountBonus = wallet["amountBonus"] as Double
+            val moneySpent = wallet["moneySpent"] as Double
+            val isOutsideWallet = wallet["outsideWallet"] as Boolean
+            val transactionType = wallet["transactionType"] as String
+
+            val transactionsList = wallet["transactions"] as MutableList<java.util.HashMap<String, *>?>?
+            val transactions = ArrayList<CroCardTransaction?>()
+
+            transactionsList?.forEach { transactionMap ->
+                transactionMap?.let {
+                    transactions.add(CroCardTransaction.fromDb(it))
+                }
+            }
+
+            return CroCardWallet(
+                walletId,
+                currencyType,
+                amount,
+                amountBonus,
+                moneySpent,
+                isOutsideWallet,
+                transactions,
+                transactionType
+            )
+        }
     }
 }

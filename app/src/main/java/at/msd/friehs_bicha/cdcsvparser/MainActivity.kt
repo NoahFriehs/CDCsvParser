@@ -153,9 +153,9 @@ class MainActivity : AppCompatActivity() {
         val dateFormat = SimpleDateFormat("d.M hh:mm")
         var filename: String
         var date: Date?
-        for (i in files!!.indices) {
-            if (files!![i].name.equals("log")) continue //TODO make a better override if more files exist
-            filename = files!![i].name
+        for (f in files!!) {
+            if (!f.isFile || !f.name.endsWith(".csv")) continue
+            filename = f.name
             filename = filename.substring(0, filename.length - 4)
             try {
                 date = sdf.parse(filename)
@@ -423,8 +423,7 @@ class MainActivity : AppCompatActivity() {
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         val db = Firebase.firestore
 
-        db.collection("user").document(uid)
-            .delete()  //TODO: use this line in production but for testing it is better to not delete the data
+        db.collection("user").document(uid).delete()
 
         val appSettings = AppSettings(
             uid,
@@ -520,10 +519,10 @@ class MainActivity : AppCompatActivity() {
                     }
                 } else {
                     // Handle database error    //TODO: handle error
-                    val a = 0
+
                 }
             }.addOnFailureListener { exception ->
-                val a = 0   //TODO: handle error
+                   //TODO: handle error
             }
     }
 

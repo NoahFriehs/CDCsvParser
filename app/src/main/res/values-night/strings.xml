@@ -19,7 +19,7 @@
     <string name="error_noEmail">Please enter your email address</string>
     <string name="allow_permissions_for_storage">Allow Permissions for Storage</string>
     <string name="transaction_type">Type</string>
-    <string name="default_date">01.01.1970</string>
+    <string name="default_date" translatable="false">01.01.1970</string>
     <string name="amount">Amount:</string>
     <string name="to_amount">to Amount:</string>
     <string name="transaction_hash">Transaction Hash:</string>

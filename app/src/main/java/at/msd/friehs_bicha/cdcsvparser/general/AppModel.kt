@@ -11,7 +11,6 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.*
 import java.io.Serializable
 import java.math.BigDecimal
 import java.util.*
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * The parser control for the Parser
@@ -92,7 +91,6 @@ class AppModel : BaseAppModel, Serializable {
 
                 AppType.CroCard -> {
                     val wallets = txApp!!.wallets.clone() as ArrayList<Wallet>
-                    //wallets.removeAt(0)
                     for (wallet in wallets) {
                         totalPrice = totalPrice.add(wallet.amount)
                     }
@@ -110,14 +108,14 @@ class AppModel : BaseAppModel, Serializable {
      */
     private val totalBonus: Double
         get() = try {
-            val valueOfAll = AtomicReference(0.0)   //TODO not necessary
+            var valueOfAll = 0.0
             for (wallet in txApp!!.wallets) {
                 if (wallet.currencyType == "EUR") continue
                 val price = wallet.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
                 val amount = wallet.amountBonus
-                valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
+                valueOfAll += price * amount.toDouble()
             }
-            valueOfAll.get()
+            valueOfAll
         } catch (e: Exception) {
             0.0
         }
@@ -129,11 +127,11 @@ class AppModel : BaseAppModel, Serializable {
      */
     private fun getTotalBonus(wallet: Wallet?): Double {
         return try {
-            val valueOfAll = AtomicReference(0.0)   //TODO not necessary
+            var valueOfAll = 0.0
             val price = wallet!!.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
             val amount = wallet.amountBonus
-            valueOfAll.updateAndGet { v: Double -> v + price * amount.toDouble() }
-            valueOfAll.get()
+            valueOfAll += price * amount.toDouble()
+            valueOfAll
         } catch (e: Exception) {
             0.0
         }

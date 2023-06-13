@@ -60,7 +60,7 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
          * Create transactions from csv list
          *
          * @param _input Input list
-         * @param _appType App type
+         * @param _appType App type (optional)
          * @param app App
          * @return List of transactions
          */
@@ -104,6 +104,7 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
         ): ArrayList<String> {
             return when (appType) {
                 AppType.CdCsvParser -> prepareCDCInput(input)
+                AppType.Default -> prepareCDCInput(input)
                 else -> throw IllegalArgumentException("Unknown app type")
             }
         }
@@ -160,8 +161,13 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
         private fun addTransaction(transaction: Transaction, app: BaseApp) {
             when (app.appType) {
                 AppType.CdCsvParser -> addCDCTransaction(transaction, app)
+                AppType.Default -> addDefaultTransaction(transaction, app)
                 else -> throw IllegalArgumentException("Unknown app type")
             }
+        }
+
+        private fun addDefaultTransaction(transaction: Transaction, app: BaseApp) {
+            addCDCTransaction(transaction, app)
         }
 
 
@@ -183,11 +189,14 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                     transaction
                 )
 
-                TransactionType.supercharger_deposit, TransactionType.crypto_earn_program_created, TransactionType.lockup_lock, TransactionType.supercharger_withdrawal, TransactionType.crypto_earn_program_withdrawn,
+                TransactionType.supercharger_deposit, TransactionType.crypto_earn_program_created, TransactionType.lockup_lock,
+                TransactionType.supercharger_withdrawal, TransactionType.crypto_earn_program_withdrawn,
                 TransactionType.rewards_platform_deposit_credited -> {
                 }
 
-                TransactionType.supercharger_reward_to_app_credited, TransactionType.crypto_earn_interest_paid, TransactionType.referral_card_cashback, TransactionType.reimbursement, TransactionType.card_cashback_reverted, TransactionType.admin_wallet_credited, TransactionType.crypto_wallet_swap_credited, TransactionType.crypto_wallet_swap_debited -> {
+                TransactionType.supercharger_reward_to_app_credited, TransactionType.crypto_earn_interest_paid,
+                TransactionType.referral_card_cashback, TransactionType.reimbursement, TransactionType.card_cashback_reverted,
+                TransactionType.admin_wallet_credited, TransactionType.crypto_wallet_swap_credited, TransactionType.crypto_wallet_swap_debited -> {
                     transaction.amountBonus = transaction.amount
                     w.addToWallet(transaction)
                 }
@@ -273,7 +282,6 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
          */
         private fun vibanPurchase(transaction: Transaction, app: BaseApp) {
             if (!app.wallets.contains(getWallet(transaction.toCurrency!!, app))) {
-                println("Tx failed: $transaction")
                 FileLog.w("TransactionManager", "Tx failed: $transaction")
             } else {
                 var wv = transaction.toCurrency?.let { getWallet(it, app) } as CDCWallet

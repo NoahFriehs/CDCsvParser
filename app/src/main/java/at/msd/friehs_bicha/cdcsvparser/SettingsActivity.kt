@@ -117,7 +117,7 @@ class SettingsActivity : AppCompatActivity() {
             db.collection("user").document(user!!.uid).set(hashMapOf("deleted" to true))
 
             db.collection("user").document(user.uid).delete().addOnCompleteListener {
-                if (it.isSuccessful) {  //TODO does not work yet
+                if (it.isSuccessful) {
                     FileLog.d("Settings-DeleteUser", "User deleted from database.")
                 } else {
                     FileLog.d("Settings-DeleteUser", "User could not be deleted from database.")

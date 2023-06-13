@@ -32,16 +32,13 @@ class ParseActivity : AppCompatActivity() {
         getAppModel()
         val btnFilter = findViewById<Button>(R.id.btn_filter)
         val btnTx = findViewById<Button>(R.id.btn_all_tx)
-        val apiInfo = findViewById<TextView>(R.id.coinGeckoApiLabel)
-        apiInfo.text =
-            "All prices provided by \n CryptoCompare API"   //overwrites the link, bc we CG api is down atm
-        btnFilter.setOnClickListener { view: View? ->
+        btnFilter.setOnClickListener {
             if (appModel!!.isRunning) {
                 val intent = Intent(this@ParseActivity, WalletViewActivity::class.java)
                 startActivity(intent)
             }
         }
-        btnTx.setOnClickListener { view: View? ->
+        btnTx.setOnClickListener {
             if (appModel!!.isRunning) {
                 val intent = Intent(this@ParseActivity, TransactionsActivity::class.java)
                 startActivity(intent)
@@ -87,12 +84,18 @@ class ParseActivity : AppCompatActivity() {
             val textView = findViewById<TextView>(resources.getIdentifier(key, "id", packageName))
             if (textView == null) {
                 FileLog.e("ParseActivity", "textView is null for key: $key")
-                return  //TODO set here Breakpoint to see if there are any problems with the ids(should only occur if the xml file is changed or programmer error)
+                return
             }
-            if (value == null) {
-                runOnUiThread { textView.visibility = View.INVISIBLE }
-            } else {
-                runOnUiThread { textView.text = value }
+            when (value) {
+                "no internet connection" -> {
+                    runOnUiThread { textView.text = resources.getString(R.string.no_internet_connection) }
+                }
+                null -> {
+                    runOnUiThread { textView.visibility = View.INVISIBLE }
+                }
+                else -> {
+                    runOnUiThread { textView.text = value }
+                }
             }
         }
     }
