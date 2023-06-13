@@ -436,7 +436,6 @@ class AppModel : BaseAppModel, Serializable {
         val defaultLocale = Locale.getDefault()
         val dateFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", defaultLocale)
 
-
         val map: MutableMap<String, String?> = HashMap()
         map[R.id.tv_transactionId.toString()] = transaction.transactionId.toString()
         map[R.id.tv_date.toString()] = transaction.date?.let { dateFormat.format(it).toString() }
