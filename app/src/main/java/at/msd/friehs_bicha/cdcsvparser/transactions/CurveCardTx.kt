@@ -2,6 +2,9 @@ package at.msd.friehs_bicha.cdcsvparser.transactions
 
 import java.math.BigDecimal
 
+/**
+ * Class for Curve Card Transactions
+ */
 class CurveCardTx(
     date: String,
     transactionTypeString: String,

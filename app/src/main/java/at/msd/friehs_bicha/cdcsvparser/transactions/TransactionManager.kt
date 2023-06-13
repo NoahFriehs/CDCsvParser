@@ -12,6 +12,13 @@ import com.github.mikephil.charting.utils.ColorTemplate
 import java.math.BigDecimal
 import java.util.Date
 
+/**
+ * Transaction Manager
+ *
+ * @property transactions List of transactions
+ * @property cumulativeAmounts Map of cumulative amounts
+ * @constructor Create empty Transaction Manager
+ */
 class TransactionManager(private val transactions: MutableList<Transaction>?) {
     private val cumulativeAmounts: MutableMap<Date, BigDecimal> = mutableMapOf()
 
@@ -49,13 +56,21 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
 
     companion object {
 
+        /**
+         * Create transactions from csv list
+         *
+         * @param _input Input list
+         * @param _appType App type
+         * @param app App
+         * @return List of transactions
+         */
         fun txFromCsvList(
             _input: ArrayList<String>,
             _appType: AppType?,
             app: BaseApp
         ): ArrayList<Transaction> {
             val transactions = ArrayList<Transaction>()
-            val currencys = ArrayList<String>()
+            val currencies = ArrayList<String>()
             val appType = _appType ?: AppTypeIdentifier.getAppType(_input)
             app.appType = appType
             val input = prepareInput(_input, appType, app)
@@ -63,18 +78,25 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                 val tx = Transaction.fromCsvLine(line, appType)
                 if (tx != null) {
                     transactions.add(tx)
-                    if (!currencys.contains(tx.currencyType)) currencys.add(tx.currencyType)
+                    if (!currencies.contains(tx.currencyType)) currencies.add(tx.currencyType)
                 } else {
                     app.addFailedTx(line)
                 }
             }
 
-            createWallets(currencys, app)
+            createWallets(currencies, app)
             transactions.forEach { addTransaction(it, app) }
 
             return transactions
         }
 
+        /**
+         * Prepare input
+         *
+         * @param input
+         * @param appType
+         * @param app
+         */
         private fun prepareInput(
             input: ArrayList<String>,
             appType: AppType,
@@ -86,35 +108,62 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             }
         }
 
+
+        /**
+         * Prepare CDC input
+         *
+         * @param input
+         * @return
+         */
         private fun prepareCDCInput(input: ArrayList<String>): ArrayList<String> {
             input.removeAt(0)
             return input
         }
 
 
+        /**
+         * Creates the wallet for the given currency types
+         *
+         * @param currencies the currency types
+         * @param app the app
+         */
         private fun createWallets(
-            currencys: ArrayList<String>,
+            currencies: ArrayList<String>,
             app: BaseApp
         ) {
             when (app.appType) {
-                AppType.CdCsvParser -> createCDCWallets(currencys, app)
+                AppType.CdCsvParser -> createCDCWallets(currencies, app)
                 else -> throw IllegalArgumentException("Unknown app type")
             }
         }
 
-        private fun createCDCWallets(currencys: ArrayList<String>, app: BaseApp) {
-            for (t in currencys) {
+
+        /**
+         * Creates CDC wallets for the given currency types
+         *
+         * @param currencies the currency types
+         * @param app the app
+         */
+        private fun createCDCWallets(currencies: ArrayList<String>, app: BaseApp) {
+            for (t in currencies) {
                 app.wallets.add(CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, app, false))
                 app.outsideWallets.add(CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, app, true))
             }
         }
 
+        /**
+         * Add transaction to the respective wallet
+         *
+         * @param transaction the transaction to be added
+         * @param app the app
+         */
         private fun addTransaction(transaction: Transaction, app: BaseApp) {
             when (app.appType) {
                 AppType.CdCsvParser -> addCDCTransaction(transaction, app)
                 else -> throw IllegalArgumentException("Unknown app type")
             }
         }
+
 
         /**
          * Adds a transactions to the respective CDCWallet
@@ -171,6 +220,15 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             }
         }
 
+
+        /**
+         * Get wallet
+         *
+         * @param currencyType
+         * @param app
+         * @param getOutsideWallet
+         * @return
+         */
         private fun getWallet(
             currencyType: String,
             app: BaseApp,
@@ -185,6 +243,7 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             }
             return CDCWallet(currencyType, BigDecimal.ZERO, BigDecimal.ZERO, app, getOutsideWallet)
         }
+
 
         /**
          * Handles crypto withdrawal
@@ -205,6 +264,7 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             wt.removeFromWallet(transaction.amount, BigDecimal.ZERO)
             transaction.isOutsideTransaction = true
         }
+
 
         /**
          * Handles crypto viban purchase
@@ -230,6 +290,5 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                 }
             }
         }
-
     }
 }

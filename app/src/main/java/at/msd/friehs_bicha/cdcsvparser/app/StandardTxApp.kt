@@ -53,6 +53,7 @@ class StandardTxApp : BaseApp, Serializable {
                     wallet.txApp = this
                 })
             }
+
             else -> throw NotImplementedError("AppType $appType not implemented")
         }
 

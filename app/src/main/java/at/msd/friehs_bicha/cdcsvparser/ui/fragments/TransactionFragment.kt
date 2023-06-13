@@ -11,7 +11,7 @@ import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 
 /**
- * A fragment representing a list of Items.
+ * A fragment representing a list of Transactions.
  */
 class TransactionFragment(val transactions: List<Transaction>) : Fragment() {
 

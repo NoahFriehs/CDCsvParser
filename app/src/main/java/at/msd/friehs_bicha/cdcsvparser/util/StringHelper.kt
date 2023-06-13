@@ -3,6 +3,9 @@ package at.msd.friehs_bicha.cdcsvparser.util
 import java.math.BigDecimal
 import java.text.DecimalFormat
 
+/**
+ * Helper-class to manipulate Strings
+ */
 object StringHelper {
 
 

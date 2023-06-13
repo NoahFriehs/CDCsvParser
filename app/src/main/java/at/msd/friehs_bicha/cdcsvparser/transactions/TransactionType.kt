@@ -29,6 +29,9 @@ enum class TransactionType {
     STRING //for Card und unknown things
 }
 
+/**
+ * Convert String to TransactionType
+ */
 fun stringToTransactionType(str: String?): TransactionType {
     return try {
         if (str != null) {

@@ -53,7 +53,9 @@ open class Transaction : Serializable {
         nativeAmount: BigDecimal?,
         transactionType: TransactionType?
     ) {
-        if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType)
+        if (!CurrencyType.currencies.contains(currencyType)) CurrencyType.currencies.add(
+            currencyType
+        )
         this.date = Converter.dateConverter(date)
         this.description = description
         this.currencyType = currencyType
@@ -80,7 +82,9 @@ open class Transaction : Serializable {
         toAmount: BigDecimal?,
         walletId: Int
     ) {
-        if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType)
+        if (!CurrencyType.currencies.contains(currencyType)) CurrencyType.currencies.add(
+            currencyType
+        )
         this.transactionId = transactionId
         this.date = date
         this.description = description
@@ -96,7 +100,7 @@ open class Transaction : Serializable {
     }
 
     constructor(transaction: DBTransaction) {
-        if (!CurrencyType.currencys.contains(transaction.currencyType)) CurrencyType.currencys.add(
+        if (!CurrencyType.currencies.contains(transaction.currencyType)) CurrencyType.currencies.add(
             transaction.currencyType
         )
         this.transactionId = transaction.transactionId.toInt()
@@ -129,7 +133,9 @@ open class Transaction : Serializable {
         toAmount: Double?,
         outsideTransaction: Boolean
     ) {
-        if (!CurrencyType.currencys.contains(currencyType)) CurrencyType.currencys.add(currencyType)
+        if (!CurrencyType.currencies.contains(currencyType)) CurrencyType.currencies.add(
+            currencyType
+        )
         this.transactionId = transactionId.toInt()
         this.date = date
         this.description = description
@@ -180,8 +186,7 @@ open class Transaction : Serializable {
          * @param transaction
          * @return
          */
-        fun fromDb(transaction: HashMap<String, *>): Transaction
-        {
+        fun fromDb(transaction: HashMap<String, *>): Transaction {
             return Transaction(
                 transaction["transactionId"] as Long,
                 transaction["description"] as String,

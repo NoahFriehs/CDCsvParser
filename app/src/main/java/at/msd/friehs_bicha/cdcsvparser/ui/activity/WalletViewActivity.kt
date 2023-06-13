@@ -3,7 +3,6 @@ package at.msd.friehs_bicha.cdcsvparser.ui.activity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.KeyEvent
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -16,6 +15,9 @@ import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 
+/**
+ * Activity for the wallet view page (wallet list)
+ */
 class WalletViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,12 +99,20 @@ class WalletViewActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable) {
                 val text = editText.text.toString()
 
-                if(text == ""){
-                    sortedWallets = sortWallets(wallets, spinnerValueSpinner.selectedItem.toString(), spinnerTypeSpinner.selectedItem.toString())
-                }else{
+                if (text == "") {
+                    sortedWallets = sortWallets(
+                        wallets,
+                        spinnerValueSpinner.selectedItem.toString(),
+                        spinnerTypeSpinner.selectedItem.toString()
+                    )
+                } else {
                     sortedWallets.clear()
-                    sortedWallets.addAll(filterWalletsByUserSearch(wallets,text))
-                    sortedWallets = sortWallets(sortedWallets, spinnerValueSpinner.selectedItem.toString(), spinnerTypeSpinner.selectedItem.toString())
+                    sortedWallets.addAll(filterWalletsByUserSearch(wallets, text))
+                    sortedWallets = sortWallets(
+                        sortedWallets,
+                        spinnerValueSpinner.selectedItem.toString(),
+                        spinnerTypeSpinner.selectedItem.toString()
+                    )
                 }
 
                 supportFragmentManager.beginTransaction()
@@ -132,8 +142,8 @@ class WalletViewActivity : AppCompatActivity() {
         sortingType: String
     ): ArrayList<Wallet> {
 
-        if(wallets.size <= 1){
-            return  wallets;
+        if (wallets.size <= 1) {
+            return wallets
         }
         var sortedWallets = wallets
         val isDesc = sortingType == "DESC"

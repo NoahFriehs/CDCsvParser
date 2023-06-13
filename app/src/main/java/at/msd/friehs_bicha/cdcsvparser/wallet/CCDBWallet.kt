@@ -2,6 +2,9 @@ package at.msd.friehs_bicha.cdcsvparser.wallet
 
 import at.msd.friehs_bicha.cdcsvparser.transactions.CCDBTransaction
 
+/**
+ * Saves the wallet data to a DBWallet object
+ */
 class CCDBWallet(wallet: Wallet) : DBWallet(wallet, true) {
 
     var transactionType: String

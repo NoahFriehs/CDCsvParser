@@ -11,6 +11,9 @@ import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import com.google.firebase.auth.FirebaseAuth
 
+/**
+ * Activity for the starting page/ splash screen
+ */
 class StartingActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +31,6 @@ class StartingActivity : ComponentActivity() {
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(intent)
             finish()
-        },1000)
+        }, 1000)
     }
 }

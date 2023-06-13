@@ -1,5 +1,8 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
+/**
+ * Class for static prices
+ */
 class StaticPrices {
     var prices: HashMap<String, Double> = HashMap()
 

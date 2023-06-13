@@ -3,6 +3,9 @@ package at.msd.friehs_bicha.cdcsvparser.transactions
 import java.io.Serializable
 import java.util.Date
 
+/**
+ * Class for DB Transactions
+ */
 open class DBTransaction(transaction: Transaction) : Serializable {
 
     var transactionId: Long
