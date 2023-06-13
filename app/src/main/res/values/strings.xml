@@ -13,7 +13,7 @@
     <string name="all_transactions">All transactions</string>
     <string name="choose_asset">choose asset</string>
     <string name="amount_of_asset">Amount of asset</string>
-    <string name="all_transactions_regarding">All transactions regarding BTC</string>
+    <string name="all_transactions_regarding">"All transactions regarding "</string>
     <string name="show_history">Show history</string>
     <string name="coinGeckoAttribution">All prices provided by \n<a href="https://min-api.cryptocompare.com/">CryptoCompare API</a></string>
     <string name="settings">Settings</string>
@@ -65,4 +65,29 @@
     <string name="no">No</string>
     <string name="deleteQuestion">"Are you sure you want to delete your account?"</string>
     <string name="user_needs_to_autheticate">User needs to reauthenticate.</string>
+    <string name="no_history">No History</string>
+    <string name="permission_needed">Permission needed</string>
+    <string name="permission_needed_text">Permission needed to read files to be able to load the file into the app.</string>
+    <string name="permission_denied">Permission denied, you can\'t use the App without it.</string>
+    <string name="filter_coin_list">filter coin list</string>
+    <string name="sort_by">sort by:</string>
+    <string name="sort_amount">amount €</string>
+    <string name="sort_amount_asset">amount Asset</string>
+    <string name="sort_percent">percent</string>
+    <string name="sort_transactions">transactions</string>
+    <string name="sort_asc">ASC</string>
+    <string name="sort_desc">DESC</string>
+    <string name="transaction_s">transaction(s)</string>
+    <string name="amounttransactions_placeholder">amountTransactions</string>
+    <string name="in">in</string>
+    <string name="percentprofit_placerholder">percentProfit</string>
+    <string name="amountvalue_placeholder">amountValue</string>
+    <string name="eg">~</string>
+    <string name="currency_type_placeholder">Currency Type</string>
+    <string name="btc_placeholder">BTC</string>
+    <string name="date_placeholder">Date</string>
+    <string name="descriptionvalue_placeholder">descriptionValue</string>
+    <string name="assetvalue_placeholder">assetValue</string>
+    <string name="asset_amount">Asset Amount:</string>
+    <string name="description">Description:</string>
 </resources>

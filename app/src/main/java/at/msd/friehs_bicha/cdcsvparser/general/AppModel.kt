@@ -10,6 +10,7 @@ import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import at.msd.friehs_bicha.cdcsvparser.wallet.*
 import java.io.Serializable
 import java.math.BigDecimal
+import java.text.SimpleDateFormat
 import java.util.*
 
 /**
@@ -419,10 +420,13 @@ class AppModel : BaseAppModel, Serializable {
 
     fun getTransactionAdapter(transaction: Transaction): MutableMap<String, String?> {
 
+        val defaultLocale = Locale.getDefault()
+        val dateFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", defaultLocale)
+
 
         val map: MutableMap<String, String?> = HashMap()
         map[R.id.tv_transactionId.toString()] = transaction.transactionId.toString()
-        map[R.id.tv_date.toString()] = transaction.date.toString()
+        map[R.id.tv_date.toString()] = transaction.date?.let { dateFormat.format(it).toString() }
         map[R.id.tv_descriptionValue.toString()] = transaction.description
         map[R.id.tv_amountValue.toString()] =
             formatAmountToString(transaction.nativeAmount.toDouble())

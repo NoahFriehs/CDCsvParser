@@ -26,7 +26,7 @@
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="BTC " />
+        android:text="@string/btc_placeholder" />
 
     <TextView
         android:id="@+id/amount"
@@ -35,7 +35,7 @@
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/currencyType"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="Currency Type" />
+        android:text="@string/currency_type_placeholder" />
 
     <TextView
         android:id="@+id/round"
@@ -44,7 +44,7 @@
         android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
         app:layout_constraintTop_toBottomOf="@id/currencyType"
         app:layout_constraintLeft_toRightOf="@id/amount"
-        android:text="~" />
+        android:text="@string/eg" />
 
     <TextView
         android:id="@+id/amountValue"
@@ -54,7 +54,7 @@
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/currencyType"
         app:layout_constraintLeft_toRightOf="@id/round"
-        android:text="amountValue" />
+        android:text="@string/amountvalue_placeholder" />
 
     <TextView
         android:id="@+id/percentProfit"
@@ -63,7 +63,7 @@
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="percentProfit" />
+        android:text="@string/percentprofit_placerholder" />
 
     <TextView
         android:id="@+id/inString"
@@ -72,7 +72,7 @@
         android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toRightOf="@+id/percentProfit"
-        android:text="in" />
+        android:text="@string/in" />
 
     <TextView
         android:id="@+id/amountTransactions"
@@ -81,7 +81,7 @@
         android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toRightOf="@+id/inString"
-        android:text="amountTransactions" />
+        android:text="@string/amounttransactions_placeholder" />
 
     <TextView
         android:id="@+id/transactionSting"
@@ -91,7 +91,7 @@
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toRightOf="@+id/amountTransactions"
-        android:text="transaction(s)" />
+        android:text="@string/transaction_s" />
 
     <View
         android:id="@+id/divider"

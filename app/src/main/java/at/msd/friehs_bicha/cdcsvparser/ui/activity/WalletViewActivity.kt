@@ -30,13 +30,13 @@ class WalletViewActivity : AppCompatActivity() {
         val wallets = appModel.txApp!!.wallets
 
         val spinnerValueSpinner = findViewById<Spinner>(R.id.sorting_value)
-        val sortingValues = listOf<String>("amount €", "amount Asset", "percent", "transactions")
+        val sortingValues = listOf<String>(resources.getString(R.string.sort_amount), resources.getString(R.string.sort_amount_asset), resources.getString(R.string.sort_percent), resources.getString(R.string.sort_transactions))
         val sortingValuesAdapter =
             ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sortingValues)
         spinnerValueSpinner.adapter = sortingValuesAdapter
 
         val spinnerTypeSpinner = findViewById<Spinner>(R.id.sorting_type)
-        val sortingTypes = listOf<String>("DESC", "ASC")
+        val sortingTypes = listOf<String>(resources.getString(R.string.sort_desc), resources.getString(R.string.sort_asc))
         val sortingTypesAdapter =
             ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, sortingTypes)
         spinnerTypeSpinner.adapter = sortingTypesAdapter
@@ -124,7 +124,7 @@ class WalletViewActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .replace(
                 R.id.fragment_container,
-                WalletListFragment(sortWallets(wallets, "amount €", "DESC"))
+                WalletListFragment(sortWallets(wallets, resources.getString(R.string.sort_amount), resources.getString(R.string.sort_desc)))
             )
             .commit()
     }
@@ -146,20 +146,20 @@ class WalletViewActivity : AppCompatActivity() {
             return wallets
         }
         var sortedWallets = wallets
-        val isDesc = sortingType == "DESC"
+        val isDesc = sortingType == resources.getString(R.string.sort_desc)
         when (sortingValue) {
-            "amount €" -> {
+            resources.getString(R.string.sort_amount) -> {
                 sortedWallets = sortedWallets.sortedByDescending {
                     AppModelManager.getInstance().getValueOfAssets(it)
                 }.toList() as ArrayList<Wallet>
             }
 
-            "amount Asset" -> {
+            resources.getString(R.string.sort_amount_asset) -> {
                 sortedWallets =
                     sortedWallets.sortedByDescending { it.amount }.toList() as ArrayList<Wallet>
             }
 
-            "percent" -> {
+            resources.getString(R.string.sort_percent) -> {
                 sortedWallets = sortedWallets.sortedWith(compareByDescending {
                     val assetValue = AppModelManager.getInstance().getValueOfAssets(it)
                     val percentProfit = assetValue / it.moneySpent.toDouble() * 100
@@ -167,7 +167,7 @@ class WalletViewActivity : AppCompatActivity() {
                 }).toList() as ArrayList<Wallet>
             }
 
-            "transactions" -> {
+            resources.getString(R.string.sort_transactions) -> {
                 sortedWallets =
                     sortedWallets.sortedWith(compareByDescending { it.transactions?.size ?: 0 })
                         .toList() as ArrayList<Wallet>

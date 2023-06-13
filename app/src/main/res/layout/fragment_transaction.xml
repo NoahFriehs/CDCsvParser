@@ -24,7 +24,7 @@
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="Date" />
+        android:text="@string/date_placeholder" />
 
     <TextView
         android:id="@+id/tv_description"
@@ -33,7 +33,7 @@
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/tv_date"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="Description:" />
+        android:text="@string/description" />
 
 
     <TextView
@@ -44,7 +44,7 @@
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/tv_date"
         app:layout_constraintLeft_toRightOf="@id/tv_description"
-        android:text="descriptionValue" />
+        android:text="@string/descriptionvalue_placeholder" />
 
     <TextView
         android:id="@+id/amount"
@@ -53,7 +53,7 @@
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/tv_description"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="Amount:" />
+        android:text="@string/amount" />
 
     <TextView
         android:id="@+id/tv_amountValue"
@@ -63,7 +63,7 @@
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/tv_description"
         app:layout_constraintLeft_toRightOf="@+id/amount"
-        android:text="amountValue" />
+        android:text="@string/amountvalue_placeholder" />
 
     <TextView
         android:id="@+id/tv_assetAmount"
@@ -72,7 +72,7 @@
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="Asset Amount:" />
+        android:text="@string/asset_amount" />
 
     <TextView
         android:id="@+id/tv_assetAmountValue"
@@ -82,7 +82,7 @@
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/amount"
         app:layout_constraintLeft_toRightOf="@+id/tv_assetAmount"
-        android:text="assetValue" />
+        android:text="@string/assetvalue_placeholder" />
 
     <View
         android:id="@+id/divider"

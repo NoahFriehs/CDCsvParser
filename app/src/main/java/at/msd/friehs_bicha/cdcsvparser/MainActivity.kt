@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity() {
                 btnHistory.setTextColor(Color.DKGRAY)
                 btnHistory.background = drawable
                 //Disable the dropdown
-                val items = arrayOf("No History")
+                val items = arrayOf(getResources().getString(R.string.no_history))
                 val adapter =
                     ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
                 dropdown.adapter = adapter

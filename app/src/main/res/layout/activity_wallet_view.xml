@@ -14,7 +14,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:hint="filter coin list"
+        android:hint="@string/filter_coin_list"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginTop="@dimen/basic_start_end_margin"
@@ -31,7 +31,7 @@
         app:layout_constraintTop_toTopOf="@+id/sorting_value"
         app:layout_constraintLeft_toLeftOf="parent"
         android:textSize="@dimen/basic_labels_fontsize"
-        android:text="sort by:"
+        android:text="@string/sort_by"
         />
 
     <Spinner

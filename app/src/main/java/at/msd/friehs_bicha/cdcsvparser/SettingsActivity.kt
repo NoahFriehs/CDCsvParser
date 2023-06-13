@@ -190,8 +190,8 @@ class SettingsActivity : AppCompatActivity() {
             ) {
                 // Display a rationale for the user to grant the permission
                 AlertDialog.Builder(this)
-                    .setTitle("Permission needed")
-                    .setMessage("Permission needed to read files to be able to load the file into the app.")
+                    .setTitle(resources.getString(R.string.permission_needed))
+                    .setMessage(resources.getString(R.string.permission_needed_text))
                     .setPositiveButton(
                         "ok"
                     ) { _, _ ->
@@ -231,7 +231,7 @@ class SettingsActivity : AppCompatActivity() {
                 // Permission denied
                 Toast.makeText(
                     this,
-                    "Permission denied, you can't use the App without it.",
+                    resources.getString(R.string.permission_denied),
                     Toast.LENGTH_SHORT
                 ).show()
             }

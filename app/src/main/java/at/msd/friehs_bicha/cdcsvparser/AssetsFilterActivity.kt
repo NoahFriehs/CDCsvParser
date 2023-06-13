@@ -138,10 +138,10 @@ class AssetsFilterActivity : AppCompatActivity() {
      * @param all_regarding_tx the TextView which should be set
      */
     private fun displayInformation(specificWallet: Wallet?, all_regarding_tx: TextView) {
-        all_regarding_tx.text = "All transactions regarding " + specificWallet?.currencyType
+        all_regarding_tx.text = resources.getString(R.string.all_transactions_regarding) + specificWallet?.currencyType
         if (appModel!!.appType == AppType.CroCard) {
             all_regarding_tx.text =
-                "All transactions regarding " + (specificWallet as CroCardWallet?)?.transactionType
+                resources.getString(R.string.all_transactions_regarding) + (specificWallet as CroCardWallet?)?.transactionType
         }
 
         //get and set prices
