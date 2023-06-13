@@ -43,11 +43,13 @@
     <string name="transaction_hash">Transaction Hash:</string>
     <string name="about_us">About Us</string>
     <string name="title_activity_about_us">AboutUsActivity</string>
-    <string name="contributers">Contributers:</string>
+    <string name="contributers">Contributors:</string>
     <string name="names">Names:</string>
     <string name="git">Git:</string>
-    <string name="if_you_want_to_support_us_the_contributers_please_use_the_btc_or_eth_adresses_provided_below">If you want to support us (the contributers) please use the BTC or ETH adresses provided below.</string>
-    <string name="we_hope_our_app_is_useful_and_easy_to_use">We hope our app is useful and easy to use! :)</string>
-    <string name="if_you_found_a_bug_or_ran_into_a_problem_feel_free_to_contact_us_under">If you found a bug or ran into a problem feel free to contact us under:</string>
+    <string name="please_wait">Please Wait…</string>
+    <string name="support_string">If you want to support us (the contributors) please use the BTC or ETH adresses provided below.</string>
+    <string name="hope_useful_string">We hope our app is userful and easy to use! :)</string>
+    <string name="problem_contact_string">If you found a bug or ran into a problem feel free to contact us under:</string>
+
     <string name="no_internet_connection">No Internet Connection</string>
 </resources>
