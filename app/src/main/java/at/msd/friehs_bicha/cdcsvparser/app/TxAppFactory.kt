@@ -7,6 +7,10 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import com.google.firebase.Timestamp
 import java.util.function.Consumer
 
+/**
+ * Tx app factory
+ *
+ */
 @Suppress("UNCHECKED_CAST")
 class TxAppFactory {
 
@@ -72,6 +76,16 @@ class TxAppFactory {
             return txApp
         }
 
+        /**
+         * Init from firebase
+         *
+         * @param dbWallets
+         * @param dbOutsideWallets
+         * @param dbTransactions
+         * @param appType
+         * @param amountTxFailed
+         * @return CroCardTxApp
+         */
         private fun processCroCardFromDB(
             dbWallets: ArrayList<java.util.HashMap<String, *>>,
             dbTransactions: ArrayList<java.util.HashMap<String, *>>,
@@ -168,6 +182,16 @@ class TxAppFactory {
             return CroCardTxApp(tXs, wTXs, amountTxFailed)
         }
 
+        /**
+         * Init from firebase
+         *
+         * @param dbWallets
+         * @param dbOutsideWallets
+         * @param dbTransactions
+         * @param appType
+         * @param amountTxFailed
+         * @return StandardTxApp
+         */
         private fun initFromFirebase(
             dbWallets: ArrayList<java.util.HashMap<String, *>>,
             dbOutsideWallets: ArrayList<java.util.HashMap<String, *>>?,

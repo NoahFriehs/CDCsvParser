@@ -1,7 +1,16 @@
 package at.msd.friehs_bicha.cdcsvparser.app
 
+/**
+ * App type identifier
+ */
 object AppTypeIdentifier {
 
+/**
+     * Returns the app type.
+     *
+     * @param input the input from the file
+     * @return the app type
+     */
     fun getAppType(input: ArrayList<String>): AppType {
 
         when {

@@ -9,7 +9,7 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     private val client = OkHttpClient()
     private val baseUrl = "https://min-api.cryptocompare.com/data/"
 
-    override fun getPrice(symbol: String): Double {
+    override fun getPrice(symbol: String): Double? {
         return try {
             val url = "${baseUrl}price?fsym=$symbol&tsyms=EUR"
             val request = Request.Builder()
@@ -22,7 +22,7 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
             price
         } catch (e: Exception) {
             FileLog.d("CryptoCompare", "Failed to get price for $symbol")
-            0.0
+            null
         }
     }
 }

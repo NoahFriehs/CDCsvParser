@@ -9,6 +9,13 @@ import java.math.BigDecimal
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 
+/**
+ * CardTxApp class
+ *
+ * @param file csv file as String list
+ * @param useStrictWallet use strict wallet type
+ * @param fastInit fast init, use only if you set the transactions and wallets manually
+ */
 class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) :
     BaseApp(), Serializable {
 
@@ -48,6 +55,11 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
         }
     }
 
+    /**
+     * Parse CurveCard csv file
+     *
+     * @param input csv file as String list
+     */
     private fun parseCurveCard(input: ArrayList<String>) {
         input.removeAt(0)
         val transactions = ArrayList<CurveCardTx>()
@@ -89,6 +101,12 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
         this.transactions.addAll(transactions)
     }
 
+    /**
+     * Parse CroCard csv file
+     *
+     * @param input csv file as String list
+     * @return CroCardTransaction list
+     */
     private fun parseCroCard(input: java.util.ArrayList<String>): java.util.ArrayList<CroCardTransaction> {
         input.removeAt(0)
         val transactions = java.util.ArrayList<CroCardTransaction>()
@@ -126,8 +144,13 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
     }
 
 
+    /**
+     * Fill wallets with transactions
+     *
+     * @param walletsExisting wallets already existing
+     */
     private fun fillWallet(walletsExisting: Boolean = false) {
-        println("Filling Wallets")
+        FileLog.i("CardTxApp", "Filling Wallets")
         if (!walletsExisting) {
             wallets.add(CroCardWallet("Test", BigDecimal.ZERO, "Test -> Test", this))
             for (t in transactions) {
@@ -150,7 +173,7 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
                     }
             }
         }
-        println("Wallets filled")
+        FileLog.i("CardTxApp", "Wallets filled")
     }
 
 

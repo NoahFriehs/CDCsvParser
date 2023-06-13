@@ -7,8 +7,17 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
 import java.io.Serializable
 import java.util.function.Consumer
 
+/**
+ * Standard transaction app
+ */
 class StandardTxApp : BaseApp, Serializable {
 
+    /**
+     * Constructor
+     *
+     * @param file csv file as String list
+     * @param appType app type
+     */
     constructor(file: ArrayList<String>, appType: AppType) {
 
         transactions = TransactionManager.txFromCsvList(file, appType, this)
@@ -21,6 +30,15 @@ class StandardTxApp : BaseApp, Serializable {
         }
     }
 
+    /**
+     * Constructor
+     *
+     * @param tXs transactions
+     * @param wTXs wallets
+     * @param wTXsOutside outside wallets
+     * @param amountTxFailed amount of failed transactions
+     * @param appType app type
+     */
     constructor(
         tXs: MutableList<Transaction>,
         wTXs: MutableList<CDCWallet>,

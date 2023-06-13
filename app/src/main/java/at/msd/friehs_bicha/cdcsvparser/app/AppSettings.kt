@@ -1,5 +1,8 @@
 package at.msd.friehs_bicha.cdcsvparser.app
 
+/**
+ * App settings class
+ */
 class AppSettings(var userID: String, var appType: AppType, var useStrictType: Boolean) {
 
     var placeholder1: String = ""

@@ -19,11 +19,10 @@ class StartingActivity : ComponentActivity() {
         FileLog.init(applicationContext)
 
         val user = FirebaseAuth.getInstance().currentUser
-        var intent: Intent
-        if (user != null) {
-            intent = Intent(this, MainActivity::class.java)
+        val intent = if (user != null) {
+            Intent(this, MainActivity::class.java)
         } else {
-            intent = Intent(this, LoginActivity::class.java)
+            Intent(this, LoginActivity::class.java)
         }
 
         Handler(Looper.getMainLooper()).postDelayed({

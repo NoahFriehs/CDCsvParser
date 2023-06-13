@@ -4,6 +4,9 @@ import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import java.io.Serializable
 import java.util.*
 
+/**
+ * Asset value class
+ */
 class AssetValue : Serializable {
     val cache: MutableList<PriceCache>
     var isRunning: Boolean
@@ -16,6 +19,11 @@ class AssetValue : Serializable {
     companion object {
         private var instance: AssetValue? = null
 
+        /**
+         * Returns the instance of the AssetValue class
+         *
+         * @return the instance of the AssetValue class
+         */
         fun getInstance(): AssetValue? {
             if (instance == null) {
                 instance = AssetValue()
@@ -45,6 +53,11 @@ class AssetValue : Serializable {
 
         val cryptoPrices = CryptoPricesCryptoCompare()
         val priceApi = cryptoPrices.getPrice(symbol)
+        if (priceApi == null) {
+            FileLog.e("AssetValue", "No price found for: $symbol")
+            isRunning = false
+            return 0.0
+        }
         if (priceApi != 0.0) {
             cache.add(PriceCache(symbol, priceApi))
             return priceApi

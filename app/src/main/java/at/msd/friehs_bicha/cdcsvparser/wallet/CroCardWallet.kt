@@ -119,20 +119,6 @@ class CroCardWallet(
         return -1
     }
 
-    fun writeAmount() {
-        var amountSpent = BigDecimal.ZERO
-        for (w in txApp.wallets) {
-            //System.out.println("-".repeat(20));
-            println((w as CroCardWallet).transactionType)
-            println(w.amount)
-            println(w.moneySpent)
-            println("Transactions: " + w.transactions!!.size)
-            amountSpent = amountSpent.add(w.moneySpent)
-        }
-        //System.out.println("-".repeat(20));
-        println("Amount total spent: $amountSpent")
-    }
-
     fun addToWallet(transaction: Transaction, ignoreThisTx: Boolean = false) {
         transaction.walletId = walletId
         if (ignoreThisTx) {

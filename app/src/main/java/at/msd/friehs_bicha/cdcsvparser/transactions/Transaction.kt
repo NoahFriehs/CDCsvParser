@@ -146,25 +146,18 @@ open class Transaction : Serializable {
         this.isOutsideTransaction = outsideTransaction
     }
 
-//    fun setWalletId(uid: Int) {
-//        walletId = uid
-//    }
-//
-//    fun setFromWalletId(uid: Int) {
-//        fromWalletId = uid
-//    }
 
     override fun toString(): String {
         return """${date.toString()}
-Description: $description
-Amount: ${nativeAmount.round(MathContext(5))} €
-AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
+                Description: $description
+                Amount: ${nativeAmount.round(MathContext(5))} €
+                AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
     }
 
     companion object {
 
         /**
-         * @exception does not work yet, because of the different csv formats
+         * @exception IllegalArgumentException if the AppType is not supported yet
          *
          * @param line
          * @param appType
@@ -174,19 +167,19 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
 
             return when (appType) {
                 AppType.CdCsvParser -> fromCdCsvParserCsvLine(line)
-//                AppType.COINBASE -> fromCoinbaseCsvLine(line)
-//                AppType.BLOCKCHAIN_INFO -> fromBlockchainInfoCsvLine(line)
-//                AppType.BITPANDA -> fromBitpandaCsvLine(line)
-//                AppType.BINANCE -> fromBinanceCsvLine(line)
-//                AppType.BITCOIN_DE -> fromBitcoinDeCsvLine(line)
-//                AppType.KRAKEN -> fromKrakenCsvLine(line)
-//                AppType.BITFINEX -> fromBitfinexCsvLine(line)
                 else -> {
                     throw IllegalArgumentException("AppType not supported")
                 }
             }
         }
 
+
+        /**
+         * Converts a HashMap<String, *> to a Transaction object
+         *
+         * @param transaction
+         * @return
+         */
         fun fromDb(transaction: HashMap<String, *>): Transaction
         {
             return Transaction(
@@ -207,6 +200,13 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
             )
         }
 
+
+        /**
+         * Transaction from a .csv line of the Crypto.com App history export
+         *
+         * @param line
+         * @return
+         */
         private fun fromCdCsvParserCsvLine(line: String): Transaction? {
 
             val sa = line.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
@@ -233,9 +233,10 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
                     "Error while processing the following transaction: $line"
                 )
             }
-            return null //throw IllegalArgumentException("Error while processing the following transaction: $line")
+            return null
         }
 
+        /*  //TODO: save this for later
         private fun fromBitfinexCsvLine(line: String): Transaction {
             val split = line.split(",")
             val date = Converter.dateConverter(split[0])
@@ -306,7 +307,7 @@ AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
                 nativeAmount,
                 transactionType
             )
-        }
+        }*/
 
         var uidCounter = 0
     }

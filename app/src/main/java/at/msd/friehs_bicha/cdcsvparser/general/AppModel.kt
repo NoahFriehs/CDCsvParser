@@ -43,6 +43,16 @@ class AppModel : BaseAppModel, Serializable {
         }
     }
 
+    /**
+     * Creates a new AppModel
+     *
+     * @param dbWallets         the wallets from the database
+     * @param dbOutsideWallets  the outside wallets from the database
+     * @param dbTransactions    the transactions from the database
+     * @param appType           which app to use
+     * @param amountTxFailed    the amount of failed transactions
+     * @param useStrictType
+     */
     constructor(
         dbWallets: ArrayList<HashMap<String, *>>?,
         dbOutsideWallets: ArrayList<HashMap<String, *>>?,
@@ -169,8 +179,12 @@ class AppModel : BaseAppModel, Serializable {
         }
     }
 
+    /**
+     * Returns a map with the data to display from a wallet
+     *
+     * @return a map with the data to display from a wallet
+     */
     fun getAssetMap(wallet: Wallet?): Map<String, String?> {
-        //TODO add sleep //if (!isRunning) sleep(1000);
         val total = formatAmountToString(wallet!!.moneySpent.toDouble())
         val map: MutableMap<String, String?> = HashMap()
         when (appType) {
@@ -208,10 +222,15 @@ class AppModel : BaseAppModel, Serializable {
         return map
     }
 
+
+    /**
+     * Returns a map with the data to display for the app
+     *
+     * @return a map with the data to display for the app
+     */
     @get:Throws(InterruptedException::class)
     val parseMap: Map<String, String?>?
         get() {
-            while (!isRunning) Thread.sleep(500)    //TODO remove this
             return try {
                 val total = totalPrice
                 val amountOfAsset = valueOfAssets

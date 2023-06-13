@@ -9,6 +9,13 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.function.Consumer
 
+/**
+ * CroCardTxApp class
+ *
+ * @param file csv file as String list
+ * @param useStrictWallet use strict wallet type
+ * @param fastInit fast init, use only if you set the transactions and wallets manually
+ */
 class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) :
     BaseApp(), Serializable {
 

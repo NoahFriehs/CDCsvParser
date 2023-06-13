@@ -1,9 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
 import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
-import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
-import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import java.io.Serializable
 import java.math.BigDecimal
 
@@ -99,104 +97,4 @@ class CDCWallet : Wallet, Serializable {
         moneySpent = moneySpent.subtract(nativeAmount)
     }
 
-    /**
-     * Adds a transactions to the respective CDCWallet
-     *
-     * @param transaction the transaction to be added
-     */
-    override fun addTransaction(transaction: Transaction) {
-        //transactions.add(transaction);
-        val t = transaction.transactionType
-        val w = txApp!!.wallets[getWallet(transaction.currencyType)] as CDCWallet
-        transaction.fromWalletId = w.walletId
-        transaction.walletId = w.walletId
-        if (!w.transactions!!.contains(transaction)) {
-            w.transactions!!.add(transaction)
-        }
-        if (transaction.currencyType.contains("DOGE")) {
-            val test = "test"
-        }
-
-        when (t) {
-            TransactionType.crypto_purchase, TransactionType.dust_conversion_credited ->                 //w.addToWallet(transaction.getAmount(), transaction.getNativeAmount(), BigDecimal.ZERO);
-                w.addToWallet(transaction)
-
-            TransactionType.supercharger_deposit, TransactionType.crypto_earn_program_created, TransactionType.lockup_lock, TransactionType.supercharger_withdrawal, TransactionType.crypto_earn_program_withdrawn -> {}
-            TransactionType.rewards_platform_deposit_credited -> {}
-            TransactionType.supercharger_reward_to_app_credited, TransactionType.crypto_earn_interest_paid, TransactionType.referral_card_cashback, TransactionType.reimbursement, TransactionType.card_cashback_reverted, TransactionType.admin_wallet_credited, TransactionType.crypto_wallet_swap_credited, TransactionType.crypto_wallet_swap_debited -> {
-                //w.addToWallet(transaction.getAmount(), BigDecimal.ZERO, transaction.getAmount());
-                transaction.amountBonus = transaction.amount
-                w.addToWallet(transaction)
-            }
-
-            TransactionType.viban_purchase -> vibanPurchase(transaction)
-            TransactionType.crypto_withdrawal -> cryptoWithdrawal(
-                w,
-                transaction,
-                txApp!!.outsideWallets
-            )
-
-            TransactionType.crypto_deposit -> cryptoWithdrawal(w, transaction, txApp!!.wallets)
-            TransactionType.dust_conversion_debited -> w.removeFromWallet(
-                transaction.amount,
-                transaction.nativeAmount
-            )
-
-            TransactionType.crypto_viban_exchange -> {
-                w.removeFromWallet(transaction.amount, transaction.nativeAmount)
-                val eur = txApp!!.wallets[getWallet("EUR")] as CDCWallet
-                eur.addToWallet(transaction.nativeAmount, transaction.nativeAmount, BigDecimal.ZERO)
-                eur.transactions?.add(transaction)
-            }
-
-            else -> println("This is an unsupported TransactionType: $t")
-        }
-    }
-
-    /**
-     * Handles crypto withdrawal
-     *
-     * @param w              the wallet from which crypto is withdrawn
-     * @param transaction    the transaction to be made
-     * @param outsideWallets all outsideWallets
-     */
-    private fun cryptoWithdrawal(
-        w: CDCWallet,
-        transaction: Transaction,
-        outsideWallets: ArrayList<Wallet>?
-    ) {
-        w.addToWallet(transaction.amount, BigDecimal.ZERO, BigDecimal.ZERO)
-        val wt = outsideWallets!![getWallet(transaction.currencyType)] as CDCWallet?
-        if (!wt!!.transactions!!.contains(transaction)) {
-            wt.transactions!!.add(transaction)
-        }
-        wt.removeFromWallet(transaction.amount, BigDecimal.ZERO)
-        transaction.isOutsideTransaction = true
-    }
-
-    /**
-     * Handles crypto viban purchase
-     *
-     * @param transaction the transaction which is a vibanPurchase
-     */
-    private fun vibanPurchase(transaction: Transaction) {
-        if (getWallet(transaction.toCurrency) == -1) {
-            println("Tx failed: $transaction")
-            FileLog.w("CDCWallet", "Tx failed: $transaction")
-        } else {
-            var wv = txApp!!.wallets[getWallet(transaction.toCurrency)] as CDCWallet
-            wv.addToWallet(transaction.toAmount, transaction.nativeAmount, BigDecimal.ZERO)
-            //wv.addToWallet(transaction);
-            transaction.walletId = wv.walletId
-            if (!wv.transactions!!.contains(transaction)) {
-                wv.transactions!!.add(transaction)
-            }
-            wv = txApp!!.wallets[getWallet(transaction.currencyType)] as CDCWallet
-            wv.addToWallet(transaction.amount, transaction.nativeAmount, BigDecimal.ZERO)
-            transaction.fromWalletId = wv.walletId
-            if (!wv.transactions!!.contains(transaction)) {
-                wv.transactions!!.add(transaction)
-            }
-        }
-    }
 }
