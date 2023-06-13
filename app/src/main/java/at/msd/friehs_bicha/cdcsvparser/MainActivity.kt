@@ -476,7 +476,7 @@ class MainActivity : AppCompatActivity() {
                         //when lower than this than it does not work with the db, has to switch to older version
                         context = applicationContext
                         val text =
-                            "Your database is not compatible with this version of the app. Please downgrade the app or delete the database."
+                            "Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload."
                         val duration = Toast.LENGTH_LONG
                         val toast = Toast.makeText(context, text, duration)
                         toast.show()

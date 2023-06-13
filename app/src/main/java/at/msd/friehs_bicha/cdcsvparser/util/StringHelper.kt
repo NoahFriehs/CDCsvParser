@@ -9,6 +9,15 @@ import java.text.DecimalFormat
 object StringHelper {
 
 
+    /**
+     * Formats an amount to a String
+     *
+     * @param amount the amount to be formatted
+     * @param decimalNumbers the amount of decimal numbers
+     * @param symbol the symbol of the currency
+     * @param writePlusIfPositive if true, a plus will be written if the amount is positive
+     * @return the formatted amount as String
+     */
     fun formatAmountToString(
         amount: Double,
         decimalNumbers: Int = 2,
@@ -21,6 +30,16 @@ object StringHelper {
         return removeLastZeros(df.format(amount)) + " $symbol"
     }
 
+
+    /**
+     * Formats an amount to a String
+     *
+     * @param amount the amount to be formatted
+     * @param decimalNumbers the amount of decimal numbers
+     * @param symbol the symbol of the currency
+     * @param writePlusIfPositive if true, a plus will be written if the amount is positive
+     * @return the formatted amount as String
+     */
     fun formatAmountToString(
         amount: BigDecimal,
         decimalNumbers: Int = 2,
@@ -31,6 +50,13 @@ object StringHelper {
     }
 
 
+    /**
+     * Compare versions
+     *
+     * @param version1 the first version
+     * @param version2 the second version
+     * @return true if version1 is greater than version2
+     */
     fun compareVersions(version1: String, version2: String): Boolean {
         val parts1 = version1.split(".").map { it.toInt() }
         val parts2 = version2.split(".").map { it.toInt() }
@@ -48,20 +74,24 @@ object StringHelper {
     }
 
 
+    /**
+     * Removes the last zeros of a String
+     *
+     * @param amount the String to be manipulated
+     * @return the manipulated String
+     */
     fun removeLastZeros(amount: String): String {
-        val amountParts = amount.split(".")
+        var amount = amount
+
+        val delimiter = if (amount.contains(",")) "," else "."
+
+        var amountParts = amount.split(delimiter)
         if (amountParts.size == 2) {
-            val lastPart = amountParts[1]
-            var lastZeroIndex = lastPart.length - 1
-            while (lastZeroIndex >= 0 && lastPart[lastZeroIndex] == '0') {
-                lastZeroIndex--
-            }
-            if (lastZeroIndex >= 0) {
-                return amountParts[0] + "." + lastPart.substring(0, lastZeroIndex + 1)
-            }
-            //if string has only zeros after the point
-            if (lastZeroIndex == -1)
-                return amountParts[0] + ".00"
+            if (amount.startsWith("0")) amount = amount.removePrefix("0")
+            if (amount.startsWith(delimiter)) amount = "0$amount"
+            amountParts = amount.split(delimiter)
+            if (amount.endsWith("0")) amount = amountParts[0] + delimiter + amountParts[1].replace("0", "")
+            if (amount.endsWith(delimiter)) amount += "0"
         }
         return amount
     }

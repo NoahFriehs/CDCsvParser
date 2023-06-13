@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.util
 
+import android.annotation.SuppressLint
 import androidx.room.TypeConverter
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
@@ -7,7 +8,6 @@ import java.math.BigDecimal
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 /**
  * Helper-class to convert types
@@ -21,7 +21,7 @@ object Converter {
      */
     fun ttConverter(s: String): TransactionType {
         var s = s
-        s = s.trim { it <= ' ' }.lowercase(Locale.getDefault())
+        s = s.trim { it <= ' ' }.lowercase()
         return try {
             TransactionType.valueOf(s)
         } catch (e: Exception) {
@@ -37,7 +37,13 @@ object Converter {
      * @param s the String to be converted
      * @return the Date of the String
      */
+    @SuppressLint("SimpleDateFormat")
     fun dateConverter(s: String?): Date? {
+        if (s == null)
+        {
+            FileLog.w("Converter", "dateConverter: String is null")
+            return null
+        }
         return try {
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
             sdf.parse(s)
@@ -49,8 +55,8 @@ object Converter {
                 return try {
                     val sdf = SimpleDateFormat("yyyy-mm-dd")
                     sdf.parse(s)
-                } catch (e1: Exception) {
-                    FileLog.w("Converter", "dateConverter: $s | ${e.message}")
+                } catch (e2: Exception) {
+                    FileLog.w("Converter:dateConverter", "error while trying to parse $s | ${e2.message}")
                     null
                 }
             }
