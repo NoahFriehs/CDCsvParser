@@ -60,4 +60,8 @@
     <string name="problem_contact_string">If you found a bug or ran into a problem feel free to contact us under:</string>
     <string name="cdcsvparser_gmail" translatable="false">cdcsvparser@gmail.com</string>
     <string name="no_internet_connection">No Internet Connection</string>
+    <string name="logoutQuestion">Are you sure you want to log out?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="deleteQuestion">"Are you sure you want to delete your account?"</string>
 </resources>

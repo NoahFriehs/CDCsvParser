@@ -52,4 +52,8 @@
     <string name="git">Git:</string>
 
     <string name="no_internet_connection">Keine Internetverbindung</string>
+    <string name="logoutQuestion">Sind Sie sicher, dass Sie sich abmelden möchten?</string>
+    <string name="yes">Ja</string>
+    <string name="no">Nein</string>
+    <string name="deleteQuestion">Sind Sie sicher, dass Sie Ihr Konto löschen möchten?</string>
 </resources>

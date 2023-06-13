@@ -22,6 +22,7 @@ import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.AboutUsActivity
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
@@ -101,10 +102,17 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         btnLogout.setOnClickListener {
-            auth.signOut()
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
-            finish()
+            val alertDialog = AlertDialog.Builder(this)
+                .setTitle(resources.getString(R.string.logout))
+                .setMessage(resources.getString(R.string.logoutQuestion))
+                .setPositiveButton(resources.getString(R.string.yes)) { _, _ ->
+                    logout(auth)
+                }
+                .setNegativeButton(resources.getString(R.string.no), null)
+                .create()
+
+            alertDialog.show()
+
         }
 
         if (user == null) {
@@ -113,39 +121,56 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         btnDeleteUser.setOnClickListener {
-            val db = Firebase.firestore
-            db.collection("user").document(user!!.uid).set(hashMapOf("deleted" to true))
-
-            db.collection("user").document(user.uid).delete().addOnCompleteListener {
-                if (it.isSuccessful) {
-                    FileLog.d("Settings-DeleteUser", "User deleted from database.")
-                } else {
-                    FileLog.d("Settings-DeleteUser", "User could not be deleted from database.")
+            val alertDialog = AlertDialog.Builder(this)
+                .setTitle(resources.getString(R.string.delete_account))
+                .setMessage(resources.getString(R.string.deleteQuestion))
+                .setPositiveButton(resources.getString(R.string.yes)) { _, _ ->
+                    deleteUser(user)
                 }
-            }
+                .setNegativeButton(resources.getString(R.string.no), null)
+                .create()
 
-            user.delete().addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    FileLog.d("Settings-DeleteUser", "User account deleted.")
-                } else {
-                    if (task.exception != null) {
-                        FileLog.d("Settings-DeleteUser", task.exception.toString())
-                    }
-                    if (task.exception.toString().contains("requires recent authentication")) {
-                        FileLog.d(
-                            "Settings-DeleteUser",
-                            "User needs to reauthenticate."
-                        )   //TODO handle this(user has to relogin)
-                        Toast.makeText(this, "User needs to reauthenticate.", Toast.LENGTH_LONG)
-                            .show()
-                    }
-                }
-            }
-            FirebaseAuth.getInstance().signOut()
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
-            finish()
+            alertDialog.show()
         }
+    }
+
+    private fun deleteUser(user: FirebaseUser?) {
+        val db = Firebase.firestore
+        db.collection("user").document(user!!.uid).set(hashMapOf("deleted" to true))
+
+        db.collection("user").document(user.uid).delete().addOnCompleteListener {
+            if (it.isSuccessful) {
+                FileLog.d("Settings-DeleteUser", "User deleted from database.")
+            } else {
+                FileLog.d("Settings-DeleteUser", "User could not be deleted from database.")
+            }
+        }
+
+        user.delete().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                FileLog.d("Settings-DeleteUser", "User account deleted.")
+            } else {
+                if (task.exception != null) {
+                    FileLog.d("Settings-DeleteUser", task.exception.toString())
+                }
+                if (task.exception.toString().contains("requires recent authentication")) {
+                    FileLog.d(
+                        "Settings-DeleteUser",
+                        "User needs to reauthenticate."
+                    )   //TODO handle this(user has to relogin)
+                    Toast.makeText(this, "User needs to reauthenticate.", Toast.LENGTH_LONG)
+                        .show()
+                }
+            }
+        }
+        logout(FirebaseAuth.getInstance())
+    }
+
+    private fun logout(auth: FirebaseAuth) {
+        auth.signOut()
+        val intent = Intent(this, LoginActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 
     private fun requestExternalStoragePermission() {
