@@ -5,54 +5,13 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppTypeIdentifier
 import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.utils.ColorTemplate
 import java.math.BigDecimal
-import java.util.Date
 
 /**
  * Transaction Manager
  *
- * @property transactions List of transactions
- * @property cumulativeAmounts Map of cumulative amounts
- * @constructor Create empty Transaction Manager
  */
-class TransactionManager(private val transactions: MutableList<Transaction>?) {
-    private val cumulativeAmounts: MutableMap<Date, BigDecimal> = mutableMapOf()
-
-    init {
-        calculateCumulativeAmounts()
-    }
-
-    private fun calculateCumulativeAmounts() {
-        var balance = BigDecimal.ZERO
-        if (transactions != null) {
-            for (transaction in transactions) {
-                balance += transaction.amount
-                cumulativeAmounts[transaction.date!!] = balance
-            }
-        }
-    }
-
-    fun getBalanceAtDate(date: Date): BigDecimal? {
-        return cumulativeAmounts[date]
-    }
-
-    fun getGraphDataSet(): LineData {
-        val entries = mutableListOf<Entry>()
-        for ((index, transaction) in transactions?.withIndex()!!) {
-            val cumulativeAmount = cumulativeAmounts[transaction.date] ?: 0
-            entries.add(Entry(index.toFloat(), cumulativeAmount.toFloat()))
-        }
-
-        val lineDataSet = LineDataSet(entries, "Cumulative Amount")
-        lineDataSet.setColors(*ColorTemplate.COLORFUL_COLORS)
-        lineDataSet.valueTextSize = 12f
-
-        return LineData(lineDataSet)
-    }
+class TransactionManager {
 
     companion object {
 
@@ -106,7 +65,10 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                 AppType.CdCsvParser -> prepareCDCInput(input)
                 AppType.Default -> prepareCDCInput(input)
                 else -> {
-                    FileLog.e("TransactionManager", "prepareInput: Unknown app type, AppType: $appType")
+                    FileLog.e(
+                        "TransactionManager",
+                        "prepareInput: Unknown app type, AppType: $appType"
+                    )
                     throw IllegalArgumentException("Unknown app type")
                 }
             }
@@ -138,7 +100,10 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             when (app.appType) {
                 AppType.CdCsvParser -> createCDCWallets(currencies, app)
                 else -> {
-                    FileLog.e("TransactionManager", "createWallets: Unknown app type, AppType: ${app.appType}")
+                    FileLog.e(
+                        "TransactionManager",
+                        "createWallets: Unknown app type, AppType: ${app.appType}"
+                    )
                     throw IllegalArgumentException("Unknown app type")
                 }
             }
@@ -169,7 +134,10 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                 AppType.CdCsvParser -> addCDCTransaction(transaction, app)
                 AppType.Default -> addDefaultTransaction(transaction, app)
                 else -> {
-                    FileLog.e("TransactionManager", "addTransaction: Unknown app type, AppType: ${app.appType}")
+                    FileLog.e(
+                        "TransactionManager",
+                        "addTransaction: Unknown app type, AppType: ${app.appType}"
+                    )
                     throw IllegalArgumentException("Unknown app type")
                 }
             }
@@ -235,7 +203,10 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                 }
 
                 else -> {
-                    FileLog.e("TransactionManager", "ddCDCTransaction: Unknown app type, TransactionType: ${t}")
+                    FileLog.e(
+                        "TransactionManager",
+                        "ddCDCTransaction: Unknown app type, TransactionType: ${t}"
+                    )
                     throw IllegalArgumentException("Unknown transaction type")
                 }
             }

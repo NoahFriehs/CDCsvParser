@@ -49,9 +49,13 @@ class TxAppFactory {
                             dataContainer[DataTypes.amountTxFailed] as Long
                         )
 
-                        else ->{
-                            FileLog.e("TxAppFactory", "CdCsvParser: Usage not found, AppStatus: $appStatus")
-                            throw RuntimeException("Usage not found")}
+                        else -> {
+                            FileLog.e(
+                                "TxAppFactory",
+                                "CdCsvParser: Usage not found, AppStatus: $appStatus"
+                            )
+                            throw RuntimeException("Usage not found")
+                        }
                     }
                 }
 
@@ -69,7 +73,10 @@ class TxAppFactory {
                         )
 
                         else -> {
-                            FileLog.e("TxAppFactory", "CroCard: Usage not found, AppStatus: $appStatus")
+                            FileLog.e(
+                                "TxAppFactory",
+                                "CroCard: Usage not found, AppStatus: $appStatus"
+                            )
                             throw RuntimeException("Usage not found")
                         }
                     }
@@ -82,7 +89,10 @@ class TxAppFactory {
                         )
 
                         else -> {
-                            FileLog.e("TxAppFactory", "Default: Usage not found, AppStatus: $appStatus")
+                            FileLog.e(
+                                "TxAppFactory",
+                                "Default: Usage not found, AppStatus: $appStatus"
+                            )
                             throw RuntimeException("Usage not found")
                         }
                     }

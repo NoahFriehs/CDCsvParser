@@ -98,7 +98,7 @@ class AppModel : BaseAppModel, Serializable {
                     }
                 }
 
-                else  ->{
+                else -> {
                     FileLog.e("AppModel", "CroCard: Usage not found, AppType: $appType")
                     throw RuntimeException("Usage not found")
                 }
@@ -167,6 +167,7 @@ class AppModel : BaseAppModel, Serializable {
             0.0
         }
 
+
     /**
      * Returns the amount the asset is worth in EUR
      *
@@ -184,6 +185,7 @@ class AppModel : BaseAppModel, Serializable {
             0.0
         }
     }
+
 
     /**
      * Returns a map with the data to display from a wallet
@@ -270,8 +272,8 @@ class AppModel : BaseAppModel, Serializable {
                         map[R.id.coinGeckoApiLabel.toString()] = null
                     }
 
-                    else ->{
-                        FileLog.e("AppModel", "ParseMap: AppType not found, AppType: $appType" )
+                    else -> {
+                        FileLog.e("AppModel", "ParseMap: AppType not found, AppType: $appType")
                         throw RuntimeException("Usage not found")
                     }
                 }
@@ -282,59 +284,6 @@ class AppModel : BaseAppModel, Serializable {
             }
         }
 
-
-    /**
-     * @deprecated not in use, leave it here to show how to use the database
-     */
-//    fun setInAndroidDB(context: Context): Boolean {
-//        val t = Thread {
-//            try {
-//                val db: AppDatabase? = AppDatabase.getInstance(context)
-//                //clear db
-//                db!!.clearAllTables()
-//                db.walletDao().deleteAll()
-//                db.transactionDao().deleteAll()
-//                db.transactionDao().insertAll(txApp!!.transactions)
-//                db.walletDao().insertAll(txApp!!.wallets)
-//                db.walletDao().insertAll(txApp!!.outsideWallets)
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            }
-//        }
-//        t.start()
-//        return true
-//    }
-
-
-    /**
-     * @deprecated not in use, leave it here to show how to use the database
-     */
-//    private fun getFromAndroidDB(context: Context, useStrictType: Boolean?): Boolean {
-//        val t = Thread {
-//            try {
-//                val db: AppDatabase? = AppDatabase.getInstance(context)
-//                val tXs = db!!.transactionDao().all
-//                val wTXs = db.walletDao().all
-//                when (appType) {
-//                    AppType.CdCsvParser -> {
-//                        val ws: MutableList<CDCWallet> = ArrayList()
-//                        wTXs!!.forEach(Consumer { w: WalletWithTransactions? ->
-//                            val wallet = CDCWallet(w!!.wallet)
-//                            ws.add(wallet)
-//                        })
-//                        txApp = TxApp(tXs, ws)
-//                        isRunning = true
-//                    }
-//                    AppType.CroCard -> throw RuntimeException("Usage not Implemented")
-//                    else -> throw RuntimeException("Usage not found")
-//                }
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            }
-//        }
-//        t.start()
-//        return true
-//    }
 
     fun toHashMap(): HashMap<String, Any> {
         val appHashMap: HashMap<String, Any>
@@ -385,7 +334,7 @@ class AppModel : BaseAppModel, Serializable {
                 throw RuntimeException("Usage not found")
             }
         }
-                return appHashMap
+        return appHashMap
     }
 
 

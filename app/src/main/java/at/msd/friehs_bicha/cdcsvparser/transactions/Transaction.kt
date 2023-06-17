@@ -162,6 +162,9 @@ open class Transaction : Serializable {
 
     companion object {
 
+        var uidCounter = 0
+
+
         /**
          * @exception IllegalArgumentException if the AppType is not supported yet
          *
@@ -276,80 +279,5 @@ open class Transaction : Serializable {
             }
             return null
         }
-
-        /*  //TODO: save this for later
-        private fun fromBitfinexCsvLine(line: String): Transaction {
-            val split = line.split(",")
-            val date = Converter.dateConverter(split[0])
-            val description = split[1]
-            val currencyType = split[2]
-            val amount = Converter.amountConverter(split[3])
-            val nativeAmount = Converter.amountConverter(split[4])
-            val transactionType = TransactionType.valueOf(split[5])
-            return Transaction(
-                split[0],
-                description,
-                currencyType,
-                amount,
-                nativeAmount,
-                transactionType
-            )
-        }
-
-        private fun fromKrakenCsvLine(line: String): Transaction {
-            val split = line.split(",")
-            val date = Converter.dateConverter(split[0])
-            val description = split[1]
-            val currencyType = split[2]
-            val amount = Converter.amountConverter(split[3])
-            val nativeAmount = Converter.amountConverter(split[4])
-            val transactionType = TransactionType.valueOf(split[5])
-            return Transaction(
-                split[0],
-                description,
-                currencyType,
-                amount,
-                nativeAmount,
-                transactionType
-            )
-        }
-
-        private fun fromBitcoinDeCsvLine(line: String): Transaction {
-            val split = line.split(",")
-            val date = Converter.dateConverter(split[0])
-            val description = split[1]
-            val currencyType = split[2]
-            val amount = Converter.amountConverter(split[3])
-            val nativeAmount = Converter.amountConverter(split[4])
-            val transactionType = TransactionType.valueOf(split[5])
-            return Transaction(
-                split[0],
-                description,
-                currencyType,
-                amount,
-                nativeAmount,
-                transactionType
-            )
-        }
-
-        private fun fromBinanceCsvLine(line: String): Transaction {
-            val split = line.split(",")
-            val date = Converter.dateConverter(split[0])
-            val description = split[1]
-            val currencyType = split[2]
-            val amount = Converter.amountConverter(split[3])
-            val nativeAmount = Converter.amountConverter(split[4])
-            val transactionType = TransactionType.valueOf(split[5])
-            return Transaction(
-                split[0],
-                description,
-                currencyType,
-                amount,
-                nativeAmount,
-                transactionType
-            )
-        }*/
-
-        var uidCounter = 0
     }
 }

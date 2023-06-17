@@ -89,11 +89,15 @@ class ParseActivity : AppCompatActivity() {
             }
             when (value) {
                 "no internet connection" -> {
-                    runOnUiThread { textView.text = resources.getString(R.string.no_internet_connection) }
+                    runOnUiThread {
+                        textView.text = resources.getString(R.string.no_internet_connection)
+                    }
                 }
+
                 null -> {
                     runOnUiThread { textView.visibility = View.INVISIBLE }
                 }
+
                 else -> {
                     runOnUiThread { textView.text = value }
                 }

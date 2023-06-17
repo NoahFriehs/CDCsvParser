@@ -23,12 +23,12 @@
         android:id="@+id/asset_spinner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:background="@android:drawable/btn_dropdown"
         android:spinnerMode="dropdown"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:layout_marginStart="@dimen/basic_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/asset_label"
         tools:ignore="MissingConstraints,SpeakableTextPresentCheck,SpeakableTextPresentCheck"
         tools:layout_editor_absoluteX="@dimen/basic_start_end_margin" />
@@ -162,9 +162,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="5dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/all_regarding_tx"
         android:padding="10dp"
-        />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/all_regarding_tx" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -18,7 +18,10 @@ object AppModelManager {
      */
     fun getInstance(): AppModel {
         if (instance == null) {
-            FileLog.e("AppModelManager", "AppModel has not been initialized. Call setInstance() first.")
+            FileLog.e(
+                "AppModelManager",
+                "AppModel has not been initialized. Call setInstance() first."
+            )
             throw IllegalStateException("AppModel has not been initialized. Call setInstance() first.")
         }
         return instance!!

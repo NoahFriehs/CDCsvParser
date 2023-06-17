@@ -81,5 +81,6 @@
     <string name="assetvalue_placeholder">assetValue</string>
     <string name="asset_amount">Anzahl Coins:</string>
     <string name="description">Beschreibung:</string>
+    <string name="user_deleted">Account wurde gelöscht</string>
 
 </resources>

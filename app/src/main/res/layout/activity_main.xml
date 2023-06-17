@@ -10,72 +10,68 @@
         android:id="@+id/tv_welcome_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/welcome_message"
-        android:textSize="@dimen/main_headline_font"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="@dimen/main_headline_padding_margin"
         android:padding="@dimen/main_headline_padding_margin"
+        android:text="@string/welcome_message"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="@dimen/main_headline_font"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/settings_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintStart_toStartOf="parent"
+        android:text="@string/settings"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_welcome_text"
         app:layout_constraintRight_toRightOf="parent"
-        android:text="@string/settings" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_welcome_text" />
 
     <Button
         android:id="@+id/btn_parse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/upload_file"
-        android:textStyle="bold"
-        android:textSize="@dimen/basic_button_font"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/history_text"
-        android:layout_marginBottom="@dimen/main_extreme_bottom_margin"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginBottom="@dimen/main_extreme_bottom_margin"
         android:background="@drawable/round_button_layer_list"
+        android:text="@string/upload_file"
         android:textAllCaps="false"
-        />
+        android:textSize="@dimen/basic_button_font"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/history_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
         android:id="@+id/history_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/history_text"
-        android:textSize="@dimen/main_middle_font"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/history_label"
         android:layout_marginBottom="@dimen/main_middle_margin_bottom"
+        android:text="@string/history_text"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="@dimen/main_middle_font"
+        app:layout_constraintBottom_toTopOf="@id/history_label"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
         android:id="@+id/history_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/history"
-        android:textSize="@dimen/main_small_font"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/spinner_history"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/basic_start_end_margin"
+        android:text="@string/history"
         android:textAlignment="center"
         android:textColor="@color/black"
-        />
+        android:textSize="@dimen/main_small_font"
+        app:layout_constraintBottom_toTopOf="@id/spinner_history"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Spinner
         android:id="@+id/spinner_history"
@@ -84,46 +80,44 @@
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/main_big_margin_bottom"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/btn_history"
         android:background="@android:drawable/btn_dropdown"
         android:spinnerMode="dropdown"
+        app:layout_constraintBottom_toTopOf="@id/btn_history"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         tools:ignore="MissingConstraints" />
+
     <Button
         android:id="@+id/btn_history"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/show_history"
-        android:textStyle="bold"
-        android:textSize="@dimen/basic_button_font"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/btn_loadFromDb"
-        android:layout_marginBottom="@dimen/main_middle_margin_bottom"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginBottom="@dimen/main_middle_margin_bottom"
         android:background="@drawable/round_button_layer_list"
+        android:text="@string/show_history"
         android:textAllCaps="false"
-        />
+        android:textSize="@dimen/basic_button_font"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/btn_loadFromDb"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/btn_loadFromDb"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/load_latest_from_database"
-        android:textStyle="bold"
-        android:textSize="@dimen/basic_button_font"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginBottom="@dimen/main_extreme_bottom_margin"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginBottom="@dimen/main_extreme_bottom_margin"
         android:background="@drawable/round_button_layer_list"
+        android:text="@string/load_latest_from_database"
         android:textAllCaps="false"
-        />
-
+        android:textSize="@dimen/basic_button_font"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

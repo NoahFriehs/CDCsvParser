@@ -39,8 +39,7 @@ object Converter {
      */
     @SuppressLint("SimpleDateFormat")
     fun dateConverter(s: String?): Date? {
-        if (s == null)
-        {
+        if (s == null) {
             FileLog.w("Converter", "dateConverter: String is null")
             return null
         }
@@ -56,7 +55,10 @@ object Converter {
                     val sdf = SimpleDateFormat("yyyy-mm-dd")
                     sdf.parse(s)
                 } catch (e2: Exception) {
-                    FileLog.w("Converter:dateConverter", "error while trying to parse $s | ${e2.message}")
+                    FileLog.w(
+                        "Converter:dateConverter",
+                        "error while trying to parse $s | ${e2.message}"
+                    )
                     null
                 }
             }

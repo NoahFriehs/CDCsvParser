@@ -10,10 +10,9 @@
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="@dimen/basic_frame_layout_height"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         android:padding="@dimen/basic_start_end_margin"
-        />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
     <!-- to move list down  (android:layout_marginTop="0dp")-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

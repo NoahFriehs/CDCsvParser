@@ -54,7 +54,12 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
             }
 
             else -> {
-                FileLog.e("cardTxApp", "getTransactions: Wrong file format, AppType: ${AppTypeIdentifier.getAppType(input)}")
+                FileLog.e(
+                    "cardTxApp",
+                    "getTransactions: Wrong file format, AppType: ${
+                        AppTypeIdentifier.getAppType(input)
+                    }"
+                )
                 throw RuntimeException("Wrong file format")
             }
         }

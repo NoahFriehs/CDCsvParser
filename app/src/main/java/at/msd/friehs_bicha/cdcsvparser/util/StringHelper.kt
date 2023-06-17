@@ -90,7 +90,8 @@ object StringHelper {
             if (amount.startsWith("0")) amount = amount.removePrefix("0")
             if (amount.startsWith(delimiter)) amount = "0$amount"
             amountParts = amount.split(delimiter)
-            if (amount.endsWith("0")) amount = amountParts[0] + delimiter + amountParts[1].replace("0", "")
+            if (amount.endsWith("0")) amount =
+                amountParts[0] + delimiter + amountParts[1].replace("0", "")
             if (amount.endsWith(delimiter)) amount += "0"
         }
         return amount

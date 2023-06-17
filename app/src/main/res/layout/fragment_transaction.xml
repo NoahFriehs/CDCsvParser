@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal">
 
     <TextView
@@ -11,29 +10,28 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/tv_date"
         android:layout_width="wrap_content"
-        android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
-        android:layout_marginTop="@dimen/basic_text_start_end_margin"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/basic_text_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        android:text="@string/date_placeholder"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="@string/date_placeholder" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/tv_description"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        app:layout_constraintTop_toBottomOf="@id/tv_date"
+        android:text="@string/description"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="@string/description" />
+        app:layout_constraintTop_toBottomOf="@id/tv_date" />
 
 
     <TextView
@@ -42,18 +40,18 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
-        app:layout_constraintTop_toBottomOf="@id/tv_date"
+        android:text="@string/descriptionvalue_placeholder"
         app:layout_constraintLeft_toRightOf="@id/tv_description"
-        android:text="@string/descriptionvalue_placeholder" />
+        app:layout_constraintTop_toBottomOf="@id/tv_date" />
 
     <TextView
         android:id="@+id/amount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        app:layout_constraintTop_toBottomOf="@id/tv_description"
+        android:text="@string/amount"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="@string/amount" />
+        app:layout_constraintTop_toBottomOf="@id/tv_description" />
 
     <TextView
         android:id="@+id/tv_amountValue"
@@ -61,18 +59,18 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
-        app:layout_constraintTop_toBottomOf="@id/tv_description"
+        android:text="@string/amountvalue_placeholder"
         app:layout_constraintLeft_toRightOf="@+id/amount"
-        android:text="@string/amountvalue_placeholder" />
+        app:layout_constraintTop_toBottomOf="@id/tv_description" />
 
     <TextView
         android:id="@+id/tv_assetAmount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        app:layout_constraintTop_toBottomOf="@id/amount"
+        android:text="@string/asset_amount"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:text="@string/asset_amount" />
+        app:layout_constraintTop_toBottomOf="@id/amount" />
 
     <TextView
         android:id="@+id/tv_assetAmountValue"
@@ -80,22 +78,21 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
-        app:layout_constraintTop_toBottomOf="@id/amount"
+        android:text="@string/assetvalue_placeholder"
         app:layout_constraintLeft_toRightOf="@+id/tv_assetAmount"
-        android:text="@string/assetvalue_placeholder" />
+        app:layout_constraintTop_toBottomOf="@id/amount" />
 
     <View
         android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="@dimen/divider_height"
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         android:layout_marginTop="@dimen/divider_margin_top"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         android:background="?android:attr/listDivider"
-        app:layout_constraintTop_toBottomOf="@id/tv_assetAmount"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-         />
+        app:layout_constraintTop_toBottomOf="@id/tv_assetAmount" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

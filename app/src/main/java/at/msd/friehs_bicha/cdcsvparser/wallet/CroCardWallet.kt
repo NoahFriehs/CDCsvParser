@@ -241,7 +241,8 @@ class CroCardWallet(
             val isOutsideWallet = wallet["outsideWallet"] as Boolean
             val transactionType = wallet["transactionType"] as String
 
-            val transactionsList = wallet["transactions"] as MutableList<java.util.HashMap<String, *>?>?
+            val transactionsList =
+                wallet["transactions"] as MutableList<java.util.HashMap<String, *>?>?
             val transactions = ArrayList<CroCardTransaction?>()
 
             transactionsList?.forEach { transactionMap ->

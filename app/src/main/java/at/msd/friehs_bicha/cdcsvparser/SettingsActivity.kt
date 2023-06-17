@@ -149,6 +149,8 @@ class SettingsActivity : AppCompatActivity() {
         user.delete().addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 FileLog.d("Settings-DeleteUser", "User account deleted.")
+                Toast.makeText(this, resources.getString(R.string.user_deleted), Toast.LENGTH_LONG)
+                    .show()
             } else {
                 if (task.exception != null) {
                     FileLog.d("Settings-DeleteUser", task.exception.toString())
@@ -157,8 +159,12 @@ class SettingsActivity : AppCompatActivity() {
                     FileLog.d(
                         "Settings-DeleteUser",
                         "User needs to reauthenticate."
-                    )   //TODO handle this(user has to relogin)
-                    Toast.makeText(this, resources.getString(R.string.user_needs_to_autheticate), Toast.LENGTH_LONG)
+                    )
+                    Toast.makeText(
+                        this,
+                        resources.getString(R.string.user_needs_to_autheticate),
+                        Toast.LENGTH_LONG
+                    )
                         .show()
                 }
             }
@@ -226,7 +232,6 @@ class SettingsActivity : AppCompatActivity() {
         if (requestCode == readExternalStorageRequestCode) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted
-                // Perform your required action here
             } else {
                 // Permission denied
                 Toast.makeText(
