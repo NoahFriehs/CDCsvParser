@@ -240,6 +240,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 callParseView()
             } catch (e: IllegalArgumentException) {
+                FileLog.e("MainActivity", ":  Error while loading files : $e")
                 hideProgressDialog()
                 context = applicationContext
                 val text: CharSequence? = e.message
@@ -247,12 +248,12 @@ class MainActivity : AppCompatActivity() {
                 val toast = Toast.makeText(context, text, duration)
                 toast.show()
             } catch (e: RuntimeException) {
+                FileLog.e("MainActivity", ":  Error while loading files : $e")
                 val context = applicationContext
                 val text: CharSequence? = e.message
                 val duration = Toast.LENGTH_SHORT
                 val toast = Toast.makeText(context, text, duration)
                 toast.show()
-                println(e.message)
                 callParseView()
             }
 
@@ -341,7 +342,7 @@ class MainActivity : AppCompatActivity() {
                 // in your app.
                 startChooseFile()
             } else {
-                // TODO show error message
+                FileLog.w("MainActivity", ": permission denied for external storage access")
                 Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
             }
         }
@@ -408,7 +409,8 @@ class MainActivity : AppCompatActivity() {
             // Close the BufferedReader and InputStream.
             reader.close()
         } catch (e: IOException) {
-            e.printStackTrace() // TODO error message
+            e.printStackTrace()
+            FileLog.e("MainActivity", ":  Error while reading file : $e")
         }
         return fileContents
     }
@@ -461,7 +463,7 @@ class MainActivity : AppCompatActivity() {
 
         val user = db.collection("user").document(uid)
         user.get()
-            .addOnSuccessListener { document ->   //TODO handle error(Exceptions wenn data nicht vorhanden ist/nicht passt)
+            .addOnSuccessListener { document ->
                 if (document != null) {
                     val userMap = document.data as HashMap<String, Any>?
                     if (userMap == null) {
@@ -525,11 +527,13 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
                 } else {
-                    // Handle database error    //TODO: handle error
+                    // Handle database error
+                    FileLog.e("MainActivity", ":  Error document is null")
 
                 }
             }.addOnFailureListener { exception ->
-                   //TODO: handle error
+                FileLog.e("MainActivity", ":  Error while loading document : ${exception.message}")
+
             }
     }
 

@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionFragment
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
@@ -125,7 +126,10 @@ class AssetsFilterActivity : AppCompatActivity() {
                     )
                 })
 
-                else -> wallets.add("This should not happen")
+                else -> {
+                    wallets.add("This should not happen")
+                    FileLog.w("AssertsFilterActivity", "CroCard:AppType unknown , AppType: $appModel!!.appType" )
+                }
             }
             return wallets.toTypedArray()
         }

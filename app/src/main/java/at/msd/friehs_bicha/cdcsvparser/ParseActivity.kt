@@ -64,6 +64,7 @@ class ParseActivity : AppCompatActivity() {
                 isReady = true
                 hideProgressDialog()
             } catch (e: InterruptedException) {
+                FileLog.e("ParseActivity", " : $e")
                 throw RuntimeException(e)
             }
         }

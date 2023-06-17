@@ -12,7 +12,7 @@ class TransactionsActivity : AppCompatActivity() {
     var appModel: AppModel? = null
 
     /**
-     * Create list of all Transactions on creat this view
+     * Create list of all Transactions on create this view
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
