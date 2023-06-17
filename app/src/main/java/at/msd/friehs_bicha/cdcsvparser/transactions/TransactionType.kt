@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+
 /**
  * All different TransactionTypes
  */
@@ -25,4 +27,20 @@ enum class TransactionType {
     dust_conversion_debited,  //Dust conversion start
     crypto_viban_exchange,  //sell
     STRING //for Card und unknown things
+}
+
+/**
+ * Convert String to TransactionType
+ */
+fun stringToTransactionType(str: String?): TransactionType {
+    return try {
+        if (str != null) {
+            TransactionType.valueOf(str)
+        } else {
+            TransactionType.STRING
+        }
+    } catch (e: IllegalArgumentException) {
+        FileLog.e("TransactionType", "Unknown TransactionType: $str")
+        TransactionType.STRING
+    }
 }

@@ -10,13 +10,12 @@
         android:id="@+id/asset_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:padding="16dp"
-        android:paddingTop="0dp"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:padding="@dimen/asset_label_padding"
         android:text="@string/choose_asset"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="12sp"
+        android:textSize="@dimen/asset_label_fontsize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -24,24 +23,27 @@
         android:id="@+id/asset_spinner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
         android:background="@android:drawable/btn_dropdown"
         android:spinnerMode="dropdown"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
         app:layout_constraintTop_toBottomOf="@id/asset_label"
-        tools:ignore="MissingConstraints" />
+        tools:ignore="MissingConstraints,SpeakableTextPresentCheck,SpeakableTextPresentCheck"
+        tools:layout_editor_absoluteX="@dimen/basic_start_end_margin" />
 
     <!--value of assets views-->
     <TextView
         android:id="@+id/assets_value_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/labels_values_margin_top"
         android:text="@string/amount_of_asset"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="16sp"
+        android:textSize="@dimen/basic_labels_fontsize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/asset_spinner" />
 
@@ -49,12 +51,12 @@
         android:id="@+id/assets_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="22dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginStart="@dimen/basic_text_second_level_start_margin"
+        android:layout_marginTop="@dimen/labels_values_margin_top"
         android:text="@string/euro_sign"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="14sp"
+        android:textSize="@dimen/basic_value_fontsize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/assets_value_label" />
 
@@ -63,12 +65,12 @@
         android:id="@+id/money_spent_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/labels_values_margin_top"
         android:text="@string/money_spent_label"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="16sp"
+        android:textSize="@dimen/basic_labels_fontsize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/assets_value" />
 
@@ -76,12 +78,12 @@
         android:id="@+id/money_spent_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="22dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginStart="@dimen/basic_text_second_level_start_margin"
+        android:layout_marginTop="@dimen/labels_values_margin_top"
         android:text="@string/euro_sign"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="14sp"
+        android:textSize="@dimen/basic_value_fontsize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/money_spent_label" />
 
@@ -90,12 +92,12 @@
         android:id="@+id/profit_loss_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/labels_values_margin_top"
         android:text="@string/profit_loss"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="16sp"
+        android:textSize="@dimen/basic_labels_fontsize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/money_spent_value" />
 
@@ -103,12 +105,12 @@
         android:id="@+id/profit_loss_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="22dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginStart="@dimen/basic_text_second_level_start_margin"
+        android:layout_marginTop="@dimen/labels_values_margin_top"
         android:text="@string/euro_sign"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="14sp"
+        android:textSize="@dimen/basic_value_fontsize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/profit_loss_label" />
 
@@ -117,12 +119,12 @@
         android:id="@+id/rewards_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/labels_values_margin_top"
         android:text="@string/rewards_earned"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="16sp"
+        android:textSize="@dimen/basic_labels_fontsize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/profit_loss_value" />
 
@@ -130,12 +132,12 @@
         android:id="@+id/rewards_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="22dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginStart="@dimen/basic_text_second_level_start_margin"
+        android:layout_marginTop="@dimen/labels_values_margin_top"
         android:text="@string/euro_sign"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="14sp"
+        android:textSize="@dimen/basic_value_fontsize"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/rewards_label" />
 
@@ -144,27 +146,25 @@
         android:id="@+id/all_regarding_tx"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="22dp"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="@dimen/labels_values_margin_top"
         android:text="@string/all_transactions_regarding"
         android:textAlignment="center"
         android:textColor="@color/black"
-        android:textSize="14sp"
+        android:textSize="@dimen/basic_value_fontsize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/rewards_value" />
 
-    <ListView
-        android:id="@+id/lv_txs"
-        tools:layout_editor_absoluteX="1dp"
-        android:layout_height="200dp"
+    <FrameLayout
+        android:id="@+id/fragment_container"
         android:layout_width="match_parent"
-        app:layout_constraintTop_toBottomOf="@id/all_regarding_tx"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintVertical_bias="0.97"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        android:layout_height="0dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/all_regarding_tx"
+        android:padding="10dp"
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

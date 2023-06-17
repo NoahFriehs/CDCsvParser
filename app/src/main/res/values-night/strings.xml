@@ -1,7 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="no_internet_connection">no internet connection</string>
     <string name="settings">Settings</string>
-    <string name="use_android_db_for_storage">Use Android DB for storage(Only for CDCsv)</string>
     <string name="use_strict_wallet_type">Use strict wallet type(Only for card)</string>
+    <string name="email">Email:</string>
+    <string name="password">Password:</string>
+    <string name="login">Login</string>
+    <string name="signup">Signup</string>
+    <string name="error_login_failed">Login failed</string>
+    <string name="error_empty_fields">Please fill out all fileds</string>
+    <string name="load_latest_from_database">Load latest from Database</string>
+    <string name="error_signup_email_empty">Signup failed: Email empty</string>
+    <string name="error_signup_pw_to_short">Signup failed: Password too short, min 6 characters</string>
+    <string name="error_signup_failed">\"Signup failed: \"</string>
+    <string name="use_app_without_login">Use App without Login</string>
+    <string name="logout">Logout</string>
+    <string name="delete_account">Delete Account</string>
+    <string name="password_forgotten">Password forgotten</string>
+    <string name="error_noEmail">Please enter your email address</string>
+    <string name="allow_permissions_for_storage">Allow Permissions for Storage</string>
+    <string name="transaction_type">Type</string>
+    <string name="default_date" translatable="false">01.01.1970</string>
+    <string name="amount">Amount:</string>
+    <string name="to_amount">to Amount:</string>
+    <string name="transaction_hash">Transaction Hash:</string>
+    <string name="about_us">About Us</string>
 </resources>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/walletId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        />
+
+    <TextView
+        android:id="@+id/currencyType"
+        android:layout_width="wrap_content"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/basic_text_start_end_margin"
+        android:textSize="@dimen/basic_labels_fontsize"
+        android:textColor="@color/black"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="@string/btc_placeholder" />
+
+    <TextView
+        android:id="@+id/amount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/currencyType"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="@string/currency_type_placeholder" />
+
+    <TextView
+        android:id="@+id/round"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
+        app:layout_constraintTop_toBottomOf="@id/currencyType"
+        app:layout_constraintLeft_toRightOf="@id/amount"
+        android:text="@string/eg" />
+
+    <TextView
+        android:id="@+id/amountValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/currencyType"
+        app:layout_constraintLeft_toRightOf="@id/round"
+        android:text="@string/amountvalue_placeholder" />
+
+    <TextView
+        android:id="@+id/percentProfit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="@string/percentprofit_placerholder" />
+
+    <TextView
+        android:id="@+id/inString"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toRightOf="@+id/percentProfit"
+        android:text="@string/in" />
+
+    <TextView
+        android:id="@+id/amountTransactions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toRightOf="@+id/inString"
+        android:text="@string/amounttransactions_placeholder" />
+
+    <TextView
+        android:id="@+id/transactionSting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toRightOf="@+id/amountTransactions"
+        android:text="@string/transaction_s" />
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/divider_height"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/divider_margin_top"
+        android:background="?android:attr/listDivider"
+        app:layout_constraintTop_toBottomOf="@id/percentProfit"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,19 +2,17 @@ package at.msd.friehs_bicha.cdcsvparser
 
 import android.os.Bundle
 import android.view.MenuItem
-import android.widget.ArrayAdapter
-import android.widget.ListView
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.App.AppType
+import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
-import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
+import at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionFragment
 
 class TransactionsActivity : AppCompatActivity() {
     var appModel: AppModel? = null
 
     /**
-     * Create list of all Transactions on creat this view
+     * Create list of all Transactions on create this view
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,27 +27,15 @@ class TransactionsActivity : AppCompatActivity() {
                 throw RuntimeException(e)
             }
         }
-        val mTransactionList: List<Transaction?>? = appModel!!.txApp!!.transactions
+        val mTransactionList: ArrayList<Transaction> = appModel!!.txApp!!.transactions
 
-        val transactionsStringList: MutableList<String?> = ArrayList()
-        for (tx in mTransactionList!!) {
-            transactionsStringList.add(tx.toString())
-        }
-
-        // Get a reference to the ListView
-        val listView = findViewById<ListView>(R.id.lv_tx)
-        // Create an adapter for the ListView
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, transactionsStringList)
-        // Set the adapter on the ListView
-        listView.adapter = adapter
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, TransactionFragment(mTransactionList))
+            .commit()
     }
 
     private fun getAppModel() {
-        appModel = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser && PreferenceHelper.getUseAndroidDB(applicationContext)) {
-            AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), applicationContext)
-        } else {
-            intent.extras!!["AppModel"] as AppModel?
-        }
+        appModel = AppModelManager.getInstance()
     }
 
     /**

@@ -1,52 +1,109 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
-import at.msd.friehs_bicha.cdcsvparser.App.CroCardTxApp
+import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
+import at.msd.friehs_bicha.cdcsvparser.transactions.CurveCardTx
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import java.io.Serializable
 import java.math.BigDecimal
 
-class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionType: String?, txApp: CroCardTxApp) : Wallet(currencyType, amount, amount), Serializable {
-    var txApp: CroCardTxApp
+/**
+ * Represents a CroCardWallet object
+ */
+class CroCardWallet(
+    currencyType: String?,
+    amount: BigDecimal?,
+    var transactionType: String?,
+    txApp: BaseApp?
+) : Wallet(currencyType, amount, amount), Serializable {
+    constructor(
+        walletID: Long,
+        currencyType: String?,
+        amount: Double?,
+        amountBonus: Double?,
+        moneySpent: Double,
+        outsideWallet: Boolean,
+        transactions: MutableList<CroCardTransaction?>,
+        transactionType: String?
+    ) : this(
+        currencyType,
+        amount?.let { BigDecimal(it) },
+        currencyType,
+        null
+    ) {
+        this.walletId = walletID.toInt()
+        this.currencyType = currencyType
+        this.transactionType = transactionType
+        amount?.let { this.amount = BigDecimal(it) }
+        amountBonus?.let { this.amountBonus = BigDecimal(it) }
+        this.moneySpent = BigDecimal(moneySpent)
+        this.transactions = transactions as MutableList<Transaction?>
+        this.isOutsideWallet = outsideWallet
+    }
+
+    lateinit var txApp: BaseApp
 
     init {
         if (!tts.contains(transactionType)) {
             tts.add(transactionType)
         }
-        this.txApp = txApp
+        if (txApp != null) {
+            this.txApp = txApp
+        }
     }
 
     override fun addTransaction(transaction: Transaction) {
         val cardTransaction = transaction as CroCardTransaction
         val tt = cardTransaction.transactionTypeString
-        //tt = checkForRefund(tt);
         if (tt == "EUR -> EUR") {
             println("Found EUR -> EUR: $tt")
         }
+
+        var ignoreThisTx = false
+
+        if (transaction is CurveCardTx) {
+            if (transaction.txType == "REFUNDED") {
+                FileLog.i("CCW.addTx", "Ignoring CurveCardTx: $transaction")
+                ignoreThisTx = true
+            }
+            if (transaction.txType == "Declined") {
+                FileLog.i("CCW.addTx", "Ignoring CurveCardTx: $transaction")
+                ignoreThisTx = true
+            }
+        }
+
         var w = findWallet(tt)
         if (w != null) {
             w = findWallet(tt)
             if (!txApp.isUseStrictWalletType) {
                 w = getNonStrictWallet(tt)
             }
-            w!!.addToWallet(transaction)
+            if (w == null) {
+                w = CroCardWallet("EUR", BigDecimal.ZERO, tt, txApp)
+            }
+            w.addToWallet(transaction, ignoreThisTx)
             w.transactions!!.add(cardTransaction)
+            transaction.walletId = w.walletId
         } else {
             if (!txApp.isUseStrictWalletType) {
                 w = getNonStrictWallet(tt)
                 if (w == null) {
-                    w = CroCardWallet("EUR", cardTransaction.amount, tt, txApp)
+                    if (!ignoreThisTx) w = CroCardWallet("EUR", cardTransaction.amount, tt, txApp)
+                    else w = CroCardWallet("EUR", BigDecimal.ZERO, tt, txApp)
                     txApp.wallets.add(w)
                     w.transactions!!.add(cardTransaction)
+                    transaction.walletId = w.walletId
                 } else {
-                    w.addToWallet(transaction)
+                    w.addToWallet(transaction, ignoreThisTx)
+                    transaction.walletId = w.walletId
                 }
             } else {
                 w = CroCardWallet("EUR", cardTransaction.amount, tt, txApp)
                 w.transactions!!.add(cardTransaction)
+                transaction.walletId = w.walletId
                 txApp.wallets.add(w)
             }
-            //w.addToWallet(transaction.getAmount());
         }
     }
 
@@ -57,32 +114,28 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
      * @return the index of the wallet
      */
     override fun getWallet(ct: String?): Int {
-        var i = 0
-        for (w in txApp.wallets) {
+        for ((i, w) in txApp.wallets.withIndex()) {
             if ((w as CroCardWallet).transactionType == ct) return i
-            i++
         }
         return -1
     }
 
-    fun writeAmount() {
-        var amountSpent = BigDecimal.ZERO
-        for (w in txApp.wallets) {
-            //System.out.println("-".repeat(20));
-            println((w as CroCardWallet).transactionType)
-            println(w.amount)
-            println(w.moneySpent)
-            println("Transactions: " + w.transactions!!.size)
-            amountSpent = amountSpent.add(w.moneySpent)
+    fun addToWallet(transaction: Transaction, ignoreThisTx: Boolean = false) {
+        transaction.walletId = walletId
+        if (ignoreThisTx) {
+            FileLog.i("CCW.addToWallet", "Ignoring transaction: $transaction")
+            transactions!!.add(transaction)
+            return
         }
-        //System.out.println("-".repeat(20));
-        println("Amount total spent: $amountSpent")
-    }
-
-    fun addToWallet(transaction: Transaction) {
-        amount = amount.add(transaction.amount)
-        moneySpent = moneySpent.add(transaction.amount)
-        transactions!!.add(transaction)
+        if (transaction.currencyType != "EUR") {
+            amount = amount.add(transaction.nativeAmount)
+            moneySpent = moneySpent.add(transaction.nativeAmount)
+            transactions!!.add(transaction)
+        } else {
+            amount = amount.add(transaction.amount)
+            moneySpent = moneySpent.add(transaction.amount)
+            transactions!!.add(transaction)
+        }
     }
 
     /**
@@ -113,11 +166,19 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
         tt = checkForRefund(tt)
         for (w in txApp.wallets) {
             if (tt.contains(" ")) {
-                if ((w as CroCardWallet).transactionType!!.contains(tt.substring(0, tt.indexOf(" ")))) {
+                if ((w as CroCardWallet).transactionType!!.contains(
+                        tt.substring(
+                            0,
+                            tt.indexOf(" ")
+                        )
+                    )
+                ) {
                     w.transactionType = tt.substring(0, tt.indexOf(" "))
                     checkTTS(tt, tt.substring(0, tt.indexOf(" ")))
                     return w
                 }
+            } else if ((w as CroCardWallet).transactionType!!.contains(tt)) {
+                return w
             }
         }
         return null
@@ -164,5 +225,41 @@ class CroCardWallet(currencyType: String?, amount: BigDecimal?, var transactionT
 
     companion object {
         var tts = ArrayList<String?>()
+
+        /**
+         * Converts a HashMap<String, *> to a CroCardWallet object
+         *
+         * @param wallet
+         * @return
+         */
+        fun fromDb(wallet: HashMap<String, *>): CroCardWallet {
+            val walletId = wallet["walletId"] as Long
+            val currencyType = wallet["currencyType"] as String?
+            val amount = wallet["amount"] as Double
+            val amountBonus = wallet["amountBonus"] as Double
+            val moneySpent = wallet["moneySpent"] as Double
+            val isOutsideWallet = wallet["outsideWallet"] as Boolean
+            val transactionType = wallet["transactionType"] as String
+
+            val transactionsList = wallet["transactions"] as MutableList<java.util.HashMap<String, *>?>?
+            val transactions = ArrayList<CroCardTransaction?>()
+
+            transactionsList?.forEach { transactionMap ->
+                transactionMap?.let {
+                    transactions.add(CroCardTransaction.fromDb(it))
+                }
+            }
+
+            return CroCardWallet(
+                walletId,
+                currencyType,
+                amount,
+                amountBonus,
+                moneySpent,
+                isOutsideWallet,
+                transactions,
+                transactionType
+            )
+        }
     }
 }

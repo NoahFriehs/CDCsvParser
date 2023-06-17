@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.activity.WalletViewActivity">
+
+
+    <EditText
+        android:id="@+id/search_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:hint="@string/filter_coin_list"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginTop="@dimen/basic_start_end_margin"
+        android:inputType="text"
+        />
+
+    <TextView
+        android:id="@+id/sorting_string"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginTop="@dimen/wallet_sortBy_margin_top"
+        android:textColor="@color/black"
+        app:layout_constraintTop_toTopOf="@+id/sorting_value"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:textSize="@dimen/basic_labels_fontsize"
+        android:text="@string/sort_by"
+        />
+
+    <Spinner
+        android:id="@+id/sorting_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/basic_start_end_margin"
+        android:layout_marginRight="@dimen/basic_start_end_margin"
+        android:layout_marginTop="@dimen/wallet_spinner_margin_top"
+        app:layout_constraintTop_toBottomOf="@id/search_bar"
+        app:layout_constraintRight_toLeftOf="@id/sorting_type"
+        />
+
+    <Spinner
+        android:id="@+id/sorting_type"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginTop="@dimen/wallet_spinner_margin_top"
+        app:layout_constraintTop_toBottomOf="@id/search_bar"
+        app:layout_constraintRight_toRightOf="parent"
+        />
+
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/basic_frame_layout_height"
+        android:layout_marginTop="@dimen/wallet_frame_margin_top"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/sorting_string"
+        android:padding="@dimen/basic_start_end_margin"
+        />
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

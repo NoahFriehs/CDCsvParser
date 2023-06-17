@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/tv_transactionId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        />
+
+    <TextView
+        android:id="@+id/tv_date"
+        android:layout_width="wrap_content"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/basic_text_start_end_margin"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="@string/date_placeholder" />
+
+    <TextView
+        android:id="@+id/tv_description"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/tv_date"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="@string/description" />
+
+
+    <TextView
+        android:id="@+id/tv_descriptionValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/tv_date"
+        app:layout_constraintLeft_toRightOf="@id/tv_description"
+        android:text="@string/descriptionvalue_placeholder" />
+
+    <TextView
+        android:id="@+id/amount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/tv_description"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="@string/amount" />
+
+    <TextView
+        android:id="@+id/tv_amountValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/tv_description"
+        app:layout_constraintLeft_toRightOf="@+id/amount"
+        android:text="@string/amountvalue_placeholder" />
+
+    <TextView
+        android:id="@+id/tv_assetAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:text="@string/asset_amount" />
+
+    <TextView
+        android:id="@+id/tv_assetAmountValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@id/amount"
+        app:layout_constraintLeft_toRightOf="@+id/tv_assetAmount"
+        android:text="@string/assetvalue_placeholder" />
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/divider_height"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="@dimen/divider_margin_top"
+        android:background="?android:attr/listDivider"
+        app:layout_constraintTop_toBottomOf="@id/tv_assetAmount"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+         />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

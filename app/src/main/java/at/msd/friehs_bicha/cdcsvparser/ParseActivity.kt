@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser
 
+import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
@@ -7,14 +8,22 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.App.AppType
+import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
-import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
 
 class ParseActivity : AppCompatActivity() {
     var appModel: AppModel? = null
+    private lateinit var progressDialog: Dialog
+
+    @JvmField
+    @Volatile
+    var isReady = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        showProgressDialog()
         setContentView(R.layout.activity_parse)
 
         // calling the action bar
@@ -23,27 +32,16 @@ class ParseActivity : AppCompatActivity() {
         getAppModel()
         val btnFilter = findViewById<Button>(R.id.btn_filter)
         val btnTx = findViewById<Button>(R.id.btn_all_tx)
-        btnFilter.setOnClickListener { view: View? ->
+        btnFilter.setOnClickListener {
             if (appModel!!.isRunning) {
-                val intent = Intent(this@ParseActivity, AssetsFilterActivity::class.java)
-                //intent.putExtra("NAME_KEY","Value");
-                intent.putExtra("AppModel", appModel)
+                val intent = Intent(this@ParseActivity, WalletViewActivity::class.java)
                 startActivity(intent)
             }
         }
-        btnTx.setOnClickListener { view: View? ->
+        btnTx.setOnClickListener {
             if (appModel!!.isRunning) {
                 val intent = Intent(this@ParseActivity, TransactionsActivity::class.java)
-                //intent.putExtra("NAME_KEY","Value");
-                intent.putExtra("AppModel", appModel)
                 startActivity(intent)
-            }
-        }
-        while (!appModel!!.isRunning) {
-            try {
-                Thread.sleep(500)
-            } catch (e: InterruptedException) {
-                throw RuntimeException(e)
             }
         }
 
@@ -52,11 +50,7 @@ class ParseActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
-        appModel = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser && PreferenceHelper.getUseAndroidDB(applicationContext)) {
-            AppModel(PreferenceHelper.getSelectedType(this), PreferenceHelper.getUseStrictType(this), applicationContext)
-        } else {
-            intent.extras!!["AppModel"] as AppModel?
-        }
+        appModel = AppModelManager.getInstance()
     }
 
     /**
@@ -67,7 +61,10 @@ class ParseActivity : AppCompatActivity() {
         val t = Thread {
             try {
                 displayTexts(appModel?.parseMap)
+                isReady = true
+                hideProgressDialog()
             } catch (e: InterruptedException) {
+                FileLog.e("ParseActivity", " : $e")
                 throw RuntimeException(e)
             }
         }
@@ -80,12 +77,26 @@ class ParseActivity : AppCompatActivity() {
      * @param texts the Map<String></String>, String> which should be displayed with id of View and text to set pairs
      */
     private fun displayTexts(texts: Map<String, String?>?) {
-        texts!!.forEach { (key: String?, value: String?) ->
+        if (texts == null) {
+            FileLog.e("ParseActivity", "texts is null")
+            return
+        }
+        texts.forEach { (key: String?, value: String?) ->
             val textView = findViewById<TextView>(resources.getIdentifier(key, "id", packageName))
-            if (value == null) {
-                runOnUiThread { textView.visibility = View.INVISIBLE }
-            } else {
-                runOnUiThread { textView.text = value }
+            if (textView == null) {
+                FileLog.e("ParseActivity", "textView is null for key: $key")
+                return
+            }
+            when (value) {
+                "no internet connection" -> {
+                    runOnUiThread { textView.text = resources.getString(R.string.no_internet_connection) }
+                }
+                null -> {
+                    runOnUiThread { textView.visibility = View.INVISIBLE }
+                }
+                else -> {
+                    runOnUiThread { textView.text = value }
+                }
             }
         }
     }
@@ -99,5 +110,17 @@ class ParseActivity : AppCompatActivity() {
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    fun showProgressDialog() {
+        progressDialog = Dialog(this)
+        progressDialog.setContentView(R.layout.progress_icon)
+        progressDialog.setCancelable(false)
+        progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.show()
+    }
+
+    fun hideProgressDialog() {
+        progressDialog.dismiss()
     }
 }
