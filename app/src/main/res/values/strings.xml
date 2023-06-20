@@ -21,7 +21,7 @@
     <string name="email">Email:</string>
     <string name="password">Password:</string>
     <string name="login">Login</string>
-    <string name="signup">Signup</string>
+    <string name="signup"><u>Signup</u></string>
     <string name="error_login_failed">Login failed</string>
     <string name="error_empty_fields">Please fill out all fileds</string>
     <string name="load_latest_from_database">Load latest from Database</string>
@@ -32,7 +32,7 @@
     <string name="use_app_without_login">Use App without Login</string>
     <string name="logout">Logout</string>
     <string name="delete_account">Delete Account</string>
-    <string name="password_forgotten">Password forgotten</string>
+    <string name="password_forgotten"><u>Password forgotten</u></string>
     <string name="error_noEmail">Please enter your email address</string>
     <string name="title_activity_starting">StartingActivity</string>
     <string name="allow_permissions_for_storage">Allow Permissions for Storage</string>
@@ -58,7 +58,7 @@
     <string name="eth_adress" translatable="false">ETH: 0xAF88D27efeF8a656a2ce7044847445467a8a9C7b</string>
     <string name="hope_useful_string">We hope our app is userful and easy to use! :)</string>
     <string name="problem_contact_string">If you found a bug or ran into a problem feel free to contact us under:</string>
-    <string name="cdcsvparser_gmail" translatable="false">cdcsvparser@gmail.com</string>
+    <string name="cdcsvparser_gmail" translatable="false"><u>cdcsvparser@gmail.com</u></string>
     <string name="no_internet_connection">No Internet Connection</string>
     <string name="logoutQuestion">Are you sure you want to log out?</string>
     <string name="yes">Yes</string>

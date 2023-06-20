@@ -82,7 +82,8 @@
         android:text="@string/password_forgotten"
         android:textSize="@dimen/login_small_font"
         app:layout_constraintLeft_toRightOf="@+id/btn_signup"
-        app:layout_constraintTop_toBottomOf="@+id/btn_login" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_login"
+        />
 
     <TextView
         android:id="@+id/tv_error_message"

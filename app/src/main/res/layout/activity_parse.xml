@@ -155,6 +155,7 @@
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:text="@string/coinGeckoAttribution"
         android:textAlignment="center"
+        android:autoLink="web"
         android:textColorLink="@color/link_blue"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintLeft_toRightOf="@id/assets_value_label"

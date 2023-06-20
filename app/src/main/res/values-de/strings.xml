@@ -21,7 +21,7 @@
     <string name="email">E-Mail:</string>
     <string name="password">Passwort:</string>
     <string name="login">Anmelden</string>
-    <string name="signup">Registrieren</string>
+    <string name="signup"><u>Registrieren</u></string>
     <string name="error_login_failed">Anmeldung fehlgeschlagen</string>
     <string name="error_empty_fields">Bitte füllen Sie alle Felder aus</string>
     <string name="error_signup_email_empty">Registrierung fehlgeschlagen: E-Mail leer</string>
@@ -31,7 +31,7 @@
     <string name="use_app_without_login">App ohne Anmeldung verwenden</string>
     <string name="logout">Abmelden</string>
     <string name="delete_account">Konto löschen</string>
-    <string name="password_forgotten">Passwort vergessen</string>
+    <string name="password_forgotten"><u>Passwort vergessen</u></string>
     <string name="error_noEmail">Bitte geben Sie Ihre E-Mail-Adresse ein</string>
     <string name="title_activity_starting">StartingActivity</string>
     <string name="allow_permissions_for_storage">Berechtigungen für Speicher zulassen</string>
