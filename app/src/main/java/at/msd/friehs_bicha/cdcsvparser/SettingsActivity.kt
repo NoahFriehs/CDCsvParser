@@ -76,7 +76,7 @@ class SettingsActivity : AppCompatActivity() {
                     this@SettingsActivity,
                     selectedType
                 )
-                useStrictTypeCheckbox.isEnabled = position != 0
+                //useStrictTypeCheckbox.isEnabled = position != 0
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
