@@ -57,7 +57,7 @@ class SettingsActivity : AppCompatActivity() {
 
         // set the selected app type
         appTypeSpinner.setSelection(selectedType.ordinal)
-        useStrictTypeCheckbox.isEnabled = selectedType != AppType.CroCard
+        useStrictTypeCheckbox.isEnabled = false//selectedType != AppType.CroCard
         useStrictTypeCheckbox.isChecked = useStrictType
         useStrictTypeCheckbox.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { _, isChecked ->
             useStrictType = isChecked
