@@ -428,30 +428,46 @@ class MainActivity : AppCompatActivity() {
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         val db = Firebase.firestore
 
-        db.collection("user").document(uid).delete()
+        var userMap = hashMapOf<String, Any>()
 
-        val appSettings = AppSettings(
-            uid,
-            PreferenceHelper.getSelectedType(this),
-            PreferenceHelper.getUseStrictType(this)
-        )
-        val appSettingsMap = appSettings.toHashMap()
+        db.collection("user").document(uid).get().addOnSuccessListener {
+            if (it != null) {
+                userMap = it.data as HashMap<String, Any>
+            }
 
-        val userMap = hashMapOf(
-            "appModel" to appModel!!.toHashMap(),
-            "appSettings" to appSettingsMap
-        )
+            val appSettings = AppSettings(
+                uid,
+                PreferenceHelper.getSelectedType(this),
+                PreferenceHelper.getUseStrictType(this)
+            )
+            val appSettingsMap = appSettings.toHashMap()
 
-        db.collection("user").document(uid).set(userMap).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                // Data saved successfully
-                Toast.makeText(this, "Data saved successfully", Toast.LENGTH_SHORT).show()
+            userMap.putAll( if (appModel?.appType!! != AppType.CdCsvParser) {
+                hashMapOf(
+                    "appModelCard" to appModel!!.toHashMap(),
+                    "appSettings" to appSettingsMap
+                )
             } else {
-                // Handle database error
-                Toast.makeText(this, "Error saving data", Toast.LENGTH_SHORT).show()
-                FileLog.e("MainActivity", "Error saving data to database ${task.exception}")
+                hashMapOf(
+                    "appModel" to appModel!!.toHashMap(),
+                    "appSettings" to appSettingsMap
+                )
+            })
+
+
+            db.collection("user").document(uid).set(userMap).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    // Data saved successfully
+                    Toast.makeText(this, "Data saved successfully", Toast.LENGTH_SHORT).show()
+                } else {
+                    // Handle database error
+                    Toast.makeText(this, "Error saving data", Toast.LENGTH_SHORT).show()
+                    FileLog.e("MainActivity", "Error saving data to database ${task.exception}")
+                }
             }
         }
+
+
     }
 
     private fun loadFromFireBaseDB() {
@@ -485,7 +501,17 @@ class MainActivity : AppCompatActivity() {
                         return@addOnSuccessListener
                     }
 
-                    val txAppMap = userMap["appModel"] as HashMap<String, Any>?
+                    var txAppMap = userMap["appModel"] as HashMap<String, Any>?
+                    if (txAppMap == null) {
+                        txAppMap = userMap["appModelCard"] as HashMap<String, Any>?
+                    }
+
+                    txAppMap = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser || userMap["appModelCard"] == null) {
+                        userMap["appModel"] as HashMap<String, Any>?
+                    } else {
+                        userMap["appModelCard"] as HashMap<String, Any>?
+                    }
+
                     val appType = AppType.valueOf(appSettings["appType"] as String)
 
                     val useStrictType = appSettings["useStrictType"] as Boolean
