@@ -21,6 +21,7 @@ class FileLog {
     companion object {
         @SuppressLint("StaticFieldLeak")
         private var m_context: Context? = null
+        private var logIsEnabled = true
         private var isInitialized = false
         private var LOG_FILENAME = "CDCsvParser.log"
         private val TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS"
@@ -31,7 +32,9 @@ class FileLog {
          * @param context The context of the application
          * @param logFilename The filename of the log file
          */
-        fun init(context: Context, logFilename: String = "log/CDCsvParser.log") {
+        fun init(context: Context, logFilename: String = "log/CDCsvParser.log", logEnabled: Boolean = true) {
+            logIsEnabled = logEnabled
+            if (!logIsEnabled) return
             m_context = context
             LOG_FILENAME = logFilename
 
@@ -61,6 +64,7 @@ class FileLog {
          * @param message The message you would like logged.
          */
         fun d(tag: String?, message: String) {
+            if (!logIsEnabled) return
             Log.d(tag, message)
             if (!isInitialized) return
             writeToFile(tag, message)
@@ -74,6 +78,7 @@ class FileLog {
          * @param message The message you would like logged.
          */
         fun i(tag: String?, message: String) {
+            if (!logIsEnabled) return
             Log.i(tag, message)
             if (!isInitialized) return
             writeToFile(tag, "Info: $message")
@@ -87,6 +92,7 @@ class FileLog {
          * @param message The message you would like logged.
          */
         fun e(tag: String?, message: String) {
+            if (!logIsEnabled) return
             Log.e(tag, message)
             if (!isInitialized) return
             writeToFile(tag, "Error: $message")
@@ -100,6 +106,7 @@ class FileLog {
          * @param message The message you would like logged.
          */
         fun w(tag: String?, message: String) {
+            if (!logIsEnabled) return
             Log.w(tag, message)
             if (!isInitialized) return
             writeToFile(tag, "Warning: $message")
