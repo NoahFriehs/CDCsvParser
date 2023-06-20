@@ -508,6 +508,7 @@ class MainActivity : AppCompatActivity() {
 
                     txAppMap = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser || userMap["appModelCard"] == null) {
                         userMap["appModel"] as HashMap<String, Any>?
+                        txAppMap ?: userMap["appModelCard"] as HashMap<String, Any>?
                     } else {
                         userMap["appModelCard"] as HashMap<String, Any>?
                     }
