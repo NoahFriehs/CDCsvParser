@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
+import com.google.firebase.Timestamp
 import java.io.Serializable
 import java.math.BigDecimal
 import java.math.MathContext
@@ -95,7 +96,7 @@ open class CroCardTransaction(
                 transaction["description"] as String,
                 (transaction["walletId"] as Long).toInt(),
                 (transaction["fromWalletId"] as Long).toInt(),
-                (transaction["date"] as Date),
+                (transaction["date"] as Timestamp).toDate(),
                 transaction["currencyType"] as String,
                 transaction["amount"] as Double,
                 transaction["nativeAmount"] as Double,
