@@ -15,7 +15,7 @@
     <string name="amount_of_asset">Menge des Assets</string>
     <string name="all_transactions_regarding">"Alle Transaktionen zu "</string>
     <string name="show_history">Verlauf anzeigen</string>
-    <string name="coinGeckoAttribution">Alle Preise bereitgestellt von \n<a href="https://min-api.cryptocompare.com/">CryptoCompare API</a></string>
+    <string name="coinGeckoAttribution">Alle Preise bereitgestellt von \n Crypto Compare API \n<a href="https://min-api.cryptocompare.com/">https://min-api.cryptocompare.com</a></string>
     <string name="settings">Einstellungen</string>
     <string name="use_strict_wallet_type">Verwende strikten Wallet-Typ (Nur für Karten)</string>
     <string name="email">E-Mail:</string>
