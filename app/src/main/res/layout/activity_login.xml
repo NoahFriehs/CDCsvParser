@@ -1,115 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:layout_height="match_parent">
 
     <TextView
         android:id="@+id/tv_email"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/login_middle_top_margin"
+        android:layout_marginTop="@dimen/login_middle_top_margin"
         android:text="@string/email"
         android:textSize="@dimen/login_middle_font"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:layout_marginTop="@dimen/login_middle_top_margin"
-        android:layout_marginStart="@dimen/login_middle_top_margin"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
         android:id="@+id/et_email"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@+id/tv_email"
+        android:layout_marginStart="@dimen/login_basic_start_end_margin"
+        android:layout_marginTop="@dimen/login_small_top_margin"
+        android:layout_marginEnd="@dimen/login_basic_start_end_margin"
+        android:inputType="textEmailAddress"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginStart="@dimen/login_basic_start_end_margin"
-        android:layout_marginEnd="@dimen/login_basic_start_end_margin"
-        android:layout_marginTop="@dimen/login_small_top_margin"
-        android:inputType="textEmailAddress"/>
+        app:layout_constraintTop_toBottomOf="@+id/tv_email" />
 
     <TextView
         android:id="@+id/tv_password"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/login_basic_start_end_margin"
+        android:layout_marginTop="@dimen/login_middle_top_margin"
         android:text="@string/password"
         android:textSize="@dimen/login_middle_font"
-        app:layout_constraintTop_toBottomOf="@+id/et_email"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:layout_marginTop="@dimen/login_middle_top_margin"
-        android:layout_marginStart="@dimen/login_basic_start_end_margin"/>
+        app:layout_constraintTop_toBottomOf="@+id/et_email" />
 
     <EditText
         android:id="@+id/et_password"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/login_basic_start_end_margin"
+        android:layout_marginTop="@dimen/login_small_top_margin"
+        android:layout_marginRight="@dimen/login_basic_start_end_margin"
+        android:inputType="textPassword"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_password"
-        android:layout_marginLeft="@dimen/login_basic_start_end_margin"
-        android:layout_marginRight="@dimen/login_basic_start_end_margin"
-        android:layout_marginTop="@dimen/login_small_top_margin"
-        android:inputType="textPassword"/>
+        app:layout_constraintTop_toBottomOf="@id/tv_password" />
 
     <Button
         android:id="@+id/btn_login"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/login_basic_start_end_margin"
+        android:layout_marginTop="@dimen/login_middle_top_margin"
+        android:layout_marginRight="@dimen/login_basic_start_end_margin"
         android:text="@string/login"
-        app:layout_constraintTop_toBottomOf="@+id/et_password"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginLeft="@dimen/login_basic_start_end_margin"
-        android:layout_marginRight="@dimen/login_basic_start_end_margin"
-        android:layout_marginTop="@dimen/login_middle_top_margin"/>
+        app:layout_constraintTop_toBottomOf="@+id/et_password" />
 
     <TextView
         android:id="@+id/btn_signup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/login_basic_start_end_margin"
+        android:layout_marginTop="@dimen/login_middle_top_margin"
         android:text="@string/signup"
         android:textSize="@dimen/login_small_font"
-        app:layout_constraintTop_toBottomOf="@+id/btn_login"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:layout_marginTop="@dimen/login_middle_top_margin"
-        android:layout_marginStart="@dimen/login_basic_start_end_margin"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/btn_login" />
 
     <TextView
         android:id="@+id/btn_forgot_password"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/login_basic_start_end_margin"
+        android:layout_marginTop="@dimen/login_middle_top_margin"
         android:text="@string/password_forgotten"
         android:textSize="@dimen/login_small_font"
-        app:layout_constraintTop_toBottomOf="@+id/btn_login"
         app:layout_constraintLeft_toRightOf="@+id/btn_signup"
-        android:layout_marginTop="@dimen/login_middle_top_margin"
-        android:layout_marginStart="@dimen/login_basic_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@+id/btn_login"
         />
 
     <TextView
         android:id="@+id/tv_error_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@android:color/holo_red_dark"
-        app:layout_constraintTop_toBottomOf="@+id/btn_signup"
-        app:layout_constraintLeft_toLeftOf="parent"
-        android:textSize="@dimen/login_small_font"
+        android:layout_marginStart="@dimen/login_basic_start_end_margin"
         android:layout_marginTop="@dimen/login_middle_top_margin"
-        android:layout_marginStart="@dimen/login_basic_start_end_margin"/>
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="@dimen/login_small_font"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn_signup" />
 
     <Button
         android:id="@+id/btn_without_login"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/use_app_without_login"
-        android:textStyle="bold"
+        android:layout_alignParentBottom="true"
         android:layout_margin="@dimen/login_basic_start_end_margin"
         android:background="@drawable/round_button_layer_list"
+        android:text="@string/use_app_without_login"
         android:textAllCaps="false"
+        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:layout_alignParentBottom="true"
-        />
+        app:layout_constraintRight_toRightOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

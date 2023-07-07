@@ -157,6 +157,7 @@
         android:layout_height="wrap_content"
         android:text="@string/coinGeckoAttribution"
         android:textAlignment="center"
+        android:autoLink="web"
         android:textColorLink="@color/link_blue"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

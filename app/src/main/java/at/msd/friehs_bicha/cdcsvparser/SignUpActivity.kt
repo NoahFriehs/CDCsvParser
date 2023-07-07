@@ -3,6 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
+import android.view.MenuItem
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -18,6 +19,9 @@ class SignUpActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_up)
+
+        val actionBar = supportActionBar
+        actionBar!!.setDisplayHomeAsUpEnabled(true)
         auth = FirebaseAuth.getInstance()
 
         val btnSignup = findViewById<Button>(R.id.btn_signup)
@@ -74,4 +78,15 @@ class SignUpActivity : AppCompatActivity() {
         }
     }
 
+
+    /**
+     * Set the back button in action bar
+     */
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
 }
