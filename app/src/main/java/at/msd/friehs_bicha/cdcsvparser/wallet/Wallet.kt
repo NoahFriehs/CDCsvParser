@@ -1,17 +1,25 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import java.io.Serializable
 import java.math.BigDecimal
 
 /**
  * Represents a basic Wallet
  */
+@Entity(tableName = "wallets")
+@TypeConverters(Converter::class, Converter.BigDecimalConverter::class)
 open class Wallet : Serializable {
 
+    @PrimaryKey
     var walletId: Int
 
-
+    @Ignore
     var transactions: MutableList<Transaction?>? = null
 
     var currencyType: String?
@@ -24,6 +32,7 @@ open class Wallet : Serializable {
 
     var isOutsideWallet = false
 
+    @Ignore
     constructor(currencyType: String?, amount: BigDecimal?, nativeAmount: BigDecimal?) {
         this.currencyType = currencyType
         this.amount = BigDecimal(0)
@@ -35,6 +44,7 @@ open class Wallet : Serializable {
         walletId = ++uidCounter
     }
 
+    @Ignore
     constructor(
         currencyType: String?,
         amount: BigDecimal,
@@ -49,6 +59,7 @@ open class Wallet : Serializable {
         walletId = ++uidCounter
     }
 
+    @Ignore
     constructor(
         currencyType: String?,
         amount: BigDecimal,

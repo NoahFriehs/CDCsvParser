@@ -79,37 +79,19 @@ object Converter {
         }
     }
 
-    /**
-     * Converts a BigDecimal to a Double
-     */
-    @TypeConverter
-    fun bdToDouble(bd: BigDecimal): Double {
-        return bd.toDouble()
+
+    class BigDecimalConverter {
+        @TypeConverter
+        fun fromBigDecimal(value: BigDecimal?): String? {
+            return value?.toString()
+        }
+
+        @TypeConverter
+        fun toBigDecimal(value: String?): BigDecimal? {
+            return value?.let { BigDecimal(it) }
+        }
     }
 
-    /**
-     * Converts a BigDecimal to a String
-     *
-     * @param value the BigDecimal to be converted
-     * @return the String of the BigDecimal
-     */
-    @JvmStatic
-    @TypeConverter
-    fun toString(value: BigDecimal?): String? {
-        return value?.toString()
-    }
-
-    /**
-     * Converts a String to a BigDecimal
-     *
-     * @param value the String to be converted
-     * @return the BigDecimal of the String
-     */
-    @JvmStatic
-    @TypeConverter
-    fun toBigDecimal(value: String?): BigDecimal? {
-        return if (value == null) null else BigDecimal(value)
-    }
 
     @JvmStatic
     @TypeConverter

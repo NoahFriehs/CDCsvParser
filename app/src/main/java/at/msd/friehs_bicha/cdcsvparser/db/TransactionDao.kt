@@ -1,7 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.db
 
-//import androidx.room.*
-//import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import androidx.room.*
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 //
 //@Dao
 //interface TransactionDao {
@@ -23,3 +23,18 @@ package at.msd.friehs_bicha.cdcsvparser.db
 //    @Query("DELETE FROM transactions")
 //    fun deleteAll()
 //}
+
+@Dao
+interface TransactionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertTransaction(transaction: Transaction)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(transactions: List<Transaction>)
+
+    @Query("SELECT * FROM transactions")
+    fun getAllTransactions(): List<Transaction>
+
+    @Query("DELETE FROM wallets")
+    fun deleteAll()
+}

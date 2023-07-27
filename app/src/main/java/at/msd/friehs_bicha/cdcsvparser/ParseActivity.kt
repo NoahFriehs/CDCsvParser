@@ -50,6 +50,18 @@ class ParseActivity : AppCompatActivity() {
     }
 
     private fun getAppModel() {
+        if (AppModelManager.getInstance() == null) {
+            FileLog.e("ParseActivity", "appModel is null")
+            //wait until appModel is initialized
+            while (AppModelManager.getInstance() == null) {
+                try {
+                    Thread.sleep(500)
+                } catch (e: InterruptedException) {
+                    FileLog.e("ParseActivity", " : $e")
+                    throw RuntimeException(e)
+                }
+            }
+        }
         appModel = AppModelManager.getInstance()
     }
 

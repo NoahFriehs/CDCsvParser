@@ -26,7 +26,7 @@ class WalletViewActivity : AppCompatActivity() {
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
-        val appModel = AppModelManager.getInstance()
+        val appModel = AppModelManager.getInstance()!!  //TODO: check if null
         val wallets = appModel.txApp!!.wallets
 
         val spinnerValueSpinner = findViewById<Spinner>(R.id.sorting_value)
@@ -150,7 +150,7 @@ class WalletViewActivity : AppCompatActivity() {
         when (sortingValue) {
             resources.getString(R.string.sort_amount) -> {
                 sortedWallets = sortedWallets.sortedByDescending {
-                    AppModelManager.getInstance().getValueOfAssets(it)
+                    AppModelManager.getInstance()!!.getValueOfAssets(it)    //TODO: check if null
                 }.toList() as ArrayList<Wallet>
             }
 
@@ -161,7 +161,7 @@ class WalletViewActivity : AppCompatActivity() {
 
             resources.getString(R.string.sort_percent) -> {
                 sortedWallets = sortedWallets.sortedWith(compareByDescending {
-                    val assetValue = AppModelManager.getInstance().getValueOfAssets(it)
+                    val assetValue = AppModelManager.getInstance()!!.getValueOfAssets(it)   //TODO: check if null
                     val percentProfit = assetValue / it.moneySpent.toDouble() * 100
                     percentProfit
                 }).toList() as ArrayList<Wallet>

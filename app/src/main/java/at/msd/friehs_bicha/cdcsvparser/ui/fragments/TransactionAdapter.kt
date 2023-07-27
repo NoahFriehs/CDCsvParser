@@ -25,7 +25,7 @@ class TransactionAdapter(private val transactions: List<Transaction>) :
             itemView.setOnClickListener {
                 val transactionId =
                     itemView.findViewById<TextView>(R.id.tv_transactionId).text.toString().toInt()
-                val appModel = AppModelManager.getInstance()
+                val appModel = AppModelManager.getInstance()!!  //TODO: check if null
                 val transaction =
                     appModel.txApp!!.transactions.find { it.transactionId == transactionId }
                 val intent = Intent(itemView.context, TransactionActivity::class.java)
@@ -49,7 +49,7 @@ class TransactionAdapter(private val transactions: List<Transaction>) :
 
     override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
         val transaction = transactions[position]
-        val waMap = AppModelManager.getInstance().getTransactionAdapter(transaction)
+        val waMap = AppModelManager.getInstance()!!.getTransactionAdapter(transaction)  //TODO: check if null
         displayTexts(waMap, holder, holder.itemView.context)
     }
 

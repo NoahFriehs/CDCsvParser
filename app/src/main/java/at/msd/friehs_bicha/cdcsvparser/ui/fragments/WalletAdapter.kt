@@ -25,7 +25,7 @@ class WalletAdapter(val wallets: List<Wallet>) :
             itemView.setOnClickListener {
                 val walletId =
                     itemView.findViewById<TextView>(R.id.walletId).text.toString().toInt()
-                val appModel = AppModelManager.getInstance()
+                val appModel = AppModelManager.getInstance()!!  //TODO: check if null
                 val wallet = appModel.txApp!!.wallets.find { it.walletId == walletId }
                 val intent = Intent(itemView.context, AssetsFilterActivity::class.java)
                 intent.putExtra("wallet", wallet)
@@ -46,7 +46,7 @@ class WalletAdapter(val wallets: List<Wallet>) :
 
     override fun onBindViewHolder(holder: WalletViewHolder, position: Int) {
         val wallet = wallets[position]
-        val waMap = AppModelManager.getInstance().getWalletAdapter(wallet)
+        val waMap = AppModelManager.getInstance()!!.getWalletAdapter(wallet)    //TODO: check if null
         displayTexts(waMap, holder, holder.itemView.context)
     }
 

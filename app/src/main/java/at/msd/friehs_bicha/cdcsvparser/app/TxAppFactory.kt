@@ -5,6 +5,7 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.util.function.Consumer
 
 /**
@@ -45,6 +46,14 @@ class TxAppFactory {
                             dataContainer[DataTypes.dbWallets] as ArrayList<java.util.HashMap<String, *>>,
                             dataContainer[DataTypes.dbOutsideWallets] as ArrayList<java.util.HashMap<String, *>>,
                             dataContainer[DataTypes.dbTransactions] as ArrayList<java.util.HashMap<String, *>>,
+                            appType,
+                            dataContainer[DataTypes.amountTxFailed] as Long
+                        )
+
+                        AppStatus.Finished -> initFromLocalDB(
+                            dataContainer[DataTypes.dbWallets] as ArrayList<Wallet>,
+                            dataContainer[DataTypes.dbOutsideWallets] as ArrayList<Wallet>,
+                            dataContainer[DataTypes.dbTransactions] as ArrayList<Transaction>,
                             appType,
                             dataContainer[DataTypes.amountTxFailed] as Long
                         )
@@ -94,6 +103,18 @@ class TxAppFactory {
                 }
             }
             return txApp
+        }
+
+        private fun initFromLocalDB(wallets: ArrayList<Wallet>, outsideWallets: ArrayList<Wallet>, transactions: ArrayList<Transaction>, appType: AppType, amountTxFailed: Long): StandardTxApp {
+            val tXs: MutableList<Transaction> = ArrayList()
+            val wTXs: MutableList<Wallet> = ArrayList()
+            val wTXsOutside: MutableList<Wallet> = ArrayList()
+
+            wTXs.addAll(wallets)
+            wTXsOutside.addAll(outsideWallets)
+            tXs.addAll(transactions)
+
+            return StandardTxApp(tXs, wTXs, wTXsOutside, amountTxFailed, appType, true)
         }
 
         /**

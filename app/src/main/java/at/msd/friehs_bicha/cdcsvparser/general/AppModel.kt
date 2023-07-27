@@ -2,12 +2,18 @@ package at.msd.friehs_bicha.cdcsvparser.general
 
 import android.graphics.Color
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.SettingsActivity.Companion.useStrictType
 import at.msd.friehs_bicha.cdcsvparser.app.*
+import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
+import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import at.msd.friehs_bicha.cdcsvparser.wallet.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.io.Serializable
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
@@ -37,6 +43,7 @@ class AppModel : BaseAppModel, Serializable {
             useStrictType,
             hashMapOf(DataTypes.csvAsList to file)
         )
+        saveAppModelLocal()
         isRunning = true
         if (txApp!!.amountTxFailed > 0) {
             FileLog.e("AppModel", "txApp: amountTxFailed, AppType: $appType")
@@ -73,7 +80,14 @@ class AppModel : BaseAppModel, Serializable {
                 DataTypes.amountTxFailed to amountTxFailed
             )
         )
+        saveAppModelLocal()
         isRunning = true
+    }
+
+
+    constructor() : super(AppType.CdCsvParser)
+    {
+        loadAppModelLocal()
     }
 
 
@@ -304,6 +318,62 @@ class AppModel : BaseAppModel, Serializable {
 //        t.start()
 //        return true
 //    }
+
+
+    private fun saveAppModelLocal()
+    {
+        GlobalScope.launch {
+            val walletDao = InstanceVars.db.walletDao()
+            val txDao = InstanceVars.db.transactionDao()
+
+            walletDao.deleteAll()
+            txDao.deleteAll()
+
+            //TODO: save calculated data to db
+            walletDao.insertAll(txApp!!.wallets)
+            walletDao.insertAll(txApp!!.outsideWallets)
+            txDao.insertAll(txApp!!.transactions)
+
+            PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
+        }
+    }
+
+
+    private fun loadAppModelLocal()
+    {
+        Thread{
+            val ws = InstanceVars.db.walletDao().getAllWallets()
+            val txs = InstanceVars.db.transactionDao().getAllTransactions()
+
+            val wallets = ArrayList<Wallet>()
+            val outsideWallets = ArrayList<Wallet>()
+
+            ws.forEach {
+                it.wallet.transactions = ArrayList()
+                (it.wallet.transactions as ArrayList<Transaction?>).addAll(it.transactions) //more difficult way: txs.filter { tx -> tx.walletId == it.wallet.walletId }
+                if (it.wallet.isOutsideWallet) {
+                    outsideWallets.add(it.wallet)
+                } else {
+                    wallets.add(it.wallet)
+                }
+
+            }
+
+            txApp = TxAppFactory.createTxApp(
+                AppType.CdCsvParser,
+                AppStatus.Finished,
+                useStrictType,
+                hashMapOf(
+                    DataTypes.dbWallets to wallets,
+                    DataTypes.dbOutsideWallets to outsideWallets,
+                    DataTypes.dbTransactions to txs,
+                    DataTypes.amountTxFailed to 0L
+                )
+            )
+
+            isRunning = true
+        }.start()
+    }
 
 
     /**

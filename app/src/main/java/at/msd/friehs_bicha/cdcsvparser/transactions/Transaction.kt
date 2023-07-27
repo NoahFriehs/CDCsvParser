@@ -1,9 +1,14 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import com.google.firebase.Timestamp
 import java.io.Serializable
 import java.math.BigDecimal
@@ -13,8 +18,18 @@ import java.util.Date
 /**
  * Represents a Transaction object
  */
+@Entity(tableName = "transactions",
+    foreignKeys = [ForeignKey(
+        entity = Wallet::class,
+        parentColumns = ["walletId"],
+        childColumns = ["walletId"],
+        onDelete = ForeignKey.CASCADE
+    )]
+)
+@TypeConverters(Converter::class, Converter.BigDecimalConverter::class)
 open class Transaction : Serializable {
 
+    @PrimaryKey
     var transactionId: Int
 
     var description: String

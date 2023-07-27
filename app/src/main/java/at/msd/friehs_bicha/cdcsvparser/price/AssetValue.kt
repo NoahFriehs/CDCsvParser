@@ -60,6 +60,7 @@ class AssetValue : Serializable {
         }
         if (priceApi != 0.0) {
             cache.add(PriceCache(symbol, priceApi))
+            FileLog.d("AssetValue", "added cache for $symbol")
             return priceApi
         }
         var symbol = symbol
