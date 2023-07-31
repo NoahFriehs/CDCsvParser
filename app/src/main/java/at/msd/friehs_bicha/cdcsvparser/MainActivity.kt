@@ -13,6 +13,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
@@ -23,6 +24,7 @@ import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import io.grpc.internal.SharedResourceHolder.Resource
 import java.io.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -73,6 +75,16 @@ class MainActivity : AppCompatActivity() {
             setSpinner(dropdown)
             btnHistory.setOnClickListener { onBtnHistoryClick(dropdown) }
         }
+
+        if (intent.hasExtra("fastStart")) {
+            fastStart()
+        }
+
+    }
+
+    private fun fastStart() {
+        val intent = Intent(this@MainActivity, ParseActivity::class.java)
+        startActivity(intent)
     }
 
 
@@ -102,8 +114,7 @@ class MainActivity : AppCompatActivity() {
      * @param btnHistory the button to de/activate
      */
     private fun setHistory(type: String, dropdown: Spinner, btnHistory: Button) {
-        val res = resources
-        val drawable = res.getDrawable(R.drawable.round_button_layer_list)  //TODO is deprecated
+        val drawable = ResourcesCompat.getDrawable(resources, R.drawable.round_button_layer_list, null)
         when (type) {
             "disabled" -> {
                 // Disable the button
@@ -336,7 +347,7 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == Companion.readExternalStorageRequestCode) {
+        if (requestCode == readExternalStorageRequestCode) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission is granted. Continue the action or workflow
                 // in your app.

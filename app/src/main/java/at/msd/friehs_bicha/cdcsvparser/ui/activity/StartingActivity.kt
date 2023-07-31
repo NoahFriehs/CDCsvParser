@@ -7,7 +7,6 @@ import android.os.Looper
 import androidx.activity.ComponentActivity
 import at.msd.friehs_bicha.cdcsvparser.LoginActivity
 import at.msd.friehs_bicha.cdcsvparser.MainActivity
-import at.msd.friehs_bicha.cdcsvparser.ParseActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
@@ -48,7 +47,9 @@ class StartingActivity : ComponentActivity() {
 
         AppModelManager.setInstance(AppModel())
 
-        val intent = Intent(this, ParseActivity::class.java)
+        val intent = Intent(this, MainActivity::class.java)
+
+        intent.putExtra("fastStart", true)
 
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(intent)
