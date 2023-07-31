@@ -8,11 +8,10 @@ import java.util.*
  * Asset value class
  */
 class AssetValue : Serializable {
-    val cache: MutableList<PriceCache>
+    private val cache = PriceCache()
     var isRunning: Boolean
 
     init {
-        cache = ArrayList()
         isRunning = true
     }
 
@@ -24,11 +23,11 @@ class AssetValue : Serializable {
          *
          * @return the instance of the AssetValue class
          */
-        fun getInstance(): AssetValue? {
+        fun getInstance(): AssetValue {
             if (instance == null) {
                 instance = AssetValue()
             }
-            return instance
+            return instance!!
         }
     }
 
@@ -45,7 +44,7 @@ class AssetValue : Serializable {
 
         if (symbol == "EUR") return 1.0
 
-        var price = checkCache(symbol)
+        var price = cache.checkCache(symbol)
         if (price != -1.0) {
             isRunning = true
             return price
@@ -59,13 +58,12 @@ class AssetValue : Serializable {
             return 0.0
         }
         if (priceApi != 0.0) {
-            cache.add(PriceCache(symbol, priceApi))
-            FileLog.d("AssetValue", "added cache for $symbol")
+            cache.addPrice(symbol, priceApi)
             return priceApi
         }
         var symbol = symbol
         symbol = overrideSymbol(symbol)
-        price = checkCache(symbol)
+        price = cache.checkCache(symbol)
         if (price != -1.0) {
             isRunning = true
             return price
@@ -86,13 +84,8 @@ class AssetValue : Serializable {
         return if (symbol == "LUNA2") "terra-luna-2" else symbol
     }
 
-    /**
-     * Checks if the price of the symbol is stored
-     *
-     * @param symbol the symbol to be checked for
-     * @return a price if it has it it else -1
-     */
-    private fun checkCache(symbol: String): Double {
+
+    /*private fun checkCache(symbol: String): Double {
         var i = 0
         while (i < cache.size) {
             if (cache[i].isOlderThanFiveMinutes) {
@@ -108,5 +101,5 @@ class AssetValue : Serializable {
             i++
         }
         return (-1).toDouble()
-    }
+    }*/
 }

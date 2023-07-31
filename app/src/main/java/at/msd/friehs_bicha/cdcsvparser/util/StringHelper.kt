@@ -89,10 +89,14 @@ object StringHelper {
             }
             index--
         }
-        return if (index == amount.length - 1) {
+        var ret = if (index == amount.length - 1) {
             amount
         } else {
             amount.substring(0, index + 1)
         }
+        if (ret.endsWith(".")) {
+            ret = ret.substring(0, ret.length - 1)
+        }
+        return ret
     }
 }
