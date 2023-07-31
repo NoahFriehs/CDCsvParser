@@ -26,6 +26,24 @@
         app:layout_constraintTop_toBottomOf="@+id/wallet_type_spinner"
         android:text="@string/use_strict_wallet_type" />
 
+    <CheckBox
+        android:id="@+id/cb_store_data_local"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@+id/use_strict_wallet_type_checkbox"
+        android:text="@string/store_data_local_needed_for_faststart" />
+
+    <CheckBox
+        android:id="@+id/cb_enable_fast_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@+id/cb_store_data_local"
+        android:text="@string/enable_faststart" />
+
 
     <Button
         android:id="@+id/btn_permission_request"

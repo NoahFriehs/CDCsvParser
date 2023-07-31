@@ -43,7 +43,7 @@ class AppModel : BaseAppModel, Serializable {
             useStrictType,
             hashMapOf(DataTypes.csvAsList to file)
         )
-        saveAppModelLocal()
+        if (PreferenceHelper.getIsDataLocal(applicationContext)) saveAppModelLocal()
         isRunning = true
         if (txApp!!.amountTxFailed > 0) {
             FileLog.e("AppModel", "txApp: amountTxFailed, AppType: $appType")
@@ -80,7 +80,7 @@ class AppModel : BaseAppModel, Serializable {
                 DataTypes.amountTxFailed to amountTxFailed
             )
         )
-        saveAppModelLocal()
+        if (PreferenceHelper.getIsDataLocal(applicationContext)) saveAppModelLocal()
         isRunning = true
     }
 
@@ -130,7 +130,7 @@ class AppModel : BaseAppModel, Serializable {
             var valueOfAll = 0.0
             for (wallet in txApp!!.wallets) {
                 if (wallet.currencyType == "EUR") continue
-                val price = wallet.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
+                val price = wallet.currencyType?.let { AssetValue.getInstance().getPrice(it) }!!
                 val amount = wallet.amountBonus
                 valueOfAll += price * amount.toDouble()
             }
@@ -148,7 +148,7 @@ class AppModel : BaseAppModel, Serializable {
     private fun getTotalBonus(wallet: Wallet?): Double {
         return try {
             var valueOfAll = 0.0
-            val price = wallet!!.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
+            val price = wallet!!.currencyType?.let { AssetValue.getInstance().getPrice(it) }!!
             val amount = wallet.amountBonus
             valueOfAll += price * amount.toDouble()
             valueOfAll
@@ -168,7 +168,7 @@ class AppModel : BaseAppModel, Serializable {
             var valueOfAll = 0.0
             for (w in txApp!!.wallets) {
                 if (w.currencyType == "EUR") continue
-                val price = w.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
+                val price = w.currencyType?.let { AssetValue.getInstance().getPrice(it) }!!
                 val amount = w.amount
                 valueOfAll += price * amount.toDouble()
                 if (valueOfAll < 0.0) {
@@ -189,7 +189,7 @@ class AppModel : BaseAppModel, Serializable {
     fun getValueOfAssets(w: Wallet?): Double {
         return try {
             val valueOfWallet: Double
-            val price = w!!.currencyType?.let { AssetValue.getInstance()!!.getPrice(it) }!!
+            val price = w!!.currencyType?.let { AssetValue.getInstance().getPrice(it) }!!
             val amount = w.amount
             valueOfWallet = price * amount.toDouble()
             valueOfWallet
@@ -211,7 +211,7 @@ class AppModel : BaseAppModel, Serializable {
             AppType.CdCsvParser -> {
                 val amountOfAsset = getValueOfAssets(wallet)
                 val rewardValue = getTotalBonus(wallet)
-                if (AssetValue.getInstance()!!.isRunning) {
+                if (AssetValue.getInstance().isRunning) {
                     map[R.id.assets_value.toString()] =
                         formatAmountToString(amountOfAsset)
                     map[R.id.rewards_value.toString()] =
@@ -258,7 +258,7 @@ class AppModel : BaseAppModel, Serializable {
                 val totalMoneySpent = formatAmountToString(total.toDouble())
                 val map: MutableMap<String, String?> = HashMap()
                 when (appType) {
-                    AppType.CdCsvParser -> if (AssetValue.getInstance()!!.isRunning) {
+                    AppType.CdCsvParser -> if (AssetValue.getInstance().isRunning) {
                         map[R.id.assets_valueP.toString()] =
                             formatAmountToString(amountOfAsset)
                         map[R.id.rewards_value.toString()] =

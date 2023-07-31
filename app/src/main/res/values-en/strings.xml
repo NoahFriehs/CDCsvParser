@@ -82,4 +82,6 @@
     <string name="assetvalue_placeholder">assetValue</string>
     <string name="asset_amount">Asset Amount:</string>
     <string name="description">Description:</string>
+    <string name="store_data_local_needed_for_faststart">Store data local(needed for FastStart)</string>
+    <string name="enable_faststart">Enable FastStart</string>
 </resources>

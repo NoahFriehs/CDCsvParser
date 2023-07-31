@@ -82,5 +82,7 @@
     <string name="asset_amount">Anzahl Coins:</string>
     <string name="description">Beschreibung:</string>
     <string name="user_needs_to_autheticate">Der Benutzer muss sich neu authentifizieren.</string>
+    <string name="store_data_local_needed_for_faststart">Daten lokal speichern (erforderlich für FastStart)</string>
+    <string name="enable_faststart">FastStart einschalten</string>
 
 </resources>

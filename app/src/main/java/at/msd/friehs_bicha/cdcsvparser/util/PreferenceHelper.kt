@@ -10,6 +10,7 @@ object PreferenceHelper {
     const val PREFS_NAME = "settings_prefs"
     const val TYPE_KEY = "app_type"
     const val USE_STRICT_TYPE_KEY = "use_strict_app_type"
+    const val IS_DATA_LOCAL = "is_data_local"
     const val IS_APPMODEL_SAVED_LOCAL = "is_appmodel_saved_local"
     const val FAST_START_ENABLED = "fast_start_enabled"
 
@@ -84,6 +85,30 @@ object PreferenceHelper {
     fun getIsAppModelSavedLocal(context: Context): Boolean {
         val settings = context.getSharedPreferences(PREFS_NAME, 0)
         return settings.getBoolean(IS_APPMODEL_SAVED_LOCAL, false)
+    }
+
+    /**
+     * sets if the data is to be stored local
+     *
+     * @param context the context
+     * @param isDataLocal if the data is local
+     */
+    fun setIsDataLocal(context: Context, isDataLocal: Boolean) {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        val editor = settings.edit()
+        editor.putBoolean(IS_DATA_LOCAL, isDataLocal)
+        editor.apply()
+    }
+
+    /**
+     * returns if the data is to be stored local
+     *
+     * @param context the context
+     * @return if the data is local
+     */
+    fun getIsDataLocal(context: Context): Boolean {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        return settings.getBoolean(IS_DATA_LOCAL, false)
     }
 
     /**

@@ -29,6 +29,8 @@ import com.google.firebase.ktx.Firebase
 class SettingsActivity : AppCompatActivity() {
     lateinit var appTypeSpinner: Spinner
     lateinit var useStrictTypeCheckbox: CheckBox
+    lateinit var cbStoreDataLocal: CheckBox
+    lateinit var cbEnableFastStart: CheckBox
     lateinit var btnLogout: Button
     lateinit var btnDeleteUser: Button
     lateinit var btnPermissionRequest: Button
@@ -43,6 +45,8 @@ class SettingsActivity : AppCompatActivity() {
 
         appTypeSpinner = findViewById(R.id.wallet_type_spinner)
         useStrictTypeCheckbox = findViewById(R.id.use_strict_wallet_type_checkbox)
+        cbStoreDataLocal = findViewById(R.id.cb_store_data_local)
+        cbEnableFastStart = findViewById(R.id.cb_enable_fast_start)
         btnPermissionRequest = findViewById(R.id.btn_permission_request)
         btnAboutUs = findViewById(R.id.btn_about_us)
         btnLogout = findViewById(R.id.btn_logout)
@@ -59,10 +63,23 @@ class SettingsActivity : AppCompatActivity() {
         appTypeSpinner.setSelection(selectedType.ordinal)
         useStrictTypeCheckbox.isEnabled = selectedType != AppType.CroCard
         useStrictTypeCheckbox.isChecked = useStrictType
-        useStrictTypeCheckbox.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { _, isChecked ->
+        useStrictTypeCheckbox.setOnCheckedChangeListener { _, isChecked ->
             useStrictType = isChecked
             PreferenceHelper.setUseStrictType(this@SettingsActivity, isChecked)
-        })
+        }
+
+        cbStoreDataLocal.isChecked = PreferenceHelper.getIsDataLocal(this)
+        cbStoreDataLocal.isEnabled = selectedType == AppType.CdCsvParser
+        cbStoreDataLocal.setOnCheckedChangeListener { _, isChecked ->
+            PreferenceHelper.setIsDataLocal(this@SettingsActivity, isChecked)
+            cbEnableFastStart.isEnabled = cbStoreDataLocal.isEnabled && cbStoreDataLocal.isChecked
+        }
+
+        cbEnableFastStart.isChecked = PreferenceHelper.getFastStartEnabled(this)
+        cbEnableFastStart.isEnabled = cbStoreDataLocal.isEnabled && cbStoreDataLocal.isChecked
+        cbEnableFastStart.setOnCheckedChangeListener { _, isChecked ->
+            PreferenceHelper.setFastStartEnabled(this@SettingsActivity, isChecked)
+        }
 
         appTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
