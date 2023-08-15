@@ -6,7 +6,7 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
-@Database(entities = [Wallet::class, Transaction::class], version = 1)
+@Database(entities = [Wallet::class, Transaction::class], version = 2)
 @TypeConverters(Converter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun walletDao(): WalletDao

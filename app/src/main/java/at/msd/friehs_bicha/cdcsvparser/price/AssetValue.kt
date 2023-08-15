@@ -53,7 +53,7 @@ class AssetValue : Serializable {
         val cryptoPrices = CryptoPricesCryptoCompare()
         val priceApi = cryptoPrices.getPrice(symbol)
         if (priceApi == null) {
-            FileLog.e("AssetValue", "No price found for: $symbol")
+            //FileLog.e("AssetValue", "No price found for: $symbol")    //happens in getPrice() already
             isRunning = false
             return 0.0
         }

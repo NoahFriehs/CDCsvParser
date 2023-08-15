@@ -21,7 +21,7 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
             val price = jsonObject.getDouble("EUR")
             price
         } catch (e: Exception) {
-            FileLog.d("CryptoCompare", "Failed to get price for $symbol")
+            FileLog.d("CryptoCompare", "Failed to get price for $symbol, error: $e")
             null
         }
     }

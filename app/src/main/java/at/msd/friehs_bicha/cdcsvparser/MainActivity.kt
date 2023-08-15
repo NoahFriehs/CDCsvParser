@@ -24,7 +24,6 @@ import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import io.grpc.internal.SharedResourceHolder.Resource
 import java.io.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -97,7 +96,7 @@ class MainActivity : AppCompatActivity() {
         updateFiles()
         val dropdown = findViewById<Spinner>(R.id.spinner_history)
         val btnHistory = findViewById<Button>(R.id.btn_history)
-        if (files!!.size == 0) {
+        if (files!!.isEmpty()) {
             setHistory("disabled", dropdown, btnHistory)
         } else {
             setHistory("enabled", dropdown, btnHistory)
@@ -163,14 +162,12 @@ class MainActivity : AppCompatActivity() {
         val sdf = SimpleDateFormat("M-d-yyyy-hh-mm-ss")
         val dateFormat = SimpleDateFormat("d.M hh:mm")
         var filename: String
-        var date: Date?
         for (f in files!!) {
             if (!f.isFile || !f.name.endsWith(".csv")) continue
             filename = f.name
             filename = filename.substring(0, filename.length - 4)
             try {
-                date = sdf.parse(filename)
-                filename = dateFormat.format(date)
+                filename = dateFormat.format(sdf.parse(filename))
             } catch (e: ParseException) {
                 e.printStackTrace()
                 FileLog.e("MainActivity", "setSpinner: Date parse error: $e")
@@ -201,10 +198,7 @@ class MainActivity : AppCompatActivity() {
             callParseView()
         } catch (e: Exception) {
             hideProgressDialog()
-            val text: CharSequence? = e.message
-            val duration = Toast.LENGTH_SHORT
-            val toast = Toast.makeText(context, text, duration)
-            toast.show()
+            Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -234,7 +228,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: IOException) {
-                e.printStackTrace()
                 FileLog.e("MainActivity", ":  Error while writing to file : $e")
             }
             //delete oldest file if already 7 files in array
@@ -253,18 +246,11 @@ class MainActivity : AppCompatActivity() {
             } catch (e: IllegalArgumentException) {
                 FileLog.e("MainActivity", ":  Error while loading files : $e")
                 hideProgressDialog()
-                context = applicationContext
-                val text: CharSequence? = e.message
-                val duration = Toast.LENGTH_SHORT
-                val toast = Toast.makeText(context, text, duration)
-                toast.show()
+                Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
             } catch (e: RuntimeException) {
                 FileLog.e("MainActivity", ":  Error while loading files : $e")
-                val context = applicationContext
-                val text: CharSequence? = e.message
-                val duration = Toast.LENGTH_SHORT
-                val toast = Toast.makeText(context, text, duration)
-                toast.show()
+                hideProgressDialog()
+                Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
                 callParseView()
             }
 
@@ -503,12 +489,9 @@ class MainActivity : AppCompatActivity() {
 
                     if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
                         //when lower than this than it does not work with the db, has to switch to older version
-                        context = applicationContext
                         val text =
                             "Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload."
-                        val duration = Toast.LENGTH_LONG
-                        val toast = Toast.makeText(context, text, duration)
-                        toast.show()
+                        Toast.makeText(context, text, Toast.LENGTH_LONG).show()
                         return@addOnSuccessListener
                     }
 
