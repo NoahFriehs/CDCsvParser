@@ -94,7 +94,7 @@ object StringHelper {
         } else {
             amount.substring(0, index + 1)
         }
-        if (ret.endsWith(".")) {
+        if (ret.endsWith(".") || ret.endsWith(",")) {
             ret = ret.substring(0, ret.length - 1)
         }
         return ret
