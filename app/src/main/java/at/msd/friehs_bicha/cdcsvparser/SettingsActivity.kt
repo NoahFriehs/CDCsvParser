@@ -9,7 +9,6 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.Button
 import android.widget.CheckBox
-import android.widget.CompoundButton
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -18,6 +17,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import at.msd.friehs_bicha.cdcsvparser.MainActivity.Companion.readExternalStorageRequestCode
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
+import at.msd.friehs_bicha.cdcsvparser.databinding.ActivitySettingsBinding
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.AboutUsActivity
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
@@ -27,6 +27,8 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
 class SettingsActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivitySettingsBinding
     lateinit var appTypeSpinner: Spinner
     lateinit var useStrictTypeCheckbox: CheckBox
     lateinit var cbStoreDataLocal: CheckBox
@@ -38,13 +40,15 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_settings)
+
+        binding = ActivitySettingsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
-        appTypeSpinner = findViewById(R.id.wallet_type_spinner)
-        useStrictTypeCheckbox = findViewById(R.id.use_strict_wallet_type_checkbox)
+        appTypeSpinner = binding.walletTypeSpinner
+        useStrictTypeCheckbox = binding.useStrictWalletTypeCheckbox
         cbStoreDataLocal = findViewById(R.id.cb_store_data_local)
         cbEnableFastStart = findViewById(R.id.cb_enable_fast_start)
         btnPermissionRequest = findViewById(R.id.btn_permission_request)

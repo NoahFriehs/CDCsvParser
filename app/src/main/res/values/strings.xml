@@ -92,4 +92,6 @@
     <string name="description">Description:</string>
     <string name="store_data_local_needed_for_faststart">Store data local(needed for FastStart)</string>
     <string name="enable_faststart">Enable FastStart</string>
+    <string name="overview_tab_crypto_text">Crypto</string>
+    <string name="overview_tab_card_text">Card</string>
 </resources>

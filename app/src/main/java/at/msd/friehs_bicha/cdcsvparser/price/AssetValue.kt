@@ -35,12 +35,12 @@ class AssetValue : Serializable {
      * Returns the price of the entered symbol
      *
      * @param symbol the symbol for which the price is needed
-     * @return the price of the symbol
+     * @return the price of the symbol or 0 if an error occurred
      */
     @Throws(InterruptedException::class)
     fun getPrice(symbol: String): Double {
         //val prices = StaticPrices()
-        //return prices.prices[symbol]    //use this if api does nor work
+        //return prices.prices[symbol]!!    //use this if api does nor work
 
         if (symbol == "EUR") return 1.0
 

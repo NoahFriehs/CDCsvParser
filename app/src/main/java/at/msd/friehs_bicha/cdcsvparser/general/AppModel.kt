@@ -44,6 +44,7 @@ class AppModel : BaseAppModel, Serializable {
             hashMapOf(DataTypes.csvAsList to file)
         )
         if (PreferenceHelper.getIsDataLocal(applicationContext)) saveAppModelLocal()
+        else PreferenceHelper.setIsAppModelSavedLocal(applicationContext,false)
         isRunning = true
         if (txApp!!.amountTxFailed > 0) {
             FileLog.e("AppModel", "txApp: amountTxFailed, AppType: $appType")
