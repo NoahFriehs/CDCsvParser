@@ -2,7 +2,6 @@ package at.msd.friehs_bicha.cdcsvparser.price
 
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import java.io.Serializable
-import java.util.*
 
 /**
  * Asset value class
@@ -34,34 +33,32 @@ class AssetValue : Serializable {
     /**
      * Returns the price of the entered symbol
      *
-     * @param symbol the symbol for which the price is needed
+     * @param symbol_ the symbol for which the price is needed
      * @return the price of the symbol or 0 if an error occurred
      */
-    @Throws(InterruptedException::class)
-    fun getPrice(symbol: String): Double {
+    fun getPrice(symbol_: String): Double {
         //val prices = StaticPrices()
         //return prices.prices[symbol]!!    //use this if api does nor work
 
-        if (symbol == "EUR") return 1.0
+        if (symbol_ == "EUR") return 1.0 //euro is always 1, replace with api if needed
 
-        var price = cache.checkCache(symbol)
+        var price = cache.checkCache(symbol_)
         if (price != -1.0) {
-            isRunning = true
             return price
         }
 
         val cryptoPrices = CryptoPricesCryptoCompare()
-        val priceApi = cryptoPrices.getPrice(symbol)
+        val priceApi = cryptoPrices.getPrice(symbol_)
         if (priceApi == null) {
             //FileLog.e("AssetValue", "No price found for: $symbol")    //happens in getPrice() already
             isRunning = false
             return 0.0
         }
         if (priceApi != 0.0) {
-            cache.addPrice(symbol, priceApi)
+            cache.addPrice(symbol_, priceApi)
             return priceApi
         }
-        var symbol = symbol
+        var symbol = symbol_
         symbol = overrideSymbol(symbol)
         price = cache.checkCache(symbol)
         if (price != -1.0) {

@@ -3,6 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -11,6 +12,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -25,6 +27,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -103,11 +106,8 @@ class SettingsActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
+        if (arePermissionsGranted(permissions()))
+        {
             btnPermissionRequest.visibility = View.GONE
         } else {
             btnPermissionRequest.visibility = View.VISIBLE
@@ -195,13 +195,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun requestExternalStoragePermission() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED
+        if (arePermissionsGranted(permissions())
         ) {
             // Permission already granted
-            Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Permissions already granted", Toast.LENGTH_SHORT).show()
+            btnPermissionRequest.visibility = View.GONE
         } else {
             // Permission not granted
             if (ActivityCompat.shouldShowRequestPermissionRationale(
@@ -219,7 +217,7 @@ class SettingsActivity : AppCompatActivity() {
                         //Prompt the user once explanation has been shown
                         ActivityCompat.requestPermissions(
                             this,
-                            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                            permissions(),
                             readExternalStorageRequestCode
                         )
                     }
@@ -230,13 +228,44 @@ class SettingsActivity : AppCompatActivity() {
                 // Request the permission directly without showing the rationale
                 ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    permissions(),
                     readExternalStorageRequestCode
                 )
             }
         }
     }
 
+    var storagePermissions = arrayOf(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        //Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    var storagePermissions33 = arrayOf(
+        Manifest.permission.READ_MEDIA_IMAGES,
+        Manifest.permission.READ_MEDIA_AUDIO,
+        Manifest.permission.READ_MEDIA_VIDEO
+    )
+
+    private fun permissions(): Array<String> {
+        val p: Array<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            storagePermissions33
+        } else {
+            storagePermissions
+        }
+        return p
+    }
+
+    private fun arePermissionsGranted(permissions: Array<String>): Boolean {
+        for (permission in permissions) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
+        }
+        return true
+    }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
