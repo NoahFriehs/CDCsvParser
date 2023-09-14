@@ -4,11 +4,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.databinding.FragmentOverviewBinding
+import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
 
 /**
  * A placeholder fragment containing a simple view.
@@ -32,15 +33,33 @@ class PlaceholderFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
         _binding = FragmentOverviewBinding.inflate(inflater, container, false)
         val root = binding.root
 
-        val textView: TextView = binding.sectionLabel
-        pageViewModel.text.observe(viewLifecycleOwner, Observer {
-            textView.text = it
-        })
+        /*pageViewModel.text.observe(viewLifecycleOwner, Observer {
+
+        })*/
+
+        // Check if the fragment is already added to avoid overlapping
+        if (childFragmentManager.findFragmentById(R.id.fragment_container) == null) {
+
+            val wallets =
+                when (arguments?.getInt(ARG_SECTION_NUMBER)) {
+                    1 -> AppModelManager.getInstance()!!.txApp!!.wallets
+                    2 -> AppModelManager.getInstance()!!.txApp!!.wallets.subList(0, 2)    //get CARD wallets -> TODO save CARD wallets in AppModel -> store Card and Crypto simultaneously
+                    else -> throw Exception() //AppModelManager.getInstance()!!.txApp!!.wallets
+                }
+
+            val fragment = WalletListFragment(wallets)
+
+            childFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit()
+        }
+
+
         return root
     }
 
