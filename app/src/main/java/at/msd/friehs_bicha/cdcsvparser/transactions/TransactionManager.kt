@@ -4,7 +4,9 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.app.AppTypeIdentifier
 import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.util.TimeSpan
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -74,6 +76,9 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             val appType = _appType ?: AppTypeIdentifier.getAppType(_input)
             app.appType = appType
             val input = prepareInput(_input, appType, app)
+
+            val ts = TimeSpan()
+            ts.start()
             for (line in input) {
                 val tx = Transaction.fromCsvLine(line, appType)
                 if (tx != null) {
@@ -83,9 +88,17 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                     app.addFailedTx(line)
                 }
             }
+            var end = ts.end()
+            FileLog.d("TransactionManager", "txFromCsvList: ${transactions.size} transactions created in $end ms")
 
+            ts.start()
             createWallets(currencies, app)
+            end = ts.end()
+            FileLog.d("TransactionManager", "txFromCsvList: ${currencies.size} wallets created in $end ms")
+            ts.start()
             transactions.forEach { addTransaction(it, app) }
+            end = ts.end()
+            FileLog.d("TransactionManager", "txFromCsvList: ${transactions.size} transactions added to wallets in $end ms")
 
             return transactions
         }
@@ -154,6 +167,7 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
         private fun createCDCWallets(currencies: ArrayList<String>, app: BaseApp) {
             for (t in currencies) {
                 app.wallets.add(CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, app, false))
+                app.walletMap[t] = app.wallets.last()
                 app.outsideWallets.add(CDCWallet(t, BigDecimal.ZERO, BigDecimal.ZERO, app, true))
             }
         }
@@ -255,8 +269,9 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             app: BaseApp,
             getOutsideWallet: Boolean = false
         ): CDCWallet {
-            var ws = app.wallets
+            var ws: ArrayList<Wallet> = app.wallets
             if (getOutsideWallet) ws = app.outsideWallets
+            else return app.walletMap[currencyType] as CDCWallet
             for (wallet in ws) {
                 if (wallet.currencyType == currencyType) {
                     return wallet as CDCWallet

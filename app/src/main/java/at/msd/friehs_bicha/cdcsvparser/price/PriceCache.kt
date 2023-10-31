@@ -30,6 +30,10 @@ class PriceCache() : Serializable {
         return -1.0
     }
 
+    fun testCache(symbol: String): Boolean {
+        return cache.containsKey(symbol) && !cache[symbol]!!.isOlderThanFiveMinutes
+    }
+
     /**
      * Adds a price to the cache
      *
@@ -42,6 +46,15 @@ class PriceCache() : Serializable {
         FileLog.d("PriceCache", "added cache for ${cacheToAdd.id}")
     }
 
+    fun reloadCache(assetValue: AssetValue) {
+        cache.forEach {
+            val price = assetValue.getPrice(it.key)
+            if (price != 0.0) {
+                cache[it.key] = Cache(it.key, price)
+            }
+        }
+    }
+
 
 }
 
@@ -52,11 +65,12 @@ class PriceCache() : Serializable {
 class Cache(id: String?, price: Double) : Serializable {
     val id: String?
     val price: Double
-    private val creationTime: Instant = Instant.now()
+    private val creationTime: Instant
 
     init {
         this.id = id
         this.price = price
+        creationTime = Instant.now()
     }
 
     /**

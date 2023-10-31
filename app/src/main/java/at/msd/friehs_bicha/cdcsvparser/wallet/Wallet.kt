@@ -22,7 +22,7 @@ open class Wallet : Serializable {
     @Ignore
     var transactions: MutableList<Transaction?>? = null
 
-    var currencyType: String?
+    var currencyType: String
 
     var amount: BigDecimal
 
@@ -33,7 +33,7 @@ open class Wallet : Serializable {
     var isOutsideWallet = false
 
     @Ignore
-    constructor(currencyType: String?, amount: BigDecimal?, nativeAmount: BigDecimal?) {
+    constructor(currencyType: String, amount: BigDecimal?, nativeAmount: BigDecimal?) {
         this.currencyType = currencyType
         this.amount = BigDecimal(0)
         this.amount = this.amount.add(amount)
@@ -46,7 +46,7 @@ open class Wallet : Serializable {
 
     @Ignore
     constructor(
-        currencyType: String?,
+        currencyType: String,
         amount: BigDecimal,
         amountBonus: BigDecimal,
         moneySpent: BigDecimal
@@ -61,7 +61,7 @@ open class Wallet : Serializable {
 
     @Ignore
     constructor(
-        currencyType: String?,
+        currencyType: String,
         amount: BigDecimal,
         amountBonus: BigDecimal,
         moneySpent: BigDecimal,
@@ -77,7 +77,7 @@ open class Wallet : Serializable {
 
     constructor(
         walletId: Int,
-        currencyType: String?,
+        currencyType: String,
         amount: BigDecimal,
         amountBonus: BigDecimal,
         moneySpent: BigDecimal,
@@ -93,7 +93,7 @@ open class Wallet : Serializable {
 
     constructor(
         walletId: Int,
-        currencyType: String?,
+        currencyType: String,
         amount: BigDecimal,
         amountBonus: BigDecimal,
         moneySpent: BigDecimal
@@ -131,7 +131,7 @@ open class Wallet : Serializable {
 
     constructor(
         walletId: Long,
-        currencyType: String?,
+        currencyType: String,
         amount: Double,
         amountBonus: Double,
         moneySpent: Double,

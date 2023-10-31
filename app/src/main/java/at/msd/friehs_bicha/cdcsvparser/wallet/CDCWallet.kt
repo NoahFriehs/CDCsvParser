@@ -13,7 +13,7 @@ class CDCWallet : Wallet, Serializable {
     var txApp: BaseApp? = null
 
     constructor(
-        currencyType: String?,
+        currencyType: String,
         amount: BigDecimal?,
         nativeAmount: BigDecimal?,
         txApp: BaseApp?,
@@ -28,7 +28,7 @@ class CDCWallet : Wallet, Serializable {
     constructor(DBWallet: DBWallet?) : super(DBWallet)
     constructor(
         walletId: Long,
-        currencyType: String?,
+        currencyType: String,
         amount: Double,
         amountBonus: Double,
         moneySpent: Double,

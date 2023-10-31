@@ -48,7 +48,13 @@ class PlaceholderFragment : Fragment() {
             val wallets =
                 when (arguments?.getInt(ARG_SECTION_NUMBER)) {
                     1 -> AppModelManager.getInstance()!!.txApp!!.wallets
-                    2 -> AppModelManager.getInstance()!!.txApp!!.wallets.subList(0, 2)    //get CARD wallets -> TODO save CARD wallets in AppModel -> store Card and Crypto simultaneously
+                    2 -> {
+                        if (AppModelManager.getInstance()!!.cardApp != null) {
+                            AppModelManager.getInstance()!!.cardApp!!.wallets
+                        } else {
+                            AppModelManager.getInstance()!!.txApp!!.wallets
+                        }
+                    }
                     else -> throw Exception() //AppModelManager.getInstance()!!.txApp!!.wallets
                 }
 

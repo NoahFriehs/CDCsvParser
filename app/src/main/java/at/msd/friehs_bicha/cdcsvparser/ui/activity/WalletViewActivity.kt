@@ -11,7 +11,9 @@ import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
+import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
+import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 
@@ -19,14 +21,26 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
  * Activity for the wallet view page (wallet list)
  */
 class WalletViewActivity : AppCompatActivity() {
+
+    private var isCacheloaded = false
+
+    private lateinit var appModel : AppModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_wallet_view)
 
+        appModel = AppModelManager.getInstance()!!
+
+        Thread{
+            if(!isCacheloaded){
+                isCacheloaded = appModel.reloadPriceCache()  //TODO: don t do it like this   -> give callback to AppModelManager
+            }
+        }.start()
+
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
-        val appModel = AppModelManager.getInstance()!!  //TODO: check if null
         val wallets = appModel.txApp!!.wallets
 
         val spinnerValueSpinner = findViewById<Spinner>(R.id.sorting_value)
@@ -150,7 +164,7 @@ class WalletViewActivity : AppCompatActivity() {
         when (sortingValue) {
             resources.getString(R.string.sort_amount) -> {
                 sortedWallets = sortedWallets.sortedByDescending {
-                    AppModelManager.getInstance()!!.getValueOfAssets(it)    //TODO: check if null
+                    appModel.getValueOfAssets(it)    //TODO: check if null   //TODO: android.os.NetworkOnMainThreadException
                 }.toList() as ArrayList<Wallet>
             }
 
@@ -161,7 +175,7 @@ class WalletViewActivity : AppCompatActivity() {
 
             resources.getString(R.string.sort_percent) -> {
                 sortedWallets = sortedWallets.sortedWith(compareByDescending {
-                    val assetValue = AppModelManager.getInstance()!!.getValueOfAssets(it)   //TODO: check if null
+                    val assetValue = appModel.getValueOfAssets(it)   //TODO: check if null   //TODO: android.os.NetworkOnMainThreadException
                     val percentProfit = assetValue / it.moneySpent.toDouble() * 100
                     percentProfit
                 }).toList() as ArrayList<Wallet>
@@ -180,6 +194,9 @@ class WalletViewActivity : AppCompatActivity() {
     }
 
     fun filterWalletsByUserSearch(wallets: ArrayList<Wallet>, query: String): List<Wallet> {
-        return wallets.filter { it.currencyType?.contains(query, ignoreCase = true) == true }
+        if (wallets[0] is CroCardWallet) {
+            return wallets.filter { (it as CroCardWallet).transactionType!!.contains(query, ignoreCase = true) }
+        }
+        return wallets.filter { it.currencyType.contains(query, ignoreCase = true) }
     }
 }

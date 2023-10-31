@@ -7,9 +7,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -278,16 +280,12 @@ class MainActivity : AppCompatActivity() {
      */
     private fun onBtnUploadClick() {
 
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (arePermissionsGranted(permissions())) {
             // Permission is not granted
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(
                     this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE
+                    permissions()[0]
                 )
             ) {
                 // Show an explanation to the user
@@ -298,20 +296,53 @@ class MainActivity : AppCompatActivity() {
                 ).show()
                 ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    permissions(),
                     readExternalStorageRequestCode
                 )
             } else {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    permissions(),
                     readExternalStorageRequestCode
                 )
             }
         } else {
             startChooseFile()
         }
+    }
+
+
+    var storagePermissions = arrayOf(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        //Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    var storagePermissions33 = arrayOf(
+        Manifest.permission.READ_MEDIA_IMAGES,
+        Manifest.permission.READ_MEDIA_AUDIO,
+        Manifest.permission.READ_MEDIA_VIDEO
+    )
+
+    private fun permissions(): Array<String> {
+        val p: Array<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            storagePermissions33
+        } else {
+            storagePermissions
+        }
+        return p
+    }
+
+    private fun arePermissionsGranted(permissions: Array<String>): Boolean {
+        for (permission in permissions) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
+        }
+        return true
     }
 
 

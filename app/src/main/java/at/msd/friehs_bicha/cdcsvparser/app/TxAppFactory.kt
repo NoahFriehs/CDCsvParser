@@ -77,6 +77,12 @@ class TxAppFactory {
                             dataContainer[DataTypes.amountTxFailed] as Long
                         )
 
+                        AppStatus.Finished -> initCardFromLocalDB(
+                            dataContainer[DataTypes.dbWallets] as ArrayList<Wallet>,
+                            dataContainer[DataTypes.dbTransactions] as ArrayList<Transaction>,
+                            dataContainer[DataTypes.amountTxFailed] as Long
+                        )
+
                         else -> {
                             FileLog.e("TxAppFactory", "CroCard: Usage not found, AppStatus: $appStatus")
                             throw RuntimeException("Usage not found")
@@ -103,6 +109,10 @@ class TxAppFactory {
                 }
             }
             return txApp
+        }
+
+        private fun initCardFromLocalDB(wallets: ArrayList<Wallet>, transactions: ArrayList<Transaction>, amountTxFailed: Long): CroCardTxApp {
+            return CroCardTxApp(transactions as ArrayList<CroCardTransaction>, wallets as ArrayList<CroCardWallet>, amountTxFailed)
         }
 
         private fun initFromLocalDB(wallets: ArrayList<Wallet>, outsideWallets: ArrayList<Wallet>, transactions: ArrayList<Transaction>, appType: AppType, amountTxFailed: Long): StandardTxApp {

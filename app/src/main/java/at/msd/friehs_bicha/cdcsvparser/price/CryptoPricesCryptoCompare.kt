@@ -22,6 +22,9 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
             price
         } catch (e: Exception) {
             FileLog.d("CryptoCompare", "Failed to get price for $symbol, error: $e")
+            if (e.message?.contains("No value for") == true) {
+                return 0.0
+            }
             null
         }
     }

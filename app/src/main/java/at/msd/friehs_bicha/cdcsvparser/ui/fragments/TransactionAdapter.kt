@@ -48,9 +48,12 @@ class TransactionAdapter(private val transactions: List<Transaction>) :
     }
 
     override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
+//        Thread {
         val transaction = transactions[position]
-        val waMap = AppModelManager.getInstance()!!.getTransactionAdapter(transaction)  //TODO: check if null
+        val waMap = AppModelManager.getInstance()!!
+            .getTransactionAdapter(transaction)  //TODO: check if null
         displayTexts(waMap, holder, holder.itemView.context)
+//        }.start()
     }
 
     override fun getItemCount(): Int = transactions.size

@@ -1,25 +1,31 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.TypeConverters
 import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.CurveCardTx
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import java.io.Serializable
 import java.math.BigDecimal
 
 /**
  * Represents a CroCardWallet object
  */
+@Entity(tableName = "card_wallets")
+@TypeConverters(Converter::class, Converter.BigDecimalConverter::class)
 class CroCardWallet(
-    currencyType: String?,
+    currencyType: String,
     amount: BigDecimal?,
     var transactionType: String?,
     txApp: BaseApp?
 ) : Wallet(currencyType, amount, amount), Serializable {
     constructor(
         walletID: Long,
-        currencyType: String?,
+        currencyType: String,
         amount: Double?,
         amountBonus: Double?,
         moneySpent: Double,
@@ -42,6 +48,32 @@ class CroCardWallet(
         this.isOutsideWallet = outsideWallet
     }
 
+    //constructor for all members:
+    constructor(
+        walletId: Int,
+        currencyType: String,
+        amount: BigDecimal?,
+        amountBonus: BigDecimal?,
+        moneySpent: BigDecimal,
+        isOutsideWallet: Boolean,
+        transactionType: String?
+    ) : this(
+        currencyType,
+        amount,
+        transactionType,
+        null
+    ) {
+        this.walletId = walletId
+        this.currencyType = currencyType
+        this.transactionType = transactionType
+        this.amount = amount!!
+        this.amountBonus = amountBonus!!
+        this.moneySpent = moneySpent
+        //if(transactions != null) this.transactions = transactions as MutableList<Transaction?>
+        this.isOutsideWallet = isOutsideWallet
+    }
+
+    @Ignore
     lateinit var txApp: BaseApp
 
     init {
@@ -57,7 +89,7 @@ class CroCardWallet(
         val cardTransaction = transaction as CroCardTransaction
         val tt = cardTransaction.transactionTypeString
         if (tt == "EUR -> EUR") {
-            println("Found EUR -> EUR: $tt")
+            FileLog.i("CCW.addTx","Found EUR -> EUR: $tt")
         }
 
         var ignoreThisTx = false
@@ -205,8 +237,8 @@ class CroCardWallet(
     private fun checkTTS(tt: String, txType: String): String {
         if (tts.contains(tt)) {
             tts.remove(tt)
-            tts.add(txType)
         }
+        tts.add(txType)
         return txType
     }
 
@@ -234,7 +266,7 @@ class CroCardWallet(
          */
         fun fromDb(wallet: HashMap<String, *>): CroCardWallet {
             val walletId = wallet["walletId"] as Long
-            val currencyType = wallet["currencyType"] as String?
+            val currencyType = wallet["currencyType"] as String
             val amount = wallet["amount"] as Double
             val amountBonus = wallet["amountBonus"] as Double
             val moneySpent = wallet["moneySpent"] as Double
