@@ -66,13 +66,11 @@ class SignUpActivity : AppCompatActivity() {
     private fun updateUI(currentUser: FirebaseUser?, errorText: String?) {
         if (currentUser != null) {
             // Signup successful, navigate to the home activity
-            // Replace HomeActivity with the name of your home activity
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
             finish()
         } else {
             // Signup failed, show an error message
-            // Replace tv_error_message with the ID of your error message TextView
             findViewById<TextView>(R.id.tv_error_message).text =
                 getString(R.string.error_signup_failed) + errorText
         }

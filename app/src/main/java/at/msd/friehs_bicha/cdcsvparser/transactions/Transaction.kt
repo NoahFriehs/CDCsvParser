@@ -282,8 +282,8 @@ open class Transaction : Serializable {
                 }
                 return t
             } else {
-                println(sa.contentToString())
-                println(sa.size)
+                FileLog.e("TxApp", sa.contentToString())
+                FileLog.e("TxApp", sa.size.toString())
                 FileLog.e(
                     "TxApp",
                     "Error while processing the following transaction: $line"

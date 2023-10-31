@@ -63,6 +63,9 @@ class ParseActivity : AppCompatActivity() {
             }
         }
         appModel = AppModelManager.getInstance()
+        Thread {
+            appModel!!.loadPriceCaches()
+        }.start()
     }
 
     /**

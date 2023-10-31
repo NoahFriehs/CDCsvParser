@@ -9,9 +9,11 @@ import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
+import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletAdapter
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import at.msd.friehs_bicha.cdcsvparser.wallet.*
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.Serializable
@@ -23,6 +25,8 @@ import java.util.*
  * The parser control for the Parser
  */
 class AppModel : BaseAppModel, Serializable {
+
+    var cardApp: CardTxApp? = null
 
 
     /**
@@ -46,6 +50,9 @@ class AppModel : BaseAppModel, Serializable {
         if (PreferenceHelper.getIsDataLocal(applicationContext)) saveAppModelLocal()
         else PreferenceHelper.setIsAppModelSavedLocal(applicationContext,false)
         isRunning = true
+        if (appType == AppType.CroCard) {
+            cardApp = txApp as CardTxApp
+        }
         if (txApp!!.amountTxFailed > 0) {
             FileLog.e("AppModel", "txApp: amountTxFailed, AppType: $appType")
             throw RuntimeException("$txApp.amountTxFailed transaction(s) failed")
@@ -86,9 +93,10 @@ class AppModel : BaseAppModel, Serializable {
     }
 
 
-    constructor() : super(AppType.CdCsvParser)
-    {
-        loadAppModelLocal()
+    constructor() : super(PreferenceHelper.getSelectedType(applicationContext)) {
+        if (PreferenceHelper.getIsDataLocal(applicationContext) && PreferenceHelper.getIsAppModelSavedLocal(applicationContext)) loadAppModelLocal()
+        else PreferenceHelper.setIsAppModelSavedLocal(applicationContext,false)
+        isRunning = true
     }
 
 
@@ -199,6 +207,18 @@ class AppModel : BaseAppModel, Serializable {
             0.0
         }
     }
+
+    fun loadPriceCaches(): Boolean {
+        if (txApp == null) return true
+        val walletSyms = txApp!!.wallets.map { it.currencyType }
+        return AssetValue.getInstance().loadCache(walletSyms)
+    }
+
+    fun reloadPriceCache(): Boolean {
+        if (txApp == null) return true
+        return AssetValue.getInstance().reloadCache()
+    }
+
 
     /**
      * Returns a map with the data to display from a wallet
@@ -321,21 +341,34 @@ class AppModel : BaseAppModel, Serializable {
 //    }
 
 
+    @OptIn(DelicateCoroutinesApi::class)
     private fun saveAppModelLocal()
     {
         GlobalScope.launch {
             val walletDao = InstanceVars.db.walletDao()
             val txDao = InstanceVars.db.transactionDao()
+            val cardWalletDao = InstanceVars.db.cardWalletDao()
+            val cardTransactionDao = InstanceVars.db.cardTransactionDao()
 
             walletDao.deleteAll()
             txDao.deleteAll()
 
             //TODO: save calculated data to db
-            walletDao.insertAll(txApp!!.wallets)
-            walletDao.insertAll(txApp!!.outsideWallets)
-            txDao.insertAll(txApp!!.transactions)
-
+            if (txApp !is CardTxApp) {
+                walletDao.insertAll(txApp!!.wallets)
+                walletDao.insertAll(txApp!!.outsideWallets)
+                txDao.insertAll(txApp!!.transactions)
+            }
             PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
+
+            if (cardApp == null) return@launch
+            cardWalletDao.deleteAll()
+            cardTransactionDao.deleteAll()
+
+            cardWalletDao.insertAll(cardApp!!.wallets as ArrayList<CroCardWallet>)
+            cardTransactionDao.insertAll(cardApp!!.transactions as ArrayList<CroCardTransaction>)   //TODO: insertAll is not working
+            //                 android.database.sqlite.SQLiteConstraintException: FOREIGN KEY constraint failed (code 787 SQLITE_CONSTRAINT_FOREIGNKEY)
+
         }
     }
 
@@ -345,6 +378,9 @@ class AppModel : BaseAppModel, Serializable {
         Thread{
             val ws = InstanceVars.db.walletDao().getAllWallets()
             val txs = InstanceVars.db.transactionDao().getAllTransactions()
+            val cws = InstanceVars.db.cardWalletDao().getAllWallets()
+            val cts = InstanceVars.db.cardTransactionDao().getAllTransactions()
+            //TODO("load calculated data from db from card app if exists")
 
             val wallets = ArrayList<Wallet>()
             val outsideWallets = ArrayList<Wallet>()
@@ -371,6 +407,7 @@ class AppModel : BaseAppModel, Serializable {
                     DataTypes.amountTxFailed to 0L
                 )
             )
+            //TODO create CardApp -> load card data in app and test then do it
 
             isRunning = true
         }.start()
@@ -500,6 +537,14 @@ class AppModel : BaseAppModel, Serializable {
         map[R.id.amountTransactions.toString()] = wallet.transactions?.count().toString()
         map["COLOR"] = color.toString()
         return map
+    }
+
+    fun getWalletAdapterWithCallback(wallet: Wallet, callback: IWalletAdapterCallback, holder: WalletAdapter.WalletViewHolder)
+    {
+        Thread {
+            val map = getWalletAdapter(wallet)
+            callback.onCallback(map, holder)
+        }.start()
     }
 
     fun getTransactionAdapter(transaction: Transaction): MutableMap<String, String?> {

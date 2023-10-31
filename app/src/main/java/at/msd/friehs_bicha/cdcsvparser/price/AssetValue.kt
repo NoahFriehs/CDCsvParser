@@ -8,6 +8,7 @@ import java.io.Serializable
  */
 class AssetValue : Serializable {
     private val cache = PriceCache()
+    var isConnected = true
     var isRunning: Boolean
 
     init {
@@ -15,18 +16,17 @@ class AssetValue : Serializable {
     }
 
     companion object {
-        private var instance: AssetValue? = null
+        private lateinit var instance: AssetValue
 
         /**
-         * Returns the instance of the AssetValue class
+         * Returns the running instance of AssetValue
          *
-         * @return the instance of the AssetValue class
+         * @return a instance of AssetValue
          */
         fun getInstance(): AssetValue {
-            if (instance == null) {
-                instance = AssetValue()
-            }
-            return instance!!
+            if (this::instance.isInitialized) return instance
+            instance = AssetValue()
+            return instance
         }
     }
 
@@ -42,29 +42,55 @@ class AssetValue : Serializable {
 
         if (symbol_ == "EUR") return 1.0 //euro is always 1, replace with api if needed
 
-        var price = cache.checkCache(symbol_)
-        if (price != -1.0) {
-            return price
+        if (cache.testCache(symbol_)) {
+            return cache.checkCache(symbol_)
         }
 
-        val cryptoPrices = CryptoPricesCryptoCompare()
-        val priceApi = cryptoPrices.getPrice(symbol_)
-        if (priceApi == null) {
-            //FileLog.e("AssetValue", "No price found for: $symbol")    //happens in getPrice() already
+        if (!isConnected) {
+            FileLog.e("AssetValue", "No internet connection")
             isRunning = false
             return 0.0
         }
-        if (priceApi != 0.0) {
-            cache.addPrice(symbol_, priceApi)
-            return priceApi
+
+        val cryptoPrices = CryptoPricesCryptoCompare()
+        when (val priceApi = cryptoPrices.getPrice(symbol_))
+        {
+            null -> {
+                //FileLog.e("AssetValue", "API error")
+                isRunning = false
+                return 0.0
+            }
+            0.0 -> {
+                //FileLog.e("AssetValue", "No price found for: $symbol_")   //does not exist at API-Endpoint
+                cache.addPrice(symbol_, priceApi)
+                return 0.0
+            }
+            -1.0 -> {
+                FileLog.e("AssetValue", "API error")
+                isRunning = false
+                //return 0.0
+            }
+            else -> {
+                cache.addPrice(symbol_, priceApi)
+                isRunning = true
+                return priceApi
+            }
         }
+
+
         var symbol = symbol_
         symbol = overrideSymbol(symbol)
-        price = cache.checkCache(symbol)
+        val price = cache.checkCache(symbol)
         if (price != -1.0) {
             isRunning = true
             return price
         }
+
+        val prices = StaticPrices()
+        if (prices.prices.containsKey(symbol)) {
+            return prices.prices[symbol]!!
+        }
+
         FileLog.e("AssetValue", "No price found for: $symbol")
         return 0.0
     }
@@ -82,21 +108,20 @@ class AssetValue : Serializable {
     }
 
 
-    /*private fun checkCache(symbol: String): Double {
-        var i = 0
-        while (i < cache.size) {
-            if (cache[i].isOlderThanFiveMinutes) {
-                FileLog.d("AssetValue", "removed cache for ${cache[i].id}")
-                cache.removeAt(i)
-                i--
-                continue
-            }
-            if (cache[i].id == symbol) {
-                FileLog.d("AssetValue", "used cache for $symbol")
-                return cache[i].price
-            }
-            i++
-        }
-        return (-1).toDouble()
-    }*/
+    fun loadCache(symbols: List<String>): Boolean {
+        Thread {
+            symbols.forEach { getPrice(it) }
+        }.start()
+        if (!isConnected || !isRunning) return false
+        return true
+    }
+
+    fun reloadCache(): Boolean {
+        Thread {
+            cache.reloadCache(this)
+        }.start()
+        if (!isConnected || !isRunning) return false
+        return true
+    }
+
 }

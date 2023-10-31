@@ -3,7 +3,9 @@ package at.msd.friehs_bicha.cdcsvparser.app
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.CurveCardTx
+import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.io.Serializable
 import java.math.BigDecimal
 import java.text.DecimalFormat
@@ -37,6 +39,20 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
             }
             FileLog.i("CardTxApp", "we have " + this.wallets.size + " different transactions.")
         }
+    }
+
+    constructor(
+        tXs: MutableList<CroCardTransaction>,
+        wTXs: MutableList<CroCardWallet>,
+        amountTxFailed: Long
+    ) : this(ArrayList(), false, true) {
+        this.transactions = tXs as ArrayList<Transaction>
+        wTXs.forEach { wallet: CroCardWallet ->
+            wallet.txApp = this
+        }
+        this.wallets = ArrayList(wTXs)
+        this.amountTxFailed = amountTxFailed
+        fillWallet(true)
     }
 
     /**
@@ -96,7 +112,7 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
                     )
                     transactions.add(t)
                 } else {
-                    FileLog.e("CardTxApp", "Wrong number of columns in CurveCard file")
+                    FileLog.e("CardTxApp", "Wrong number of columns in CurveCard file: $sa")
                 }
             } catch (e: Exception) {
                 FileLog.e("CardTxApp", "Error parsing CurveCard file: " + e.message)
@@ -168,14 +184,13 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
             if (wallets[0].getWallet("Test -> Test") != -1)
                 wallets.remove(wallets[wallets[0].getWallet("Test -> Test")])
         } else {
+            val walletsMap = HashMap<Int, Wallet>()
+            wallets.forEach {
+                walletsMap[it.walletId] = it
+            }
+
             for (t in transactions) {
-                for (w in wallets)
-                    if (w != null) {
-                        if (t.walletId == w.walletId) {
-                            w.addTransaction(t)
-                            break
-                        }
-                    }
+                walletsMap[t.walletId]?.transactions?.add(t)
             }
         }
         FileLog.i("CardTxApp", "Wallets filled")

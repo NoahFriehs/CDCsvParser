@@ -76,7 +76,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         cbStoreDataLocal.isChecked = PreferenceHelper.getIsDataLocal(this)
-        cbStoreDataLocal.isEnabled = selectedType == AppType.CdCsvParser
         cbStoreDataLocal.setOnCheckedChangeListener { _, isChecked ->
             PreferenceHelper.setIsDataLocal(this@SettingsActivity, isChecked)
             cbEnableFastStart.isEnabled = cbStoreDataLocal.isEnabled && cbStoreDataLocal.isChecked
@@ -274,9 +273,9 @@ class SettingsActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == readExternalStorageRequestCode) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED && arePermissionsGranted(permissions())) {
                 // Permission granted
-                // Perform your required action here
+                btnPermissionRequest.visibility = View.GONE
             } else {
                 // Permission denied
                 Toast.makeText(

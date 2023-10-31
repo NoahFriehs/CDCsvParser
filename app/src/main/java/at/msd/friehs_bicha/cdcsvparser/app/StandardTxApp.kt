@@ -32,7 +32,7 @@ class StandardTxApp : BaseApp, Serializable {
     }
 
     /**
-     * Constructor
+     * Constructor (from Firebase)
      *
      * @param tXs transactions
      * @param wTXs wallets
@@ -67,6 +67,16 @@ class StandardTxApp : BaseApp, Serializable {
         this.amountTxFailed = amountTxFailed
     }
 
+    /**
+     * Constructor (from AndroidDB)
+     *
+     * @param tXs transactions
+     * @param wTXs wallets
+     * @param wTXsOutside outside wallets
+     * @param amountTxFailed amount of failed transactions
+     * @param appType app type
+     * @param dummy dummy
+     */
     constructor(tXs: MutableList<Transaction>, wTXs: MutableList<Wallet>, wTXsOutside: MutableList<Wallet>, amountTxFailed: Long, appType: AppType, dummy: Boolean)
     {
         this.transactions = tXs as ArrayList<Transaction>

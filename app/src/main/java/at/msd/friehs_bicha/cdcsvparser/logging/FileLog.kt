@@ -44,6 +44,7 @@ class FileLog {
                 logFile.createNewFile()
             } else if (logFile.parentFile == null || logFile.parentFile?.exists() == false) {
                 logFile.parentFile?.mkdirs()
+                logFile.createNewFile()
             } else {
                 val lines = logFile.readLines()
                 if (lines.size > 1000) {
