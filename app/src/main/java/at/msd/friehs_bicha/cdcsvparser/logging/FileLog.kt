@@ -1,12 +1,13 @@
 package at.msd.friehs_bicha.cdcsvparser.logging
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.icu.text.SimpleDateFormat
 import android.util.Log
+import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import java.io.File
 import java.io.FileWriter
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 /**
  * This class is used to log to a file
@@ -19,8 +20,6 @@ import java.util.*
 class FileLog {
 
     companion object {
-        @SuppressLint("StaticFieldLeak")
-        private lateinit var m_context: Context
         private var logIsEnabled = true
         private var isInitialized = false
         private var LOG_FILENAME = "CDCsvParser.log"
@@ -30,17 +29,31 @@ class FileLog {
 
         /**
          * Initialize the FileLog
-         * @param context The context of the application
          * @param logFilename The filename of the log file
+         * @param logEnabled If logging is enabled
+         * @param maxLogLevel The max log level
+         * @return If the initialization was successful or not
          */
-        fun init(context: Context, logFilename: String = "log/CDCsvParser.log", logEnabled: Boolean = true, maxLogLevel: Int = Log.DEBUG) {
+        fun init(logFilename: String? = null, logEnabled: Boolean = true, maxLogLevel: Int = -1): Boolean {
             logIsEnabled = logEnabled
-            if (!logIsEnabled) return
-            m_context = context
-            LOG_FILENAME = logFilename
-            FileLog.maxLogLevel = maxLogLevel
+            if (!logIsEnabled) return isInitialized
+            LOG_FILENAME = if (logFilename == null) {
+                PreferenceHelper.getLogFilename(applicationContext)
+            } else {
+                PreferenceHelper.setLogFilename(applicationContext, logFilename)
+                logFilename
+            }
+            val mLLI = maxLogLevel
+            val mLLS = PreferenceHelper.getMaxLogLevel(applicationContext)
 
-            val logFile = File(m_context.filesDir, LOG_FILENAME)
+            this.maxLogLevel = if (mLLI == -1) {
+                mLLS
+            } else {
+                PreferenceHelper.setMaxLogLevel(applicationContext, mLLI)
+                mLLI
+            }
+
+            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
             if (!logFile.exists()) {
                 logFile.parentFile?.mkdirs()
                 logFile.createNewFile()
@@ -57,11 +70,13 @@ class FileLog {
 
             isInitialized = true
             d("FileLog", "Initialized")
+            return isInitialized
         }
 
 
         fun setMaxLogLevel(maxLogLevel: Int) {
             FileLog.maxLogLevel = maxLogLevel
+            PreferenceHelper.setMaxLogLevel(applicationContext, maxLogLevel)
         }
 
         fun getMaxLogLevel(): Int {
@@ -82,25 +97,26 @@ class FileLog {
 
         fun setLogFilename(logFilename: String) {
             LOG_FILENAME = logFilename
+            PreferenceHelper.setLogFilename(applicationContext, logFilename)
         }
 
         fun getLogSize(): Int {
-            val logFile = File(m_context.filesDir, LOG_FILENAME)
+            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
             return logFile.readLines().size
         }
 
         fun getLog(): String {
-            val logFile = File(m_context.filesDir, LOG_FILENAME)
+            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
             return logFile.readText()
         }
 
         fun clearLog() {
-            val logFile = File(m_context.filesDir, LOG_FILENAME)
+            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
             logFile.writeText("")
         }
 
         fun getLogFiles(): File {
-            return File(m_context.filesDir, LOG_FILENAME)
+            return File(applicationContext.filesDir, LOG_FILENAME)
         }
 
 
@@ -178,7 +194,7 @@ class FileLog {
         }
 
         private fun writeToFile(logLevel: Int, tag: String?, message: String) {
-            val logFile = File(m_context.filesDir, LOG_FILENAME)
+            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
             val fileWriter = FileWriter(logFile, true)
             val timeStamp = SimpleDateFormat(TIMESTAMP_FORMAT, Locale.GERMANY).format(Date())
             val logLevelString = logLevelToString(logLevel)

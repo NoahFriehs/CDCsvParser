@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.util
 
 import android.content.Context
+import android.util.Log
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 
 /**
@@ -13,6 +14,8 @@ object PreferenceHelper {
     const val IS_DATA_LOCAL = "is_data_local"
     const val IS_APPMODEL_SAVED_LOCAL = "is_appmodel_saved_local"
     const val FAST_START_ENABLED = "fast_start_enabled"
+    const val LOG_FILENAME = "LOG_FILENAME"
+    const val MAX_LOG_LEVEL = "MAX_LOG_LEVEL"
 
     /**
      * returns the selected app type
@@ -133,6 +136,56 @@ object PreferenceHelper {
     fun getFastStartEnabled(context: Context): Boolean {
         val settings = context.getSharedPreferences(PREFS_NAME, 0)
         return settings.getBoolean(FAST_START_ENABLED, false)
+    }
+
+    /**
+     * sets the log filename
+     *
+     * @param context the context
+     * @param logFilename the log filename
+     */
+    fun setLogFilename(context: Context, logFilename: String) {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        val editor = settings.edit()
+        editor.putString(LOG_FILENAME, logFilename)
+        editor.apply()
+    }
+
+    /**
+     * returns the log filename
+     *
+     * @param context the context
+     * @return the log filename
+     */
+    fun getLogFilename(context: Context): String {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        return settings.getString(LOG_FILENAME, "log/CDCsvParser.log")!!
+    }
+
+
+    /**
+     * sets the max log level
+     *
+     * @param context the context
+     * @param maxLogLevel the max log level
+     */
+    fun setMaxLogLevel(context: Context, maxLogLevel: Int) {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        val editor = settings.edit()
+        editor.putInt(MAX_LOG_LEVEL, maxLogLevel)
+        editor.apply()
+    }
+
+
+    /**
+     * returns the max log level
+     *
+     * @param context the context
+     * @return the max log level
+     */
+    fun getMaxLogLevel(context: Context): Int {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        return settings.getInt(MAX_LOG_LEVEL, Log.DEBUG)
     }
 
 }

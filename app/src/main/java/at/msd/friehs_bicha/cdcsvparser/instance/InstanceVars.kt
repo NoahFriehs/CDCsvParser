@@ -13,7 +13,7 @@ object InstanceVars {
 
     fun init(context: Context) {
         applicationContext = context
-        initLogging(context)
+        initLogging()
         initDB()
         initServices()
         initGlobalReceivers()
@@ -51,8 +51,8 @@ object InstanceVars {
         }
     }
 
-    private fun initLogging(context: Context) {
-        FileLog.init(context)
+    private fun initLogging() {
+        FileLog.init()
     }
 
 }
