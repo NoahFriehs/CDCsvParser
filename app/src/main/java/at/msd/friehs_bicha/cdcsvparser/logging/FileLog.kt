@@ -1,13 +1,14 @@
 package at.msd.friehs_bicha.cdcsvparser.logging
 
-import android.icu.text.SimpleDateFormat
 import android.util.Log
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
+import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
-import java.util.Date
-import java.util.Locale
+import java.io.PrintWriter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * This class is used to log to a file
@@ -24,6 +25,7 @@ class FileLog {
         private var isInitialized = false
         private var LOG_FILENAME = "CDCsvParser.log"
         private val TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS"
+        private val dateTimeFormatter = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT)
         private var maxLogLevel = Log.DEBUG
 
 
@@ -44,6 +46,10 @@ class FileLog {
                 logFilename
             }
             val mLLI = maxLogLevel
+            if (mLLI != -1 && mLLI < Log.VERBOSE || mLLI > Log.ERROR) {
+                e("FileLog", "Invalid max log level $mLLI from ${Thread.currentThread().stackTrace[3]}")
+                return false
+            }
             val mLLS = PreferenceHelper.getMaxLogLevel(applicationContext)
 
             this.maxLogLevel = if (mLLI == -1) {
@@ -53,20 +59,7 @@ class FileLog {
                 mLLI
             }
 
-            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
-            if (!logFile.exists()) {
-                logFile.parentFile?.mkdirs()
-                logFile.createNewFile()
-            } else if (logFile.parentFile == null || logFile.parentFile?.exists() == false) {
-                logFile.parentFile?.mkdirs()
-                logFile.createNewFile()
-            } else {
-                val lines = logFile.readLines()
-                if (lines.size > 1000) {
-                    val newLines = lines.subList(500, lines.size)
-                    logFile.writeText(newLines.joinToString("\n"))
-                }
-            }
+            createLogFileIfNeeded()
 
             isInitialized = true
             d("FileLog", "Initialized")
@@ -75,6 +68,11 @@ class FileLog {
 
 
         fun setMaxLogLevel(maxLogLevel: Int) {
+            if (maxLogLevel < Log.VERBOSE || maxLogLevel > Log.ERROR)
+            {
+                e("FileLog", "Invalid max log level $maxLogLevel from ${Thread.currentThread().stackTrace[3]}")
+                return
+            }
             FileLog.maxLogLevel = maxLogLevel
             PreferenceHelper.setMaxLogLevel(applicationContext, maxLogLevel)
         }
@@ -98,6 +96,24 @@ class FileLog {
         fun setLogFilename(logFilename: String) {
             LOG_FILENAME = logFilename
             PreferenceHelper.setLogFilename(applicationContext, logFilename)
+            createLogFileIfNeeded()
+        }
+
+        private fun createLogFileIfNeeded() {
+            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
+            if (!logFile.exists()) {
+                logFile.parentFile?.mkdirs()
+                logFile.createNewFile()
+            } else if (logFile.parentFile == null || logFile.parentFile?.exists() == false) {
+                logFile.parentFile?.mkdirs()
+                logFile.createNewFile()
+            } else {
+                val lines = logFile.readLines()
+                if (lines.size > 1000) {
+                    val newLines = lines.subList(500, lines.size)
+                    logFile.writeText(newLines.joinToString("\n"))
+                }
+            }
         }
 
         fun getLogSize(): Int {
@@ -112,7 +128,8 @@ class FileLog {
 
         fun clearLog() {
             val logFile = File(applicationContext.filesDir, LOG_FILENAME)
-            logFile.writeText("")
+            val fileWriter = FileWriter(logFile, false)
+            fileWriter.close()
         }
 
         fun getLogFiles(): File {
@@ -195,11 +212,11 @@ class FileLog {
 
         private fun writeToFile(logLevel: Int, tag: String?, message: String) {
             val logFile = File(applicationContext.filesDir, LOG_FILENAME)
-            val fileWriter = FileWriter(logFile, true)
-            val timeStamp = SimpleDateFormat(TIMESTAMP_FORMAT, Locale.GERMANY).format(Date())
+            val printWriter = PrintWriter(BufferedWriter(FileWriter(logFile, true)))
+            val timeStamp = LocalDateTime.now().format(dateTimeFormatter)
             val logLevelString = logLevelToString(logLevel)
-            fileWriter.write("$timeStamp $logLevelString $tag: $message\n")
-            fileWriter.close()
+            printWriter.println("$timeStamp $logLevelString $tag: $message")
+            printWriter.close()
         }
 
         private fun logLevelToString(logLevel: Int) = when (logLevel) {
