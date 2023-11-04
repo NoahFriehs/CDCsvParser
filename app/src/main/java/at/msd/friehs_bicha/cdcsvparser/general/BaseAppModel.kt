@@ -9,7 +9,7 @@ open class BaseAppModel
  * Creates a new AppModel
  *
  * @param appType which app to use
- */(var appType: AppType?) : Serializable {
+ */(var appType: AppType) : Serializable {
     var txApp: BaseApp? = null
     var isRunning = false
 }

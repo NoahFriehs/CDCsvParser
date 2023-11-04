@@ -7,7 +7,7 @@ import java.time.Instant
 /**
  * Object to store prices for 5 mins
  */
-class PriceCache() : Serializable {
+class PriceCache : Serializable {
     private val cache: HashMap<String, Cache> = HashMap()
 
     /**

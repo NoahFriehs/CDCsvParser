@@ -139,7 +139,7 @@ class AppModel : BaseAppModel, Serializable {
             var valueOfAll = 0.0
             for (wallet in txApp!!.wallets) {
                 if (wallet.currencyType == "EUR") continue
-                val price = wallet.currencyType?.let { AssetValue.getInstance().getPrice(it) }!!
+                val price = wallet.currencyType.let { AssetValue.getInstance().getPrice(it) }
                 val amount = wallet.amountBonus
                 valueOfAll += price * amount.toDouble()
             }
@@ -157,7 +157,7 @@ class AppModel : BaseAppModel, Serializable {
     private fun getTotalBonus(wallet: Wallet?): Double {
         return try {
             var valueOfAll = 0.0
-            val price = wallet!!.currencyType?.let { AssetValue.getInstance().getPrice(it) }!!
+            val price = wallet!!.currencyType.let { AssetValue.getInstance().getPrice(it) }
             val amount = wallet.amountBonus
             valueOfAll += price * amount.toDouble()
             valueOfAll
@@ -177,7 +177,7 @@ class AppModel : BaseAppModel, Serializable {
             var valueOfAll = 0.0
             for (w in txApp!!.wallets) {
                 if (w.currencyType == "EUR") continue
-                val price = w.currencyType?.let { AssetValue.getInstance().getPrice(it) }!!
+                val price = w.currencyType.let { AssetValue.getInstance().getPrice(it) }
                 val amount = w.amount
                 valueOfAll += price * amount.toDouble()
                 if (valueOfAll < 0.0) {
@@ -198,7 +198,7 @@ class AppModel : BaseAppModel, Serializable {
     fun getValueOfAssets(w: Wallet?): Double {
         return try {
             val valueOfWallet: Double
-            val price = w!!.currencyType?.let { AssetValue.getInstance().getPrice(it) }!!
+            val price = w!!.currencyType.let { AssetValue.getInstance().getPrice(it) }
             val amount = w.amount
             valueOfWallet = price * amount.toDouble()
             valueOfWallet
@@ -466,7 +466,7 @@ class AppModel : BaseAppModel, Serializable {
                     "outsideWallets" to dboutsideWallets,
                     "transactions" to dbTransactions,
                     "amountTxFailed" to txApp!!.amountTxFailed,
-                    "appType" to appType!!
+                    "appType" to appType
                 )
             }
 
@@ -484,7 +484,7 @@ class AppModel : BaseAppModel, Serializable {
                     "wallets" to dbWallets,
                     "transactions" to dbTransactions,
                     "amountTxFailed" to txApp!!.amountTxFailed,
-                    "appType" to appType!!
+                    "appType" to appType
                 )
             }
 
@@ -515,7 +515,7 @@ class AppModel : BaseAppModel, Serializable {
         }
         val assetValueString = formatAmountToString(assetValue, 5)
         val amountString =
-            formatAmountToString(wallet.amount.toDouble(), 5, wallet.currencyType!!)
+            formatAmountToString(wallet.amount.toDouble(), 5, wallet.currencyType)
         val color: Int = if (percentProfit > 100) {
             Color.GREEN
         } else if (percentProfit == 100.0 || percentProfit == 0.0) {
@@ -525,7 +525,7 @@ class AppModel : BaseAppModel, Serializable {
         }
 
         val walletName: String = if (wallet is CroCardWallet) wallet.transactionType.toString()
-        else wallet.currencyType!!
+        else wallet.currencyType
 
         val map: MutableMap<String, String?> = HashMap()
         map[R.id.walletId.toString()] = wallet.walletId.toString()
