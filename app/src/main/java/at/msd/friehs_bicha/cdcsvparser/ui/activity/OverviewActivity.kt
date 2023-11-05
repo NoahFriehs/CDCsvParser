@@ -8,7 +8,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager.widget.ViewPager
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.SettingsActivity
+import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.databinding.ActivityOverviewBinding
+import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.ui.main.SectionsPagerAdapter
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -18,6 +20,8 @@ import com.google.android.material.tabs.TabLayout
 class OverviewActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityOverviewBinding
+
+    private lateinit var appModel : AppModel
 
     private var hasData = false
 
@@ -33,6 +37,8 @@ class OverviewActivity : AppCompatActivity() {
         val tabs: TabLayout = binding.tabs
         tabs.setupWithViewPager(viewPager)
         val fabAdd: FloatingActionButton = binding.fabAdd
+
+        appModel = AppModelManager.getInstance()!!
 
         fabAdd.setOnClickListener { view ->
             Snackbar.make(view, "Replace with add action TODO", Snackbar.LENGTH_LONG)

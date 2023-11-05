@@ -115,7 +115,8 @@ class AppModel : BaseAppModel, Serializable {
                 }
 
                 AppType.CroCard -> {
-                    val wallets = txApp!!.wallets.clone() as ArrayList<Wallet>
+                    val app = txApp ?: cardApp
+                    val wallets = app!!.wallets.clone() as ArrayList<Wallet>
                     for (wallet in wallets) {
                         totalPrice = totalPrice.add(wallet.amount)
                     }
@@ -274,12 +275,12 @@ class AppModel : BaseAppModel, Serializable {
         get() {
             return try {
                 val total = totalPrice
-                val amountOfAsset = valueOfAssets
-                val rewardValue = totalBonus
                 val totalMoneySpent = formatAmountToString(total.toDouble())
                 val map: MutableMap<String, String?> = HashMap()
                 when (appType) {
                     AppType.CdCsvParser -> if (AssetValue.getInstance().isRunning) {
+                        val amountOfAsset = valueOfAssets
+                        val rewardValue = totalBonus
                         map[R.id.assets_valueP.toString()] =
                             formatAmountToString(amountOfAsset)
                         map[R.id.rewards_value.toString()] =
@@ -350,11 +351,11 @@ class AppModel : BaseAppModel, Serializable {
             val cardWalletDao = InstanceVars.db.cardWalletDao()
             val cardTransactionDao = InstanceVars.db.cardTransactionDao()
 
-            walletDao.deleteAll()
-            txDao.deleteAll()
+            //walletDao.deleteAll()
+            //txDao.deleteAll()
 
             //TODO: save calculated data to db
-            if (txApp !is CardTxApp) {
+            if (txApp is StandardTxApp) {
                 walletDao.insertAll(txApp!!.wallets)
                 walletDao.insertAll(txApp!!.outsideWallets)
                 txDao.insertAll(txApp!!.transactions)
@@ -362,8 +363,20 @@ class AppModel : BaseAppModel, Serializable {
             PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
 
             if (cardApp == null) return@launch
-            cardWalletDao.deleteAll()
-            cardTransactionDao.deleteAll()
+            //cardWalletDao.deleteAll()
+            //cardTransactionDao.deleteAll()
+
+            val listOfWalletIDs = ArrayList<Int>()
+
+            for (wallet in cardApp!!.wallets) {
+                listOfWalletIDs.add(wallet.walletId)
+            }
+            for (transaction in cardApp!!.transactions) {
+                if (!listOfWalletIDs.contains(transaction.walletId)) {
+                    FileLog.e("AppModel", "saveAppModelLocal: $transaction.walletId not found in wallets")
+                    continue
+                }
+            }
 
             cardWalletDao.insertAll(cardApp!!.wallets as ArrayList<CroCardWallet>)
             cardTransactionDao.insertAll(cardApp!!.transactions as ArrayList<CroCardTransaction>)   //TODO: insertAll is not working
@@ -380,34 +393,67 @@ class AppModel : BaseAppModel, Serializable {
             val txs = InstanceVars.db.transactionDao().getAllTransactions()
             val cws = InstanceVars.db.cardWalletDao().getAllWallets()
             val cts = InstanceVars.db.cardTransactionDao().getAllTransactions()
-            //TODO("load calculated data from db from card app if exists")
 
-            val wallets = ArrayList<Wallet>()
-            val outsideWallets = ArrayList<Wallet>()
-
-            ws.forEach {
-                it.wallet.transactions = ArrayList()
-                (it.wallet.transactions as ArrayList<Transaction?>).addAll(it.transactions) //more difficult way: txs.filter { tx -> tx.walletId == it.wallet.walletId }
-                if (it.wallet.isOutsideWallet) {
-                    outsideWallets.add(it.wallet)
-                } else {
-                    wallets.add(it.wallet)
-                }
-
+            if (ws.isEmpty() && txs.isEmpty() && cws.isEmpty() && cts.isEmpty()) {
+                FileLog.e("AppModel", "loadAppModelLocal: no data found in db")
+                return@Thread
             }
 
-            txApp = TxAppFactory.createTxApp(
-                AppType.CdCsvParser,
-                AppStatus.Finished,
-                useStrictType,
-                hashMapOf(
-                    DataTypes.dbWallets to wallets,
-                    DataTypes.dbOutsideWallets to outsideWallets,
-                    DataTypes.dbTransactions to txs,
-                    DataTypes.amountTxFailed to 0L
+            if (cws.isNotEmpty() && cts.isNotEmpty()) {
+                val cardWallets = ArrayList<CroCardWallet>()
+                cws.forEach {
+                    it.wallet.transactions.addAll(it.transactions)
+                    cardWallets.add(it.wallet)}
+
+                cardApp = TxAppFactory.createTxApp(
+                    AppType.CroCard,
+                    AppStatus.Finished,
+                    useStrictType,
+                    hashMapOf(
+                        DataTypes.dbWallets to cardWallets,
+                        DataTypes.dbTransactions to cts,
+                        DataTypes.amountTxFailed to 0L
+                    )
+                ) as CardTxApp
+            }
+
+            if (ws.isNotEmpty() && txs.isNotEmpty()) {
+
+                val wallets = ArrayList<Wallet>()
+                val outsideWallets = ArrayList<Wallet>()
+
+                ws.forEach {
+                    it.wallet.transactions = ArrayList()
+                    (it.wallet.transactions as ArrayList<Transaction?>).addAll(it.transactions) //more difficult way: txs.filter { tx -> tx.walletId == it.wallet.walletId }
+                    if (it.wallet.isOutsideWallet) {
+                        outsideWallets.add(it.wallet)
+                    } else {
+                        wallets.add(it.wallet)
+                    }
+
+                }
+
+                txApp = TxAppFactory.createTxApp(
+                    AppType.CdCsvParser,
+                    AppStatus.Finished,
+                    useStrictType,
+                    hashMapOf(
+                        DataTypes.dbWallets to wallets,
+                        DataTypes.dbOutsideWallets to outsideWallets,
+                        DataTypes.dbTransactions to txs,
+                        DataTypes.amountTxFailed to 0L
+                    )
                 )
-            )
-            //TODO create CardApp -> load card data in app and test then do it
+            }
+
+            if (txApp == null && cardApp == null) {
+                FileLog.e("AppModel", "loadAppModelLocal: no data found in db")
+                return@Thread
+            }
+
+            if (txApp == null) {
+                txApp = cardApp
+            }
 
             isRunning = true
         }.start()

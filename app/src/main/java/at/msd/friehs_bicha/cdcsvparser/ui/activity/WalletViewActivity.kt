@@ -41,7 +41,9 @@ class WalletViewActivity : AppCompatActivity() {
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
-        val wallets = appModel.txApp!!.wallets
+        val app = appModel.txApp ?: appModel.cardApp
+
+        val wallets = app!!.wallets
 
         val spinnerValueSpinner = findViewById<Spinner>(R.id.sorting_value)
         val sortingValues = listOf<String>(resources.getString(R.string.sort_amount), resources.getString(R.string.sort_amount_asset), resources.getString(R.string.sort_percent), resources.getString(R.string.sort_transactions))

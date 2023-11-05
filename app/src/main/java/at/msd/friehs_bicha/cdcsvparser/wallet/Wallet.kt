@@ -20,26 +20,24 @@ open class Wallet : Serializable {
     var walletId: Int
 
     @Ignore
-    var transactions: MutableList<Transaction?>? = null
+    var transactions: MutableList<Transaction?> = mutableListOf()
 
     var currencyType: String
 
-    var amount: BigDecimal
+    var amount: BigDecimal = BigDecimal.ZERO
 
-    var amountBonus: BigDecimal
+    var amountBonus: BigDecimal = BigDecimal.ZERO
 
-    var moneySpent: BigDecimal
+    var moneySpent: BigDecimal = BigDecimal.ZERO
 
     var isOutsideWallet = false
 
     @Ignore
     constructor(currencyType: String, amount: BigDecimal?, nativeAmount: BigDecimal?) {
         this.currencyType = currencyType
-        this.amount = BigDecimal(0)
         this.amount = this.amount.add(amount)
-        moneySpent = BigDecimal(0)
         moneySpent = moneySpent.add(nativeAmount)
-        amountBonus = BigDecimal(0)
+        amountBonus = BigDecimal.ZERO
         transactions = ArrayList()
         walletId = ++uidCounter
     }
@@ -71,7 +69,9 @@ open class Wallet : Serializable {
         this.amount = amount
         this.amountBonus = amountBonus
         this.moneySpent = moneySpent
-        this.transactions = transactions
+        if (transactions != null) {
+            this.transactions.addAll(transactions)
+        }
         walletId = ++uidCounter
     }
 
@@ -88,7 +88,9 @@ open class Wallet : Serializable {
         this.amount = amount
         this.amountBonus = amountBonus
         this.moneySpent = moneySpent
-        this.transactions = transactions
+        if (transactions != null) {
+            this.transactions = transactions
+        }
     }
 
     constructor(
@@ -112,7 +114,6 @@ open class Wallet : Serializable {
         amountBonus = wallet.amountBonus
         moneySpent = wallet.moneySpent
         transactions = wallet.transactions
-        if (transactions == null) transactions = ArrayList()
         isOutsideWallet = wallet.isOutsideWallet
     }
 
@@ -123,9 +124,8 @@ open class Wallet : Serializable {
         amountBonus = BigDecimal(wallet.amountBonus)
         moneySpent = BigDecimal(wallet.moneySpent)
         wallet.transactions?.forEach { transaction ->
-            transactions?.add(transaction?.let { Transaction(it) })
+            transactions.add(transaction?.let { Transaction(it) })
         }
-        if (transactions == null) transactions = ArrayList()
         isOutsideWallet = wallet.isOutsideWallet
     }
 

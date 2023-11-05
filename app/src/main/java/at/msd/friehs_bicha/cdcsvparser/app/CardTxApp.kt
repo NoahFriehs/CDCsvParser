@@ -22,8 +22,8 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
     BaseApp(), Serializable {
 
     init {
+        isUseStrictWalletType = useStrictWallet
         if (!fastInit) {
-            isUseStrictWalletType = useStrictWallet
             try {
                 this.transactions.addAll(getTransactions(file))
             } catch (e: Exception) {
@@ -173,7 +173,7 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
     private fun fillWallet(walletsExisting: Boolean = false) {
         FileLog.i("CardTxApp", "Filling Wallets")
         if (!walletsExisting) {
-            wallets.add(CroCardWallet("Test", BigDecimal.ZERO, "Test -> Test", this))
+            wallets.add(CroCardWallet("EUR", BigDecimal.ZERO, "EUR -> EUR", this))
             for (t in transactions) {
                 if ((t as CroCardTransaction).transactionTypeString == "EUR -> EUR") {
                     (wallets[0] as CroCardWallet).addToWallet(t)

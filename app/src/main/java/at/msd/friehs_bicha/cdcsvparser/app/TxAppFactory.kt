@@ -111,8 +111,8 @@ class TxAppFactory {
             return txApp
         }
 
-        private fun initCardFromLocalDB(wallets: ArrayList<Wallet>, transactions: ArrayList<Transaction>, amountTxFailed: Long): CroCardTxApp {
-            return CroCardTxApp(transactions as ArrayList<CroCardTransaction>, wallets as ArrayList<CroCardWallet>, amountTxFailed)
+        private fun initCardFromLocalDB(wallets: ArrayList<Wallet>, transactions: ArrayList<Transaction>, amountTxFailed: Long): CardTxApp {
+            return CardTxApp(transactions as ArrayList<CroCardTransaction>, wallets as ArrayList<CroCardWallet>, amountTxFailed)
         }
 
         private fun initFromLocalDB(wallets: ArrayList<Wallet>, outsideWallets: ArrayList<Wallet>, transactions: ArrayList<Transaction>, appType: AppType, amountTxFailed: Long): StandardTxApp {

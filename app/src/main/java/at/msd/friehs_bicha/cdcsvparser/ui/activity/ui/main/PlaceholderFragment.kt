@@ -45,14 +45,16 @@ class PlaceholderFragment : Fragment() {
         // Check if the fragment is already added to avoid overlapping
         if (childFragmentManager.findFragmentById(R.id.fragment_container) == null) {
 
+            val appModel = AppModelManager.getInstance()!!
+
             val wallets =
                 when (arguments?.getInt(ARG_SECTION_NUMBER)) {
-                    1 -> AppModelManager.getInstance()!!.txApp!!.wallets
+                    1 -> appModel.txApp!!.wallets
                     2 -> {
-                        if (AppModelManager.getInstance()!!.cardApp != null) {
-                            AppModelManager.getInstance()!!.cardApp!!.wallets
+                        if (appModel.cardApp != null) {
+                            appModel.cardApp!!.wallets
                         } else {
-                            AppModelManager.getInstance()!!.txApp!!.wallets
+                            appModel.txApp!!.wallets
                         }
                     }
                     else -> throw Exception() //AppModelManager.getInstance()!!.txApp!!.wallets

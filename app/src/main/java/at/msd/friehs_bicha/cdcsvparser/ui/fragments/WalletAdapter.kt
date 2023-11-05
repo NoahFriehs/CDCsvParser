@@ -27,7 +27,8 @@ class WalletAdapter(val wallets: List<Wallet>) :
                 val walletId =
                     itemView.findViewById<TextView>(R.id.walletId).text.toString().toInt()
                 val appModel = AppModelManager.getInstance()!!  //TODO: check if null
-                val wallet = appModel.txApp!!.wallets.find { it.walletId == walletId }
+                val app = appModel.txApp ?: appModel.cardApp
+                val wallet = app!!.wallets.find { it.walletId == walletId }
                 val intent = Intent(itemView.context, AssetsFilterActivity::class.java)
                 intent.putExtra("wallet", wallet)
                 itemView.context.startActivity(intent)

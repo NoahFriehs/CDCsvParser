@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
+import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
@@ -63,9 +64,12 @@ class ParseActivity : AppCompatActivity() {
             }
         }
         appModel = AppModelManager.getInstance()
-        Thread {
-            appModel!!.loadPriceCaches()
-        }.start()
+        if(appModel!!.appType != AppType.CroCard){
+            Thread {
+                appModel!!.loadPriceCaches()
+            }.start()
+        }
+
     }
 
     /**
