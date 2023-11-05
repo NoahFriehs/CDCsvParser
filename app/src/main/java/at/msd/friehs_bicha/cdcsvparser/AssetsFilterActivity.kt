@@ -22,6 +22,8 @@ import java.util.function.Consumer
 class AssetsFilterActivity : AppCompatActivity() {
     var appModel: AppModel? = null
     var context: Context? = null
+    private var walletList: MutableList<Wallet> = mutableListOf()
+    private var walletNamesArray: Array<String?> = arrayOf()
 
     /**
      * sets the spinner and context the first time
@@ -41,6 +43,7 @@ class AssetsFilterActivity : AppCompatActivity() {
 
         // make List with all Wallets
         val items = walletNames
+        walletNamesArray = items.copyOf()
         //create an adapter to describe how the items are displayed
         val assetNamesAdapter =
             ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
@@ -52,11 +55,16 @@ class AssetsFilterActivity : AppCompatActivity() {
         var specificWallet =
             appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0].getWallet(indexObj.toString())]
 
-        val wallet = intent.extras?.get("wallet")
-        if (wallet is Wallet) {
-            specificWallet = wallet
-            if (wallet is CroCardWallet) dropdown.setSelection(items.indexOf(wallet.transactionType))
-            else dropdown.setSelection(items.indexOf(specificWallet.currencyType))
+        val intentWallet = intent.extras?.get("wallet")
+        if (intentWallet is Wallet) {
+            val wallet = walletList.find { it.walletId == intentWallet.walletId }
+            if (wallet != null) {
+                specificWallet = wallet
+            } else {
+                FileLog.e("AssetsFilterActivity", "Wallet not found")
+            }
+            val index = walletList.indexOf(wallet)
+            dropdown.setSelection(index)
         }
 
 
@@ -81,7 +89,7 @@ class AssetsFilterActivity : AppCompatActivity() {
             ) {
                 //get the specific wallet
                 val specificWallet =
-                    appModel!!.txApp!!.wallets[appModel!!.txApp!!.wallets[0].getWallet(dropdown.selectedItem.toString())]
+                    walletList[position]
 
                 //display Transactions
                 supportFragmentManager.beginTransaction()
@@ -116,14 +124,28 @@ class AssetsFilterActivity : AppCompatActivity() {
                         wallets.add(
                             wallet?.currencyType
                         )
+                        if (wallet != null) {
+                            walletList.add(wallet)
+                        }
                     })
                     //wallets.remove("EUR")
+                    if (appModel!!.cardApp != null) appModel!!.cardApp!!.wallets.forEach(Consumer { wallet: Wallet? ->
+                        wallets.add(
+                            (wallet as CroCardWallet?)?.transactionType
+                        )
+                        if (wallet != null) {
+                            walletList.add(wallet)
+                        }
+                    })
                 }
 
                 AppType.CroCard -> appModel!!.txApp!!.wallets.forEach(Consumer { wallet: Wallet? ->
                     wallets.add(
                         (wallet as CroCardWallet?)?.transactionType
                     )
+                    if (wallet != null) {
+                        walletList.add(wallet)
+                    }
                 })
 
                 else -> {
@@ -172,7 +194,7 @@ class AssetsFilterActivity : AppCompatActivity() {
     /**
      * Displays the Transactions of specificWallet
      *
-     * @param specificWallet the CDCWallet which should be displayed
+     * param specificWallet the CDCWallet which should be displayed
 
     private fun displayTxs(specificWallet: Wallet?) {
     // Get a reference to the ListView

@@ -27,8 +27,16 @@ class WalletAdapter(val wallets: List<Wallet>) :
                 val walletId =
                     itemView.findViewById<TextView>(R.id.walletId).text.toString().toInt()
                 val appModel = AppModelManager.getInstance()!!
-                val app = appModel.txApp ?: appModel.cardApp
-                val wallet = app!!.wallets.find { it.walletId == walletId }
+                if (appModel.txApp == null && appModel.cardApp == null) {
+                    FileLog.e("WalletAdapter", "appModel.txApp == null && appModel.cardApp == null")
+                    return@setOnClickListener
+                }
+                val wallets = mutableListOf<Wallet>()
+
+                if (appModel.txApp != null) wallets.addAll(appModel.txApp!!.wallets)
+                if (appModel.cardApp != null) wallets.addAll(appModel.cardApp!!.wallets)
+
+                val wallet = wallets.find { it.walletId == walletId }
                 val intent = Intent(itemView.context, AssetsFilterActivity::class.java)
                 intent.putExtra("wallet", wallet)
                 itemView.context.startActivity(intent)
