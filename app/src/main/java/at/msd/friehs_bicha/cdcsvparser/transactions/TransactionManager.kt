@@ -6,7 +6,6 @@ import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.TimeSpan
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -269,15 +268,22 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             app: BaseApp,
             getOutsideWallet: Boolean = false
         ): CDCWallet {
-            var ws: ArrayList<Wallet> = app.wallets
-            if (getOutsideWallet) ws = app.outsideWallets
-            else return app.walletMap[currencyType] as CDCWallet
-            for (wallet in ws) {
+            if (!getOutsideWallet)
+            {
+                return app.walletMap[currencyType] as CDCWallet
+            }
+            for (wallet in app.outsideWallets) {
                 if (wallet.currencyType == currencyType) {
                     return wallet as CDCWallet
                 }
             }
-            return CDCWallet(currencyType, BigDecimal.ZERO, BigDecimal.ZERO, app, getOutsideWallet)
+
+            FileLog.w("TransactionManager", "getWallet: Wallet not found, CurrencyType: $currencyType")
+            CDCWallet(currencyType, BigDecimal.ZERO, BigDecimal.ZERO, app, true).let {
+                app.outsideWallets.add(it)
+                //app.walletMap[currencyType] = it
+                return it
+            }
         }
 
 

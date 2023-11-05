@@ -165,7 +165,7 @@ class AssetsFilterActivity : AppCompatActivity() {
      */
     private fun displayInformation(specificWallet: Wallet?, all_regarding_tx: TextView) {
         all_regarding_tx.text = resources.getString(R.string.all_transactions_regarding) + specificWallet?.currencyType
-        if (appModel!!.appType == AppType.CroCard) {
+        if (appModel!!.appType == AppType.CroCard || specificWallet is CroCardWallet) {
             all_regarding_tx.text =
                 resources.getString(R.string.all_transactions_regarding) + (specificWallet as CroCardWallet?)?.transactionType
         }

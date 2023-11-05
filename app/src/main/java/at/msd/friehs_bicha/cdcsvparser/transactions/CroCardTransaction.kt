@@ -120,6 +120,9 @@ open class CroCardTransaction(
     }
 
 
+    override fun getTxTypeString(): CharSequence? {
+        return transactionTypeString
+    }
 
 
 

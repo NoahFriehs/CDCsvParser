@@ -175,6 +175,10 @@ open class Transaction : Serializable {
                 AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
     }
 
+    open fun getTxTypeString(): CharSequence? {
+        return transactionType.toString()
+    }
+
     companion object {
 
         /**

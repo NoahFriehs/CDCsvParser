@@ -7,7 +7,6 @@ import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
-import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 
@@ -41,8 +40,7 @@ class TransactionActivity : AppCompatActivity() {
         val tvTxHash = findViewById<TextView>(R.id.tv_txHash)
         val tvTxHashValue = findViewById<TextView>(R.id.tv_txHashValue)
 
-        tvType.text =
-            if (transaction is CroCardTransaction) (transaction as CroCardTransaction).transactionTypeString else transaction.transactionType.toString()
+        tvType.text = transaction.getTxTypeString()
         tvDate.text = transaction.date.toString()
         tvDescription.text = transaction.description
         tvAmountValue.text =
