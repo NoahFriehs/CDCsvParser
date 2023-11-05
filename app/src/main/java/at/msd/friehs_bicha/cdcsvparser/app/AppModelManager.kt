@@ -18,9 +18,12 @@ object AppModelManager {
      */
     fun getInstance(): AppModel? {
         if (instance == null) {
-            FileLog.e("AppModelManager", "AppModel has not been initialized. Call setInstance() first. Called from: ${Thread.currentThread().stackTrace[3]}")
-            //throw IllegalStateException("AppModel has not been initialized. Call setInstance() first.")
-            return null
+            FileLog.e(
+                "AppModelManager",
+                "AppModel has not been initialized. Call setInstance() first. Called from: ${Thread.currentThread().stackTrace[3]}"
+            )
+            throw IllegalStateException("AppModel has not been initialized. Call setInstance() first.")
+            //return null
         }
         FileLog.d("AppModelManager", "AppModel getInstance() called from: ${Thread.currentThread().stackTrace[3]}")
         return instance!!

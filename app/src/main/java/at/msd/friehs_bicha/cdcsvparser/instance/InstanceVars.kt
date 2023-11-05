@@ -19,8 +19,12 @@ object InstanceVars {
         initGlobalReceivers()
     }
 
+    /**
+     * Shutdown
+     *
+     * Call this on app shutdown
+     */
     fun shutdown() {
-        //TODO call this on app shutdown
         FileLog.i("InstanceVars", "Shutting down")
         stopServices()
     }
@@ -30,7 +34,7 @@ object InstanceVars {
     }
 
     private fun initGlobalReceivers() {
-        //TODO register global receivers here
+        //register global receivers here
     }
 
     private fun initServices() {

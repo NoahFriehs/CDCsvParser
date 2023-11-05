@@ -12,6 +12,7 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.ui.activity.OverviewActivity
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
 
 class ParseActivity : AppCompatActivity() {
@@ -41,7 +42,7 @@ class ParseActivity : AppCompatActivity() {
         }
         btnTx.setOnClickListener {
             if (appModel!!.isRunning) {
-                val intent = Intent(this@ParseActivity, TransactionsActivity::class.java)
+                val intent = Intent(this@ParseActivity, OverviewActivity::class.java)
                 startActivity(intent)
             }
         }

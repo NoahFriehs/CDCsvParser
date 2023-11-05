@@ -354,7 +354,6 @@ class AppModel : BaseAppModel, Serializable {
             //walletDao.deleteAll()
             //txDao.deleteAll()
 
-            //TODO: save calculated data to db
             if (txApp is StandardTxApp) {
                 walletDao.insertAll(txApp!!.wallets)
                 walletDao.insertAll(txApp!!.outsideWallets)
@@ -379,9 +378,7 @@ class AppModel : BaseAppModel, Serializable {
             }
 
             cardWalletDao.insertAll(cardApp!!.wallets as ArrayList<CroCardWallet>)
-            cardTransactionDao.insertAll(cardApp!!.transactions as ArrayList<CroCardTransaction>)   //TODO: insertAll is not working
-            //                 android.database.sqlite.SQLiteConstraintException: FOREIGN KEY constraint failed (code 787 SQLITE_CONSTRAINT_FOREIGNKEY)
-
+            cardTransactionDao.insertAll(cardApp!!.transactions as ArrayList<CroCardTransaction>)
         }
     }
 
@@ -580,7 +577,7 @@ class AppModel : BaseAppModel, Serializable {
         map[R.id.amountValue.toString()] = assetValueString
         map[R.id.percentProfit.toString()] =
             formatAmountToString(percentProfit - 100, 2, "%", true)
-        map[R.id.amountTransactions.toString()] = wallet.transactions?.count().toString()
+        map[R.id.amountTransactions.toString()] = wallet.transactions.count().toString()
         map["COLOR"] = color.toString()
         return map
     }

@@ -28,7 +28,7 @@ class TransactionActivity : AppCompatActivity() {
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
-        appModel = AppModelManager.getInstance()!!  //TODO: check if null
+        appModel = AppModelManager.getInstance()!!
 
         transaction = intent.getSerializableExtra("transaction") as Transaction
 

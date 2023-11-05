@@ -555,7 +555,6 @@ class MainActivity : AppCompatActivity() {
                         val appTypeString = txAppMap["appType"] as String? ?: ""
                         val appType = AppType.valueOf(appTypeString)
 
-                        //TODO check if data is valid
                         this.appModel = AppModel(
                             dbWallets as ArrayList<HashMap<String, *>>?,
                             dbOutsideWallets,
