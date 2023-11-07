@@ -145,7 +145,7 @@ class FileLog {
          */
         fun v(tag: String?, message: String) {
             if (!logIsEnabled) return
-            if (Log.VERBOSE > maxLogLevel) return
+            if (Log.VERBOSE < maxLogLevel) return
             Log.v(tag, message)
             if (!isInitialized) return
             writeToFile(Log.VERBOSE, tag, message)
@@ -159,7 +159,7 @@ class FileLog {
          */
         fun d(tag: String?, message: String) {
             if (!logIsEnabled) return
-            if (Log.DEBUG > maxLogLevel) return
+            if (Log.DEBUG < maxLogLevel) return
             Log.d(tag, message)
             if (!isInitialized) return
             writeToFile(Log.DEBUG, tag, message)
@@ -174,7 +174,7 @@ class FileLog {
          */
         fun i(tag: String?, message: String) {
             if (!logIsEnabled) return
-            if (Log.INFO > maxLogLevel) return
+            if (Log.INFO < maxLogLevel) return
             Log.i(tag, message)
             if (!isInitialized) return
             writeToFile(Log.INFO, tag, "Info: $message")
@@ -189,7 +189,7 @@ class FileLog {
          */
         fun e(tag: String?, message: String) {
             if (!logIsEnabled) return
-            if (Log.ERROR > maxLogLevel) return
+            if (Log.ERROR < maxLogLevel) return
             Log.e(tag, message)
             if (!isInitialized) return
             writeToFile(Log.ERROR, tag, "Error: $message")
@@ -204,7 +204,7 @@ class FileLog {
          */
         fun w(tag: String?, message: String) {
             if (!logIsEnabled) return
-            if (Log.WARN > maxLogLevel) return
+            if (Log.WARN < maxLogLevel) return
             Log.w(tag, message)
             if (!isInitialized) return
             writeToFile(Log.WARN, tag, "Warning: $message")
