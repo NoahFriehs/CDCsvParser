@@ -23,6 +23,7 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
 
     init {
         isUseStrictWalletType = useStrictWallet
+        appType = AppType.CroCard
         if (!fastInit) {
             try {
                 this.transactions.addAll(getTransactions(file))

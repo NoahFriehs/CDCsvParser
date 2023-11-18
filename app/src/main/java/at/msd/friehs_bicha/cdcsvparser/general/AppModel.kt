@@ -229,6 +229,18 @@ class AppModel : BaseAppModel, Serializable {
     fun getAssetMap(wallet: Wallet?): Map<String, String?> {
         val total = formatAmountToString(wallet!!.moneySpent.toDouble())
         val map: MutableMap<String, String?> = HashMap()
+
+        if (wallet is CroCardWallet) {
+            map[R.id.money_spent_value.toString()] = total
+            map[R.id.assets_value.toString()] = null
+            map[R.id.rewards_value.toString()] = null
+            map[R.id.profit_loss_value.toString()] = null
+            map[R.id.assets_value_label.toString()] = null
+            map[R.id.rewards_label.toString()] = null
+            map[R.id.profit_loss_label.toString()] = null
+            return map
+        }
+
         when (appType) {
             AppType.CdCsvParser -> {
                 val amountOfAsset = getValueOfAssets(wallet)
@@ -332,10 +344,9 @@ class AppModel : BaseAppModel, Serializable {
             val cardWalletDao = InstanceVars.db.cardWalletDao()
             val cardTransactionDao = InstanceVars.db.cardTransactionDao()
 
-            //walletDao.deleteAll()
-            //txDao.deleteAll()
-
             if (txApp is StandardTxApp) {
+                walletDao.deleteAll()
+                txDao.deleteAll()
                 walletDao.insertAll(txApp!!.wallets)
                 walletDao.insertAll(txApp!!.outsideWallets)
                 txDao.insertAll(txApp!!.transactions)
@@ -343,8 +354,8 @@ class AppModel : BaseAppModel, Serializable {
             PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
 
             if (cardApp == null) return@launch
-            //cardWalletDao.deleteAll()
-            //cardTransactionDao.deleteAll()
+            cardWalletDao.deleteAll()
+            cardTransactionDao.deleteAll()
 
             val listOfWalletIDs = ArrayList<Int>()
 
@@ -353,7 +364,10 @@ class AppModel : BaseAppModel, Serializable {
             }
             for (transaction in cardApp!!.transactions) {
                 if (!listOfWalletIDs.contains(transaction.walletId)) {
-                    FileLog.e("AppModel", "saveAppModelLocal: $transaction.walletId not found in wallets")
+                    FileLog.e(
+                        "AppModel",
+                        "saveAppModelLocal: $transaction.walletId not found in wallets"
+                    )
                     continue
                 }
             }
@@ -483,7 +497,7 @@ class AppModel : BaseAppModel, Serializable {
             }
 
             else -> {
-                FileLog.e("AppModel", "CroCard: Usage not found, AppType: $appType")
+                FileLog.e("AppModel", "toHashMap: Usage not found, AppType: $appType")
                 throw RuntimeException("Usage not found")
             }
         }
@@ -543,17 +557,30 @@ class AppModel : BaseAppModel, Serializable {
 
     fun getTransactionAdapter(transaction: Transaction): MutableMap<String, String?> {
 
+        //TDOO: make this better for CardTransactions
+
         val defaultLocale = Locale.getDefault()
         val dateFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", defaultLocale)
-
         val map: MutableMap<String, String?> = HashMap()
+
+        if (transaction is CroCardTransaction) {
+            map[R.id.tv_assetAmountValue.toString()] =
+                formatAmountToString(
+                    transaction.amount.toDouble(),
+                    6,
+                    transaction.transactionTypeString
+                )
+        } else {
+            map[R.id.tv_assetAmountValue.toString()] =
+                formatAmountToString(transaction.amount.toDouble(), 6, transaction.currencyType)
+        }
+
         map[R.id.tv_transactionId.toString()] = transaction.transactionId.toString()
         map[R.id.tv_date.toString()] = transaction.date?.let { dateFormat.format(it).toString() }
         map[R.id.tv_descriptionValue.toString()] = transaction.description
         map[R.id.tv_amountValue.toString()] =
             formatAmountToString(transaction.nativeAmount.toDouble())
-        map[R.id.tv_assetAmountValue.toString()] =
-            formatAmountToString(transaction.amount.toDouble(), 6, transaction.currencyType)
+
         return map
     }
 

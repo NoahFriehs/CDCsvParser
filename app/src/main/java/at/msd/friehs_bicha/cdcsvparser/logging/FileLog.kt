@@ -118,12 +118,18 @@ class FileLog {
 
         fun getLogSize(): Int {
             val logFile = File(applicationContext.filesDir, LOG_FILENAME)
-            return logFile.readLines().size
+            return logFile.useLines { lines -> lines.count() }
         }
 
         fun getLog(): String {
             val logFile = File(applicationContext.filesDir, LOG_FILENAME)
-            return logFile.readText()
+            return logFile.useLines { lines -> lines.joinToString("\n") }
+        }
+
+        fun getLogLines(): List<String> {
+            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
+            return logFile.useLines { lines -> lines.toList() }
+
         }
 
         fun clearLog() {

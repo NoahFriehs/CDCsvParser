@@ -95,8 +95,23 @@
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/basic_start_end_margin"
         android:background="@drawable/round_button_layer_list"
+        android:textAllCaps="false" />
+
+    <Button
+        android:id="@+id/btn_login"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginBottom="@dimen/basic_start_end_margin"
+        android:background="@drawable/round_button_layer_list"
+        android:text="@string/login"
         android:textAllCaps="false"
-        />
+        android:textSize="@dimen/basic_button_font"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/btn_permission_request"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
 
     <Button
         android:id="@+id/btn_delete_account"

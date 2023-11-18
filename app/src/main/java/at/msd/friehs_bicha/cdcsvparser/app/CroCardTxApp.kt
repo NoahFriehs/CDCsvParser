@@ -21,6 +21,7 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
     BaseApp(), Serializable {
 
     init {
+        appType = AppType.CroCard
         if (!fastInit) {
             isUseStrictWalletType = useStrictWallet
             try {

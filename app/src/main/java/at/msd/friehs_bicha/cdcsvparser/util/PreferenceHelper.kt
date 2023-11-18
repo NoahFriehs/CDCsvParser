@@ -16,6 +16,7 @@ object PreferenceHelper {
     const val FAST_START_ENABLED = "fast_start_enabled"
     const val LOG_FILENAME = "LOG_FILENAME"
     const val MAX_LOG_LEVEL = "MAX_LOG_LEVEL"
+    const val IS_FIRST_START = "IS_FIRST_START"
 
     /**
      * returns the selected app type
@@ -186,6 +187,32 @@ object PreferenceHelper {
     fun getMaxLogLevel(context: Context): Int {
         val settings = context.getSharedPreferences(PREFS_NAME, 0)
         return settings.getInt(MAX_LOG_LEVEL, Log.DEBUG)
+    }
+
+
+    /**
+     * sets if the app is started for the first time
+     *
+     * @param context the context
+     * @param isFirstStart if the app is started for the first time
+     */
+    fun setIsFirstStart(context: Context, isFirstStart: Boolean) {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        val editor = settings.edit()
+        editor.putBoolean(IS_FIRST_START, isFirstStart)
+        editor.apply()
+    }
+
+
+    /**
+     * returns if the app is started for the first time
+     *
+     * @param context the context
+     * @return if the app is started for the first time
+     */
+    fun getIsFirstStart(context: Context): Boolean {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        return settings.getBoolean(IS_FIRST_START, true)
     }
 
 }

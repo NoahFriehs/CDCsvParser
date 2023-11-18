@@ -26,7 +26,10 @@ class StartingActivity : ComponentActivity() {
 
         InstanceVars.init(applicationContext)
 
-        if (PreferenceHelper.getFastStartEnabled(applicationContext) && PreferenceHelper.getIsAppModelSavedLocal(applicationContext)) {
+        if (PreferenceHelper.getFastStartEnabled(applicationContext) || !PreferenceHelper.getIsFirstStart(
+                applicationContext
+            )
+        ) {
             return fastStart()
         } else {
             //continue old way
@@ -55,11 +58,15 @@ class StartingActivity : ComponentActivity() {
     }
 
     private fun fastStart() {
-        AppModelManager.setInstance(AppModel())
+        val isLocal =
+            PreferenceHelper.getFastStartEnabled(applicationContext) && PreferenceHelper.getIsAppModelSavedLocal(
+                applicationContext
+            )
+        if (isLocal) AppModelManager.setInstance(AppModel())
 
         val intent = Intent(this, MainActivity::class.java)
 
-        intent.putExtra("fastStart", true)
+        if (isLocal) intent.putExtra("fastStart", true)
 
         lifecycleScope.launch {
             delay(1000)

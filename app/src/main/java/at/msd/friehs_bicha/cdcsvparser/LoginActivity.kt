@@ -35,6 +35,7 @@ class LoginActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
 
         btnWithoutLogin.setOnClickListener {
+            PreferenceHelper.setIsFirstStart(this, false)
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
             finish()

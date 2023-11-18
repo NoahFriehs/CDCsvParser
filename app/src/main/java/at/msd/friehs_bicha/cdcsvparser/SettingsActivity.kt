@@ -37,6 +37,7 @@ class SettingsActivity : AppCompatActivity() {
     lateinit var cbStoreDataLocal: CheckBox
     lateinit var cbEnableFastStart: CheckBox
     lateinit var btnLogout: Button
+    lateinit var btnLogin: Button
     lateinit var btnDeleteUser: Button
     lateinit var btnPermissionRequest: Button
     lateinit var btnAboutUs: Button
@@ -57,6 +58,7 @@ class SettingsActivity : AppCompatActivity() {
         btnPermissionRequest = findViewById(R.id.btn_permission_request)
         btnAboutUs = findViewById(R.id.btn_about_us)
         btnLogout = findViewById(R.id.btn_logout)
+        btnLogin = findViewById(R.id.btn_login)
         btnDeleteUser = findViewById(R.id.btn_delete_account)
 
         // load the stored values for the spinner and checkbox
@@ -135,9 +137,15 @@ class SettingsActivity : AppCompatActivity() {
 
         }
 
+        btnLogin.setOnClickListener {
+            val intent = Intent(this, LoginActivity::class.java)
+            startActivity(intent)
+        }
+
         if (user == null) {
             btnLogout.visibility = View.GONE
             btnDeleteUser.visibility = View.GONE
+            btnLogin.visibility = View.VISIBLE
         }
 
         btnDeleteUser.setOnClickListener {
