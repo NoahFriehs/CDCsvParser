@@ -107,17 +107,6 @@ class SettingsActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        if (arePermissionsGranted(permissions()))
-        {
-            btnPermissionRequest.visibility = View.GONE
-        } else {
-            btnPermissionRequest.visibility = View.VISIBLE
-            btnPermissionRequest.setOnClickListener {
-                requestExternalStoragePermission()
-            }
-        }
-
-
         btnAboutUs.setOnClickListener {
             val intent = Intent(this, AboutUsActivity::class.java)
             startActivity(intent)
@@ -142,12 +131,6 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        if (user == null) {
-            btnLogout.visibility = View.GONE
-            btnDeleteUser.visibility = View.GONE
-            btnLogin.visibility = View.VISIBLE
-        }
-
         btnDeleteUser.setOnClickListener {
             val alertDialog = AlertDialog.Builder(this)
                 .setTitle(resources.getString(R.string.delete_account))
@@ -159,6 +142,32 @@ class SettingsActivity : AppCompatActivity() {
                 .create()
 
             alertDialog.show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if (arePermissionsGranted(permissions())) {
+            btnPermissionRequest.visibility = View.GONE
+        } else {
+            btnPermissionRequest.visibility = View.VISIBLE
+            btnPermissionRequest.setOnClickListener {
+                requestExternalStoragePermission()
+            }
+        }
+
+        val auth = FirebaseAuth.getInstance()
+        val user = auth.currentUser
+
+        if (user == null) {
+            btnLogout.visibility = View.GONE
+            btnDeleteUser.visibility = View.GONE
+            btnLogin.visibility = View.VISIBLE
+        } else {
+            btnLogout.visibility = View.VISIBLE
+            btnDeleteUser.visibility = View.VISIBLE
+            btnLogin.visibility = View.GONE
         }
     }
 
@@ -217,7 +226,7 @@ class SettingsActivity : AppCompatActivity() {
                 // Display a rationale for the user to grant the permission
                 AlertDialog.Builder(this)
                     .setTitle(resources.getString(R.string.permission_needed))
-                    .setMessage(resources.getString(R.string.permission_needed_text))
+                    .setMessage(resources.getString(R.string.permission_needed_text))   //TODO: change text
                     .setPositiveButton(
                         "ok"
                     ) { _, _ ->

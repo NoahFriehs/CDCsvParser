@@ -38,4 +38,8 @@ object AppModelManager {
         instance = appModel
         FileLog.d("AppModelManager", "AppModel has been initialized.")
     }
+
+    fun isInitialized(): Boolean {
+        return instance != null
+    }
 }

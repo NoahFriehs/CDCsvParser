@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -17,10 +16,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
-import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.util.FileUtil
+import at.msd.friehs_bicha.cdcsvparser.util.FirebaseUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import com.google.firebase.auth.FirebaseAuth
@@ -80,7 +80,6 @@ class MainActivity : AppCompatActivity() {
         if (intent.hasExtra("fastStart")) {
             fastStart()
         }
-
     }
 
     private fun fastStart() {
@@ -190,7 +189,7 @@ class MainActivity : AppCompatActivity() {
         showProgressDialog()
         val position = spinner.selectedItemPosition
         val selectedFile = files!![position]
-        val list = getFileContent(selectedFile)
+        val list = FileUtil.getFileContent(selectedFile)
         try {
             appModel = AppModel(
                 list,
@@ -221,7 +220,7 @@ class MainActivity : AppCompatActivity() {
             val now = Date()
             val time = dateFormat.format(now)
             val filename = "$time.csv"
-            val list = getFileContentFromUri(fileUri)
+            val list = FileUtil.getFileContentFromUri(this, fileUri!!)
             try {
                 applicationContext.openFileOutput(filename, MODE_APPEND).use { fos ->
                     for (element in list) {
@@ -250,7 +249,7 @@ class MainActivity : AppCompatActivity() {
                 hideProgressDialog()
                 Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
             } catch (e: RuntimeException) {
-                FileLog.e("MainActivity", ":  Error while loading files : $e")
+                FileLog.w("MainActivity", ":  Error while loading files : $e")
                 hideProgressDialog()
                 Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
                 callParseView()
@@ -259,16 +258,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun callParseView(saveToDB: Boolean = true) {
-        if (appModel == null) {
+    private fun callParseView(saveToDB: Boolean = true, ignoreAppModel: Boolean = false) {
+        if (appModel == null && !ignoreAppModel) {
             Toast.makeText(context, "No valid data loaded", Toast.LENGTH_LONG).show()
             FileLog.e("MainActivity", "No valid data loaded")
             return
         }
         if (saveToDB) {
-            if (user != null) saveToFireBaseDB()
+            if (user != null) {
+                Thread { FirebaseUtil(this).saveDataToFirebase(appModel!!) }.start()
+            }
         }
-        AppModelManager.setInstance(appModel!!)
+        if (!ignoreAppModel) AppModelManager.setInstance(appModel!!)
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
         hideProgressDialog()
         startActivity(intent)
@@ -366,8 +367,6 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == readExternalStorageRequestCode) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission is granted. Continue the action or workflow
-                // in your app.
                 startChooseFile()
             } else {
                 FileLog.w("MainActivity", ": permission denied for external storage access")
@@ -376,72 +375,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * gets the file from the url then reads it and returns it
-     *
-     * @param uri url to file
-     * @return the content of the file in a ArrayList<Sting>
-    </Sting> */
-    private fun getFileContentFromUri(uri: Uri?): ArrayList<String> {
-        val fileContents = ArrayList<String>()
-        try {
-            // Get the ContentResolver for the current context.
-            val resolver = contentResolver
-
-            // Open an InputStream for the file represented by the Uri.
-            val inputStream = resolver.openInputStream(uri!!)
-
-            // Create a BufferedReader to read the file contents.
-            val reader = BufferedReader(InputStreamReader(inputStream))
-
-            // Read the file line by line and add each line to the fileContents list.
-            var line: String? = ""
-            while (line != null) {
-                line = reader.readLine()
-                if (line == null) break
-                fileContents.add(line)
-            }
-
-            // Close the BufferedReader and InputStream.
-            reader.close()
-            inputStream!!.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-            FileLog.e("MainActivity", ":  Error while getting file content from Uri : $e")
-
-        }
-        return fileContents
-    }
-
-    /**
-     * reads a file and returns it
-     *
-     * @param file a file
-     * @return the content of the file in a ArrayList<Sting>
-    </Sting> */
-    private fun getFileContent(file: File?): ArrayList<String> {
-        val fileContents = ArrayList<String>()
-        try {
-
-            // Create a BufferedReader to read the file contents.
-            val reader = BufferedReader(FileReader(file))
-
-            // Read the file line by line and add each line to the fileContents list.
-            var line: String? = ""
-            while (line != null) {
-                line = reader.readLine()
-                if (line == null) break
-                fileContents.add(line)
-            }
-
-            // Close the BufferedReader and InputStream.
-            reader.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-            FileLog.e("MainActivity", ":  Error while reading file : $e")
-        }
-        return fileContents
-    }
 
     private fun settingsButton() {
         val settingsButton = findViewById<Button>(R.id.settings_button)
@@ -451,52 +384,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-    private fun saveToFireBaseDB() {
-        val uid = FirebaseAuth.getInstance().currentUser!!.uid
-        val db = Firebase.firestore
-
-        var userMap = hashMapOf<String, Any>()
-
-        db.collection("user").document(uid).get().addOnSuccessListener {
-            if (it != null) {
-                userMap = it.data as HashMap<String, Any>
-            }
-
-            val appSettings = AppSettings(
-                uid,
-                PreferenceHelper.getSelectedType(this),
-                PreferenceHelper.getUseStrictType(this)
-            )
-            val appSettingsMap = appSettings.toHashMap()
-
-            userMap.putAll( if (appModel?.appType!! != AppType.CdCsvParser) {
-                hashMapOf(
-                    "appModelCard" to appModel!!.toHashMap(),
-                    "appSettings" to appSettingsMap
-                )
-            } else {
-                hashMapOf(
-                    "appModel" to appModel!!.toHashMap(),
-                    "appSettings" to appSettingsMap
-                )
-            })
-
-
-            db.collection("user").document(uid).set(userMap).addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    // Data saved successfully
-                    Toast.makeText(this, "Data saved successfully", Toast.LENGTH_SHORT).show()
-                } else {
-                    // Handle database error
-                    Toast.makeText(this, "Error saving data", Toast.LENGTH_SHORT).show()
-                    FileLog.e("MainActivity", "Error saving data to database ${task.exception}")
-                }
-            }
-        }
-
-
-    }
 
     private fun loadFromFireBaseDB() {
         showProgressDialog()

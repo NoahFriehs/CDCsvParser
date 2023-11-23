@@ -72,7 +72,10 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
         ): ArrayList<Transaction> {
             val transactions = ArrayList<Transaction>()
             val currencies = ArrayList<String>()
-            val appType = _appType ?: AppTypeIdentifier.getAppType(_input)
+            val appType =
+                if (_appType == null) AppTypeIdentifier.getAppType(_input) else if (app.appType == AppType.Default) AppTypeIdentifier.getAppType(
+                    _input
+                ) else _appType
             app.appType = appType
             val input = prepareInput(_input, appType, app)
 
@@ -203,8 +206,8 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
             val w = getWallet(transaction.currencyType, app)
             transaction.fromWalletId = w.walletId
             transaction.walletId = w.walletId
-            if (!w.transactions!!.contains(transaction)) {
-                w.transactions!!.add(transaction)
+            if (!w.transactions.contains(transaction)) {
+                w.transactions.add(transaction)
             }
             when (t) {
                 TransactionType.crypto_purchase, TransactionType.dust_conversion_credited -> w.addToWallet(
@@ -244,7 +247,7 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                         transaction.nativeAmount,
                         BigDecimal.ZERO
                     )
-                    eur.transactions?.add(transaction)
+                    eur.transactions.add(transaction)
                 }
 
                 else -> {
@@ -300,8 +303,8 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
         ) {
             w.addToWallet(transaction.amount, BigDecimal.ZERO, BigDecimal.ZERO)
             val wt = getWallet(transaction.currencyType, app, true)
-            if (!wt.transactions!!.contains(transaction)) {
-                wt.transactions!!.add(transaction)
+            if (!wt.transactions.contains(transaction)) {
+                wt.transactions.add(transaction)
             }
             wt.removeFromWallet(transaction.amount, BigDecimal.ZERO)
             transaction.isOutsideTransaction = true
@@ -320,14 +323,14 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
                 var wv = transaction.toCurrency?.let { getWallet(it, app) } as CDCWallet
                 wv.addToWallet(transaction.toAmount, transaction.nativeAmount, BigDecimal.ZERO)
                 transaction.walletId = wv.walletId
-                if (!wv.transactions!!.contains(transaction)) {
-                    wv.transactions!!.add(transaction)
+                if (!wv.transactions.contains(transaction)) {
+                    wv.transactions.add(transaction)
                 }
                 wv = getWallet(transaction.currencyType, app)
                 wv.addToWallet(transaction.amount, transaction.nativeAmount, BigDecimal.ZERO)
                 transaction.fromWalletId = wv.walletId
-                if (!wv.transactions!!.contains(transaction)) {
-                    wv.transactions!!.add(transaction)
+                if (!wv.transactions.contains(transaction)) {
+                    wv.transactions.add(transaction)
                 }
             }
         }

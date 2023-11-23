@@ -10,6 +10,7 @@ import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -26,9 +27,8 @@ class StartingActivity : ComponentActivity() {
 
         InstanceVars.init(applicationContext)
 
-        if (PreferenceHelper.getFastStartEnabled(applicationContext) || !PreferenceHelper.getIsFirstStart(
-                applicationContext
-            )
+        if (PreferenceHelper.getFastStartEnabled(applicationContext) ||
+            !PreferenceHelper.getIsFirstStart(applicationContext)
         ) {
             return fastStart()
         } else {
@@ -67,6 +67,8 @@ class StartingActivity : ComponentActivity() {
         val intent = Intent(this, MainActivity::class.java)
 
         if (isLocal) intent.putExtra("fastStart", true)
+
+        FileLog.d("StartingActivity", "Quick start, fast enabled: $isLocal")
 
         lifecycleScope.launch {
             delay(1000)
