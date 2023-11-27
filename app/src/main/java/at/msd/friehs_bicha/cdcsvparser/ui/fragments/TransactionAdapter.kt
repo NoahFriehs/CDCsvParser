@@ -7,8 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.TransactionActivity
@@ -25,11 +25,8 @@ class TransactionAdapter(private val transactions: List<Transaction>) :
             itemView.setOnClickListener {
                 val transactionId =
                     itemView.findViewById<TextView>(R.id.tv_transactionId).text.toString().toInt()
-                val appModel = AppModelManager.getInstance()!!  //TODO: check if null
-                val transaction =
-                    appModel.txApp!!.transactions.find { it.transactionId == transactionId }
                 val intent = Intent(itemView.context, TransactionActivity::class.java)
-                intent.putExtra("transaction", transaction)
+                intent.putExtra("transactionID", transactionId)
                 itemView.context.startActivity(intent)
             }
         }
@@ -50,8 +47,7 @@ class TransactionAdapter(private val transactions: List<Transaction>) :
     override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
 //        Thread {
         val transaction = transactions[position]
-        val waMap = AppModelManager.getInstance()!!
-            .getTransactionAdapter(transaction)  //TODO: check if null
+        val waMap = CoreService.getTransactionAdapter(transaction)
         displayTexts(waMap, holder, holder.itemView.context)
 //        }.start()
     }

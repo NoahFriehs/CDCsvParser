@@ -22,7 +22,7 @@ class FirebaseUtil(private val context: Context) {
     val userMapLiveData = MutableLiveData<HashMap<String, Any>>()
     var userMapError = false
 
-    fun saveDataToFirebase(appModel: AppModel) {
+    fun saveDataToFirebase(appModel: AppModel) {    //TODO: let service execute this @CoreService
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         val db = Firebase.firestore
 
@@ -171,7 +171,6 @@ class FirebaseUtil(private val context: Context) {
         )
     }
 
-    @Suppress("UN")
     private fun getUserDataFromFirestore(
         uid: String,
         db: FirebaseFirestore

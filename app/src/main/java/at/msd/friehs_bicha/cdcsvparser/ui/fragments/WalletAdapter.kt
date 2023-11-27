@@ -8,8 +8,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.AssetsFilterActivity
+import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.wallet.IWalletAdapterCallback
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
@@ -26,19 +26,14 @@ class WalletAdapter(val wallets: List<Wallet>) :
             itemView.setOnClickListener {
                 val walletId =
                     itemView.findViewById<TextView>(R.id.walletId).text.toString().toInt()
-                val appModel = AppModelManager.getInstance()!!
-                if (appModel.txApp == null && appModel.cardApp == null) {
-                    FileLog.e("WalletAdapter", "appModel.txApp == null && appModel.cardApp == null")
+
+                if (!CoreService.isRunning) {
+                    FileLog.e("WalletAdapter", "CoreService is not running.")
                     return@setOnClickListener
                 }
-                val wallets = mutableListOf<Wallet>()
 
-                if (appModel.txApp != null) wallets.addAll(appModel.txApp!!.wallets)
-                if (appModel.cardApp != null) wallets.addAll(appModel.cardApp!!.wallets)
-
-                val wallet = wallets.find { it.walletId == walletId }
                 val intent = Intent(itemView.context, AssetsFilterActivity::class.java)
-                intent.putExtra("wallet", wallet)
+                intent.putExtra("walletID", walletId)
                 itemView.context.startActivity(intent)
             }
         }
@@ -56,11 +51,9 @@ class WalletAdapter(val wallets: List<Wallet>) :
 
     override fun onBindViewHolder(holder: WalletViewHolder, position: Int) {
         val wallet = wallets[position]
-        val appModel = AppModelManager.getInstance()!!
-            val waMap = appModel.getWalletAdapter(wallet)
-            //  appModel.getWalletAdapter(wallet, readData, holder) //TODO: this better
+        val waMap = CoreService.getWalletAdapter(wallet)
 
-            displayTexts(waMap, holder, holder.itemView.context)
+        displayTexts(waMap, holder, holder.itemView.context)
     }
 
 

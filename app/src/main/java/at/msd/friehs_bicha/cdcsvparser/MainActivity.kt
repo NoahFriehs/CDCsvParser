@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
@@ -191,12 +192,13 @@ class MainActivity : AppCompatActivity() {
         val selectedFile = files!![position]
         val list = FileUtil.getFileContent(selectedFile)
         try {
-            appModel = AppModel(
-                list,
-                PreferenceHelper.getSelectedType(this),
-                PreferenceHelper.getUseStrictType(this)
-            )
-            callParseView()
+//            appModel = AppModel(
+//                list,
+//                PreferenceHelper.getSelectedType(this),
+//                PreferenceHelper.getUseStrictType(this)
+//            )
+            CoreService.startServiceWithData(list, 0)
+            callParseView(ignoreAppModel = true, saveToDB = false)
         } catch (e: Exception) {
             hideProgressDialog()
             Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
@@ -266,7 +268,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (saveToDB) {
             if (user != null) {
-                Thread { FirebaseUtil(this).saveDataToFirebase(appModel!!) }.start()
+                Thread { FirebaseUtil(this).saveDataToFirebase(AppModelManager.getInstance()!!) }.start()
             }
         }
         if (!ignoreAppModel) AppModelManager.setInstance(appModel!!)

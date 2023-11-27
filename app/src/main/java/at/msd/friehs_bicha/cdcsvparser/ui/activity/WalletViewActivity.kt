@@ -9,9 +9,8 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
+import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
@@ -24,26 +23,14 @@ class WalletViewActivity : AppCompatActivity() {
 
     private var isCacheloaded = false
 
-    private lateinit var appModel : AppModel
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_wallet_view)
 
-        appModel = AppModelManager.getInstance()!!
-
-        Thread{
-            if(!isCacheloaded){
-                isCacheloaded = appModel.reloadPriceCache()  //TODO: don t do it like this   -> give callback to AppModelManager
-            }
-        }.start()
-
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
-        val app = appModel.txApp ?: appModel.cardApp
-
-        val wallets = app!!.wallets
+        val wallets = CoreService.walletsLiveData.value ?: ArrayList<Wallet>()
 
         val spinnerValueSpinner = findViewById<Spinner>(R.id.sorting_value)
         val sortingValues = listOf<String>(resources.getString(R.string.sort_amount), resources.getString(R.string.sort_amount_asset), resources.getString(R.string.sort_percent), resources.getString(R.string.sort_transactions))
@@ -166,7 +153,7 @@ class WalletViewActivity : AppCompatActivity() {
         when (sortingValue) {
             resources.getString(R.string.sort_amount) -> {
                 sortedWallets = sortedWallets.sortedByDescending {
-                    appModel.getValueOfAssets(it)    //TODO: check if null   //TODO: android.os.NetworkOnMainThreadException
+                    CoreService.getValueOfAssets(it)
                 }.toList() as ArrayList<Wallet>
             }
 
@@ -177,7 +164,7 @@ class WalletViewActivity : AppCompatActivity() {
 
             resources.getString(R.string.sort_percent) -> {
                 sortedWallets = sortedWallets.sortedWith(compareByDescending {
-                    val assetValue = appModel.getValueOfAssets(it)   //TODO: check if null   //TODO: android.os.NetworkOnMainThreadException
+                    val assetValue = CoreService.getValueOfAssets(it)
                     val percentProfit = assetValue / it.moneySpent.toDouble() * 100
                     percentProfit
                 }).toList() as ArrayList<Wallet>
@@ -185,7 +172,7 @@ class WalletViewActivity : AppCompatActivity() {
 
             resources.getString(R.string.sort_transactions) -> {
                 sortedWallets =
-                    sortedWallets.sortedWith(compareByDescending { it.transactions?.size ?: 0 })
+                    sortedWallets.sortedWith(compareByDescending { it.transactions.size })
                         .toList() as ArrayList<Wallet>
             }
         }

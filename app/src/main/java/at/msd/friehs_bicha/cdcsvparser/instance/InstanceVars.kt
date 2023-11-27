@@ -2,6 +2,7 @@ package at.msd.friehs_bicha.cdcsvparser.instance
 
 import android.content.Context
 import android.content.Intent
+import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.db.AppDatabase
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.networkstateservice.NetworkStateService
@@ -39,6 +40,7 @@ object InstanceVars {
 
     private fun initServices() {
         registerNetworkStateService()
+        CoreService.isInitialized   //init core service companion object to check for .so
     }
 
     private fun registerNetworkStateService() {

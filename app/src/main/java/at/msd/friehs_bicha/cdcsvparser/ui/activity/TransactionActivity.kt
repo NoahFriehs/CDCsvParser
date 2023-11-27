@@ -4,9 +4,8 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 
@@ -14,8 +13,6 @@ import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
  * Activity for the transaction page that shows the details of a transaction
  */
 class TransactionActivity : AppCompatActivity() {
-
-    lateinit var appModel: AppModel
 
     lateinit var transaction: Transaction
 
@@ -27,9 +24,13 @@ class TransactionActivity : AppCompatActivity() {
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
-        appModel = AppModelManager.getInstance()!!
+        val transactionId = intent.extras?.getInt("transactionID", -1)
 
-        transaction = intent.getSerializableExtra("transaction") as Transaction
+        if (transactionId == null || transactionId == -1) {
+            return
+        }
+
+        transaction = CoreService.getTransaction(transactionId)
 
         val tvType = findViewById<TextView>(R.id.tv_transaction_type)
         val tvDate = findViewById<TextView>(R.id.tv_date)

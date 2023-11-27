@@ -177,6 +177,10 @@ open class Wallet : Serializable {
         throw UnsupportedOperationException()
     }
 
+    open fun getTypeString(): String {
+        return currencyType
+    }
+
 
     companion object {
         var uidCounter = 0

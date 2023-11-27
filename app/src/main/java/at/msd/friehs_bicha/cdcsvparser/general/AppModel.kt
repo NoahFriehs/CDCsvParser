@@ -1,6 +1,8 @@
 package at.msd.friehs_bicha.cdcsvparser.general
 
+import android.content.Intent
 import android.graphics.Color
+import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.SettingsActivity.Companion.useStrictType
 import at.msd.friehs_bicha.cdcsvparser.app.*
@@ -41,14 +43,34 @@ class AppModel : BaseAppModel, Serializable {
         appType: AppType,
         useStrictType: Boolean
     ) : super(appType) {
+        val copy = file.clone() as ArrayList<String>    //TODO: remove only for testing -> DEV_ZONE
         txApp = TxAppFactory.createTxApp(
             appType,
             AppStatus.NotStarted,
             useStrictType,
             hashMapOf(DataTypes.csvAsList to file)
         )
+        this.appType = txApp!!.appType
+
+        // DEV_ZONE
+        if (!CoreService.isRunning && false) {
+            applicationContext.startService(
+                Intent(
+                    applicationContext,
+                    CoreService::class.java
+                ).apply {
+                    action = CoreService.ACTION_START_SERVICE_WITH_DATA
+                    putExtra("data", copy)
+                    putExtra("mode", 0)
+                })
+        }
+
+
+        // DEV_ZONE
+
+
         if (PreferenceHelper.getIsDataLocal(applicationContext)) saveAppModelLocal()
-        else PreferenceHelper.setIsAppModelSavedLocal(applicationContext,false)
+        else PreferenceHelper.setIsAppModelSavedLocal(applicationContext, false)
         isRunning = true
         if (appType == AppType.CroCard) {
             cardApp = txApp as CardTxApp
@@ -190,24 +212,6 @@ class AppModel : BaseAppModel, Serializable {
             FileLog.e("AppModel.valueOfAssets", "Exception: $e")
             0.0
         }
-
-    /**
-     * Returns the amount the asset is worth in EUR
-     *
-     * @return the amount the asset is worth in EUR
-     */
-    fun getValueOfAssets(w: Wallet?): Double {
-        return try {
-            val valueOfWallet: Double
-            val price = w!!.currencyType.let { AssetValue.getInstance().getPrice(it) }
-            val amount = w.amount
-            valueOfWallet = price * amount.toDouble()
-            valueOfWallet
-        } catch (e: Exception) {
-            FileLog.e("AppModel.getValueOfAssets", "Exception: $e")
-            0.0
-        }
-    }
 
     fun loadPriceCaches(): Boolean {
         if (txApp == null) return true
@@ -452,9 +456,9 @@ class AppModel : BaseAppModel, Serializable {
     }
 
 
-    fun toHashMap(): HashMap<String, Any> {
+    fun toHashMap(overrideAppType: AppType = appType): HashMap<String, Any> {
         val appHashMap: HashMap<String, Any>
-        when (appType) {
+        when (overrideAppType) {
             AppType.CdCsvParser -> {
                 val dbWallets = ArrayList<DBWallet>()
                 val dboutsideWallets = ArrayList<DBWallet>()
@@ -515,7 +519,7 @@ class AppModel : BaseAppModel, Serializable {
     }
 
 
-    fun getWalletAdapter(wallet: Wallet): MutableMap<String, String?> {
+    fun getWalletAdapter(wallet: Wallet): Map<String, String?> {
         val assetValue = getValueOfAssets(wallet)
         var percentProfit = assetValue / wallet.moneySpent.toDouble() * 100
         if (percentProfit.isNaN()) {
@@ -535,7 +539,7 @@ class AppModel : BaseAppModel, Serializable {
         val walletName: String = if (wallet is CroCardWallet) wallet.transactionType.toString()
         else wallet.currencyType
 
-        val map: MutableMap<String, String?> = HashMap()
+        val map: MutableMap<String, String?> = mutableMapOf()
         map[R.id.walletId.toString()] = wallet.walletId.toString()
         map[R.id.currencyType.toString()] = walletName
         map[R.id.amount.toString()] = amountString
@@ -547,12 +551,15 @@ class AppModel : BaseAppModel, Serializable {
         return map
     }
 
-    fun getWalletAdapterWithCallback(wallet: Wallet, callback: IWalletAdapterCallback, holder: WalletAdapter.WalletViewHolder)
-    {
-        Thread {
-            val map = getWalletAdapter(wallet)
-            callback.onCallback(map, holder)
-        }.start()
+    fun getWalletAdapterWithCallback(
+        wallet: Wallet,
+        callback: IWalletAdapterCallback,
+        holder: WalletAdapter.WalletViewHolder
+    ) {
+//        Thread {
+//            val map = getWalletAdapter(wallet)
+//            callback.onCallback(map, holder)
+//        }.start()
     }
 
     fun getTransactionAdapter(transaction: Transaction): MutableMap<String, String?> {
@@ -582,6 +589,34 @@ class AppModel : BaseAppModel, Serializable {
             formatAmountToString(transaction.nativeAmount.toDouble())
 
         return map
+    }
+
+    fun hasCard(): Boolean {
+        return cardApp != null || appType == AppType.CroCard || appType == AppType.CurveCard
+    }
+
+    fun hasTxModule(): Boolean {
+        return txApp != null && txApp!!.appType == AppType.CdCsvParser
+    }
+
+    companion object {
+        /**
+         * Returns the amount the asset is worth in EUR
+         *
+         * @return the amount the asset is worth in EUR
+         */
+        fun getValueOfAssets(w: Wallet?): Double {
+            return try {
+                val valueOfWallet: Double
+                val price = w!!.currencyType.let { AssetValue.getInstance().getPrice(it) }
+                val amount = w.amount
+                valueOfWallet = price * amount.toDouble()
+                valueOfWallet
+            } catch (e: Exception) {
+                FileLog.e("AppModel.getValueOfAssets", "Exception: $e")
+                0.0
+            }
+        }
     }
 
 }

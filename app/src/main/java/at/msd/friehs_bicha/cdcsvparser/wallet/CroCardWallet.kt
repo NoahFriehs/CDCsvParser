@@ -115,7 +115,7 @@ class CroCardWallet(
                 w = CroCardWallet("EUR", BigDecimal.ZERO, tt, txApp)
             }
             w.addToWallet(transaction, ignoreThisTx)
-            w.transactions!!.add(cardTransaction)
+            w.transactions.add(cardTransaction)
             transaction.walletId = w.walletId
         } else {
             if (!txApp.isUseStrictWalletType) {
@@ -124,7 +124,7 @@ class CroCardWallet(
                     if (!ignoreThisTx) w = CroCardWallet("EUR", cardTransaction.amount, tt, txApp)
                     else w = CroCardWallet("EUR", BigDecimal.ZERO, tt, txApp)
                     txApp.wallets.add(w)
-                    w.transactions!!.add(cardTransaction)
+                    w.transactions.add(cardTransaction)
                     transaction.walletId = w.walletId
                 } else {
                     w.addToWallet(transaction, ignoreThisTx)
@@ -132,7 +132,7 @@ class CroCardWallet(
                 }
             } else {
                 w = CroCardWallet("EUR", cardTransaction.amount, tt, txApp)
-                w.transactions!!.add(cardTransaction)
+                w.transactions.add(cardTransaction)
                 transaction.walletId = w.walletId
                 txApp.wallets.add(w)
             }
@@ -156,17 +156,17 @@ class CroCardWallet(
         transaction.walletId = walletId
         if (ignoreThisTx) {
             FileLog.i("CCW.addToWallet", "Ignoring transaction: $transaction")
-            transactions!!.add(transaction)
+            transactions.add(transaction)
             return
         }
         if (transaction.currencyType != "EUR") {
             amount = amount.add(transaction.nativeAmount)
             moneySpent = moneySpent.add(transaction.nativeAmount)
-            transactions!!.add(transaction)
+            transactions.add(transaction)
         } else {
             amount = amount.add(transaction.amount)
             moneySpent = moneySpent.add(transaction.amount)
-            transactions!!.add(transaction)
+            transactions.add(transaction)
         }
     }
 
@@ -190,7 +190,7 @@ class CroCardWallet(
     fun removeFromWallet(transaction: Transaction) {
         amount = amount.subtract(transaction.amount)
         moneySpent = moneySpent.subtract(transaction.amount)
-        transactions!!.add(transaction)
+        transactions.add(transaction)
     }
 
     private fun getNonStrictWallet(tt: String?): CroCardWallet? {
@@ -253,6 +253,10 @@ class CroCardWallet(
             }
         }
         return null
+    }
+
+    override fun getTypeString(): String {
+        return transactionType!!
     }
 
     companion object {

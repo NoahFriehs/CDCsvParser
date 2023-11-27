@@ -95,6 +95,7 @@
                 android:value="" />
         </activity>
         <service android:name=".networkstateservice.NetworkStateService" />
+        <service android:name=".Core.CoreService" />
     </application>
 
 </manifest>
