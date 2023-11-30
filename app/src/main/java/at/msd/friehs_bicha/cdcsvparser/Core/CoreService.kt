@@ -13,8 +13,11 @@ import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.util.FirebaseUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.*
 
 class CoreService : Service() {
 
@@ -22,6 +25,7 @@ class CoreService : Service() {
         return null
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent == null) {
             FileLog.w(TAG, "Initialization failed. Intent is null.")
@@ -31,7 +35,8 @@ class CoreService : Service() {
         if (AppModelManager.isInitialized()) {
             appModel = AppModelManager.getInstance()
         }
-        Thread {
+
+        GlobalScope.launch {
             when (intent.action) {
                 ACTION_START_SERVICE -> {
                     handleStartService()
@@ -59,13 +64,22 @@ class CoreService : Service() {
                     FileLog.w(TAG, "Initialization failed. Unknown action: ${intent.action}")
                 }
             }
-        }.start()
+        }
 
         return super.onStartCommand(intent, flags, startId)
     }
 
     private fun handleStartServiceWithFirebaseData(intent: Intent) {
-        //Not developed more atm bc of strange bug in FB
+        if (isCoreInitialized) {
+            TODO()
+        }
+        if (intent.getBooleanExtra("isRunning", false)) {
+            FileLog.d(TAG, "isRunning")
+            isRunning = true
+        }
+
+        provideDataToActivity()
+
     }
 
     private fun handleStartServiceWithData(intent: Intent) {
@@ -77,7 +91,7 @@ class CoreService : Service() {
         }
         when (isCoreInitialized) {
             true -> {
-                val dataArray = arrayOf("TEST", "TEST")//Array<String>(data.size) { i -> data[i] }
+                val dataArray = Array<String>(data.size) { i -> data[i] }
                 if (initWithData(dataArray, data.size, mode)) {
                     FileLog.d(TAG, "Initialization with data successful.")
                     isRunning = true
@@ -88,7 +102,7 @@ class CoreService : Service() {
             }
 
             false -> {
-                if (appModel != null) {
+                if (appModel != null && data.size == 0) {
                     FileLog.i(TAG, "AppModel already initialized.")
                     isRunning = true
                     isInitialized = true
@@ -105,6 +119,7 @@ class CoreService : Service() {
 
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     private fun provideDataToActivity() {
 
         when (isCoreInitialized) {
@@ -113,10 +128,10 @@ class CoreService : Service() {
             }
 
             false -> {
-                Thread {
+                GlobalScope.launch {
                     try {
                         while (!isRunning) {
-                            Thread.sleep(500)
+                            delay(500)
                             FileLog.d(TAG, "Waiting for initialization to finish.")
                         }
                         FileLog.d(TAG, "isRunning")
@@ -127,11 +142,11 @@ class CoreService : Service() {
                             cardWalletsLiveData.postValue(appModel?.txApp?.wallets)
                         }
 
-                        val allWallets = ArrayList<Wallet>()
-                        allWallets.addAll(appModel?.txApp?.wallets ?: ArrayList())
-                        allWallets.addAll(appModel?.cardApp?.wallets ?: ArrayList())
+                        val allWallets = mutableListOf<Wallet>()
+                        allWallets.addAll(appModel?.txApp?.wallets ?: emptyList())
+                        allWallets.addAll(appModel?.cardApp?.wallets ?: emptyList())
 
-                        allWalletsLiveData.postValue(allWallets.clone() as ArrayList<Wallet>)
+                        allWalletsLiveData.postValue(allWallets.toCollection(ArrayList()))
 
                         val walletNames_ = Array<String?>(allWallets.size) { _ -> null }
 
@@ -146,7 +161,7 @@ class CoreService : Service() {
                         val data = appModel?.parseMap
                         if (data == null) {
                             FileLog.e(TAG, "data is null")
-                            return@Thread
+                            return@launch
                         }
                         parsedDataLiveData.postValue(data!!)
 
@@ -158,12 +173,12 @@ class CoreService : Service() {
                             FileLog.e(TAG, "transactions_ contains null")
                             transactions_.remove(null)
                         }
-                        transactions.postValue(transactions_ as ArrayList<Transaction>)
+                        transactionsLiveData.postValue(transactions_ as ArrayList<Transaction>)
                     } catch (e: InterruptedException) {
                         FileLog.e(TAG, " : $e")
                         throw RuntimeException(e)
                     }
-                }.start()
+                }
             }
         }
     }
@@ -221,12 +236,13 @@ class CoreService : Service() {
         var cardWalletsLiveData = MutableLiveData<ArrayList<Wallet>>()
         var allWalletsLiveData = MutableLiveData<ArrayList<Wallet>>()
         val walletNames = MutableLiveData<Array<String?>>()
-        val transactions = MutableLiveData<ArrayList<Transaction>>()
+        val transactionsLiveData = MutableLiveData<ArrayList<Transaction>>()
 
         var currentWallet = MutableLiveData<Map<String, String?>>()
 
 
         var priceProvider: AssetValue = AssetValue.getInstance()
+        var user = FirebaseAuth.getInstance().currentUser
         private var appModel: AppModel? = null
 
 
@@ -252,6 +268,36 @@ class CoreService : Service() {
             intent.action = ACTION_START_SERVICE_WITH_DATA
             intent.putExtra("data", data)
             intent.putExtra("mode", mode)
+            InstanceVars.applicationContext.startService(intent)
+        }
+
+        fun startServiceWithFirebaseData(
+            dbWallets: java.util.ArrayList<HashMap<String, *>>?,
+            dbOutsideWallets: java.util.ArrayList<HashMap<String, *>>?,
+            dbTransactions: java.util.ArrayList<HashMap<String, *>>?,
+            appType: AppType,
+            amountTxFailed: Long,
+            useStrictType: Boolean
+        ) {
+            if (isCoreInitialized) {
+                TODO()
+            }
+
+            AppModel(
+                dbWallets,
+                dbOutsideWallets,
+                dbTransactions,
+                appType,
+                amountTxFailed,
+                useStrictType
+            ).let {
+                AppModelManager.setInstance(it)
+            }
+
+            val intent = Intent(InstanceVars.applicationContext, CoreService::class.java)
+            intent.action = ACTION_START_SERVICE_WITH_FIREBASE_DATA
+//            intent.putExtra("data", data)
+            intent.putExtra("isRunning", true)
             InstanceVars.applicationContext.startService(intent)
         }
 
@@ -334,9 +380,25 @@ class CoreService : Service() {
                 }
 
                 false -> {
-                    transactions.value!!.find { it.transactionId == transactionId }!!
+                    transactionsLiveData.value!!.find { it.transactionId == transactionId }!!
                 }
             }
+        }
+
+
+        fun saveDataToFirebase() {
+            if (isCoreInitialized) {
+                TODO()
+            }
+            appModel?.let {
+                user = FirebaseAuth.getInstance().currentUser   //refresh user
+                if (user != null) Thread {
+                    FirebaseUtil(InstanceVars.applicationContext).saveDataToFirebase(
+                        it
+                    )
+                }.start()
+            }
+
         }
 
 

@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
@@ -16,12 +17,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.FileUtil
-import at.msd.friehs_bicha.cdcsvparser.util.FirebaseUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import com.google.firebase.auth.FirebaseAuth
@@ -34,7 +32,6 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
     var context: Context? = null
-    var appModel: AppModel? = null
     var files: Array<File>? = null
     var user = FirebaseAuth.getInstance().currentUser
     private lateinit var progressDialog: Dialog
@@ -159,6 +156,7 @@ class MainActivity : AppCompatActivity() {
      *
      * @param spinner spinner to fill
      */
+    @SuppressLint("SimpleDateFormat")
     private fun setSpinner(spinner: Spinner) {
         val fileNames = ArrayList<String>()
         val sdf = SimpleDateFormat("M-d-yyyy-hh-mm-ss")
@@ -192,13 +190,8 @@ class MainActivity : AppCompatActivity() {
         val selectedFile = files!![position]
         val list = FileUtil.getFileContent(selectedFile)
         try {
-//            appModel = AppModel(
-//                list,
-//                PreferenceHelper.getSelectedType(this),
-//                PreferenceHelper.getUseStrictType(this)
-//            )
-            CoreService.startServiceWithData(list, 0)
-            callParseView(ignoreAppModel = true, saveToDB = false)
+            CoreService.startServiceWithData(list, PreferenceHelper.getSelectedType(this).ordinal)
+            callParseView()
         } catch (e: Exception) {
             hideProgressDialog()
             Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
@@ -240,10 +233,9 @@ class MainActivity : AppCompatActivity() {
                 updateFiles()
             }
             try {
-                appModel = AppModel(
+                CoreService.startServiceWithData(
                     list,
-                    PreferenceHelper.getSelectedType(this),
-                    PreferenceHelper.getUseStrictType(this)
+                    PreferenceHelper.getSelectedType(this).ordinal
                 )
                 callParseView()
             } catch (e: IllegalArgumentException) {
@@ -260,18 +252,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun callParseView(saveToDB: Boolean = true, ignoreAppModel: Boolean = false) {
-        if (appModel == null && !ignoreAppModel) {
-            Toast.makeText(context, "No valid data loaded", Toast.LENGTH_LONG).show()
-            FileLog.e("MainActivity", "No valid data loaded")
-            return
-        }
+    private fun callParseView(saveToDB: Boolean = true) {
         if (saveToDB) {
-            if (user != null) {
-                Thread { FirebaseUtil(this).saveDataToFirebase(AppModelManager.getInstance()!!) }.start()
-            }
+            CoreService.saveDataToFirebase()
         }
-        if (!ignoreAppModel) AppModelManager.setInstance(appModel!!)
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
         hideProgressDialog()
         startActivity(intent)
@@ -284,7 +268,6 @@ class MainActivity : AppCompatActivity() {
     private fun onBtnUploadClick() {
 
         if (arePermissionsGranted(permissions())) {
-            // Permission is not granted
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(
                     this,
@@ -444,7 +427,7 @@ class MainActivity : AppCompatActivity() {
                         val appTypeString = txAppMap["appType"] as String? ?: ""
                         val appType = AppType.valueOf(appTypeString)
 
-                        this.appModel = AppModel(
+                        CoreService.startServiceWithFirebaseData(
                             dbWallets as ArrayList<HashMap<String, *>>?,
                             dbOutsideWallets,
                             dbTransactions as ArrayList<HashMap<String, *>>?,
@@ -458,7 +441,7 @@ class MainActivity : AppCompatActivity() {
                             this,
                             appSettings["useStrictType"] as Boolean
                         )
-                        callParseView(false)
+                        callParseView(saveToDB = false)
                     } else {
                         FileLog.w(
                             "MainActivity",

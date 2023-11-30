@@ -36,7 +36,10 @@ object AppModelManager {
      */
     fun setInstance(appModel: AppModel) {
         instance = appModel
-        FileLog.d("AppModelManager", "AppModel has been initialized.")
+        FileLog.d(
+            "AppModelManager",
+            "AppModel has been initialized from: ${Thread.currentThread().stackTrace[3]}"
+        )
     }
 
     fun isInitialized(): Boolean {
