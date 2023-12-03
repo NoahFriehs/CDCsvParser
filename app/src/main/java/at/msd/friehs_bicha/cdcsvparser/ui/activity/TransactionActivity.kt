@@ -8,6 +8,7 @@ import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
+import java.math.BigDecimal
 
 /**
  * Activity for the transaction page that shows the details of a transaction
@@ -46,7 +47,7 @@ class TransactionActivity : AppCompatActivity() {
         tvDescription.text = transaction.description
         tvAmountValue.text =
             StringHelper.formatAmountToString(transaction.amount, 6, transaction.currencyType)
-        if (transaction.toAmount != null && transaction.toCurrency != null) {
+        if (transaction.toAmount != null && transaction.toCurrency != null && transaction.toAmount != BigDecimal.ZERO && transaction.toCurrency != "") {
             tvToAmountValue.text = StringHelper.formatAmountToString(
                 transaction.toAmount!!,
                 6,

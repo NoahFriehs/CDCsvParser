@@ -51,7 +51,7 @@ class WalletAdapter(val wallets: List<Wallet>) :
 
     override fun onBindViewHolder(holder: WalletViewHolder, position: Int) {
         val wallet = wallets[position]
-        val waMap = CoreService.getWalletAdapter(wallet)
+        val waMap = CoreService.getWalletAdapter(wallet.walletId)
 
         displayTexts(waMap, holder, holder.itemView.context)
     }

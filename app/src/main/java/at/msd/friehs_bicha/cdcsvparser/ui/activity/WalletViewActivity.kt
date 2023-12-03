@@ -153,7 +153,7 @@ class WalletViewActivity : AppCompatActivity() {
         when (sortingValue) {
             resources.getString(R.string.sort_amount) -> {
                 sortedWallets = sortedWallets.sortedByDescending {
-                    CoreService.getValueOfAssets(it)
+                    CoreService.getValueOfAssetsFromWID(it.walletId)
                 }.toList() as ArrayList<Wallet>
             }
 
@@ -164,7 +164,7 @@ class WalletViewActivity : AppCompatActivity() {
 
             resources.getString(R.string.sort_percent) -> {
                 sortedWallets = sortedWallets.sortedWith(compareByDescending {
-                    val assetValue = CoreService.getValueOfAssets(it)
+                    val assetValue = CoreService.getValueOfAssetsFromWID(it.walletId)
                     val percentProfit = assetValue / it.moneySpent.toDouble() * 100
                     percentProfit
                 }).toList() as ArrayList<Wallet>

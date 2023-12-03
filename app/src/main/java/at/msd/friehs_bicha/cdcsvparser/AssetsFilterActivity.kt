@@ -123,7 +123,7 @@ class AssetsFilterActivity : AppCompatActivity() {
 
 
         //get and set prices
-        val t = Thread { displayTexts(CoreService.getAssetMap(specificWallet)) }
+        val t = Thread { displayTexts(CoreService.getAssetMap(specificWallet.walletId)) }
         t.start()
     }
 

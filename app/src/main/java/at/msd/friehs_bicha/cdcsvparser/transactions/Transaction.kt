@@ -167,6 +167,23 @@ open class Transaction : Serializable {
         this.isOutsideTransaction = outsideTransaction
     }
 
+    constructor(txData: TransactionData) {
+        this.transactionId = txData.transactionId
+        this.date = txData.date
+        this.description = txData.description
+        this.currencyType = txData.currencyType
+        this.amount = BigDecimal(txData.amount)
+        this.nativeAmount = BigDecimal(txData.nativeAmount)
+        this.amountBonus = BigDecimal(txData.amountBonus)
+        this.transactionType = txData.transactionType
+        this.transHash = txData.transHash
+        this.toCurrency = txData.toCurrency
+        this.toAmount = BigDecimal(txData.toAmount)
+        this.walletId = txData.walletId
+        this.fromWalletId = txData.fromWalletId
+        this.isOutsideTransaction = txData.isOutsideTransaction
+    }
+
 
     override fun toString(): String {
         return """${date.toString()}

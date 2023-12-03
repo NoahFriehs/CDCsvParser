@@ -44,3 +44,7 @@ fun stringToTransactionType(str: String?): TransactionType {
         TransactionType.STRING
     }
 }
+
+fun fromOrdinal(ordinal: Int): TransactionType {
+    return TransactionType.values()[ordinal]
+}

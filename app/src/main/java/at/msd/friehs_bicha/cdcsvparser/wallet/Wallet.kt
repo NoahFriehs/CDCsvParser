@@ -147,6 +147,16 @@ open class Wallet : Serializable {
         this.isOutsideWallet = outsideWallet
     }
 
+    constructor(data: WalletData) {
+        walletId = data.walletId
+        currencyType = data.currencyType
+        amount = BigDecimal(data.balance)
+        amountBonus = BigDecimal(data.bonusBalance)
+        moneySpent = BigDecimal(data.moneySpent)
+        isOutsideWallet = data.isOutsideWallet
+        transactions = ArrayList()
+    }
+
     /**
      * Get Wallet from CurrencyType String
      *

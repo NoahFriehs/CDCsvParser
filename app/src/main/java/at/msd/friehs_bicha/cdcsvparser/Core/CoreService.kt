@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import androidx.lifecycle.MutableLiveData
+import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.app.CardTxApp
@@ -13,11 +14,19 @@ import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionData
 import at.msd.friehs_bicha.cdcsvparser.util.FirebaseUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
+import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.WalletXmlSerializer
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class CoreService : Service() {
 
@@ -124,7 +133,80 @@ class CoreService : Service() {
 
         when (isCoreInitialized) {
             true -> {
-                TODO("call getCurrencies from core and return prices to it and then get the data from it")
+                //TODO("call getCurrencies from core and return prices to it and then get the data from it")
+                val currencies = getCurrencies()
+                val prices = Array<Double>(currencies.size) { _ -> 0.0 }
+                currencies.forEach {
+                    prices[currencies.indexOf(it)] = priceProvider.getPrice(it)
+                }
+                setPrice(prices)
+
+                // get Data from Core and set it to the LiveData
+                val map: MutableMap<String, String?> = java.util.HashMap()
+                val totalMoneySpent = getTotalMoneySpent()
+                val totalMoneySpentString =
+                    StringHelper.formatAmountToString(totalMoneySpent.toDouble())
+                if (AssetValue.getInstance().isRunning) {
+                    val amountOfAsset = getValueOfAssets()
+                    val rewardValue = getTotalBonus()
+                    map[R.id.assets_valueP.toString()] =
+                        StringHelper.formatAmountToString(amountOfAsset)
+                    map[R.id.rewards_value.toString()] =
+                        StringHelper.formatAmountToString(rewardValue)
+                    map[R.id.profit_loss_value.toString()] =
+                        StringHelper.formatAmountToString(amountOfAsset - totalMoneySpent.toDouble())
+                    map[R.id.money_spent_value.toString()] = totalMoneySpentString
+                } else {
+                    FileLog.e(TAG, "AssetValue is not running")
+                    map[R.id.assets_valueP.toString()] = "no internet connection"
+                    map[R.id.rewards_value.toString()] = "no internet connection"
+                    map[R.id.profit_loss_value.toString()] = "no internet connection"
+                    map[R.id.money_spent_value.toString()] = totalMoneySpentString
+                }
+                parsedDataLiveData.postValue(map)
+
+                //get transactions from Core and set it to the LiveData
+                val transactions = getTransactionsAsString()
+                val transactions_ = ArrayList<Transaction>()
+                transactions.forEach {
+                    val txData =
+                        TransactionData(0, "", 0, 0, "", 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0)
+                    val dataString = it.replace("\n\t", "")
+                    try {
+                        txData.fromXml(dataString)
+                        transactions_.add(Transaction(txData))
+                    } catch (e: Exception) {
+                        FileLog.e(TAG, "Exception: $e")
+                    }
+                    //txdata.fromXml(it)
+                }
+                transactionsLiveData.postValue(transactions_)
+
+                //get Wallets from Core and set it to the LiveData
+                val wallets = getWalletsAsString()
+                val wallets_ = ArrayList<Wallet>()
+                wallets.forEach {
+                    val data = WalletXmlSerializer().deserializeFromXml(it)
+                    wallets_.add(Wallet(data))
+                }
+                transactions_.forEach { tx ->
+                    wallets_.find { it.walletId == tx.walletId }?.transactions?.add(tx)
+                }
+                walletsLiveData.postValue(wallets_)
+                outsideWalletsLiveData.postValue(wallets_.filter { it.isOutsideWallet } as ArrayList<Wallet>)
+                //cardWalletsLiveData.postValue(wallets_.filter { it.isCard } as ArrayList<Wallet>)
+                allWalletsLiveData.postValue(wallets_)
+
+                val walletNames_ = Array<String?>(wallets_.size) { _ -> null }
+                wallets_.forEach {
+                    wallets_.indexOf(it).let { index ->
+                        walletNames_[index] = it.getTypeString()
+                    }
+                }
+                walletNames.postValue(walletNames_)
+                wallets_.forEach {
+                    assetMaps.value!!.add(AssetData(it.walletId, getAssetMap(it.walletId)))
+                }
             }
 
             false -> {
@@ -174,11 +256,47 @@ class CoreService : Service() {
                             transactions_.remove(null)
                         }
                         transactionsLiveData.postValue(transactions_ as ArrayList<Transaction>)
+                        allWallets.forEach {
+                            assetMaps.value!!.add(AssetData(it.walletId, getAssetMap(it.walletId)))
+                        }
                     } catch (e: InterruptedException) {
                         FileLog.e(TAG, " : $e")
                         throw RuntimeException(e)
                     }
                 }
+            }
+        }
+    }
+
+    private fun getAssetMap(walletId: Int): Map<String, String?> {
+        return when (isCoreInitialized) {
+            true -> {
+
+                val map = mutableMapOf<String, String?>()
+                val moneySpent = getMoneySpentByWID(walletId)
+                val total = StringHelper.formatAmountToString(moneySpent)
+                val amountOfAsset = getValueOfAssetsByWID(walletId)
+                val rewardValue = getTotalBonusByWID(walletId)
+                if (AssetValue.getInstance().isRunning) {
+                    map[R.id.assets_value.toString()] =
+                        StringHelper.formatAmountToString(amountOfAsset)
+                    map[R.id.rewards_value.toString()] =
+                        StringHelper.formatAmountToString(rewardValue)
+                    map[R.id.profit_loss_value.toString()] =
+                        StringHelper.formatAmountToString(amountOfAsset - moneySpent)
+                    map[R.id.money_spent_value.toString()] = total
+                } else {
+                    map[R.id.assets_value.toString()] = "no internet connection"
+                    map[R.id.rewards_value.toString()] = "no internet connection"
+                    map[R.id.profit_loss_value.toString()] = "no internet connection"
+                    map[R.id.money_spent_value.toString()] = total
+                }
+                map
+            }
+
+            false -> {
+                val specificWallet = appModel!!.txApp!!.wallets.find { it.walletId == walletId }
+                appModel!!.getAssetMap(specificWallet)
             }
         }
     }
@@ -216,6 +334,22 @@ class CoreService : Service() {
     private external fun init(): Boolean
     private external fun initWithData(data: Array<String>, dataSize: Int, mode: Int): Boolean
 
+    private external fun getCurrencies(): Array<String>
+
+    private external fun setPrice(prices: Array<Double>)
+
+    private external fun getTotalMoneySpent(): Double
+    private external fun getValueOfAssets(): Double
+    private external fun getTotalBonus(): Double
+
+    private external fun getTransactionsAsString(): Array<String>
+    private external fun getWalletsAsString(): Array<String>
+
+    private external fun getValueOfAssetsByWID(walletID: Int): Double
+    private external fun getTotalBonusByWID(walletID: Int): Double
+    private external fun getMoneySpentByWID(walletId: Int): Double
+
+
     companion object {
 
         private const val TAG = "CoreService"
@@ -239,6 +373,7 @@ class CoreService : Service() {
         val transactionsLiveData = MutableLiveData<ArrayList<Transaction>>()
 
         var currentWallet = MutableLiveData<Map<String, String?>>()
+        val assetMaps = MutableLiveData<ArrayList<AssetData>>()
 
 
         var priceProvider: AssetValue = AssetValue.getInstance()
@@ -249,6 +384,7 @@ class CoreService : Service() {
         init {
             dataLiveData.value = ArrayList()
             firebaseDataLiveData.value = ArrayList()
+            assetMaps.value = ArrayList()
             try {
                 System.loadLibrary("cdcsvparser")
                 isCoreInitialized = true
@@ -316,55 +452,72 @@ class CoreService : Service() {
          *
          * @return the amount the asset is worth in EUR
          */
-        fun getValueOfAssets(w: Wallet?): Double {
-            if (isCoreInitialized) {
-                TODO("call getCurrencies from core and return prices to it and then get the data from it")
-                return 0.0
-            }
-            return try {
-                val valueOfWallet: Double
-                val price = w!!.currencyType.let { AssetValue.getInstance().getPrice(it) }
-                val amount = w.amount
-                valueOfWallet = price * amount.toDouble()
-                valueOfWallet
-            } catch (e: Exception) {
-                FileLog.e("$TAG.getValueOfAssets", "Exception: $e")
-                0.0
-            }
+        fun getValueOfAssetsFromWID(walletId: Int): Double {
+            return if (isCoreInitialized) {
+                try {
+                    val w = walletsLiveData.value!!.find { it.walletId == walletId }
+                    val valueOfWallet: Double
+                    val price = w!!.currencyType.let { AssetValue.getInstance().getPrice(it) }
+                    val amount = w.amount
+                    valueOfWallet = price * amount.toDouble()
+                    valueOfWallet
+                } catch (e: Exception) {
+                    FileLog.e("$TAG.getValueOfAssets", "Exception: $e")
+                    0.0
+                }
+            } else
+                try {
+                    val w = appModel!!.txApp!!.wallets.find { it.walletId == walletId }
+                    val valueOfWallet: Double
+                    val price = w!!.currencyType.let { AssetValue.getInstance().getPrice(it) }
+                    val amount = w.amount
+                    valueOfWallet = price * amount.toDouble()
+                    valueOfWallet
+                } catch (e: Exception) {
+                    FileLog.e("$TAG.getValueOfAssets", "Exception: $e")
+                    0.0
+                }
         }
 
 
-        fun getWalletAdapter(wallet: Wallet): Map<String, String?> {
+        fun getWalletAdapter(walletId: Int): Map<String, String?> {
             return when (isCoreInitialized) {
                 true -> {
-                    TODO("ask Core for the data and return it")
-                    mapOf()
+                    val w = allWalletsLiveData.value!!.find { it.walletId == walletId }
+                    AppModel.getWalletAdapter(w!!)
                 }
 
                 false -> {
-                    appModel!!.getWalletAdapter(wallet)
+                    val w = appModel!!.txApp!!.wallets.find { it.walletId == walletId }
+                    AppModel.getWalletAdapter(w!!)
                 }
             }
         }
 
-        fun getAssetMap(specificWallet: Wallet): Map<String, String?> {
-            return when (isCoreInitialized) {
-                true -> {
-                    TODO("ask Core for the data and return it")
-                    mapOf()
-                }
-
-                false -> {
-                    appModel!!.getAssetMap(specificWallet)
-                }
-            }
+        fun getAssetMap(walletId: Int): Map<String, String?> {
+            return assetMaps.value!!.find { it.walletId == walletId }!!.data
         }
+
 
         fun getTransactionAdapter(transaction: Transaction): Map<String, String?> {
             return when (isCoreInitialized) {
                 true -> {
-                    TODO("ask Core for the data and return it")
-                    mapOf()
+                    val defaultLocale = Locale.getDefault()
+                    val dateFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", defaultLocale)
+                    val map: MutableMap<String, String?> = java.util.HashMap()
+                    map[R.id.tv_assetAmountValue.toString()] =
+                        StringHelper.formatAmountToString(
+                            transaction.amount.toDouble(),
+                            6,
+                            transaction.currencyType
+                        )
+                    map[R.id.tv_transactionId.toString()] = transaction.transactionId.toString()
+                    map[R.id.tv_date.toString()] =
+                        transaction.date?.let { dateFormat.format(it).toString() }
+                    map[R.id.tv_descriptionValue.toString()] = transaction.description
+                    map[R.id.tv_amountValue.toString()] =
+                        StringHelper.formatAmountToString(transaction.nativeAmount.toDouble())
+                    map
                 }
 
                 false -> {
@@ -376,7 +529,7 @@ class CoreService : Service() {
         fun getTransaction(transactionId: Int): Transaction {
             return when (isCoreInitialized) {
                 true -> {
-                    TODO("ask Core for the data and return it")
+                    transactionsLiveData.value!!.find { it.transactionId == transactionId }!!
                 }
 
                 false -> {
@@ -388,7 +541,9 @@ class CoreService : Service() {
 
         fun saveDataToFirebase() {
             if (isCoreInitialized) {
-                TODO()
+                FileLog.e(TAG, "saveDataToFirebase: Not implemented yet")
+                return
+                TODO("save data to firebase")  //TODO: save data to firebase
             }
             appModel?.let {
                 user = FirebaseAuth.getInstance().currentUser   //refresh user
