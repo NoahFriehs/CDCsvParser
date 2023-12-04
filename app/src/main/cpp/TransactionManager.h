@@ -9,7 +9,6 @@
 #include <vector>
 #include <map>
 #include <mutex>
-#include <jni.h>
 #include "BaseTransaction.h"
 #include "Wallet.h"
 #include "WalletBalance.h"
@@ -19,7 +18,7 @@ class TransactionManager {
 public:
     TransactionManager();
 
-    explicit TransactionManager(std::vector<BaseTransaction> &transactions);
+    explicit TransactionManager(std::vector<BaseTransaction> &transactions_);
 
     ~TransactionManager();
 
