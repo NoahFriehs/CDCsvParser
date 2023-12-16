@@ -6,19 +6,30 @@
 #include "TimeSpan.h"
 
 #include <iostream>
+#include <utility>
 #include <jni.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void hello() {
-    std::cout << "Hello, World! 2x3c" << std::endl;
-}
 
 
 bool init() {
-    return DataHolder::GetInstance().isInitialized();
+
+    if (DataHolder::GetInstance().isInitialized()) {
+        FileLog::i("library", "Already initialized");
+        return true;
+    }
+
+    FileLog::init("my_log.txt", true, 3);
+
+    FileLog::i("library", "Initializing...");
+    DataHolder::GetInstance().SetTransactionManager(new TransactionManager());
+    if (DataHolder::GetInstance().checkSavedData()) {
+        FileLog::i("library", "Saved data found, loading...");
+        DataHolder::GetInstance().loadData();
+        FileLog::i("library", "Done");
+        return true;
+    }
+    FileLog::i("library", "No saved data found");
+    return false;
 }
 
 bool initWithData(const std::vector<std::string> &data, uint mode) {
@@ -36,8 +47,8 @@ bool initWithData(const std::vector<std::string> &data, uint mode) {
 
     // parseFromCsv data
     TransactionParser parser(data);
-    try {   //TODO: do it like this to prevent crashes when data is not valid and we don't wanna sanitize it
-        parser.parseFromCsv(static_cast<TransactionParser::Mode>(mode));
+    try {
+        parser.parseFromCsv(static_cast<Mode>(mode));
     } catch (std::exception &e) {
         FileLog::e("library", e.what());
         return false;
@@ -46,7 +57,9 @@ bool initWithData(const std::vector<std::string> &data, uint mode) {
     long double time = timeSpan.end();
     FileLog::i("library", "Parsing took " + std::to_string(time) + " milliseconds");
 
-    auto *transactionManager = new TransactionManager(parser.getTransactions());
+    auto *transactionManager = new TransactionManager();
+
+    transactionManager->setTransactions(parser.getTransactions(), static_cast<Mode>(mode));
 
     timeSpan.start();
 
@@ -66,13 +79,109 @@ std::vector<std::string> getCurrencies() {
 }
 
 void setPrice(std::vector<double> prices) {
+    FileLog::i("library", "Setting prices and calculating wallet balances...");
     DataHolder::GetInstance().GetTransactionManager()->setPrices(std::move(prices));
+    DataHolder::GetInstance().GetTransactionManager()->calculateWalletBalances();
+    FileLog::i("library", "Done");
+}
+
+
+double getTotalMoneySpent() {
+    return DataHolder::GetInstance().GetTransactionManager()->getTotalMoneySpent();
+}
+
+double getTotalValueOfAssets() {
+    return DataHolder::GetInstance().GetTransactionManager()->getTotalValueOfAssets();
+}
+
+double getTotalBonus() {
+    return DataHolder::GetInstance().GetTransactionManager()->getTotalBonus();
+}
+
+double getValueOfAssets(int walletId) {
+    return DataHolder::GetInstance().GetTransactionManager()->getValueOfAssets(walletId);
+}
+
+double getBonus(int walletId) {
+    return DataHolder::GetInstance().GetTransactionManager()->getTotalBonus(walletId);
+}
+
+double getMoneySpent(int walletId) {
+    return DataHolder::GetInstance().GetTransactionManager()->getMoneySpent(walletId);
+}
+
+
+std::vector<std::string> getWalletsAsStrings() {
+    std::map<std::string, Wallet> wallets = DataHolder::GetInstance().GetTransactionManager()->getWallets();
+    std::vector<std::string> vec;
+    for (auto &wallet: wallets) {
+        vec.emplace_back(wallet.second.getWalletData()->serializeToXml());
+    }
+    return vec;
+}
+
+std::vector<std::string> getTransactionsAsStrings() {
+    std::vector<BaseTransaction> transactions = DataHolder::GetInstance().GetTransactionManager()->getTransactions();
+    std::vector<std::string> vec;
+    for (auto &tx: transactions) {
+        vec.emplace_back(tx.getTransactionData().serializeToXml());
+    }
+    return vec;
+}
+
+std::vector<std::string> getCardWalletsAsStrings() {
+    std::map<std::string, Wallet> wallets = DataHolder::GetInstance().GetTransactionManager()->getCardWallets();
+    std::vector<std::string> vec;
+    for (auto &wallet: wallets) {
+        vec.emplace_back(wallet.second.getWalletData()->serializeToXml());
+    }
+    return vec;
+}
+
+std::vector<std::string> getCardTransactionsAsStrings() {
+    std::vector<BaseTransaction> transactions = DataHolder::GetInstance().GetTransactionManager()->getCardTransactions();
+    std::vector<std::string> vec;
+    for (auto &tx: transactions) {
+        vec.emplace_back(tx.getTransactionData().serializeToXml());
+    }
+    return vec;
+}
+
+double getTotalMoneySpentCard() {
+    return DataHolder::GetInstance().GetTransactionManager()->getTotalMoneySpentCard();
+}
+
+double getTotalValueOfAssetsCard() {
+    return DataHolder::GetInstance().GetTransactionManager()->getTotalValueOfAssetsCard();
+}
+
+double getTotalBonusCard() {
+    return DataHolder::GetInstance().GetTransactionManager()->getTotalBonusCard();
+}
+
+std::string getWalletAsString(int walletId) {
+    auto wallet = DataHolder::GetInstance().GetTransactionManager()->getWallet(walletId);
+    if (wallet == nullptr) return "";
+    return wallet->getWalletData()->serializeToXml();
+}
+
+void save() {
+    DataHolder::GetInstance().saveData();
+}
+
+void loadData() {
+    DataHolder::GetInstance().loadData();
+}
+
+void calculateBalances() {
     DataHolder::GetInstance().GetTransactionManager()->calculateWalletBalances();
 }
 
-#ifdef __cplusplus
-}
-#endif
+
+
+
+
+
 
 extern "C"
 JNIEXPORT jboolean JNICALL
@@ -129,34 +238,30 @@ extern "C"
 JNIEXPORT jdouble JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_Core_CoreService_getTotalMoneySpent(JNIEnv *env,
                                                                           jobject thiz) {
-    return DataHolder::GetInstance().GetTransactionManager()->getTotalMoneySpent();
+    return getTotalMoneySpent();
 }
 extern "C"
 JNIEXPORT jdouble JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_Core_CoreService_getValueOfAssets(JNIEnv *env, jobject thiz) {
-    return DataHolder::GetInstance().GetTransactionManager()->getTotalValueOfAssets();
+    return getTotalValueOfAssets();
 }
 extern "C"
 JNIEXPORT jdouble JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_Core_CoreService_getTotalBonus(JNIEnv *env, jobject thiz) {
-    return DataHolder::GetInstance().GetTransactionManager()->getTotalBonus();
+    return getTotalBonus();
 }
 extern "C"
 JNIEXPORT jdouble JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_Core_CoreService_00024Companion_getValueOfAssets(JNIEnv *env,
                                                                                        jobject thiz,
                                                                                        jint wallet_id) {
-    return DataHolder::GetInstance().GetTransactionManager()->getValueOfAssets(wallet_id);
+    return getValueOfAssets(wallet_id);
 }
 extern "C"
 JNIEXPORT jobjectArray JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_Core_CoreService_getTransactionsAsString(JNIEnv *env,
                                                                                jobject thiz) {
-    std::vector<BaseTransaction> transactions = DataHolder::GetInstance().GetTransactionManager()->getTransactions();
-    std::vector<std::string> vec;
-    for (auto &tx: transactions) {
-        vec.emplace_back(tx.getTransactionData().serializeToXml());
-    }
+    std::vector<std::string> vec = getTransactionsAsStrings();
     jobjectArray ret = env->NewObjectArray(vec.size(), env->FindClass("java/lang/String"), nullptr);
     for (int i = 0; i < vec.size(); i++) {
         env->SetObjectArrayElement(ret, i, env->NewStringUTF(vec[i].c_str()));
@@ -167,11 +272,7 @@ extern "C"
 JNIEXPORT jobjectArray JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_Core_CoreService_getWalletsAsString(JNIEnv *env,
                                                                           jobject thiz) {
-    std::map<std::string, Wallet> wallets = DataHolder::GetInstance().GetTransactionManager()->getWallets();
-    std::vector<std::string> vec;
-    for (auto &wallet: wallets) {
-        vec.emplace_back(wallet.second.getWalletData().serializeToXml());
-    }
+    std::vector<std::string> vec = getWalletsAsStrings();
     jobjectArray ret = env->NewObjectArray(vec.size(), env->FindClass("java/lang/String"), nullptr);
     for (int i = 0; i < vec.size(); i++) {
         env->SetObjectArrayElement(ret, i, env->NewStringUTF(vec[i].c_str()));
@@ -185,17 +286,17 @@ JNIEXPORT jdouble JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_Core_CoreService_getValueOfAssetsByWID(JNIEnv *env,
                                                                              jobject thiz,
                                                                              jint wallet_id) {
-    return DataHolder::GetInstance().GetTransactionManager()->getValueOfAssets(wallet_id);
+    return getValueOfAssets(wallet_id);
 }
 extern "C"
 JNIEXPORT jdouble JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_Core_CoreService_getTotalBonusByWID(JNIEnv *env, jobject thiz,
                                                                           jint wallet_id) {
-    return DataHolder::GetInstance().GetTransactionManager()->getTotalBonus(wallet_id);
+    return getBonus(wallet_id);
 }
 extern "C"
 JNIEXPORT jdouble JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_Core_CoreService_getMoneySpentByWID(JNIEnv *env, jobject thiz,
                                                                           jint wallet_id) {
-    return DataHolder::GetInstance().GetTransactionManager()->getMoneySpent(wallet_id);
+    return getMoneySpent(wallet_id);
 }

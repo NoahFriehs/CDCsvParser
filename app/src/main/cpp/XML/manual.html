@@ -92,7 +92,7 @@
 </head>
 <body><h1>RAPIDXML Manual</h1>
 <h3>Version 1.13</h3>
-<detaileddescription xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<detaileddescription>
     <para><i>Copyright (C) 2006, 2009 Marcin Kalicinski</i><br/><i>See accompanying file <a
             href="license.txt">license.txt</a> for license information.</i>
         <hr/>
@@ -1138,7 +1138,7 @@ char *end = print(buffer, doc, 0);      // end contains pointer to character aft
 Defined in <a href="rapidxml.hpp">rapidxml.hpp</a><br/>
 Base class for
 <a href="#classrapidxml_1_1xml__document">xml_document</a> <h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">This class is used by the parser to
+<para>This class is used by the parser to
     create new nodes and attributes, without overheads of dynamic memory allocation. In most cases,
     you will not need to use this class directly. However, if you need to create nodes manually or
     modify names/values of nodes, you are encouraged to use <a href="#classrapidxml_1_1memory__pool"
@@ -1191,7 +1191,7 @@ Base class for
     constructor
     memory_pool::memory_pool</h3><h4>Synopsis</h4><code class="synopsis">memory_pool();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Constructs empty pool with default
+<para>Constructs empty pool with default
     allocator functions.
 </para>
 <p/>
@@ -1200,7 +1200,7 @@ Base class for
     destructor
     memory_pool::~memory_pool</h3><h4>Synopsis</h4><code class="synopsis">~memory_pool();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Destroys pool and frees all the memory.
+<para>Destroys pool and frees all the memory.
     This causes memory occupied by nodes allocated by the pool to be freed. Nodes allocated from the
     pool are no longer valid.
 </para>
@@ -1211,7 +1211,7 @@ Base class for
     allocate_node(node_type type, const Ch *name=0, const Ch *value=0, std::size_t name_size=0,
     std::size_t value_size=0);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Allocates a new node from the pool, and
+<para>Allocates a new node from the pool, and
     optionally assigns name and value to it. If the allocation request cannot be accomodated, this
     function will throw <code>std::bad_alloc</code>. If exceptions are disabled by defining
     RAPIDXML_NO_EXCEPTIONS, this function will call <a
@@ -1250,7 +1250,7 @@ Base class for
     allocate_attribute(const Ch *name=0, const Ch *value=0, std::size_t name_size=0, std::size_t
     value_size=0);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Allocates a new attribute from the pool,
+<para>Allocates a new attribute from the pool,
     and optionally assigns name and value to it. If the allocation request cannot be accomodated,
     this function will throw <code>std::bad_alloc</code>. If exceptions are disabled by defining
     RAPIDXML_NO_EXCEPTIONS, this function will call <a
@@ -1284,7 +1284,7 @@ Base class for
     function memory_pool::allocate_string</h3><h4>Synopsis</h4><code class="synopsis">Ch*
     allocate_string(const Ch *source=0, std::size_t size=0);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Allocates a char array of given size
+<para>Allocates a char array of given size
     from the pool, and optionally copies a given string to it. If the allocation request cannot be
     accomodated, this function will throw <code>std::bad_alloc</code>. If exceptions are disabled by
     defining RAPIDXML_NO_EXCEPTIONS, this function will call <a
@@ -1311,7 +1311,7 @@ Base class for
     function memory_pool::clone_node</h3><h4>Synopsis</h4><code class="synopsis">xml_node&lt;Ch&gt;*
     clone_node(const xml_node&lt; Ch &gt; *source, xml_node&lt; Ch &gt; *result=0);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Clones an <a
+<para>Clones an <a
         href="#classrapidxml_1_1xml__node" kindref="compound">xml_node</a> and its hierarchy of
     child nodes and attributes. Nodes and attributes are allocated from this memory pool. Names and
     values are not cloned, they are shared between the clone and the source. Result node can be
@@ -1333,7 +1333,7 @@ Base class for
     id="classrapidxml_1_1memory__pool_c8bb3912a3ce86b15842e79d0b421204_1c8bb3912a3ce86b15842e79d0b421204">
     function memory_pool::clear</h3><h4>Synopsis</h4><code class="synopsis">void clear();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Clears the pool. This causes memory
+<para>Clears the pool. This causes memory
     occupied by nodes allocated by the pool to be freed. Any nodes or strings allocated from the
     pool will no longer be valid.
 </para>
@@ -1343,7 +1343,7 @@ Base class for
     function memory_pool::set_allocator</h3><h4>Synopsis</h4><code class="synopsis">void
     set_allocator(alloc_func *af, free_func *ff);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Sets or resets the user-defined memory
+<para>Sets or resets the user-defined memory
     allocation functions for the pool. This can only be called when no memory is allocated from the
     pool yet, otherwise results are undefined. Allocation function must not return invalid pointer
     on failure. It should either throw, stop the program, or use <code>longjmp()</code> function to
@@ -1365,7 +1365,7 @@ Base class for
 <h3 class="reference-header" id="classrapidxml_1_1parse__error">class rapidxml::parse_error</h3>
 
 Defined in <a href="rapidxml.hpp">rapidxml.hpp</a><br/><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse error exception. This exception is
+<para>Parse error exception. This exception is
     thrown by the parser when an error occurs. Use <a
             href="#classrapidxml_1_1parse__error_ff06f49065b54a8a86e02e9a2441a8ba_1ff06f49065b54a8a86e02e9a2441a8ba"
             kindref="member">what()</a> function to get human-readable error message. Use <a
@@ -1387,14 +1387,14 @@ Defined in <a href="rapidxml.hpp">rapidxml.hpp</a><br/><h4>Description</h4>
     parse_error::parse_error</h3><h4>Synopsis</h4><code class="synopsis">parse_error(const char
     *what, void *where);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Constructs parse error.</para>
+<para>Constructs parse error.</para>
 <p/>
 <h3 class="reference-header"
     id="classrapidxml_1_1parse__error_ff06f49065b54a8a86e02e9a2441a8ba_1ff06f49065b54a8a86e02e9a2441a8ba">
     function parse_error::what</h3><h4>Synopsis</h4><code class="synopsis">virtual const char*
     what() const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets human readable description of
+<para>Gets human readable description of
     error.
 </para>
 <h4>Returns</h4>Pointer to null terminated description of the error. <p/>
@@ -1402,7 +1402,7 @@ Defined in <a href="rapidxml.hpp">rapidxml.hpp</a><br/><h4>Description</h4>
     id="classrapidxml_1_1parse__error_377be7d201d95221c318682c35377aca_1377be7d201d95221c318682c35377aca">
     function parse_error::where</h3><h4>Synopsis</h4><code class="synopsis">Ch* where() const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets pointer to character data where
+<para>Gets pointer to character data where
     error happened. Ch should be the same as char type of <a href="#classrapidxml_1_1xml__document"
                                                              kindref="compound">xml_document</a>
     that produced the error.
@@ -1415,7 +1415,7 @@ Defined in <a href="rapidxml.hpp">rapidxml.hpp</a><br/><h4>Description</h4>
 Defined in <a href="rapidxml.hpp">rapidxml.hpp</a><br/>
 Inherits from
 <a href="#classrapidxml_1_1xml__base">xml_base</a> <br/><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Class representing attribute node of XML
+<para>Class representing attribute node of XML
     document. Each attribute has name and value strings, which are available through <a
             href="#classrapidxml_1_1xml__base_622eade29fdf7806d3ef93ac4d90e707_1622eade29fdf7806d3ef93ac4d90e707"
             kindref="member">name()</a> and <a
@@ -1436,7 +1436,7 @@ Inherits from
     constructor
     xml_attribute::xml_attribute</h3><h4>Synopsis</h4><code class="synopsis">xml_attribute();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Constructs an empty attribute with the
+<para>Constructs an empty attribute with the
     specified type. Consider using <a href="#classrapidxml_1_1memory__pool" kindref="compound">memory_pool</a>
     of appropriate <a href="#classrapidxml_1_1xml__document" kindref="compound">xml_document</a> if
     allocating attributes manually.
@@ -1447,7 +1447,7 @@ Inherits from
     function xml_attribute::document</h3><h4>Synopsis</h4><code class="synopsis">xml_document&lt;Ch&gt;*
     document() const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets document of which attribute is a
+<para>Gets document of which attribute is a
     child.
 </para>
 <h4>Returns</h4>Pointer to document that contains this attribute, or 0 if there is no parent
@@ -1457,7 +1457,7 @@ document. <p/>
     function xml_attribute::previous_attribute</h3><h4>Synopsis</h4><code class="synopsis">xml_attribute&lt;Ch&gt;*
     previous_attribute(const Ch *name=0, std::size_t name_size=0, bool case_sensitive=true) const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets previous attribute, optionally
+<para>Gets previous attribute, optionally
     matching attribute name.
 </para>
 <h4>Parameters</h4>
@@ -1486,7 +1486,7 @@ document. <p/>
     function xml_attribute::next_attribute</h3><h4>Synopsis</h4><code class="synopsis">xml_attribute&lt;Ch&gt;*
     next_attribute(const Ch *name=0, std::size_t name_size=0, bool case_sensitive=true) const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets next attribute, optionally matching
+<para>Gets next attribute, optionally matching
     attribute name.
 </para>
 <h4>Parameters</h4>
@@ -1517,7 +1517,7 @@ Defined in <a href="rapidxml.hpp">rapidxml.hpp</a><br/>
 Base class for
 <a href="#classrapidxml_1_1xml__attribute">xml_attribute</a> <a href="#classrapidxml_1_1xml__node">xml_node</a>
 <h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Base class for <a
+<para>Base class for <a
         href="#classrapidxml_1_1xml__node" kindref="compound">xml_node</a> and <a
         href="#classrapidxml_1_1xml__attribute" kindref="compound">xml_attribute</a> implementing
     common functions: <a
@@ -1548,7 +1548,7 @@ Base class for
     id="classrapidxml_1_1xml__base_622eade29fdf7806d3ef93ac4d90e707_1622eade29fdf7806d3ef93ac4d90e707">
     function xml_base::name</h3><h4>Synopsis</h4><code class="synopsis">Ch* name() const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets name of the node. Interpretation of
+<para>Gets name of the node. Interpretation of
     name depends on type of node. Note that name will not be zero-terminated if <a
             href="#namespacerapidxml_9cae3801e70437cbc410c24bf6be691c_19cae3801e70437cbc410c24bf6be691c"
             kindref="member">rapidxml::parse_no_string_terminators</a> option was selected during
@@ -1563,7 +1563,7 @@ Base class for
     function xml_base::name_size</h3><h4>Synopsis</h4><code class="synopsis">std::size_t name_size()
     const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets size of node name, not including
+<para>Gets size of node name, not including
     terminator character. This function works correctly irrespective of whether name is or is not
     zero terminated.
 </para>
@@ -1572,7 +1572,7 @@ Base class for
     id="classrapidxml_1_1xml__base_c54fa4987fb503916a7b541eb15c9c7f_1c54fa4987fb503916a7b541eb15c9c7f">
     function xml_base::value</h3><h4>Synopsis</h4><code class="synopsis">Ch* value() const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets value of node. Interpretation of
+<para>Gets value of node. Interpretation of
     value depends on type of node. Note that value will not be zero-terminated if <a
             href="#namespacerapidxml_9cae3801e70437cbc410c24bf6be691c_19cae3801e70437cbc410c24bf6be691c"
             kindref="member">rapidxml::parse_no_string_terminators</a> option was selected during
@@ -1587,7 +1587,7 @@ Base class for
     function xml_base::value_size</h3><h4>Synopsis</h4><code class="synopsis">std::size_t
     value_size() const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets size of node value, not including
+<para>Gets size of node value, not including
     terminator character. This function works correctly irrespective of whether value is or is not
     zero terminated.
 </para>
@@ -1597,7 +1597,7 @@ Base class for
     function xml_base::name</h3><h4>Synopsis</h4><code class="synopsis">void name(const Ch *name,
     std::size_t size);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Sets name of node to a non
+<para>Sets name of node to a non
     zero-terminated string. See <a href="#namespacerapidxml_1ownership_of_strings" kindref="member">Ownership
         Of Strings</a> . <br/><br/>
     Note that node does not own its name or value, it only stores a pointer to it. It will not
@@ -1627,7 +1627,7 @@ Base class for
     id="classrapidxml_1_1xml__base_e099c291e104a0d277307fe71f5e0f9e_1e099c291e104a0d277307fe71f5e0f9e">
     function xml_base::name</h3><h4>Synopsis</h4><code class="synopsis">void name(const Ch *name);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Sets name of node to a zero-terminated
+<para>Sets name of node to a zero-terminated
     string. See also <a href="#namespacerapidxml_1ownership_of_strings" kindref="member">Ownership
         Of Strings</a> and <a
             href="#classrapidxml_1_1xml__base_4e7e23d06d48126c65b1f6266acfba5c_14e7e23d06d48126c65b1f6266acfba5c"
@@ -1644,7 +1644,7 @@ Base class for
     function xml_base::value</h3><h4>Synopsis</h4><code class="synopsis">void value(const Ch *value,
     std::size_t size);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Sets value of node to a non
+<para>Sets value of node to a non
     zero-terminated string. See <a href="#namespacerapidxml_1ownership_of_strings" kindref="member">Ownership
         Of Strings</a> . <br/><br/>
     Note that node does not own its name or value, it only stores a pointer to it. It will not
@@ -1680,7 +1680,7 @@ Base class for
     function xml_base::value</h3><h4>Synopsis</h4><code class="synopsis">void value(const Ch
     *value);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Sets value of node to a zero-terminated
+<para>Sets value of node to a zero-terminated
     string. See also <a href="#namespacerapidxml_1ownership_of_strings" kindref="member">Ownership
         Of Strings</a> and <a
             href="#classrapidxml_1_1xml__base_d9640aa3f5374673cb72a5289b6c91eb_1d9640aa3f5374673cb72a5289b6c91eb"
@@ -1697,7 +1697,7 @@ Base class for
     function xml_base::parent</h3><h4>Synopsis</h4><code class="synopsis">xml_node&lt;Ch&gt;*
     parent() const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets node parent.</para>
+<para>Gets node parent.</para>
 <h4>Returns</h4>Pointer to parent node, or 0 if there is no parent. <p/>
 <h3 class="reference-header" id="classrapidxml_1_1xml__document">class
     template
@@ -1707,7 +1707,7 @@ Defined in <a href="rapidxml.hpp">rapidxml.hpp</a><br/>
 Inherits from
 <a href="#classrapidxml_1_1xml__node">xml_node</a> <a href="#classrapidxml_1_1memory__pool">memory_pool</a>
 <br/><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">This class represents root of the DOM
+<para>This class represents root of the DOM
     hierarchy. It is also an <a href="#classrapidxml_1_1xml__node" kindref="compound">xml_node</a>
     and a <a href="#classrapidxml_1_1memory__pool" kindref="compound">memory_pool</a> through public
     inheritance. Use <a
@@ -1733,13 +1733,13 @@ Inherits from
     constructor
     xml_document::xml_document</h3><h4>Synopsis</h4><code class="synopsis">xml_document();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Constructs empty XML document.</para>
+<para>Constructs empty XML document.</para>
 <p/>
 <h3 class="reference-header"
     id="classrapidxml_1_1xml__document_8338ce6042e7b04d5a42144fb446b69c_18338ce6042e7b04d5a42144fb446b69c">
     function xml_document::parse</h3><h4>Synopsis</h4><code class="synopsis">void parse(Ch *text);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parses zero-terminated XML string
+<para>Parses zero-terminated XML string
     according to given flags. Passed string will be modified by the parser, unless <a
             href="#namespacerapidxml_a97ba1a0a79a6d66f4eef3612508d943_1a97ba1a0a79a6d66f4eef3612508d943"
             kindref="member">rapidxml::parse_non_destructive</a> flag is used. The string must
@@ -1763,7 +1763,7 @@ Inherits from
     id="classrapidxml_1_1xml__document_c8bb3912a3ce86b15842e79d0b421204_1c8bb3912a3ce86b15842e79d0b421204">
     function xml_document::clear</h3><h4>Synopsis</h4><code class="synopsis">void clear();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Clears the document by deleting all
+<para>Clears the document by deleting all
     nodes and clearing the memory pool. All nodes owned by document pool are destroyed.
 </para>
 <p/>
@@ -1776,7 +1776,7 @@ Inherits from
 <a href="#classrapidxml_1_1xml__base">xml_base</a> <br/>
 Base class for
 <a href="#classrapidxml_1_1xml__document">xml_document</a> <h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Class representing a node of XML
+<para>Class representing a node of XML
     document. Each node may have associated name and value strings, which are available through <a
             href="#classrapidxml_1_1xml__base_622eade29fdf7806d3ef93ac4d90e707_1622eade29fdf7806d3ef93ac4d90e707"
             kindref="member">name()</a> and <a
@@ -1799,7 +1799,7 @@ Base class for
     constructor
     xml_node::xml_node</h3><h4>Synopsis</h4><code class="synopsis">xml_node(node_type type);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Constructs an empty node with the
+<para>Constructs an empty node with the
     specified type. Consider using <a href="#classrapidxml_1_1memory__pool" kindref="compound">memory_pool</a>
     of appropriate document to allocate nodes manually.
 </para>
@@ -1813,14 +1813,14 @@ Base class for
     id="classrapidxml_1_1xml__node_975e86937621ae4afe6a423219de30d0_1975e86937621ae4afe6a423219de30d0">
     function xml_node::type</h3><h4>Synopsis</h4><code class="synopsis">node_type type() const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets type of node.</para>
+<para>Gets type of node.</para>
 <h4>Returns</h4>Type of node. <p/>
 <h3 class="reference-header"
     id="classrapidxml_1_1xml__node_77aea7d8d996ba4f6bd61cc478a4e72d_177aea7d8d996ba4f6bd61cc478a4e72d">
     function xml_node::document</h3><h4>Synopsis</h4><code class="synopsis">xml_document&lt;Ch&gt;*
     document() const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets document of which node is a
+<para>Gets document of which node is a
     child.
 </para>
 <h4>Returns</h4>Pointer to document that contains this node, or 0 if there is no parent document.
@@ -1830,7 +1830,7 @@ Base class for
     function xml_node::first_node</h3><h4>Synopsis</h4><code class="synopsis">xml_node&lt;Ch&gt;*
     first_node(const Ch *name=0, std::size_t name_size=0, bool case_sensitive=true) const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets first child node, optionally
+<para>Gets first child node, optionally
     matching node name.
 </para>
 <h4>Parameters</h4>
@@ -1858,7 +1858,7 @@ Base class for
     function xml_node::last_node</h3><h4>Synopsis</h4><code class="synopsis">xml_node&lt;Ch&gt;*
     last_node(const Ch *name=0, std::size_t name_size=0, bool case_sensitive=true) const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets last child node, optionally
+<para>Gets last child node, optionally
     matching node name. Behaviour is undefined if node has no children. Use <a
             href="#classrapidxml_1_1xml__node_7823e36687669e59c2afdf66334ef35a_17823e36687669e59c2afdf66334ef35a"
             kindref="member">first_node()</a> to test if node has children.
@@ -1888,7 +1888,7 @@ Base class for
     function xml_node::previous_sibling</h3><h4>Synopsis</h4><code class="synopsis">xml_node&lt;Ch&gt;*
     previous_sibling(const Ch *name=0, std::size_t name_size=0, bool case_sensitive=true) const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets previous sibling node, optionally
+<para>Gets previous sibling node, optionally
     matching node name. Behaviour is undefined if node has no parent. Use <a
             href="#classrapidxml_1_1xml__base_798e8df7ea53ade4d9f0701017dce80e_1798e8df7ea53ade4d9f0701017dce80e"
             kindref="member">parent()</a> to test if node has a parent.
@@ -1918,7 +1918,7 @@ Base class for
     function xml_node::next_sibling</h3><h4>Synopsis</h4><code class="synopsis">xml_node&lt;Ch&gt;*
     next_sibling(const Ch *name=0, std::size_t name_size=0, bool case_sensitive=true) const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets next sibling node, optionally
+<para>Gets next sibling node, optionally
     matching node name. Behaviour is undefined if node has no parent. Use <a
             href="#classrapidxml_1_1xml__base_798e8df7ea53ade4d9f0701017dce80e_1798e8df7ea53ade4d9f0701017dce80e"
             kindref="member">parent()</a> to test if node has a parent.
@@ -1948,7 +1948,7 @@ Base class for
     function xml_node::first_attribute</h3><h4>Synopsis</h4><code class="synopsis">xml_attribute&lt;Ch&gt;*
     first_attribute(const Ch *name=0, std::size_t name_size=0, bool case_sensitive=true) const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets first attribute of node, optionally
+<para>Gets first attribute of node, optionally
     matching attribute name.
 </para>
 <h4>Parameters</h4>
@@ -1976,7 +1976,7 @@ Base class for
     function xml_node::last_attribute</h3><h4>Synopsis</h4><code class="synopsis">xml_attribute&lt;Ch&gt;*
     last_attribute(const Ch *name=0, std::size_t name_size=0, bool case_sensitive=true) const;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Gets last attribute of node, optionally
+<para>Gets last attribute of node, optionally
     matching attribute name.
 </para>
 <h4>Parameters</h4>
@@ -2003,7 +2003,7 @@ Base class for
     id="classrapidxml_1_1xml__node_a78759bfa429fa2ab6bc5fe617cfa3cf_1a78759bfa429fa2ab6bc5fe617cfa3cf">
     function xml_node::type</h3><h4>Synopsis</h4><code class="synopsis">void type(node_type type);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Sets type of node.</para>
+<para>Sets type of node.</para>
 <h4>Parameters</h4>
 <dl>
     <dt class="parameter-name">type</dt>
@@ -2015,7 +2015,7 @@ Base class for
     function xml_node::prepend_node</h3><h4>Synopsis</h4><code class="synopsis">void
     prepend_node(xml_node&lt; Ch &gt; *child);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Prepends a new child node. The prepended
+<para>Prepends a new child node. The prepended
     child becomes the first child, and all existing children are moved one position back.
 </para>
 <h4>Parameters</h4>
@@ -2029,7 +2029,7 @@ Base class for
     function xml_node::append_node</h3><h4>Synopsis</h4><code class="synopsis">void
     append_node(xml_node&lt; Ch &gt; *child);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Appends a new child node. The appended
+<para>Appends a new child node. The appended
     child becomes the last child.
 </para>
 <h4>Parameters</h4>
@@ -2043,7 +2043,7 @@ Base class for
     function xml_node::insert_node</h3><h4>Synopsis</h4><code class="synopsis">void
     insert_node(xml_node&lt; Ch &gt; *where, xml_node&lt; Ch &gt; *child);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Inserts a new child node at specified
+<para>Inserts a new child node at specified
     place inside the node. All children after and including the specified node are moved one
     position back.
 </para>
@@ -2062,7 +2062,7 @@ Base class for
     function xml_node::remove_first_node</h3><h4>Synopsis</h4><code class="synopsis">void
     remove_first_node();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Removes first child node. If node has no
+<para>Removes first child node. If node has no
     children, behaviour is undefined. Use <a
             href="#classrapidxml_1_1xml__node_7823e36687669e59c2afdf66334ef35a_17823e36687669e59c2afdf66334ef35a"
             kindref="member">first_node()</a> to test if node has children.
@@ -2073,7 +2073,7 @@ Base class for
     function xml_node::remove_last_node</h3><h4>Synopsis</h4><code class="synopsis">void
     remove_last_node();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Removes last child of the node. If node
+<para>Removes last child of the node. If node
     has no children, behaviour is undefined. Use <a
             href="#classrapidxml_1_1xml__node_7823e36687669e59c2afdf66334ef35a_17823e36687669e59c2afdf66334ef35a"
             kindref="member">first_node()</a> to test if node has children.
@@ -2084,7 +2084,7 @@ Base class for
     function xml_node::remove_node</h3><h4>Synopsis</h4><code class="synopsis">void
     remove_node(xml_node&lt; Ch &gt; *where);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Removes specified child from the node.
+<para>Removes specified child from the node.
 </para>
 <p/>
 <h3 class="reference-header"
@@ -2092,7 +2092,7 @@ Base class for
     function xml_node::remove_all_nodes</h3><h4>Synopsis</h4><code class="synopsis">void
     remove_all_nodes();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Removes all child nodes (but not
+<para>Removes all child nodes (but not
     attributes).
 </para>
 <p/>
@@ -2101,7 +2101,7 @@ Base class for
     function xml_node::prepend_attribute</h3><h4>Synopsis</h4><code class="synopsis">void
     prepend_attribute(xml_attribute&lt; Ch &gt; *attribute);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Prepends a new attribute to the node.
+<para>Prepends a new attribute to the node.
 </para>
 <h4>Parameters</h4>
 <dl>
@@ -2114,7 +2114,7 @@ Base class for
     function xml_node::append_attribute</h3><h4>Synopsis</h4><code class="synopsis">void
     append_attribute(xml_attribute&lt; Ch &gt; *attribute);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Appends a new attribute to the node.
+<para>Appends a new attribute to the node.
 </para>
 <h4>Parameters</h4>
 <dl>
@@ -2127,7 +2127,7 @@ Base class for
     function xml_node::insert_attribute</h3><h4>Synopsis</h4><code class="synopsis">void
     insert_attribute(xml_attribute&lt; Ch &gt; *where, xml_attribute&lt; Ch &gt; *attribute);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Inserts a new attribute at specified
+<para>Inserts a new attribute at specified
     place inside the node. All attributes after and including the specified attribute are moved one
     position back.
 </para>
@@ -2146,7 +2146,7 @@ Base class for
     function xml_node::remove_first_attribute</h3><h4>Synopsis</h4><code class="synopsis">void
     remove_first_attribute();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Removes first attribute of the node. If
+<para>Removes first attribute of the node. If
     node has no attributes, behaviour is undefined. Use <a
             href="#classrapidxml_1_1xml__node_5810a09f82f8d53efbe9456286dcec83_15810a09f82f8d53efbe9456286dcec83"
             kindref="member">first_attribute()</a> to test if node has attributes.
@@ -2157,7 +2157,7 @@ Base class for
     function xml_node::remove_last_attribute</h3><h4>Synopsis</h4><code class="synopsis">void
     remove_last_attribute();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Removes last attribute of the node. If
+<para>Removes last attribute of the node. If
     node has no attributes, behaviour is undefined. Use <a
             href="#classrapidxml_1_1xml__node_5810a09f82f8d53efbe9456286dcec83_15810a09f82f8d53efbe9456286dcec83"
             kindref="member">first_attribute()</a> to test if node has attributes.
@@ -2168,7 +2168,7 @@ Base class for
     function xml_node::remove_attribute</h3><h4>Synopsis</h4><code class="synopsis">void
     remove_attribute(xml_attribute&lt; Ch &gt; *where);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Removes specified attribute from node.
+<para>Removes specified attribute from node.
 </para>
 <h4>Parameters</h4>
 <dl>
@@ -2181,12 +2181,12 @@ Base class for
     function xml_node::remove_all_attributes</h3><h4>Synopsis</h4><code class="synopsis">void
     remove_all_attributes();
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Removes all attributes of node.</para>
+<para>Removes all attributes of node.</para>
 <p/>
 <h3 class="reference-header"
     id="namespacerapidxml_6a276b85e2da28c5f9c3dbce61c55682_16a276b85e2da28c5f9c3dbce61c55682">enum
     node_type</h3><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Enumeration listing all node types
+<para>Enumeration listing all node types
     produced by the parser. Use <a
             href="#classrapidxml_1_1xml__node_975e86937621ae4afe6a423219de30d0_1975e86937621ae4afe6a423219de30d0"
             kindref="member">xml_node::type()</a> function to query node type.
@@ -2234,7 +2234,7 @@ Base class for
     function parse_error_handler</h3><h4>Synopsis</h4><code class="synopsis">void
     rapidxml::parse_error_handler(const char *what, void *where);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">When exceptions are disabled by defining
+<para>When exceptions are disabled by defining
     RAPIDXML_NO_EXCEPTIONS, this function is called to notify user about the error. It must be
     defined by the user. <br/><br/>
     This function cannot return. If it does, the results are undefined. <br/><br/>
@@ -2262,7 +2262,7 @@ Base class for
     function print</h3><h4>Synopsis</h4><code class="synopsis">OutIt rapidxml::print(OutIt out,
     const xml_node&lt; Ch &gt; &amp;node, int flags=0);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Prints XML to given output iterator.
+<para>Prints XML to given output iterator.
 </para>
 <h4>Parameters</h4>
 <dl>
@@ -2285,7 +2285,7 @@ text. <p/>
     rapidxml::print(std::basic_ostream&lt; Ch &gt; &amp;out, const xml_node&lt; Ch &gt; &amp;node,
     int flags=0);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Prints XML to given output stream.
+<para>Prints XML to given output stream.
 </para>
 <h4>Parameters</h4>
 <dl>
@@ -2307,7 +2307,7 @@ text. <p/>
     rapidxml::operator&lt;&lt;(std::basic_ostream&lt; Ch &gt; &amp;out, const xml_node&lt; Ch &gt;
     &amp;node);
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Prints formatted XML to given output
+<para>Prints formatted XML to given output
     stream. Uses default printing flags. Use <a
             href="#namespacerapidxml_b94d570fc4c4ab2423813cd0243326b1_1b94d570fc4c4ab2423813cd0243326b1"
             kindref="member">print()</a> function to customize printing process.
@@ -2328,7 +2328,7 @@ text. <p/>
     parse_no_data_nodes</h3><h4>Synopsis</h4><code class="synopsis">const int parse_no_data_nodes
     = 0x1;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to not
+<para>Parse flag instructing the parser to not
     create data nodes. Text of first data node will still be placed in value of parent element,
     unless <a
             href="#namespacerapidxml_97e2c4fdc04fae17126f9971a4fc993e_197e2c4fdc04fae17126f9971a4fc993e"
@@ -2346,7 +2346,7 @@ text. <p/>
     parse_no_element_values
     = 0x2;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to not
+<para>Parse flag instructing the parser to not
     use text of first data node as a value of parent element. Can be combined with other flags by
     use of | operator. Note that child data nodes of element node take precendence over its value
     when printing. That is, if element has one or more child data nodes <i>and</i> a value, the
@@ -2366,7 +2366,7 @@ text. <p/>
     parse_no_string_terminators
     = 0x4;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to not
+<para>Parse flag instructing the parser to not
     place zero terminators after strings in the source text. By default zero terminators are placed,
     modifying source text. Can be combined with other flags by use of | operator. <br/><br/>
     See
@@ -2381,7 +2381,7 @@ text. <p/>
     parse_no_entity_translation
     = 0x8;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to not
+<para>Parse flag instructing the parser to not
     translate entities in the source text. By default entities are translated, modifying source
     text. Can be combined with other flags by use of | operator. <br/><br/>
     See
@@ -2395,7 +2395,7 @@ text. <p/>
     parse_no_utf8</h3><h4>Synopsis</h4><code class="synopsis">const int parse_no_utf8
     = 0x10;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to
+<para>Parse flag instructing the parser to
     disable UTF-8 handling and assume plain 8 bit characters. By default, UTF-8 handling is enabled.
     Can be combined with other flags by use of | operator. <br/><br/>
     See
@@ -2410,7 +2410,7 @@ text. <p/>
     parse_declaration_node
     = 0x20;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to
+<para>Parse flag instructing the parser to
     create XML declaration node. By default, declaration node is not created. Can be combined with
     other flags by use of | operator. <br/><br/>
     See
@@ -2424,7 +2424,7 @@ text. <p/>
     parse_comment_nodes</h3><h4>Synopsis</h4><code class="synopsis">const int parse_comment_nodes
     = 0x40;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to
+<para>Parse flag instructing the parser to
     create comments nodes. By default, comment nodes are not created. Can be combined with other
     flags by use of | operator. <br/><br/>
     See
@@ -2438,7 +2438,7 @@ text. <p/>
     parse_doctype_node</h3><h4>Synopsis</h4><code class="synopsis">const int parse_doctype_node
     = 0x80;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to
+<para>Parse flag instructing the parser to
     create DOCTYPE node. By default, doctype node is not created. Although W3C specification allows
     at most one DOCTYPE node, RapidXml will silently accept documents with more than one. Can be
     combined with other flags by use of | operator. <br/><br/>
@@ -2453,7 +2453,7 @@ text. <p/>
     parse_pi_nodes</h3><h4>Synopsis</h4><code class="synopsis">const int parse_pi_nodes
     = 0x100;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to
+<para>Parse flag instructing the parser to
     create PI nodes. By default, PI nodes are not created. Can be combined with other flags by use
     of | operator. <br/><br/>
     See
@@ -2468,7 +2468,7 @@ text. <p/>
     parse_validate_closing_tags
     = 0x200;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to
+<para>Parse flag instructing the parser to
     validate closing tag names. If not set, name inside closing tag is irrelevant to the parser. By
     default, closing tags are not validated. Can be combined with other flags by use of | operator.
     <br/><br/>
@@ -2484,7 +2484,7 @@ text. <p/>
     parse_trim_whitespace
     = 0x400;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to
+<para>Parse flag instructing the parser to
     trim all leading and trailing whitespace of data nodes. By default, whitespace is not trimmed.
     This flag does not cause the parser to modify source text. Can be combined with other flags by
     use of | operator. <br/><br/>
@@ -2500,7 +2500,7 @@ text. <p/>
     parse_normalize_whitespace
     = 0x800;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flag instructing the parser to
+<para>Parse flag instructing the parser to
     condense all whitespace runs of data nodes to a single space character. Trimming of leading and
     trailing whitespace of data is controlled by <a
             href="#namespacerapidxml_ac1f06b1afd47b812732fb521b146fd9_1ac1f06b1afd47b812732fb521b146fd9"
@@ -2518,7 +2518,7 @@ text. <p/>
     parse_default</h3><h4>Synopsis</h4><code class="synopsis">const int parse_default
     = 0;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Parse flags which represent default
+<para>Parse flags which represent default
     behaviour of the parser. This is always equal to 0, so that all other flags can be simply ored
     together. Normally there is no need to inconveniently disable flags by anding with their negated
     (~) values. This also means that meaning of each flag is a <i>negation</i> of the default
@@ -2538,7 +2538,7 @@ text. <p/>
     parse_non_destructive
     = parse_no_string_terminators | parse_no_entity_translation;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">A combination of parse flags that
+<para>A combination of parse flags that
     forbids any modifications of the source text. This also results in faster parsing. However, note
     that the following will occur:
     <ul>
@@ -2569,7 +2569,7 @@ text. <p/>
     parse_fastest</h3><h4>Synopsis</h4><code class="synopsis">const int parse_fastest
     = parse_non_destructive | parse_no_data_nodes;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">A combination of parse flags resulting
+<para>A combination of parse flags resulting
     in fastest possible parsing, without sacrificing important data. <br/><br/>
     See
     <a href="#classrapidxml_1_1xml__document_8338ce6042e7b04d5a42144fb446b69c_18338ce6042e7b04d5a42144fb446b69c"
@@ -2583,7 +2583,7 @@ text. <p/>
     = parse_declaration_node | parse_comment_nodes | parse_doctype_node | parse_pi_nodes |
     parse_validate_closing_tags;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">A combination of parse flags resulting
+<para>A combination of parse flags resulting
     in largest amount of data being extracted. This usually results in slowest parsing. <br/><br/>
     See
     <a href="#classrapidxml_1_1xml__document_8338ce6042e7b04d5a42144fb446b69c_18338ce6042e7b04d5a42144fb446b69c"
@@ -2596,7 +2596,7 @@ text. <p/>
     print_no_indenting</h3><h4>Synopsis</h4><code class="synopsis">const int print_no_indenting
     = 0x1;
 </code><h4>Description</h4>
-<para xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">Printer flag instructing the printer to
+<para>Printer flag instructing the printer to
     suppress indenting of XML. See <a
             href="#namespacerapidxml_b94d570fc4c4ab2423813cd0243326b1_1b94d570fc4c4ab2423813cd0243326b1"
             kindref="member">print()</a> function.

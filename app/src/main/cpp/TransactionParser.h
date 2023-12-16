@@ -8,7 +8,7 @@
 
 #include <string>
 #include "TransactionManager.h"
-#include "BaseTransaction.h"
+#include "Transaction/BaseTransaction.h"
 
 class TransactionParser {
 
@@ -18,12 +18,6 @@ public:
     explicit TransactionParser(const std::vector<std::string> &data);
 
     ~TransactionParser();
-
-    enum Mode {
-        CDC,
-        Card,
-        Custom
-    };
 
     void parseFromCsv(Mode mode);
 
@@ -35,6 +29,8 @@ private:
     bool hasData = false;
 
     void parseCDC();
+
+    void parseCard();
 };
 
 

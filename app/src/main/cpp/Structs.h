@@ -8,10 +8,12 @@
 #include <string>
 #include <ctime>
 #include <sstream>
+#include <memory>
 #include "Enums.h"
 #include "XML/rapidxml.hpp"
 #include "XML/rapidxml_print.hpp"
 #include "XML/rapidxml_utils.hpp"
+#include "MagicNumbers.h"
 
 struct TransactionData {
     int transactionId{};
@@ -31,11 +33,11 @@ struct TransactionData {
     bool isOutsideTransaction = false;
     std::string notes = {};
 
-    std::string serializeToXml() {
+    [[nodiscard]] std::string serializeToXml() const {
         return serializeToXml(*this);
     }
 
-    std::string serializeToXml(const TransactionData &transaction) {
+    static std::string serializeToXml(const TransactionData &transaction) {
         rapidxml::xml_document<> doc;
 
         auto *root = doc.allocate_node(rapidxml::node_element, "TransactionData");
@@ -57,15 +59,17 @@ struct TransactionData {
         char dateTimeStr[100];
         std::strftime(dateTimeStr, sizeof(dateTimeStr), "%Y-%m-%d %H:%M:%S",
                       &transaction.transactionDate);
-        addNode("transactionDate", dateTimeStr);
+        std::string dateTimeString = dateTimeStr;
+        addNode("transactionDate", dateTimeString.c_str());
 
         addNode("currencyType", transaction.currencyType);
         addNode("toCurrencyType", transaction.toCurrencyType);
-        addNode("amount", std::to_string(transaction.amount));
-        addNode("toAmount", std::to_string(transaction.toAmount));
-        addNode("nativeAmount", std::to_string(transaction.nativeAmount));
-        addNode("amountBonus", std::to_string(transaction.amountBonus));
-        addNode("transactionTypeOrdinal", std::to_string(transaction.transactionTypeOrdinal));
+        addNode("amount", std::to_string(transaction.amount).c_str());
+        addNode("toAmount", std::to_string(transaction.toAmount).c_str());
+        addNode("nativeAmount", std::to_string(transaction.nativeAmount).c_str());
+        addNode("amountBonus", std::to_string(transaction.amountBonus).c_str());
+        addNode("transactionTypeOrdinal",
+                std::to_string(transaction.transactionTypeOrdinal).c_str());
         addNode("transactionHash", transaction.transactionHash);
         addNode("isOutsideTransaction", transaction.isOutsideTransaction ? "true" : "false");
         addNode("notes", transaction.notes);
@@ -124,18 +128,18 @@ struct TransactionData {
 struct WalletData {
     int walletId{};
     std::string currencyType = {};
-    long double balance{};
-    long double nativeBalance{};
-    long double bonusBalance{};
-    long double moneySpent{};
+    double balance{};
+    double nativeBalance{};
+    double bonusBalance{};
+    double moneySpent{};
     bool isOutsideWallet{};
-    std::string notes;
+    std::string notes = {};
 
-    std::string serializeToXml() {
+    [[nodiscard]] std::string serializeToXml() const {
         return serializeToXml(*this);
     }
 
-    std::string serializeToXml(const WalletData &wallet) {
+    static std::string serializeToXml(const WalletData &wallet) {
         rapidxml::xml_document<> doc;
 
         auto *root = doc.allocate_node(rapidxml::node_element, "WalletData");
@@ -164,7 +168,7 @@ struct WalletData {
         return xmlString;
     }
 
-    void deserializeFromXml(const std::string &xml, WalletData &wallet) {
+    static void deserializeFromXml(const std::string &xml, WalletData &wallet) {
         size_t pos = 0;
 
         auto getTagValue = [&](const std::string &tag) -> std::string {
@@ -191,6 +195,29 @@ struct WalletData {
         wallet.isOutsideWallet = (getTagValue("isOutsideWallet") == "true");
         wallet.notes = getTagValue("notes");
     }
+};
+
+
+struct TransactionManagerState {
+    bool isBig = false;
+    bool hasTxData = false;
+    bool hasCardTxData = false;
+    bool isReadyFlag = false;
+    int txIdCounter = 0;
+    char currencies[MAX_WALLETS][MAX_STRING_LENGTH] = {};
+    char cardTxTypes[MAX_WALLETS][MAX_STRING_LENGTH] = {};
+};
+
+
+struct BigTransactionMangerState : TransactionManagerState {
+
+    char bigCurrencies[BIG_MAX_WALLETS][MAX_STRING_LENGTH] = {};
+    char bigCardTxTypes[BIG_MAX_WALLETS][MAX_STRING_LENGTH] = {};
+
+    BigTransactionMangerState() {
+        isBig = true;
+    }
+
 };
 
 #endif //NF_TX_CORE_STRUCTS_H

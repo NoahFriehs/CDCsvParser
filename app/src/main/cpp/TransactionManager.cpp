@@ -3,16 +3,20 @@
 //
 
 #include <stdexcept>
+#include <cstring>
 #include "TransactionManager.h"
 #include "FileLog.h"
+#include "BinaryUtil.h"
+#include "TransactionManager/TMState.h"
+#include "Util/CharUtil.h"
 
 TransactionManager::TransactionManager() = default;
 
-TransactionManager::TransactionManager(std::vector<BaseTransaction> &transactions_) {
+TransactionManager::TransactionManager(std::vector<BaseTransaction> &transactions) {
     std::lock_guard<std::mutex> lock(mutex, std::adopt_lock);
-    if (transactions_.empty()) throw std::invalid_argument("Transactions is empty");
+    if (transactions.empty()) throw std::invalid_argument("Transactions is empty");
 
-    transactions.insert(transactions.begin(), transactions_.begin(), transactions_.end());
+    this->transactions = transactions;
 }
 
 TransactionManager::~TransactionManager() = default;
@@ -36,11 +40,21 @@ void TransactionManager::processTransactions() {
 }
 
 void TransactionManager::getCurrenciesFromTxs() {
-    for (auto &item: transactions) {
-        if (std::find(currencies.begin(), currencies.end(), item.getCurrencyType()) ==
-            currencies.end())
-            currencies.push_back(item.getCurrencyType());
-    }
+    if (!transactions.empty())
+        for (auto &item: transactions) {
+            hasTxData = true;
+            if (std::find(currencies.begin(), currencies.end(), item.getCurrencyType()) ==
+                currencies.end())
+                currencies.push_back(item.getCurrencyType());
+        }
+    if (!cardTransactions.empty())
+        for (auto &item: cardTransactions) {
+            hasCardTxData = true;
+            if (std::find(cardTxTypes.begin(), cardTxTypes.end(),
+                          item.getTransactionTypeString()) ==
+                cardTxTypes.end())
+                cardTxTypes.push_back(item.getTransactionTypeString());
+        }
 }
 
 
@@ -49,6 +63,11 @@ bool TransactionManager::isReady() {
 }
 
 void TransactionManager::createWallets() {
+    if (hasTxData) createCDCWallets();
+    if (hasCardTxData) createCardWallets();
+}
+
+void TransactionManager::createCDCWallets() {
     for (auto &currency: currencies) {
         FileLog::i("TransactionManager", "Creating wallets for " + currency);
         // create wallets
@@ -61,7 +80,37 @@ void TransactionManager::createWallets() {
     }
 }
 
+void TransactionManager::createCardWallets() {
+    /*for (auto &txType: cardTxTypes) {
+        FileLog::i("TransactionManager", "Creating wallets for " + txType);
+        // create wallets
+        Wallet wallet(txType);
+        // add wallet to map
+        cardWallets.insert(std::pair<std::string, Wallet>(txType, wallet));
+    }*/
+    Wallet wallet("EUR -> EUR");
+    cardWallets.insert(std::pair<std::string, Wallet>("EUR -> EUR", wallet));
+}
+
 void TransactionManager::addTransactionsToWallets() {
+    if (hasTxData) addCDCTransactionsToWallets();
+
+    if (hasCardTxData) addCardTransactionsToWallets();
+}
+
+void TransactionManager::addCardTransactionsToWallets() {
+    for (auto &tx: cardTransactions) {
+        std::string tt = tx.getTransactionTypeString();
+        if (tt == "EUR -> EUR") {
+            cardWallets["EUR -> EUR"].addTransaction(tx);
+            continue;
+        }
+        auto *wallet = getNonStrictWallet(tt);
+        wallet->addTransaction(tx);
+    }
+}
+
+void TransactionManager::addCDCTransactionsToWallets() {
     for (auto &tx: transactions) {
         FileLog::v("TransactionManager", "Adding transaction to wallet: " + tx.getCurrencyType());
         // add transaction to wallet
@@ -118,7 +167,6 @@ void TransactionManager::addTransactionsToWallets() {
             case NONE:
                 FileLog::e("TransactionManager", "Transaction type is NONE");
                 throw std::invalid_argument("Transaction type is NONE");
-                //break;
         }
 
     }
@@ -164,22 +212,43 @@ void TransactionManager::removeUnusedTransactions() {
 void TransactionManager::calculateWalletBalances() {
 
     walletBalanceMap.clear();
-    for (auto &wallet: wallets) {
+    cardWalletBalanceMap.clear();
+    walletsBalance.reset();
+    cardWalletsBalance.reset();
+    if (hasTxData)
+        for (auto &wallet: wallets) {
 
-        if (wallet.second.getCurrencyType() == "EUR") continue;
+            if (wallet.second.getCurrencyType() == "EUR") continue;
 
-        auto *walletBalance = new WalletBalance();
-        walletBalance->fillFromWallet(&wallet.second);
-        if (walletBalance->nativeBalance == 0 && walletBalance->balance != 0) {
-            walletBalance->nativeBalance =
-                    assetValue.getPrice(walletBalance->currencyType) * walletBalance->balance;
-            walletBalance->nativeBonusBalance =
-                    assetValue.getPrice(walletBalance->currencyType) * walletBalance->bonusBalance;
+            auto *walletBalance = new WalletBalance();
+            walletBalance->fillFromWallet(&wallet.second);
+            if (walletBalance->nativeBalance == 0 && walletBalance->balance != 0) {
+                walletBalance->nativeBalance =
+                        assetValue.getPrice(walletBalance->currencyType) * walletBalance->balance;
+                walletBalance->nativeBonusBalance =
+                        assetValue.getPrice(walletBalance->currencyType) *
+                        walletBalance->bonusBalance;
+            }
+            walletBalanceMap.insert(
+                    std::pair<std::string, WalletBalance>(wallet.first, *walletBalance));
         }
-        walletBalanceMap.insert(
-                std::pair<std::string, WalletBalance>(wallet.first, *walletBalance));
-    }
     walletsBalance.fillFromWalletBalanceMap(walletBalanceMap);
+
+    if (hasCardTxData)
+        for (auto [txType, wallet]: cardWallets) {
+            auto *walletBalance = new WalletBalance();
+            walletBalance->fillFromWallet(&wallet);
+            if (walletBalance->nativeBalance == 0 && walletBalance->balance != 0) {
+                walletBalance->nativeBalance =
+                        assetValue.getPrice(walletBalance->currencyType) * walletBalance->balance;
+                walletBalance->nativeBonusBalance =
+                        assetValue.getPrice(walletBalance->currencyType) *
+                        walletBalance->bonusBalance;
+            }
+            cardWalletBalanceMap.insert(
+                    std::pair<std::string, WalletBalance>(txType, *walletBalance));
+        }
+    cardWalletsBalance.fillFromWalletBalanceMap(cardWalletBalanceMap);
 
 }
 
@@ -187,7 +256,7 @@ std::vector<std::string> TransactionManager::getCurrencies() {
     return currencies;
 }
 
-void TransactionManager::setPrices(std::vector<double> prices) {
+void TransactionManager::setPrices(const std::vector<double> &prices) {
     assetValue.loadCacheWithData(currencies, prices);
 }
 
@@ -212,6 +281,10 @@ double TransactionManager::getValueOfAssets(int walletId) {
         if (item.second.walletId == walletId)
             return item.second.nativeBalance;
     }
+    for (const auto &item: cardWalletBalanceMap) {
+        if (item.second.walletId == walletId)
+            return item.second.nativeBalance;
+    }
     FileLog::w("TransactionsManager", "No wallet found for id: " + std::to_string(walletId));
     return 0.0;
 }
@@ -225,6 +298,10 @@ double TransactionManager::getTotalBonus(int walletId) {
         if (item.second.walletId == walletId)
             return item.second.nativeBonusBalance;
     }
+    for (const auto &item: cardWalletBalanceMap) {
+        if (item.second.walletId == walletId)
+            return item.second.nativeBonusBalance;
+    }
     FileLog::w("TransactionsManager", "No wallet found for id: " + std::to_string(walletId));
     return 0.0;
 }
@@ -234,6 +311,312 @@ double TransactionManager::getMoneySpent(int walletId) {
         if (item.second.walletId == walletId)
             return item.second.moneySpent;
     }
+    for (const auto &item: cardWalletBalanceMap) {
+        if (item.second.walletId == walletId)
+            return item.second.moneySpent;
+    }
     FileLog::w("TransactionsManager", "No wallet found for id: " + std::to_string(walletId));
     return 0.0;
+}
+
+void TransactionManager::setTransactions(std::vector<BaseTransaction> &transactions_, Mode mode) {
+    std::lock_guard<std::mutex> lock(mutex, std::adopt_lock);
+    if (transactions_.empty()) throw std::invalid_argument("Transactions is empty");
+
+    switch (mode) {
+        case CDC:
+            this->transactions = transactions_;
+            hasTxData = true;
+            break;
+        case Card:
+            this->cardTransactions = transactions_;
+            hasCardTxData = true;
+            break;
+        case Custom:
+            throw std::invalid_argument("Custom mode not implemented");
+        case Default:
+            this->transactions = transactions_;
+            hasTxData = true;
+            break;
+    }
+}
+
+std::string TransactionManager::checkCardTxTypes(const std::string &tt, const std::string &txType) {
+    auto it = std::find(cardTxTypes.begin(), cardTxTypes.end(), tt);
+    if (it != cardTxTypes.end()) {
+        cardTxTypes.erase(it);
+    }
+    cardTxTypes.push_back(txType);
+    return txType;
+}
+
+std::string TransactionManager::checkForRefund(std::string &tt) {
+    if (tt.find("Refund: ") != std::string::npos) {
+        tt = checkCardTxTypes(tt, tt.substr(8));
+    }
+    if (tt.find("Refund reversal: ") != std::string::npos) {
+        tt = checkCardTxTypes(tt, tt.substr(17));
+    }
+    return tt;
+}
+
+Wallet *TransactionManager::getNonStrictWallet(std::string &tt) {
+    std::string modifiedTT = checkForRefund(tt);
+
+    for (auto &[name, w]: cardWallets) {
+        size_t spacePos = modifiedTT.find_first_of(' ');
+
+        if (spacePos != std::string::npos) {
+            std::string prefix = modifiedTT.substr(0, spacePos);
+            if (w.getCurrencyType().find(prefix) != std::string::npos) {
+                w.setCurrencyType(prefix);
+                checkCardTxTypes(modifiedTT, prefix);
+                return &w;
+            }
+        } else if (w.getCurrencyType().find(modifiedTT) != std::string::npos) {
+            return &w;
+        }
+    }
+
+    //if no Wallet found, create new one
+    modifiedTT = checkCardTxTypes(tt, modifiedTT);
+    Wallet wallet(modifiedTT);
+    cardWallets.insert(std::pair<std::string, Wallet>(modifiedTT, wallet));
+    return &cardWallets[modifiedTT];
+}
+
+std::map<std::string, Wallet> TransactionManager::getCardWallets() {
+    return cardWallets;
+}
+
+std::vector<BaseTransaction> TransactionManager::getCardTransactions() {
+    return cardTransactions;
+}
+
+double TransactionManager::getTotalValueOfAssetsCard() {
+    return cardWalletsBalance.nativeBalance;
+}
+
+double TransactionManager::getTotalBonusCard() {
+    return cardWalletsBalance.nativeBonusBalance;
+}
+
+double TransactionManager::getTotalMoneySpentCard() {
+    return cardWalletsBalance.moneySpent;
+}
+
+std::unique_ptr<Wallet> TransactionManager::getWallet(int walletId) {
+    if (hasTxData)
+        for (auto [txType, wallet]: wallets) {
+            if (wallet.getWalletId() == walletId)
+                return std::make_unique<Wallet>(wallet);
+        }
+    if (hasCardTxData)
+        for (auto [txType, wallet]: cardWallets) {
+            if (wallet.getWalletId() == walletId)
+                return std::make_unique<Wallet>(wallet);
+        }
+    FileLog::e("TransactionsManager", "No wallet found for id: " + std::to_string(walletId));
+    return nullptr;
+}
+
+
+void TransactionManager::saveData() {
+    std::lock_guard<std::mutex> lock(mutex, std::adopt_lock);
+    FileLog::i("TransactionManager", "Saving data");
+    std::vector<WalletStruct> walletStructVector;
+    std::vector<WalletStruct> cardWalletStructVector;
+    std::vector<CWalletStruct> cWalletStructVector;
+    std::vector<CWalletStruct> cCardWalletStructVector;
+
+    for (auto &[name, wallet]: wallets) {
+        walletStructVector.push_back(*wallet.getWalletStruct());
+    }
+    for (auto &[name, wallet]: outWallets) {
+        walletStructVector.push_back(*wallet.getWalletStruct());
+    }
+    for (auto &[name, wallet]: cardWallets) {
+        cardWalletStructVector.push_back(*wallet.getWalletStruct());
+    }
+
+    auto state = getTransactionManagerState();
+
+    FileLog::i("TransactionManager", "Saving data to file");
+
+    int walletsSize = walletStructVector.size();
+    int cardWalletsSize = cardWalletStructVector.size();
+
+    for (int i = 0; i < walletsSize; i++) {
+        cWalletStructVector.push_back(CWalletStruct::convertToCWalletStruct(walletStructVector[i]));
+    }
+    for (int i = 0; i < cardWalletsSize; i++) {
+        cCardWalletStructVector.push_back(
+                CWalletStruct::convertToCWalletStruct(cardWalletStructVector[i]));
+    }
+
+    serializeVector(cWalletStructVector, "wallets");
+    serializeVector(cCardWalletStructVector, "cardWallets");
+    if (!state.isBig) {
+        auto tmState = state.getTransactionManagerState();
+        serializeStruct(tmState, "state");
+    } else {
+        //BigTransactionMangerState bigState = state;
+    }
+
+    FileLog::i("TransactionManager", "Finished saving data");
+}
+
+void TransactionManager::loadData() {
+    std::lock_guard<std::mutex> lock(mutex, std::adopt_lock);
+    FileLog::i("TransactionManager", "Loading data");
+    clearAll();
+    std::vector<CWalletStruct> walletStructVector;
+    std::vector<CWalletStruct> cardWalletStructVector;
+    TransactionManagerState state;
+
+    deserializeStruct(state, "state");
+
+    deserializeVector(walletStructVector, "wallets");
+    deserializeVector(cardWalletStructVector, "cardWallets");
+
+    FileLog::i("TransactionManager", "Loading data from file");
+
+    setTransactionManagerState(state);
+
+    if (hasTxData)
+        for (auto &walletStruct: walletStructVector) {
+            Wallet wallet;
+            wallet.setWalletData(CWalletStruct::convertToWalletStruct(walletStruct));
+            if (!wallet.getIsOutWallet())
+                wallets.insert(std::pair<std::string, Wallet>(walletStruct.currencyType, wallet));
+            else
+                outWallets.insert(
+                        std::pair<std::string, Wallet>(walletStruct.currencyType, wallet));
+
+            auto txs = wallet.getTransactions();
+            transactions.insert(transactions.end(), txs.begin(), txs.end());
+        }
+
+    if (hasCardTxData)
+        for (auto &walletStruct: cardWalletStructVector) {
+            Wallet wallet;
+            wallet.setWalletData(CWalletStruct::convertToWalletStruct(walletStruct));
+            cardWallets.insert(std::pair<std::string, Wallet>(walletStruct.currencyType, wallet));
+            auto txs = wallet.getTransactions();
+            cardTransactions.insert(cardTransactions.end(), txs.begin(), txs.end());
+        }
+
+    FileLog::i("TransactionManager", "Finished loading data");
+}
+
+TMState TransactionManager::getTransactionManagerState() {
+    auto *state = new TMState();
+    bool isBig = false;
+    int maxWallets = MAX_WALLETS;
+
+    if (!currencies.empty()) {
+        if (currencies.size() > BIG_MAX_WALLETS) {
+            FileLog::e("TransactionManager",
+                       "Too many currencies: " + std::to_string(currencies.size()));
+            currencies.erase(currencies.begin() + BIG_MAX_WALLETS, currencies.end());
+        }
+        if (currencies.size() > maxWallets) {
+            FileLog::w("TransactionManager",
+                       "Too many currencies: " + std::to_string(currencies.size()));
+            state = new BigTMState();
+            isBig = true;
+            maxWallets = BIG_MAX_WALLETS;
+        }
+        char currenciesChar[maxWallets][MAX_STRING_LENGTH];
+        int it = 0;
+        for (auto &currency: currencies) {
+            std::string shortCurrency = currency;
+            if (currency.length() > MAX_STRING_LENGTH) {
+                FileLog::w("TransactionManager", "Currency name too long: " + currency);
+                shortCurrency = currency.substr(0, MAX_STRING_LENGTH);
+            }
+            strcpy(currenciesChar[it], shortCurrency.c_str());
+            it++;
+        }
+        for (int i = 0; i < MAX_WALLETS; ++i) {
+            std::strcpy(state->currencies[i], currenciesChar[i]);
+        }
+        if (isBig) {
+            for (int i = 0; i < BIG_MAX_WALLETS; ++i) {
+                std::strcpy(((BigTMState *) state)->bigCurrencies[i], currenciesChar[i]);
+            }
+        }
+    }
+    if (!cardTxTypes.empty()) {
+        if (currencies.size() > BIG_MAX_WALLETS) {
+            FileLog::e("TransactionManager",
+                       "Too many currencies: " + std::to_string(currencies.size()));
+            currencies.erase(currencies.begin() + BIG_MAX_WALLETS, currencies.end());
+        }
+        if (currencies.size() > maxWallets || isBig) {
+            FileLog::w("TransactionManager",
+                       "Too many currencies: " + std::to_string(currencies.size()));
+            if (!isBig) state = new BigTMState();
+            maxWallets = BIG_MAX_WALLETS;
+        }
+        char cardTxTypesChar[maxWallets][MAX_STRING_LENGTH];
+        int it = 0;
+        for (auto &txType: cardTxTypes) {
+            std::string shortTxType = txType;
+            if (txType.length() > MAX_STRING_LENGTH) {
+                FileLog::w("TransactionManager", "TxType name too long: " + txType);
+                shortTxType = txType.substr(0, MAX_STRING_LENGTH);
+            }
+            strcpy(cardTxTypesChar[it], shortTxType.c_str());
+            it++;
+        }
+    }
+
+    state->hasCardTxData = hasCardTxData;
+    state->hasTxData = hasTxData;
+    state->isReadyFlag = isReadyFlag;
+    return *state;
+}
+
+void TransactionManager::setTransactionManagerState(const TransactionManagerState &state) {
+    BaseTransaction::setTxIdCounter(state.txIdCounter);
+    hasCardTxData = state.hasCardTxData;
+    hasTxData = state.hasTxData;
+    for (const auto &currency: state.currencies) {
+        if (currency[0] == '\0') break;
+        currencies.emplace_back(currency);
+    }
+    isReadyFlag = state.isReadyFlag;
+}
+
+bool TransactionManager::checkSavedData() {
+    std::lock_guard<std::mutex> lock(mutex, std::adopt_lock);
+    FileLog::i("TransactionManager", "Checking saved data");
+
+    return checkIfFileExists("wallets") && checkIfFileExists("cardWallets") &&
+           checkIfFileExists("state");
+}
+
+bool TransactionManager::checkIfFileExists(const std::string &file) {
+    std::ifstream f(file);
+    return f.good();
+}
+
+void TransactionManager::clearAll() {
+    hasTxData = false;
+    hasCardTxData = false;
+
+    transactions.clear();
+    cardTransactions.clear();
+    wallets.clear();
+    outWallets.clear();
+    cardWallets.clear();
+    currencies.clear();
+    cardTxTypes.clear();
+    isReadyFlag = false;
+    walletBalanceMap.clear();
+    cardWalletBalanceMap.clear();
+    walletsBalance.reset();
+    cardWalletsBalance.reset();
+
 }
