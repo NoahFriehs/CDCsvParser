@@ -1,4 +1,4 @@
-package at.msd.friehs_bicha.cdcsvparser.Core
+package at.msd.friehs_bicha.cdcsvparser.core
 
 import android.app.Service
 import android.content.Intent
@@ -133,7 +133,6 @@ class CoreService : Service() {
 
         when (isCoreInitialized) {
             true -> {
-                //TODO("call getCurrencies from core and return prices to it and then get the data from it")
                 val currencies = getCurrencies()
                 val prices = Array<Double>(currencies.size) { _ -> 0.0 }
                 currencies.forEach {
@@ -145,7 +144,7 @@ class CoreService : Service() {
                 val map: MutableMap<String, String?> = java.util.HashMap()
                 val totalMoneySpent = getTotalMoneySpent()
                 val totalMoneySpentString =
-                    StringHelper.formatAmountToString(totalMoneySpent.toDouble())
+                    StringHelper.formatAmountToString(totalMoneySpent)
                 if (AssetValue.getInstance().isRunning) {
                     val amountOfAsset = getValueOfAssets()
                     val rewardValue = getTotalBonus()
@@ -154,7 +153,7 @@ class CoreService : Service() {
                     map[R.id.rewards_value.toString()] =
                         StringHelper.formatAmountToString(rewardValue)
                     map[R.id.profit_loss_value.toString()] =
-                        StringHelper.formatAmountToString(amountOfAsset - totalMoneySpent.toDouble())
+                        StringHelper.formatAmountToString(amountOfAsset - totalMoneySpent)
                     map[R.id.money_spent_value.toString()] = totalMoneySpentString
                 } else {
                     FileLog.e(TAG, "AssetValue is not running")
@@ -165,7 +164,7 @@ class CoreService : Service() {
                 }
                 parsedDataLiveData.postValue(map)
 
-                //get transactions from Core and set it to the LiveData
+                //get transactions from core and set it to the LiveData
                 val transactions = getTransactionsAsString()
                 val transactions_ = ArrayList<Transaction>()
                 transactions.forEach {
@@ -182,7 +181,7 @@ class CoreService : Service() {
                 }
                 transactionsLiveData.postValue(transactions_)
 
-                //get Wallets from Core and set it to the LiveData
+                //get Wallets from core and set it to the LiveData
                 val wallets = getWalletsAsString()
                 val wallets_ = ArrayList<Wallet>()
                 wallets.forEach {
@@ -389,6 +388,7 @@ class CoreService : Service() {
                 System.loadLibrary("cdcsvparser")
                 isCoreInitialized = true
                 isInitialized = true
+                FileLog.d(TAG, "Core library loaded.")
             } catch (e: UnsatisfiedLinkError) {
                 FileLog.e(TAG, "Failed to load native library: ${e.message}")
             }
@@ -557,14 +557,14 @@ class CoreService : Service() {
         }
 
 
-        const val ACTION_START_SERVICE = "at.msd.friehs_bicha.cdcsvparser.Core.action.START_SERVICE"
-        const val ACTION_STOP_SERVICE = "at.msd.friehs_bicha.cdcsvparser.Core.action.STOP_SERVICE"
+        const val ACTION_START_SERVICE = "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE"
+        const val ACTION_STOP_SERVICE = "at.msd.friehs_bicha.cdcsvparser.core.action.STOP_SERVICE"
         const val ACTION_RESTART_SERVICE =
-            "at.msd.friehs_bicha.cdcsvparser.Core.action.RESTART_SERVICE"
+            "at.msd.friehs_bicha.cdcsvparser.core.action.RESTART_SERVICE"
         const val ACTION_START_SERVICE_WITH_DATA =
-            "at.msd.friehs_bicha.cdcsvparser.Core.action.START_SERVICE_WITH_DATA"
+            "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE_WITH_DATA"
         const val ACTION_START_SERVICE_WITH_FIREBASE_DATA =
-            "at.msd.friehs_bicha.cdcsvparser.Core.action.START_SERVICE_WITH_FIREBASE_DATA"
+            "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE_WITH_FIREBASE_DATA"
 
     }
 }

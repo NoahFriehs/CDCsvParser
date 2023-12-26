@@ -8,8 +8,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.AssetsFilterActivity
-import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.wallet.IWalletAdapterCallback
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet

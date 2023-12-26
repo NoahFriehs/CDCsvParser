@@ -4,10 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
-import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -67,12 +67,12 @@ class FirebaseUtil(private val context: Context) {
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         val db = Firebase.firestore
 
-        var userMap = getUserDataFromFirestore(
+        val userMap = getUserDataFromFirestore(
             uid,
             db
         ) //it's a live data, so we have to wait for it to be set
         Thread.sleep(1000)
-        userMap = userMapLiveData.value
+        userMapLiveData.value = userMap ?: hashMapOf<String, Any>()
 
         userMap?.let {
             val appSettings = it["appSettings"] as HashMap<String, Any>?

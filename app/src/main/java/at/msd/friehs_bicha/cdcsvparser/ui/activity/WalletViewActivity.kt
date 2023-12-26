@@ -9,8 +9,8 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
@@ -102,8 +102,8 @@ class WalletViewActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable) {
                 val text = editText.text.toString()
 
-                if (text == "") {
-                    sortedWallets = sortWallets(
+                sortedWallets = if (text == "") {
+                    sortWallets(
                         wallets,
                         spinnerValueSpinner.selectedItem.toString(),
                         spinnerTypeSpinner.selectedItem.toString()
@@ -111,7 +111,7 @@ class WalletViewActivity : AppCompatActivity() {
                 } else {
                     sortedWallets.clear()
                     sortedWallets.addAll(filterWalletsByUserSearch(wallets, text))
-                    sortedWallets = sortWallets(
+                    sortWallets(
                         sortedWallets,
                         spinnerValueSpinner.selectedItem.toString(),
                         spinnerTypeSpinner.selectedItem.toString()

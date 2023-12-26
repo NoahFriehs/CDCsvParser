@@ -9,7 +9,7 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionFragment
@@ -119,7 +119,7 @@ class AssetsFilterActivity : AppCompatActivity() {
         }
 
         all_regarding_tx.text =
-            resources.getString(R.string.all_transactions_regarding) + specificWallet.getTypeString()
+            resources.getString(R.string.all_transactions_regarding, specificWallet.getTypeString())
 
 
         //get and set prices

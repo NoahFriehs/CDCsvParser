@@ -2,10 +2,10 @@ package at.msd.friehs_bicha.cdcsvparser.general
 
 import android.content.Intent
 import android.graphics.Color
-import at.msd.friehs_bicha.cdcsvparser.Core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.SettingsActivity.Companion.useStrictType
 import at.msd.friehs_bicha.cdcsvparser.app.*
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog

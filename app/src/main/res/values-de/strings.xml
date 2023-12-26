@@ -13,7 +13,7 @@
     <string name="all_transactions">Alle Transaktionen</string>
     <string name="choose_asset">Asset auswählen</string>
     <string name="amount_of_asset">Menge des Assets</string>
-    <string name="all_transactions_regarding">"Alle Transaktionen zu "</string>
+    <string name="all_transactions_regarding">Alle Transaktionen zu %s</string>
     <string name="show_history">Verlauf anzeigen</string>
     <string name="coinGeckoAttribution">Alle Preise bereitgestellt von \n<a href="https://min-api.cryptocompare.com/">CryptoCompare API</a></string>
     <string name="settings">Einstellungen</string>

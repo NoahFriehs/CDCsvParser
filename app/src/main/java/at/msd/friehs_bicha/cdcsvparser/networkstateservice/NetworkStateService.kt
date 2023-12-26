@@ -7,6 +7,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkRequest
 import android.os.IBinder
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 
 class NetworkStateService : Service() {
@@ -53,6 +54,7 @@ class NetworkStateService : Service() {
         //intent.putExtra(EXTRA_IS_CONNECTED, isConnected)
         //sendBroadcast(intent)
         AssetValue.getInstance().isConnected = isConnected
+        FileLog.d("NetworkStateService", "Network state changed, isConnected: $isConnected")
     }
 
     companion object {
