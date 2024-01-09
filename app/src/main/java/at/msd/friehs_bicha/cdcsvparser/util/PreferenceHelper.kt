@@ -17,6 +17,7 @@ object PreferenceHelper {
     const val LOG_FILENAME = "LOG_FILENAME"
     const val MAX_LOG_LEVEL = "MAX_LOG_LEVEL"
     const val IS_FIRST_START = "IS_FIRST_START"
+    const val USE_CPP = "USE_CPP"
 
     /**
      * returns the selected app type
@@ -213,6 +214,18 @@ object PreferenceHelper {
     fun getIsFirstStart(context: Context): Boolean {
         val settings = context.getSharedPreferences(PREFS_NAME, 0)
         return settings.getBoolean(IS_FIRST_START, true)
+    }
+
+    fun setUseCpp(context: Context, useCpp: Boolean) {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        val editor = settings.edit()
+        editor.putBoolean(USE_CPP, useCpp)
+        editor.apply()
+    }
+
+    fun getUseCpp(context: Context): Boolean {
+        val settings = context.getSharedPreferences(PREFS_NAME, 0)
+        return settings.getBoolean(USE_CPP, true)
     }
 
 }

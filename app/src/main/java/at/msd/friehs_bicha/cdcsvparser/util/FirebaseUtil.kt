@@ -31,10 +31,9 @@ class FirebaseUtil(private val context: Context) {
             db
         ) //it's a live data, so we have to wait for it to be set
         Thread.sleep(300)
-        userMap = userMapLiveData.value
-        if (userMap == null || userMap.isEmpty()) {
+        userMap = userMapLiveData.value ?: hashMapOf<String, Any>()
+        if (userMap.isEmpty()) {
             FileLog.i("FirebaseUtil", "userMap is null or empty when saving")
-            userMap = hashMapOf<String, Any>()
         }
 
         val appSettings = AppSettings(
@@ -171,35 +170,6 @@ class FirebaseUtil(private val context: Context) {
         )
     }
 
-    private fun getUserDataFromFirestore(
-        uid: String,
-        db: FirebaseFirestore
-    ): HashMap<String, Any>? {
-        val user = db.collection("user").document(uid)
-        user.get()
-            .addOnSuccessListener { document ->
-                if (document != null) {
-                    val userMap = document.data as HashMap<String, Any>?
-                    if (userMap == null) {
-                        Toast.makeText(context, "Error loading data", Toast.LENGTH_SHORT).show()
-                        userMapError = true
-                        return@addOnSuccessListener
-                    }
-                    userMapLiveData.value = userMap!!   //go f yourself kotlin  :(
-                } else {
-                    Toast.makeText(context, "Error loading data", Toast.LENGTH_SHORT).show()
-                    userMapError = true
-                    return@addOnSuccessListener
-                }
-            }
-            .addOnFailureListener { exception ->
-                Toast.makeText(context, "Error loading data", Toast.LENGTH_SHORT).show()
-                userMapError = true
-                return@addOnFailureListener
-            }
-
-        return userMapLiveData.value
-    }
 
     private fun handleFirebaseTaskResult(
         task: Task<Void>,
@@ -212,6 +182,53 @@ class FirebaseUtil(private val context: Context) {
         } else {
             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             FileLog.e("FirebaseUtil", "Error: ${task.exception}")
+        }
+    }
+
+    companion object {
+        fun getUserDataFromFirestore(
+            uid: String,
+            db: FirebaseFirestore,
+            callbackMethod: ((HashMap<String, Any>) -> Unit)? = null
+        ): HashMap<String, Any> {
+            val user = db.collection("user").document(uid)
+            var userMap = HashMap<String, Any>()
+            user.get()
+                .addOnSuccessListener { document ->
+                    if (document != null) {
+                        val userMap_ = document.data as HashMap<String, Any>?
+                        if (userMap == null) {
+                            Toast.makeText(
+                                InstanceVars.applicationContext,
+                                "Error loading data",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            FileLog.e("FirebaseUtil", "userMap is null")
+                            return@addOnSuccessListener
+                        }
+                        userMap = userMap_!!
+                        callbackMethod?.invoke(userMap)
+                    } else {
+                        Toast.makeText(
+                            InstanceVars.applicationContext,
+                            "Error loading data",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        FileLog.e("FirebaseUtil", "document is null")
+                        return@addOnSuccessListener
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Toast.makeText(
+                        InstanceVars.applicationContext,
+                        "Error loading data",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    FileLog.e("FirebaseUtil", "Error getting documents: $exception")
+                    return@addOnFailureListener
+                }
+
+            return userMap
         }
     }
 

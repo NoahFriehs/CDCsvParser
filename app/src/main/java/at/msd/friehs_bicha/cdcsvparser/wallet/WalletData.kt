@@ -9,7 +9,22 @@ data class WalletData(
     var moneySpent: Double = 0.0,
     var isOutsideWallet: Boolean = false,
     var notes: String = ""
-)
+) {
+    companion object {
+        fun fromWallet(fromDb: Wallet): WalletData {
+            return WalletData(
+                fromDb.walletId,
+                fromDb.currencyType,
+                fromDb.amount.toDouble(),
+                fromDb.amount.toDouble(),
+                fromDb.amountBonus.toDouble(),
+                fromDb.moneySpent.toDouble(),
+                fromDb.isOutsideWallet,
+                ""
+            )
+        }
+    }
+}
 
 class WalletXmlSerializer {
     fun serializeToXml(wallet: WalletData): String {

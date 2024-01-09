@@ -3,30 +3,48 @@ package at.msd.friehs_bicha.cdcsvparser.core
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
+import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
+import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
+import at.msd.friehs_bicha.cdcsvparser.app.AppStatus
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.app.CardTxApp
+import at.msd.friehs_bicha.cdcsvparser.app.DataTypes
 import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
+import at.msd.friehs_bicha.cdcsvparser.app.TxAppFactory
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
+import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
+import at.msd.friehs_bicha.cdcsvparser.transactions.CCDBTransaction
+import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
+import at.msd.friehs_bicha.cdcsvparser.transactions.DBTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionData
 import at.msd.friehs_bicha.cdcsvparser.util.FirebaseUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
+import at.msd.friehs_bicha.cdcsvparser.wallet.CCDBWallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.DBWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.WalletData
 import at.msd.friehs_bicha.cdcsvparser.wallet.WalletXmlSerializer
+import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.function.Consumer
 
 class CoreService : Service() {
 
@@ -45,6 +63,8 @@ class CoreService : Service() {
             appModel = AppModelManager.getInstance()
         }
 
+        useCpp = PreferenceHelper.getUseCpp(applicationContext)
+
         GlobalScope.launch {
             when (intent.action) {
                 ACTION_START_SERVICE -> {
@@ -59,6 +79,10 @@ class CoreService : Service() {
                     handleStartServiceWithFirebaseData(intent)
                 }
 
+                ACTION_SAVE_DATA_TO_FIREBASE -> {
+                    handleSaveDataToFirebase()
+                }
+
                 ACTION_STOP_SERVICE -> {
                     FileLog.d(TAG, "Stopping service.")
                     stopSelf()
@@ -67,6 +91,7 @@ class CoreService : Service() {
                 ACTION_RESTART_SERVICE -> {
                     FileLog.d(TAG, "Restarting service.")
                     //TODO: restartService()
+                    TODO()
                 }
 
                 else -> {
@@ -78,17 +103,26 @@ class CoreService : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    private fun handleSaveDataToFirebase() {
+        user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            FileLog.e(TAG, "User is null")
+            return
+        }
+
+        //wait until walletNames is set
+        while (walletNames.value == null) {
+            FileLog.v(TAG, "Waiting for walletNames to be set.")
+            suspend { delay(500) }
+        }
+
+
+        saveToFireBase()
+    }
+
     private fun handleStartServiceWithFirebaseData(intent: Intent) {
-        if (isCoreInitialized) {
-            TODO()
-        }
-        if (intent.getBooleanExtra("isRunning", false)) {
-            FileLog.d(TAG, "isRunning")
-            isRunning = true
-        }
-
+        loadFromFirebase()
         provideDataToActivity()
-
     }
 
     private fun handleStartServiceWithData(intent: Intent) {
@@ -98,16 +132,17 @@ class CoreService : Service() {
             FileLog.e(TAG, "Initialization with data failed. Data is null.")
             return
         }
-        when (isCoreInitialized) {
+        when (isCoreInitialized && useCpp) {
             true -> {
                 val dataArray = Array<String>(data.size) { i -> data[i] }
-                if (initWithData(dataArray, data.size, mode)) {
+                if (initWithData(dataArray, data.size, mode, logFilePath)) {
                     FileLog.d(TAG, "Initialization with data successful.")
                     isRunning = true
                 } else {
                     FileLog.e(TAG, "Initialization with data failed.")
                     return
                 }
+                checkAndSetModes()
             }
 
             false -> {
@@ -121,6 +156,10 @@ class CoreService : Service() {
                 }
                 isInitialized = true
                 isRunning = true
+                appModel?.let {
+                    hasCardTx = it.hasCard()
+                    hasCryptoTx = it.hasTxModule()
+                }
             }
         }
 
@@ -128,10 +167,29 @@ class CoreService : Service() {
 
     }
 
+    private fun checkAndSetModes() {
+        when (getModes()) {
+            1 -> {
+                hasCryptoTx = true
+                hasCardTx = false
+            }
+
+            2 -> {
+                hasCryptoTx = false
+                hasCardTx = true
+            }
+
+            3 -> {
+                hasCryptoTx = true
+                hasCardTx = true
+            }
+        }
+    }
+
     @OptIn(DelicateCoroutinesApi::class)
     private fun provideDataToActivity() {
 
-        when (isCoreInitialized) {
+        when (isCoreInitialized && useCpp) {
             true -> {
                 val currencies = getCurrencies()
                 val prices = Array<Double>(currencies.size) { _ -> 0.0 }
@@ -166,6 +224,7 @@ class CoreService : Service() {
 
                 //get transactions from core and set it to the LiveData
                 val transactions = getTransactionsAsString()
+                //TODO getCardTxAsStrings
                 val transactions_ = ArrayList<Transaction>()
                 transactions.forEach {
                     val txData =
@@ -183,6 +242,7 @@ class CoreService : Service() {
 
                 //get Wallets from core and set it to the LiveData
                 val wallets = getWalletsAsString()
+                //TODO getCardWalletsAsStrings
                 val wallets_ = ArrayList<Wallet>()
                 wallets.forEach {
                     val data = WalletXmlSerializer().deserializeFromXml(it)
@@ -193,7 +253,7 @@ class CoreService : Service() {
                 }
                 walletsLiveData.postValue(wallets_)
                 outsideWalletsLiveData.postValue(wallets_.filter { it.isOutsideWallet } as ArrayList<Wallet>)
-                //cardWalletsLiveData.postValue(wallets_.filter { it.isCard } as ArrayList<Wallet>)
+                cardWalletsLiveData.postValue(wallets_.filterIsInstance<CroCardWallet>() as ArrayList<Wallet>)
                 allWalletsLiveData.postValue(wallets_)
 
                 val walletNames_ = Array<String?>(wallets_.size) { _ -> null }
@@ -206,6 +266,10 @@ class CoreService : Service() {
                 wallets_.forEach {
                     assetMaps.value!!.add(AssetData(it.walletId, getAssetMap(it.walletId)))
                 }
+
+
+                //save(savePath)
+                //load(savePath)
             }
 
             false -> {
@@ -247,7 +311,14 @@ class CoreService : Service() {
                         parsedDataLiveData.postValue(data!!)
 
                         val transactions_ = ArrayList<Transaction?>()
-                        allWallets.forEach {
+                        val cardTransactions_ = ArrayList<CroCardTransaction?>()
+                        appModel?.txApp?.wallets?.forEach {
+                            transactions_.addAll(it.transactions.toCollection(ArrayList()))
+                        }
+                        appModel?.cardApp?.wallets?.forEach {
+                            cardTransactions_.addAll(it.transactions.toCollection(ArrayList()) as ArrayList<CroCardTransaction?>)
+                        }
+                        appModel?.txApp?.outsideWallets?.forEach {
                             transactions_.addAll(it.transactions.toCollection(ArrayList()))
                         }
                         while (transactions_.contains(null)) {
@@ -301,12 +372,12 @@ class CoreService : Service() {
     }
 
     private fun handleStartService() {
-        when (isCoreInitialized) {
+        when (isCoreInitialized && useCpp) {
             true -> {
-                if (init()) {
+                if (init(logFilePath, savePath)) {
                     FileLog.d(TAG, "Initialization successful.")
                     isRunning = true
-                    //TODO: call getCurrencies from core and return prices to it
+                    provideDataToActivity()
                 } else {
                     FileLog.w(TAG, "Initialization failed.")
                 }
@@ -330,8 +401,264 @@ class CoreService : Service() {
         }
     }
 
-    private external fun init(): Boolean
-    private external fun initWithData(data: Array<String>, dataSize: Int, mode: Int): Boolean
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun loadFromFirebase() {
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        val db = Firebase.firestore
+
+        GlobalScope.launch {
+
+            FirebaseUtil.getUserDataFromFirestore(
+                uid,
+                db
+            ) { userMap ->
+                loadFromMap(userMap)
+                FileLog.i("FirebaseUtil", "User data loaded successfully")
+            }
+
+        }
+    }
+
+    private fun loadFromMap(userMap: HashMap<String, Any>) {
+        userMap.let {
+            val appSettingsMap = it["appSettings"] as HashMap<String, Any>?
+            val appSettings = AppSettings().fromHashMap(appSettingsMap!!)
+            if (!appSettings.compareVersionsWithDefault()) {
+                return
+            }
+            hasCryptoTx = appSettings.hasCryptoTx == "true"
+            hasCardTx = appSettings.hasCardTx == "true"
+            val dbWallets = it["wallets"] as ArrayList<HashMap<String, *>>?
+            val dbOutsideWallets = it["outsideWallets"] as ArrayList<HashMap<String, *>>?
+            val dbTransactions = it["transactions"] as ArrayList<HashMap<String, *>>?
+            val dbCardWallets = it["cardWallets"] as ArrayList<HashMap<String, *>>?
+            val dbCardTransactions =
+                it["cardTransactions"] as ArrayList<HashMap<String, *>>?
+
+            PreferenceHelper.setUseStrictType(
+                InstanceVars.applicationContext,
+                appSettings.useStrictType
+            )
+
+            if (hasCryptoTx) {
+                when (isCoreInitialized && useCpp) {
+                    true -> {
+                        val txXMl = mutableListOf<String>()
+                        val walletXml = mutableListOf<String>()
+
+                        dbTransactions?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
+                            txXMl.add(
+                                TransactionData.fromTransaction(Transaction.fromDb(hashMap)).toXml()
+                            )
+                        })
+                        dbWallets?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
+                            walletXml.add(
+                                WalletXmlSerializer().serializeToXml(
+                                    WalletData.fromWallet(
+                                        CDCWallet.fromDb(hashMap)
+                                    )
+                                )
+                            )
+                        })
+                        dbOutsideWallets?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
+                            walletXml.add(
+                                WalletXmlSerializer().serializeToXml(
+                                    WalletData.fromWallet(
+                                        CDCWallet.fromDb(hashMap)
+                                    )
+                                )
+                            )
+                        })
+
+                        val dataArray = Array<String>(txXMl.size) { i -> txXMl[i] }
+                        val walletArray = Array<String>(walletXml.size) { i -> walletXml[i] }
+
+                        init(logFilePath, savePath)
+
+                        setTransactionData(dataArray)
+                        setWalletData(walletArray)
+
+                    }
+
+                    false -> {
+                        val appModel = AppModel(
+                            dbWallets,
+                            dbOutsideWallets,
+                            dbTransactions,
+                            AppType.CdCsvParser,
+                            0,
+                            appSettings.useStrictType
+                        )
+                        AppModelManager.setInstance(appModel)
+                    }
+                }
+            }
+            if (hasCardTx && hasCryptoTx) {
+                when (isCoreInitialized) {
+                    true -> {
+                        dbCardWallets?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
+                            setCardWalletData(
+                                arrayOf(
+                                    WalletXmlSerializer().serializeToXml(
+                                        WalletData.fromWallet(
+                                            CroCardWallet.fromDb(
+                                                hashMap
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        })
+                        dbCardTransactions?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
+                            setCardTransactionData(
+                                arrayOf(
+                                    TransactionData.fromTransaction(
+                                        CroCardTransaction.fromDb(
+                                            hashMap
+                                        )
+                                    ).toXml()
+                                )
+                            )
+                        })
+                    }
+
+                    false -> {
+                        AppModelManager.getInstance()?.cardApp = TxAppFactory.createTxApp(
+                            AppType.CroCard,
+                            AppStatus.importFromFB,
+                            appSettings.useStrictType,
+                            hashMapOf(
+                                DataTypes.dbWallets to dbCardWallets,
+                                DataTypes.dbTransactions to dbCardTransactions,
+                                DataTypes.amountTxFailed to 0
+                            )
+                        ) as CardTxApp
+                    }
+                }
+            }
+            if (hasCardTx) {
+                when (isCoreInitialized) {
+                    true -> {
+
+                        init(logFilePath, savePath)
+
+                        dbCardWallets?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
+                            setCardWalletData(
+                                arrayOf(
+                                    WalletXmlSerializer().serializeToXml(
+                                        WalletData.fromWallet(
+                                            CroCardWallet.fromDb(
+                                                hashMap
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        })
+                        dbCardTransactions?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
+                            setCardTransactionData(
+                                arrayOf(
+                                    TransactionData.fromTransaction(
+                                        CroCardTransaction.fromDb(
+                                            hashMap
+                                        )
+                                    ).toXml()
+                                )
+                            )
+                        })
+                    }
+
+                    false -> {
+                        val appModel = AppModel(
+                            dbCardWallets,
+                            null,
+                            dbCardTransactions,
+                            AppType.CroCard,
+                            0,
+                            appSettings.useStrictType
+                        )
+                        AppModelManager.setInstance(appModel)
+                    }
+                }
+            }
+            isInitialized = true
+            isRunning = true
+        }
+    }
+
+    private fun saveToMap(): HashMap<String, Any> {
+        val userMap = HashMap<String, Any>()
+
+        val appSettingsMap = HashMap<String, Any>()
+        appSettingsMap["hasCryptoTx"] = hasCryptoTx.toString()
+        appSettingsMap["hasCardTx"] = hasCardTx.toString()
+        appSettingsMap["useStrictType"] =
+            PreferenceHelper.getUseStrictType(applicationContext).toString()
+        appSettingsMap["version"] = AppSettings().dbVersion
+        userMap["appSettings"] = appSettingsMap
+
+        val dbWallets = ArrayList<DBWallet>()
+        val dbOutsideWallets = ArrayList<DBWallet>()
+        val dbTransactions = ArrayList<DBTransaction>()
+        val dbCardWallets = ArrayList<CCDBWallet>()
+        val dbCardTransactions = ArrayList<CCDBTransaction>()
+
+        walletsLiveData.value?.forEach {
+            if (it is CDCWallet) {
+                dbWallets.add(DBWallet(it))
+            } else if (it is CroCardWallet) {
+                dbCardWallets.add(CCDBWallet(it))
+            }
+        }
+        outsideWalletsLiveData.value?.forEach {
+            if (it is CDCWallet) {
+                dbOutsideWallets.add(DBWallet(it))
+            }
+        }
+        transactionsLiveData.value?.forEach {
+            if (it is Transaction) {
+                dbTransactions.add(DBTransaction(it))
+            } else if (it is CroCardTransaction) {
+                dbCardTransactions.add(CCDBTransaction(it))
+            }
+        }
+        cardTransactionsLiveData.value?.forEach {
+            if (it is CroCardTransaction) {
+                dbCardTransactions.add(CCDBTransaction(it))
+            }
+        }
+        cardWalletsLiveData.value?.forEach {
+            if (it is CroCardWallet) {
+                dbCardWallets.add(CCDBWallet(it))
+            }
+        }
+
+        userMap["wallets"] = dbWallets
+        userMap["outsideWallets"] = dbOutsideWallets
+        userMap["transactions"] = dbTransactions
+        userMap["cardWallets"] = dbCardWallets
+        userMap["cardTransactions"] = dbCardTransactions
+
+        return userMap
+    }
+
+    private external fun init(logFilePath: String, savePath: String): Boolean
+    private external fun initWithData(
+        data: Array<String>,
+        dataSize: Int,
+        mode: Int,
+        logFilePath: String
+    ): Boolean
+
+    private external fun save(savePath: String) //TODO: does not work in and
+    private external fun load(savePath: String)
+
+    private external fun getModes(): Int
+
+    private external fun setWalletData(walletData: Array<String>)
+    private external fun setTransactionData(transactionData: Array<String>)
+    private external fun setCardWalletData(cardWalletData: Array<String>)
+    private external fun setCardTransactionData(cardTransactionData: Array<String>)
 
     private external fun getCurrencies(): Array<String>
 
@@ -355,8 +682,12 @@ class CoreService : Service() {
 
         var isCoreInitialized = false
         var isInitialized = false
+        var useCpp = true
 
         var isRunning = false
+
+        var hasCardTx = false
+        var hasCryptoTx = false
 
         var dataLiveData = MutableLiveData<List<String>>()
 
@@ -370,6 +701,7 @@ class CoreService : Service() {
         var allWalletsLiveData = MutableLiveData<ArrayList<Wallet>>()
         val walletNames = MutableLiveData<Array<String?>>()
         val transactionsLiveData = MutableLiveData<ArrayList<Transaction>>()
+        val cardTransactionsLiveData = MutableLiveData<ArrayList<CroCardTransaction>>()
 
         var currentWallet = MutableLiveData<Map<String, String?>>()
         val assetMaps = MutableLiveData<ArrayList<AssetData>>()
@@ -380,10 +712,22 @@ class CoreService : Service() {
         private var appModel: AppModel? = null
 
 
+        val path: String
+            get() = applicationContext.filesDir.absolutePath
+        val savePath: String
+            get() = "$path/save/"
+        val logFilePath: String
+            get() = "$path/log/core.log"
+
         init {
             dataLiveData.value = ArrayList()
             firebaseDataLiveData.value = ArrayList()
             assetMaps.value = ArrayList()
+            //mkdir for save
+            val saveDir = java.io.File("/save")
+            if (!saveDir.exists()) {
+                saveDir.mkdir()
+            }
             try {
                 System.loadLibrary("cdcsvparser")
                 isCoreInitialized = true
@@ -541,9 +885,14 @@ class CoreService : Service() {
 
         fun saveDataToFirebase() {
             if (isCoreInitialized) {
-                FileLog.e(TAG, "saveDataToFirebase: Not implemented yet")
-                return
-                TODO("save data to firebase")  //TODO: save data to firebase
+                FileLog.i("FirebaseUtil", "Saving data to Firebase")
+                applicationContext.startService(
+                    Intent(
+                        applicationContext,
+                        CoreService::class.java
+                    ).apply {
+                        action = ACTION_SAVE_DATA_TO_FIREBASE
+                    })
             }
             appModel?.let {
                 user = FirebaseAuth.getInstance().currentUser   //refresh user
@@ -556,6 +905,70 @@ class CoreService : Service() {
 
         }
 
+        private fun saveToFireBase() {
+            val uid = FirebaseAuth.getInstance().currentUser!!.uid
+            val appSettings = AppSettings(
+                uid,
+                PreferenceHelper.getSelectedType(applicationContext),
+                PreferenceHelper.getUseStrictType(applicationContext)
+            )
+            if (hasCardTx) appSettings.hasCardTx = "true"
+            if (hasCryptoTx) appSettings.hasCryptoTx = "true"
+
+            val appHashMap: java.util.HashMap<String, Any>
+            val dbWallets = java.util.ArrayList<DBWallet>()
+            val dbOutsideWallets = java.util.ArrayList<DBWallet>()
+            val dbCardWallets = java.util.ArrayList<CCDBWallet>()
+            val dbTransactions = java.util.ArrayList<DBTransaction>()
+            val cardTransactions = java.util.ArrayList<CCDBTransaction>()
+            walletsLiveData.value?.forEach {
+                dbWallets.add(DBWallet(it))
+            }
+            outsideWalletsLiveData.value?.forEach {
+                dbOutsideWallets.add(DBWallet(it))
+            }
+            cardWalletsLiveData.value?.forEach {
+                dbCardWallets.add(CCDBWallet(it))
+            }
+            transactionsLiveData.value?.forEach {
+                dbTransactions.add(DBTransaction(it))
+            }
+            cardTransactionsLiveData.value?.forEach {
+                cardTransactions.add(CCDBTransaction(it))
+            }
+
+            appHashMap = hashMapOf<String, Any>(
+                "wallets" to dbWallets,
+                "outsideWallets" to dbOutsideWallets,
+                "cardWallets" to dbCardWallets,
+                "transactions" to dbTransactions,
+                "cardTransactions" to cardTransactions,
+                "appSettings" to appSettings.toHashMap()
+            )
+
+            val db = Firebase.firestore
+
+            db.collection("user").document(uid).set(appHashMap)
+                .addOnCompleteListener { task ->
+                    handleFirebaseTaskResult(task, "Data saved successfully", "Error saving data")
+                }
+        }
+
+
+        private fun handleFirebaseTaskResult(
+            task: Task<Void>,
+            successMessage: String,
+            errorMessage: String
+        ) {
+            if (task.isSuccessful) {
+                Toast.makeText(applicationContext, successMessage, Toast.LENGTH_SHORT).show()
+                FileLog.i("FirebaseUtil", successMessage)
+            } else {
+                Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show()
+                FileLog.e("FirebaseUtil", "Error: ${task.exception}")
+            }
+        }
+
 
         const val ACTION_START_SERVICE = "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE"
         const val ACTION_STOP_SERVICE = "at.msd.friehs_bicha.cdcsvparser.core.action.STOP_SERVICE"
@@ -565,6 +978,8 @@ class CoreService : Service() {
             "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE_WITH_DATA"
         const val ACTION_START_SERVICE_WITH_FIREBASE_DATA =
             "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE_WITH_FIREBASE_DATA"
+        const val ACTION_SAVE_DATA_TO_FIREBASE =
+            "at.msd.friehs_bicha.cdcsvparser.core.action.SAVE_DATA_TO_FIREBASE"
 
     }
 }

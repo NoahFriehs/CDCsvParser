@@ -33,6 +33,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     lateinit var appTypeSpinner: Spinner
+    lateinit var coreModeSpinner: Spinner
     lateinit var useStrictTypeCheckbox: CheckBox
     lateinit var cbStoreDataLocal: CheckBox
     lateinit var cbEnableFastStart: CheckBox
@@ -52,6 +53,7 @@ class SettingsActivity : AppCompatActivity() {
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
         appTypeSpinner = binding.walletTypeSpinner
+        coreModeSpinner = binding.coreModeSpinner
         useStrictTypeCheckbox = binding.useStrictWalletTypeCheckbox
         cbStoreDataLocal = findViewById(R.id.cb_store_data_local)
         cbEnableFastStart = findViewById(R.id.cb_enable_fast_start)
@@ -70,6 +72,10 @@ class SettingsActivity : AppCompatActivity() {
 
         // set the selected app type
         appTypeSpinner.setSelection(selectedType.ordinal)
+        coreModeSpinner.setSelection(0)
+        if (!PreferenceHelper.getUseCpp(this)) {
+            coreModeSpinner.setSelection(1)
+        }
         useStrictTypeCheckbox.isEnabled = selectedType != AppType.CroCard
         useStrictTypeCheckbox.isChecked = useStrictType
         useStrictTypeCheckbox.setOnCheckedChangeListener { _, isChecked ->
@@ -102,6 +108,23 @@ class SettingsActivity : AppCompatActivity() {
                     selectedType
                 )
                 useStrictTypeCheckbox.isEnabled = position != 0
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        coreModeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View,
+                position: Int,
+                id: Long
+            ) {
+                useCpp = position == 0
+                PreferenceHelper.setUseCpp(
+                    this@SettingsActivity,
+                    useCpp
+                )
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -308,6 +331,7 @@ class SettingsActivity : AppCompatActivity() {
     companion object {
         var useStrictType = false
         var selectedType: AppType = AppType.CdCsvParser
+        var useCpp = true
     }
 
 

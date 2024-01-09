@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="core_modes">
+        <item>C++ Rechenmodul benutzen</item>
+        <item>Kotlin Rechenmodul benutzen</item>
+    </string-array>
+</resources>

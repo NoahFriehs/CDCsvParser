@@ -4,4 +4,8 @@
         <item>CdCsvParser</item>
         <item>CroCard</item>
     </string-array>
+    <string-array name="core_modes">
+        <item>use C++ Core</item>
+        <item>use Kotlin Core</item>
+    </string-array>
 </resources>

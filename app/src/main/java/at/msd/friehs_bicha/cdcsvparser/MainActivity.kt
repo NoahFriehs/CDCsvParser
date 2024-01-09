@@ -16,15 +16,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
-import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.FileUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
-import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import java.io.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -372,91 +368,99 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadFromFireBaseDB() {
         showProgressDialog()
-        val uid = FirebaseAuth.getInstance().currentUser!!.uid
-        //val database = FirebaseDatabase.getInstance()
-        val db = Firebase.firestore
-        // Add data to the txApp object
+//        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+//        //val database = FirebaseDatabase.getInstance()
+//        val db = Firebase.firestore
+//        // Add data to the txApp object
+//
+//        val user = db.collection("user").document(uid)
+//        user.get()
+//            .addOnSuccessListener { document ->
+//                if (document != null) {
+//                    val userMap = document.data as HashMap<String, Any>?
+//                    if (userMap == null) {
+//                        Toast.makeText(this, "Error loading data", Toast.LENGTH_SHORT).show()
+//                        return@addOnSuccessListener
+//                    }
+//                    val appSettings = userMap["appSettings"] as HashMap<String, Any>?
+//
+//                    val dbVersion = appSettings?.get("dbVersion")
+//
+//                    if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
+//                        //when lower than this than it does not work with the db, has to switch to older version
+//                        val text =
+//                            "Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload."
+//                        Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+//                        return@addOnSuccessListener
+//                    }
+//
+//                    var txAppMap = userMap["appModel"] as HashMap<String, Any>?
+//                    if (txAppMap == null) {
+//                        txAppMap = userMap["appModelCard"] as HashMap<String, Any>?
+//                    }
+//
+//                    txAppMap = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser || userMap["appModelCard"] == null) {
+//                        userMap["appModel"] as HashMap<String, Any>?
+//                    } else {
+//                        userMap["appModelCard"] as HashMap<String, Any>?
+//                    }
+//
+//                    val appType = AppType.valueOf(appSettings["appType"] as String)
+//
+//                    val useStrictType = appSettings["useStrictType"] as Boolean
+//
+//                    var dbOutsideWallets: ArrayList<HashMap<String, *>>? = null
+//
+//                    if (txAppMap != null) {
+//                        val dbWallets = txAppMap["wallets"]
+//                        if (appType == AppType.CdCsvParser) {
+//                            dbOutsideWallets =
+//                                txAppMap["outsideWallets"] as ArrayList<HashMap<String, *>>?
+//                        }
+//                        val dbTransactions =
+//                            txAppMap["transactions"]
+//                        val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
+//                        val appTypeString = txAppMap["appType"] as String? ?: ""
+//                        val appType = AppType.valueOf(appTypeString)
+//
+//                        CoreService.startServiceWithFirebaseData(
+//                            dbWallets as ArrayList<HashMap<String, *>>?,
+//                            dbOutsideWallets,
+//                            dbTransactions as ArrayList<HashMap<String, *>>?,
+//                            appType,
+//                            amountTxFailed,
+//                            useStrictType
+//                        )
+//
+//                        PreferenceHelper.setSelectedType(this, appType)
+//                        PreferenceHelper.setUseStrictType(
+//                            this,
+//                            appSettings["useStrictType"] as Boolean
+//                        )
+//                        callParseView(saveToDB = false)
+//                    } else {
+//                        FileLog.w(
+//                            "MainActivity",
+//                            "loadFromFireBaseDB: txAppMap is null: userMap: $userMap"
+//                        )
+//                    }
+//                } else {
+//                    // Handle database error
+//                    FileLog.e("MainActivity", ":  Error document is null")
+//
+//                }
+//            }.addOnFailureListener { exception ->
+//                FileLog.e("MainActivity", ":  Error while loading document : ${exception.message}")
+//
+//            }
 
-        val user = db.collection("user").document(uid)
-        user.get()
-            .addOnSuccessListener { document ->
-                if (document != null) {
-                    val userMap = document.data as HashMap<String, Any>?
-                    if (userMap == null) {
-                        Toast.makeText(this, "Error loading data", Toast.LENGTH_SHORT).show()
-                        return@addOnSuccessListener
-                    }
-                    val appSettings = userMap["appSettings"] as HashMap<String, Any>?
+        //start ACTION_START_SERVICE_WITH_FIREBASE_DATA
+        val intent = Intent(this@MainActivity, CoreService::class.java)
+        intent.action = CoreService.ACTION_START_SERVICE_WITH_FIREBASE_DATA
+        startService(intent)
 
-                    val dbVersion = appSettings?.get("dbVersion")
+        callParseView(saveToDB = false)
 
-                    if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
-                        //when lower than this than it does not work with the db, has to switch to older version
-                        val text =
-                            "Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload."
-                        Toast.makeText(context, text, Toast.LENGTH_LONG).show()
-                        return@addOnSuccessListener
-                    }
-
-                    var txAppMap = userMap["appModel"] as HashMap<String, Any>?
-                    if (txAppMap == null) {
-                        txAppMap = userMap["appModelCard"] as HashMap<String, Any>?
-                    }
-
-                    txAppMap = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser || userMap["appModelCard"] == null) {
-                        userMap["appModel"] as HashMap<String, Any>?
-                    } else {
-                        userMap["appModelCard"] as HashMap<String, Any>?
-                    }
-
-                    val appType = AppType.valueOf(appSettings["appType"] as String)
-
-                    val useStrictType = appSettings["useStrictType"] as Boolean
-
-                    var dbOutsideWallets: ArrayList<HashMap<String, *>>? = null
-
-                    if (txAppMap != null) {
-                        val dbWallets = txAppMap["wallets"]
-                        if (appType == AppType.CdCsvParser) {
-                            dbOutsideWallets =
-                                txAppMap["outsideWallets"] as ArrayList<HashMap<String, *>>?
-                        }
-                        val dbTransactions =
-                            txAppMap["transactions"]
-                        val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
-                        val appTypeString = txAppMap["appType"] as String? ?: ""
-                        val appType = AppType.valueOf(appTypeString)
-
-                        CoreService.startServiceWithFirebaseData(
-                            dbWallets as ArrayList<HashMap<String, *>>?,
-                            dbOutsideWallets,
-                            dbTransactions as ArrayList<HashMap<String, *>>?,
-                            appType,
-                            amountTxFailed,
-                            useStrictType
-                        )
-
-                        PreferenceHelper.setSelectedType(this, appType)
-                        PreferenceHelper.setUseStrictType(
-                            this,
-                            appSettings["useStrictType"] as Boolean
-                        )
-                        callParseView(saveToDB = false)
-                    } else {
-                        FileLog.w(
-                            "MainActivity",
-                            "loadFromFireBaseDB: txAppMap is null: userMap: $userMap"
-                        )
-                    }
-                } else {
-                    // Handle database error
-                    FileLog.e("MainActivity", ":  Error document is null")
-
-                }
-            }.addOnFailureListener { exception ->
-                FileLog.e("MainActivity", ":  Error while loading document : ${exception.message}")
-
-            }
     }
 
     fun showProgressDialog() {

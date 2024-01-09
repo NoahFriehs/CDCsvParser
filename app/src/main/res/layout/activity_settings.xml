@@ -17,6 +17,18 @@
         app:layout_constraintTop_toTopOf="parent"
         android:entries="@array/appTypes" />
 
+    <Spinner
+        android:id="@+id/core_mode_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/settings_spinner_height"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginTop="@dimen/settings_margin_top_bottom"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:entries="@array/core_modes"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <CheckBox
         android:id="@+id/use_strict_wallet_type_checkbox"
         android:layout_width="wrap_content"

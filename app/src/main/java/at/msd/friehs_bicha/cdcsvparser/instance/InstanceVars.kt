@@ -8,7 +8,7 @@ import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.networkstateservice.NetworkStateService
 
 object InstanceVars {
-
+    @Volatile
     lateinit var applicationContext: Context
     lateinit var db: AppDatabase
 

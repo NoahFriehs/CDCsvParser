@@ -36,6 +36,8 @@ class TransactionData(
 
     var transactionType: TransactionType
 
+    var transactionTypeString: String = ""
+
     var transHash: String = ""
 
     var toCurrency: String = ""
@@ -102,17 +104,21 @@ class TransactionData(
         serializer.text(amountBonus.toString())
         serializer.endTag("", "amountBonus")
 
-        serializer.startTag("", "transactionTypeOrdinal")
+        serializer.startTag("", "tTO")
         serializer.text(transactionType.ordinal.toString())
-        serializer.endTag("", "transactionTypeOrdinal")
+        serializer.endTag("", "tTO")
+
+        serializer.startTag("", "tTS")
+        serializer.text(transactionTypeString)
+        serializer.endTag("", "tTS")
 
         serializer.startTag("", "transactionHash")
         serializer.text(transHash)
         serializer.endTag("", "transactionHash")
 
-        serializer.startTag("", "isOutsideTransaction")
+        serializer.startTag("", "outTx")
         serializer.text(isOutsideTransaction.toString())
-        serializer.endTag("", "isOutsideTransaction")
+        serializer.endTag("", "outTx")
 
         serializer.startTag("", "notes")
         serializer.text(notes)
@@ -161,16 +167,42 @@ class TransactionData(
                         "toAmount" -> toAmount = parser.text.toDouble()
                         "nativeAmount" -> nativeAmount = parser.text.toDouble()
                         "amountBonus" -> amountBonus = parser.text.toDouble()
-                        "transactionTypeOrdinal" -> transactionType =
+                        "tTO" -> transactionType =
                             fromOrdinal(parser.text.toInt())
 
+                        "tTS" -> transactionTypeString =
+                            parser.text
+
+
                         "transactionHash" -> transHash = parser.text
-                        "isOutsideTransaction" -> isOutsideTransaction = parser.text.toBoolean()
+                        "outTx" -> isOutsideTransaction = parser.text.toBoolean()
                         "notes" -> notes = parser.text
                     }
                 }
             }
             eventType = parser.next()
+        }
+    }
+
+    companion object {
+        fun fromTransaction(transaction: Transaction): TransactionData {
+            return TransactionData(
+                transaction.transactionId,
+                transaction.description,
+                transaction.walletId,
+                transaction.fromWalletId,
+                transaction.currencyType,
+                transaction.amount.toDouble(),
+                transaction.nativeAmount.toDouble(),
+                transaction.amountBonus?.toDouble() ?: 0.0,
+                transaction.transactionType?.ordinal ?: TransactionType.STRING.ordinal,
+                transaction.date?.seconds ?: 0,
+                transaction.date?.minutes ?: 0,
+                transaction.date?.hours ?: 0,
+                transaction.date?.day ?: 0,
+                transaction.date?.month ?: 0,
+                transaction.date?.year ?: 0
+            )
         }
     }
 }
