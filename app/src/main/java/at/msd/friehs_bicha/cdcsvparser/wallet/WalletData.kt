@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
+import at.msd.friehs_bicha.cdcsvparser.util.Converter.doubleToStringConverter
+
 data class WalletData(
     var walletId: Int = 0,
     var currencyType: String = "",
@@ -32,10 +34,10 @@ class WalletXmlSerializer {
             append("<WalletData>")
             append("<walletId>${wallet.walletId}</walletId>")
             append("<currencyType>${wallet.currencyType}</currencyType>")
-            append("<balance>${wallet.balance}</balance>")
-            append("<nativeBalance>${wallet.nativeBalance}</nativeBalance>")
-            append("<bonusBalance>${wallet.bonusBalance}</bonusBalance>")
-            append("<moneySpent>${wallet.moneySpent}</moneySpent>")
+            append("<balance>${doubleToStringConverter(wallet.balance)}</balance>")
+            append("<nativeBalance>${doubleToStringConverter(wallet.nativeBalance)}</nativeBalance>")
+            append("<bonusBalance>${doubleToStringConverter(wallet.bonusBalance)}</bonusBalance>")
+            append("<moneySpent>${doubleToStringConverter(wallet.moneySpent)}</moneySpent>")
             append("<isOutsideWallet>${wallet.isOutsideWallet}</isOutsideWallet>")
             append("<notes>${wallet.notes}</notes>")
             append("</WalletData>")

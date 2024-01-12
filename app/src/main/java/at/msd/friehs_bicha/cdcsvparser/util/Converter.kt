@@ -79,6 +79,16 @@ object Converter {
         }
     }
 
+    fun doubleToStringConverter(number: Double?): String? {
+        return try {
+            val result: String = "%.20f".format(number).replace("0*$".toRegex(), "")
+            result
+        } catch (e: Exception) {
+            FileLog.w("Converter", "doubleToStringConverter: $number | ${e.message}")
+            null
+        }
+    }
+
 
     class BigDecimalConverter {
         @TypeConverter

@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
 import android.util.Xml
+import at.msd.friehs_bicha.cdcsvparser.util.Converter.doubleToStringConverter
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlSerializer
 import java.io.StringWriter
@@ -89,19 +90,19 @@ class TransactionData(
         serializer.endTag("", "toCurrencyType")
 
         serializer.startTag("", "amount")
-        serializer.text(amount.toString())
+        serializer.text(doubleToStringConverter(amount))
         serializer.endTag("", "amount")
 
         serializer.startTag("", "toAmount")
-        serializer.text(toAmount.toString())
+        serializer.text(doubleToStringConverter(toAmount))
         serializer.endTag("", "toAmount")
 
         serializer.startTag("", "nativeAmount")
-        serializer.text(nativeAmount.toString())
+        serializer.text(doubleToStringConverter(nativeAmount))
         serializer.endTag("", "nativeAmount")
 
         serializer.startTag("", "amountBonus")
-        serializer.text(amountBonus.toString())
+        serializer.text(doubleToStringConverter(amountBonus))
         serializer.endTag("", "amountBonus")
 
         serializer.startTag("", "tTO")

@@ -42,6 +42,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.function.Consumer
@@ -62,6 +63,8 @@ class CoreService : Service() {
         if (AppModelManager.isInitialized()) {
             appModel = AppModelManager.getInstance()
         }
+
+        makeSaveDirIfNeeded()
 
         useCpp = PreferenceHelper.getUseCpp(applicationContext)
 
@@ -121,8 +124,14 @@ class CoreService : Service() {
     }
 
     private fun handleStartServiceWithFirebaseData(intent: Intent) {
-        loadFromFirebase()
-        provideDataToActivity()
+        GlobalScope.launch {
+            loadFromFirebase()
+            while (!isRunning) {
+                FileLog.d(TAG, "Waiting for FB initialization to finish.")
+                delay(500)
+            }
+            provideDataToActivity()
+        }
     }
 
     private fun handleStartServiceWithData(intent: Intent) {
@@ -191,6 +200,9 @@ class CoreService : Service() {
 
         when (isCoreInitialized && useCpp) {
             true -> {
+
+                calculateWalletBalances()
+
                 val currencies = getCurrencies()
                 val prices = Array<Double>(currencies.size) { _ -> 0.0 }
                 currencies.forEach {
@@ -280,6 +292,14 @@ class CoreService : Service() {
                             FileLog.d(TAG, "Waiting for initialization to finish.")
                         }
                         FileLog.d(TAG, "isRunning")
+                        if (appModel == null) {
+                            FileLog.w(TAG, "AppModel is null")
+                            appModel = AppModelManager.getInstance()
+                            if (appModel == null) {
+                                FileLog.e(TAG, "AppModel is null")
+                                return@launch
+                            }
+                        }
                         walletsLiveData.postValue(appModel?.txApp?.wallets)
                         outsideWalletsLiveData.postValue(appModel?.txApp?.outsideWallets)
                         cardWalletsLiveData.postValue(appModel?.cardApp?.wallets)
@@ -401,21 +421,16 @@ class CoreService : Service() {
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun loadFromFirebase() {
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         val db = Firebase.firestore
 
-        GlobalScope.launch {
-
-            FirebaseUtil.getUserDataFromFirestore(
-                uid,
-                db
-            ) { userMap ->
-                loadFromMap(userMap)
-                FileLog.i("FirebaseUtil", "User data loaded successfully")
-            }
-
+        FirebaseUtil.getUserDataFromFirestore(
+            uid,
+            db
+        ) { userMap ->
+            loadFromMap(userMap)
+            FileLog.i("FirebaseUtil", "User data loaded successfully")
         }
     }
 
@@ -439,6 +454,13 @@ class CoreService : Service() {
                 InstanceVars.applicationContext,
                 appSettings.useStrictType
             )
+
+            if (dbCardWallets.isNullOrEmpty() && dbCardTransactions.isNullOrEmpty()) {
+                hasCardTx = false
+            }
+            if (dbWallets.isNullOrEmpty() && dbOutsideWallets.isNullOrEmpty() && dbTransactions.isNullOrEmpty()){
+                hasCryptoTx = false
+            }
 
             if (hasCryptoTx) {
                 when (isCoreInitialized && useCpp) {
@@ -473,7 +495,7 @@ class CoreService : Service() {
                         val dataArray = Array<String>(txXMl.size) { i -> txXMl[i] }
                         val walletArray = Array<String>(walletXml.size) { i -> walletXml[i] }
 
-                        init(logFilePath, savePath)
+                        init(logFilePath, "")
 
                         setTransactionData(dataArray)
                         setWalletData(walletArray)
@@ -660,6 +682,8 @@ class CoreService : Service() {
     private external fun setCardWalletData(cardWalletData: Array<String>)
     private external fun setCardTransactionData(cardTransactionData: Array<String>)
 
+    private external fun calculateWalletBalances()
+
     private external fun getCurrencies(): Array<String>
 
     private external fun setPrice(prices: Array<Double>)
@@ -724,10 +748,6 @@ class CoreService : Service() {
             firebaseDataLiveData.value = ArrayList()
             assetMaps.value = ArrayList()
             //mkdir for save
-            val saveDir = java.io.File("/save")
-            if (!saveDir.exists()) {
-                saveDir.mkdir()
-            }
             try {
                 System.loadLibrary("cdcsvparser")
                 isCoreInitialized = true
@@ -735,6 +755,13 @@ class CoreService : Service() {
                 FileLog.d(TAG, "Core library loaded.")
             } catch (e: UnsatisfiedLinkError) {
                 FileLog.e(TAG, "Failed to load native library: ${e.message}")
+            }
+        }
+
+        private fun makeSaveDirIfNeeded() {
+            val saveDir = File("/save")
+            if (!saveDir.exists()) {
+                saveDir.mkdir()
             }
         }
 

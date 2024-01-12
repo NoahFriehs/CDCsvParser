@@ -23,7 +23,7 @@ bool init(const std::string &logFilePath, const std::string &loadDirPath) {
 
     FileLog::init(logFilePath, true, 3);
 
-    auto transactionManager = new TransactionManager();
+    auto *transactionManager = new TransactionManager();
 
     DataHolder::GetInstance().SetTransactionManager(transactionManager);
     if (DataHolder::GetInstance().checkSavedData() && false) {
@@ -438,5 +438,11 @@ Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_setCardWalletData(JNIEnv 
     setCardWalletData(vec);
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_calculateWalletBalances(JNIEnv *env,
+                                                                               jobject thiz) {
+    calculateBalances();
+}
 
 #endif
