@@ -106,6 +106,9 @@ class CoreService : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    /**
+     * Saves the data to Firebase
+     */
     private fun handleSaveDataToFirebase() {
         user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
@@ -119,10 +122,12 @@ class CoreService : Service() {
             suspend { delay(500) }
         }
 
-
         saveToFireBase()
     }
 
+    /**
+     * Loads the data from Firebase
+     */
     private fun handleStartServiceWithFirebaseData(intent: Intent) {
         GlobalScope.launch {
             loadFromFirebase()
@@ -134,6 +139,9 @@ class CoreService : Service() {
         }
     }
 
+    /**
+     * Loads the data from Firebase
+     */
     private fun handleStartServiceWithData(intent: Intent) {
         val data = intent.getStringArrayListExtra("data")
         val mode = intent.getIntExtra("mode", 0)
@@ -176,6 +184,9 @@ class CoreService : Service() {
 
     }
 
+    /**
+     * Checks which modes are available and sets the variables accordingly (cpp)
+     */
     private fun checkAndSetModes() {
         when (getModes()) {
             1 -> {
@@ -195,6 +206,9 @@ class CoreService : Service() {
         }
     }
 
+    /**
+     * Provides the data to the activity
+     */
     @OptIn(DelicateCoroutinesApi::class)
     private fun provideDataToActivity() {
 
@@ -358,8 +372,13 @@ class CoreService : Service() {
         }
     }
 
+    /**
+     * Returns the amounts of the asset in the wallet
+     *
+     * @return the amount of the asset in the wallet
+     */
     private fun getAssetMap(walletId: Int): Map<String, String?> {
-        return when (isCoreInitialized) {
+        return when (isCoreInitialized && useCpp) {
             true -> {
 
                 val map = mutableMapOf<String, String?>()
@@ -391,6 +410,9 @@ class CoreService : Service() {
         }
     }
 
+    /**
+     * Initializes the Core
+     */
     private fun handleStartService() {
         when (isCoreInitialized && useCpp) {
             true -> {
@@ -421,6 +443,9 @@ class CoreService : Service() {
         }
     }
 
+    /**
+     * Loads the data from Firebase
+     */
     private fun loadFromFirebase() {
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         val db = Firebase.firestore
@@ -434,6 +459,9 @@ class CoreService : Service() {
         }
     }
 
+    /**
+     * Loads the data from the HashMap
+     */
     private fun loadFromMap(userMap: HashMap<String, Any>) {
         userMap.let {
             val appSettingsMap = it["appSettings"] as HashMap<String, Any>?
@@ -458,7 +486,7 @@ class CoreService : Service() {
             if (dbCardWallets.isNullOrEmpty() && dbCardTransactions.isNullOrEmpty()) {
                 hasCardTx = false
             }
-            if (dbWallets.isNullOrEmpty() && dbOutsideWallets.isNullOrEmpty() && dbTransactions.isNullOrEmpty()){
+            if (dbWallets.isNullOrEmpty() && dbOutsideWallets.isNullOrEmpty() && dbTransactions.isNullOrEmpty()) {
                 hasCryptoTx = false
             }
 
@@ -516,7 +544,7 @@ class CoreService : Service() {
                 }
             }
             if (hasCardTx && hasCryptoTx) {
-                when (isCoreInitialized) {
+                when (isCoreInitialized && useCpp) {
                     true -> {
                         dbCardWallets?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
                             setCardWalletData(
@@ -559,7 +587,7 @@ class CoreService : Service() {
                 }
             }
             if (hasCardTx) {
-                when (isCoreInitialized) {
+                when (isCoreInitialized && useCpp) {
                     true -> {
 
                         init(logFilePath, savePath)
@@ -608,61 +636,6 @@ class CoreService : Service() {
         }
     }
 
-    private fun saveToMap(): HashMap<String, Any> {
-        val userMap = HashMap<String, Any>()
-
-        val appSettingsMap = HashMap<String, Any>()
-        appSettingsMap["hasCryptoTx"] = hasCryptoTx.toString()
-        appSettingsMap["hasCardTx"] = hasCardTx.toString()
-        appSettingsMap["useStrictType"] =
-            PreferenceHelper.getUseStrictType(applicationContext).toString()
-        appSettingsMap["version"] = AppSettings().dbVersion
-        userMap["appSettings"] = appSettingsMap
-
-        val dbWallets = ArrayList<DBWallet>()
-        val dbOutsideWallets = ArrayList<DBWallet>()
-        val dbTransactions = ArrayList<DBTransaction>()
-        val dbCardWallets = ArrayList<CCDBWallet>()
-        val dbCardTransactions = ArrayList<CCDBTransaction>()
-
-        walletsLiveData.value?.forEach {
-            if (it is CDCWallet) {
-                dbWallets.add(DBWallet(it))
-            } else if (it is CroCardWallet) {
-                dbCardWallets.add(CCDBWallet(it))
-            }
-        }
-        outsideWalletsLiveData.value?.forEach {
-            if (it is CDCWallet) {
-                dbOutsideWallets.add(DBWallet(it))
-            }
-        }
-        transactionsLiveData.value?.forEach {
-            if (it is Transaction) {
-                dbTransactions.add(DBTransaction(it))
-            } else if (it is CroCardTransaction) {
-                dbCardTransactions.add(CCDBTransaction(it))
-            }
-        }
-        cardTransactionsLiveData.value?.forEach {
-            if (it is CroCardTransaction) {
-                dbCardTransactions.add(CCDBTransaction(it))
-            }
-        }
-        cardWalletsLiveData.value?.forEach {
-            if (it is CroCardWallet) {
-                dbCardWallets.add(CCDBWallet(it))
-            }
-        }
-
-        userMap["wallets"] = dbWallets
-        userMap["outsideWallets"] = dbOutsideWallets
-        userMap["transactions"] = dbTransactions
-        userMap["cardWallets"] = dbCardWallets
-        userMap["cardTransactions"] = dbCardTransactions
-
-        return userMap
-    }
 
     private external fun init(logFilePath: String, savePath: String): Boolean
     private external fun initWithData(
@@ -765,58 +738,25 @@ class CoreService : Service() {
             }
         }
 
+        /**
+         * Starts the CoreService
+         */
         fun startService() {
-            val intent = Intent(InstanceVars.applicationContext, CoreService::class.java)
-            InstanceVars.applicationContext.startService(intent)
+            val intent = Intent(applicationContext, CoreService::class.java)
+            applicationContext.startService(intent)
         }
 
+        /**
+         * Starts the CoreService with the data
+         */
         fun startServiceWithData(data: ArrayList<String>, mode: Int) {
-            val intent = Intent(InstanceVars.applicationContext, CoreService::class.java)
+            val intent = Intent(applicationContext, CoreService::class.java)
             intent.action = ACTION_START_SERVICE_WITH_DATA
             intent.putExtra("data", data)
             intent.putExtra("mode", mode)
-            InstanceVars.applicationContext.startService(intent)
+            applicationContext.startService(intent)
         }
 
-        fun startServiceWithFirebaseData(
-            dbWallets: java.util.ArrayList<HashMap<String, *>>?,
-            dbOutsideWallets: java.util.ArrayList<HashMap<String, *>>?,
-            dbTransactions: java.util.ArrayList<HashMap<String, *>>?,
-            appType: AppType,
-            amountTxFailed: Long,
-            useStrictType: Boolean
-        ) {
-            if (isCoreInitialized) {
-                TODO()
-            }
-
-            AppModel(
-                dbWallets,
-                dbOutsideWallets,
-                dbTransactions,
-                appType,
-                amountTxFailed,
-                useStrictType
-            ).let {
-                AppModelManager.setInstance(it)
-            }
-
-            val intent = Intent(InstanceVars.applicationContext, CoreService::class.java)
-            intent.action = ACTION_START_SERVICE_WITH_FIREBASE_DATA
-//            intent.putExtra("data", data)
-            intent.putExtra("isRunning", true)
-            InstanceVars.applicationContext.startService(intent)
-        }
-
-        fun stopService() {
-            val intent = Intent(InstanceVars.applicationContext, CoreService::class.java)
-            InstanceVars.applicationContext.stopService(intent)
-        }
-
-        fun restartService() {
-            stopService()
-            startService()
-        }
 
         /**
          * Returns the amount the asset is worth in EUR
@@ -824,7 +764,7 @@ class CoreService : Service() {
          * @return the amount the asset is worth in EUR
          */
         fun getValueOfAssetsFromWID(walletId: Int): Double {
-            return if (isCoreInitialized) {
+            return if (isCoreInitialized && useCpp) {
                 try {
                     val w = walletsLiveData.value!!.find { it.walletId == walletId }
                     val valueOfWallet: Double
@@ -851,8 +791,13 @@ class CoreService : Service() {
         }
 
 
+        /**
+         * Returns the amounts of the asset in the wallet
+         *
+         * @return the amounts of the asset in the wallet
+         */
         fun getWalletAdapter(walletId: Int): Map<String, String?> {
-            return when (isCoreInitialized) {
+            return when (isCoreInitialized && useCpp) {
                 true -> {
                     val w = allWalletsLiveData.value!!.find { it.walletId == walletId }
                     AppModel.getWalletAdapter(w!!)
@@ -865,11 +810,19 @@ class CoreService : Service() {
             }
         }
 
+        /**
+         * Returns the AssetMap of the wallet
+         */
         fun getAssetMap(walletId: Int): Map<String, String?> {
             return assetMaps.value!!.find { it.walletId == walletId }!!.data
         }
 
 
+        /**
+         * Returns the stats of transaction
+         *
+         * @return the stats of transaction
+         */
         fun getTransactionAdapter(transaction: Transaction): Map<String, String?> {
             return when (isCoreInitialized) {
                 true -> {
@@ -897,6 +850,11 @@ class CoreService : Service() {
             }
         }
 
+        /**
+         * Returns the transaction with the transactionId
+         *
+         * @return the transaction with the transactionId
+         */
         fun getTransaction(transactionId: Int): Transaction {
             return when (isCoreInitialized) {
                 true -> {
@@ -910,6 +868,9 @@ class CoreService : Service() {
         }
 
 
+        /**
+         * Tell service to save the data to Firebase
+         */
         fun saveDataToFirebase() {
             if (isCoreInitialized) {
                 FileLog.i("FirebaseUtil", "Saving data to Firebase")
@@ -920,11 +881,12 @@ class CoreService : Service() {
                     ).apply {
                         action = ACTION_SAVE_DATA_TO_FIREBASE
                     })
+                return
             }
             appModel?.let {
                 user = FirebaseAuth.getInstance().currentUser   //refresh user
                 if (user != null) Thread {
-                    FirebaseUtil(InstanceVars.applicationContext).saveDataToFirebase(
+                    FirebaseUtil(applicationContext).saveDataToFirebase(
                         it
                     )
                 }.start()
@@ -932,6 +894,9 @@ class CoreService : Service() {
 
         }
 
+        /**
+         * Saves the data to Firebase
+         */
         private fun saveToFireBase() {
             val uid = FirebaseAuth.getInstance().currentUser!!.uid
             val appSettings = AppSettings(
@@ -982,6 +947,9 @@ class CoreService : Service() {
         }
 
 
+        /**
+         * Handles the result of the Firebase task
+         */
         private fun handleFirebaseTaskResult(
             task: Task<Void>,
             successMessage: String,
