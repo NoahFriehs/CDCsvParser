@@ -10,6 +10,7 @@ class AssetValue : Serializable {
     private val cache = PriceCache()
     var isConnected = true
     var isRunning: Boolean
+    var priceProvider: BaseCryptoPrices = CryptoPricesCryptoCompare()
 
     init {
         isRunning = true
@@ -52,14 +53,13 @@ class AssetValue : Serializable {
             return 0.0
         }
 
-        val cryptoPrices = CryptoPricesCryptoCompare()
-        when (val priceApi = cryptoPrices.getPrice(symbol_))
-        {
+        when (val priceApi = priceProvider.getPrice(symbol_)) {
             null -> {
                 //FileLog.e("AssetValue", "API error")
                 isRunning = false
                 return 0.0
             }
+
             0.0 -> {
                 //FileLog.e("AssetValue", "No price found for: $symbol_")   //does not exist at API-Endpoint
                 cache.addPrice(symbol_, priceApi)
@@ -122,6 +122,35 @@ class AssetValue : Serializable {
         }.start()
         if (!isConnected || !isRunning) return false
         return true
+    }
+
+    fun check() {
+        Thread {
+            when (val priceApi = priceProvider.getPrice("BTC")) {
+                null -> {
+                    //FileLog.e("AssetValue", "API error")
+                    isRunning = false
+                }
+
+                0.0 -> {
+                    FileLog.e(
+                        "AssetValue",
+                        "No price found for: BTC"
+                    )   //does not exist at API-Endpoint
+                }
+
+                -1.0 -> {
+                    FileLog.e("AssetValue", "API error")
+                    isRunning = false
+                    //return 0.0
+                }
+
+                else -> {
+                    cache.addPrice("BTC", priceApi)
+                    isRunning = true
+                }
+            }
+        }.start()
     }
 
 }

@@ -57,6 +57,24 @@ class TransactionData(
         this.date = Date(dateYear, dateMonth, dateDay, dateHours, dateMinutes, dateSeconds)
     }
 
+    constructor() : this(
+        0,
+        "",
+        0,
+        0,
+        "",
+        0.0,
+        0.0,
+        0.0,
+        TransactionType.STRING.ordinal,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    )
+
     fun toXml(): String {
         val serializer: XmlSerializer = Xml.newSerializer()
         val writer = StringWriter()
