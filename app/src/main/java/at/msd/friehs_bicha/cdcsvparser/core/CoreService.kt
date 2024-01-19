@@ -168,7 +168,7 @@ class CoreService : Service() {
                     isRunning = true
                     isInitialized = true
                 } else {
-                    appModel = AppModel(data, AppType.Default, false)
+                    appModel = AppModel(data, AppType.fromOrdinal(mode), false)
                     AppModelManager.setInstance(appModel!!)
                 }
                 isInitialized = true
@@ -824,7 +824,7 @@ class CoreService : Service() {
         val path: String
             get() = applicationContext.filesDir.absolutePath
         val savePath: String
-            get() = "$path/save/"
+            get() = ""//"$path/save/"
         val logFilePath: String
             get() = "$path/log/core.log"
 

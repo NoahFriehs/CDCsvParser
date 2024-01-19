@@ -77,7 +77,7 @@ class AppModel : BaseAppModel, Serializable {
         }
         if (txApp!!.amountTxFailed > 0) {
             FileLog.e("AppModel", "txApp: amountTxFailed, AppType: $appType")
-            throw RuntimeException("$txApp.amountTxFailed transaction(s) failed")
+            throw RuntimeException("${txApp?.amountTxFailed} transaction(s) failed")
         }
     }
 
