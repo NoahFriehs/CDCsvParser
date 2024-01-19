@@ -38,9 +38,9 @@ bool init(const std::string &logFilePath, const std::string &loadDirPath) {
 
 bool initWithData(const std::vector<std::string> &data, uint mode, const std::string &logFilePath) {
 
-    FileLog::i("library", "Initializing with data...");
-
     FileLog::init(logFilePath, true, 3);
+
+    FileLog::i("library", "Initializing with data, with mode " + std::to_string(mode) + "...");
 
     FileLog::i("library", "Data size: " + std::to_string(data.size()));
 
@@ -122,6 +122,7 @@ std::vector<std::string> getWalletsAsStrings() {
     for (auto &wallet: wallets) {
         vec.emplace_back(wallet.second.getWalletData()->serializeToXml());
     }
+    FileLog::i("library", "Returning " + std::to_string(vec.size()) + " wallets");
     return vec;
 }
 
@@ -131,6 +132,7 @@ std::vector<std::string> getTransactionsAsStrings() {
     for (auto &tx: transactions) {
         vec.emplace_back(tx.getTransactionData().serializeToXml());
     }
+    FileLog::i("library", "Returning " + std::to_string(vec.size()) + " transactions");
     return vec;
 }
 
@@ -303,6 +305,14 @@ Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_getTotalMoneySpent(JNIEnv
                                                                           jobject thiz) {
     return getTotalMoneySpent();
 }
+
+extern "C"
+JNIEXPORT jdouble JNICALL
+Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_getTotalMoneySpentCard(JNIEnv *env,
+                                                                              jobject thiz) {
+    return getTotalValueOfAssetsCard();
+}
+
 extern "C"
 JNIEXPORT jdouble JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_getValueOfAssets(JNIEnv *env, jobject thiz) {
@@ -325,11 +335,36 @@ Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_getTransactionsAsString(J
     }
     return ret;
 }
+
+extern "C"
+JNIEXPORT jobjectArray JNICALL
+Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_getCardTransactionsAsStrings(JNIEnv *env,
+                                                                                    jobject thiz) {
+    std::vector<std::string> vec = getCardTransactionsAsStrings();
+    jobjectArray ret = env->NewObjectArray(vec.size(), env->FindClass("java/lang/String"), nullptr);
+    for (int i = 0; i < vec.size(); i++) {
+        env->SetObjectArrayElement(ret, i, env->NewStringUTF(vec[i].c_str()));
+    }
+    return ret;
+}
+
 extern "C"
 JNIEXPORT jobjectArray JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_getWalletsAsString(JNIEnv *env,
                                                                           jobject thiz) {
     std::vector<std::string> vec = getWalletsAsStrings();
+    jobjectArray ret = env->NewObjectArray(vec.size(), env->FindClass("java/lang/String"), nullptr);
+    for (int i = 0; i < vec.size(); i++) {
+        env->SetObjectArrayElement(ret, i, env->NewStringUTF(vec[i].c_str()));
+    }
+    return ret;
+}
+
+extern "C"
+JNIEXPORT jobjectArray JNICALL
+Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_getCardWalletsAsStrings(JNIEnv *env,
+                                                                               jobject thiz) {
+    std::vector<std::string> vec = getCardWalletsAsStrings();
     jobjectArray ret = env->NewObjectArray(vec.size(), env->FindClass("java/lang/String"), nullptr);
     for (int i = 0; i < vec.size(); i++) {
         env->SetObjectArrayElement(ret, i, env->NewStringUTF(vec[i].c_str()));

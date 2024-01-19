@@ -576,6 +576,9 @@ class AppModel : BaseAppModel, Serializable {
          * @return the amount the asset is worth in EUR
          */
         fun getValueOfAssets(w: Wallet?): Double {
+            if (w is CroCardWallet) {
+                return w.amount.toDouble()
+            }
             return try {
                 val valueOfWallet: Double
                 val price = w!!.currencyType.let { AssetValue.getInstance().getPrice(it) }

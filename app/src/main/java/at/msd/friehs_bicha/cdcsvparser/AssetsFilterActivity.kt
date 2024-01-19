@@ -35,7 +35,7 @@ class AssetsFilterActivity : AppCompatActivity() {
         val dropdown = findViewById<Spinner>(R.id.asset_spinner)
         // make List with all Wallets
         val items = CoreService.walletNames.value ?: arrayOf()
-        walletList = CoreService.walletsLiveData.value ?: mutableListOf()
+        walletList = CoreService.allWalletsLiveData.value ?: mutableListOf()
 
         if (items.isEmpty()) {
             FileLog.e("AssetsFilterActivity", "items is empty")

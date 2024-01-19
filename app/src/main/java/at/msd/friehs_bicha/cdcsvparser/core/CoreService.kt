@@ -305,42 +305,58 @@ class CoreService : Service() {
 
         // get Data from Core and set it to the LiveData
         val map: MutableMap<String, String?> = java.util.HashMap()
-        val totalMoneySpent = getTotalMoneySpent()
+        var totalMoneySpent = getTotalMoneySpent()
         val totalMoneySpentString =
             StringHelper.formatAmountToString(totalMoneySpent)
-        if (AssetValue.getInstance().isRunning) {
-            val amountOfAsset = getValueOfAssets()
-            val rewardValue = getTotalBonus()
-            map[R.id.assets_valueP.toString()] =
-                StringHelper.formatAmountToString(amountOfAsset)
-            map[R.id.rewards_value.toString()] =
-                StringHelper.formatAmountToString(rewardValue)
-            map[R.id.profit_loss_value.toString()] =
-                StringHelper.formatAmountToString(amountOfAsset - totalMoneySpent)
-            map[R.id.money_spent_value.toString()] = totalMoneySpentString
-        } else {
-            FileLog.e(TAG, "AssetValue is not running")
-            AssetValue.getInstance().check()
-            map[R.id.assets_valueP.toString()] = "no internet connection"
-            map[R.id.rewards_value.toString()] = "no internet connection"
-            map[R.id.profit_loss_value.toString()] = "no internet connection"
-            map[R.id.money_spent_value.toString()] = totalMoneySpentString
-            //start thread to check if internet is back
-            GlobalScope.launch {
-                while (!AssetValue.getInstance().isRunning) {
-                    FileLog.d(TAG, "Waiting for internet connection.")
-                    delay(5000)
-                    AssetValue.getInstance().check()
+
+        if (hasCryptoTx) {
+
+            if (AssetValue.getInstance().isRunning) {
+                val amountOfAsset = getValueOfAssets()
+                val rewardValue = getTotalBonus()
+                map[R.id.assets_valueP.toString()] =
+                    StringHelper.formatAmountToString(amountOfAsset)
+                map[R.id.rewards_value.toString()] =
+                    StringHelper.formatAmountToString(rewardValue)
+                map[R.id.profit_loss_value.toString()] =
+                    StringHelper.formatAmountToString(amountOfAsset - totalMoneySpent)
+                map[R.id.money_spent_value.toString()] = totalMoneySpentString
+            } else {
+                FileLog.e(TAG, "AssetValue is not running")
+                AssetValue.getInstance().check()
+                map[R.id.assets_valueP.toString()] = "no internet connection"
+                map[R.id.rewards_value.toString()] = "no internet connection"
+                map[R.id.profit_loss_value.toString()] = "no internet connection"
+                map[R.id.money_spent_value.toString()] = totalMoneySpentString
+                //start thread to check if internet is back
+                GlobalScope.launch {
+                    while (!AssetValue.getInstance().isRunning) {
+                        FileLog.d(TAG, "Waiting for internet connection.")
+                        delay(5000)
+                        AssetValue.getInstance().check()
+                    }
+                    provideDataToActivityFromCppCore()
                 }
-                provideDataToActivityFromCppCore()
             }
+        } else {
+            totalMoneySpent = getTotalMoneySpentCard()
+            map[R.id.money_spent_value.toString()] =
+                StringHelper.formatAmountToString(totalMoneySpent)
+            map[R.id.assets_valueP.toString()] = null
+            map[R.id.rewards_value.toString()] = null
+            map[R.id.profit_loss_value.toString()] = null
+            map[R.id.assets_value_label.toString()] = null
+            map[R.id.rewards_label.toString()] = null
+            map[R.id.profit_loss_label.toString()] = null
+            map[R.id.coinGeckoApiLabel.toString()] = null
         }
         parsedDataLiveData.postValue(map)
 
         //get transactions from core and set it to the LiveData
         val transactions = getTransactionsAsString()
-        //TODO getCardTxAsStrings
+        val cardTransactions = getCardTransactionsAsStrings()
         val transactions_ = ArrayList<Transaction>()
+        val cardTransactions_ = ArrayList<CroCardTransaction>()
         transactions.forEach {
             val txData =
                 TransactionData()
@@ -353,11 +369,25 @@ class CoreService : Service() {
             }
         }
         transactionsLiveData.postValue(transactions_)
+        cardTransactions.forEach {
+            val txData =
+                TransactionData()
+            val dataString = it.replace("\n\t", "")
+            try {
+                txData.fromXml(dataString)
+                cardTransactions_.add(CroCardTransaction(txData))
+            } catch (e: Exception) {
+                FileLog.e(TAG, "Exception: $e")
+            }
+        }
+        cardTransactionsLiveData.postValue(cardTransactions_)
+
 
         //get Wallets from core and set it to the LiveData
         val wallets = getWalletsAsString()
-        //TODO getCardWalletsAsStrings
+        val cardWallets = getCardWalletsAsStrings()
         val wallets_ = ArrayList<Wallet>()
+        val cardWallets_ = ArrayList<Wallet>()
         wallets.forEach {
             val data = WalletXmlSerializer().deserializeFromXml(it)
             wallets_.add(Wallet(data))
@@ -365,23 +395,65 @@ class CoreService : Service() {
         transactions_.forEach { tx ->
             wallets_.find { it.walletId == tx.walletId }?.transactions?.add(tx)
         }
+        cardWallets.forEach {
+            val data = WalletXmlSerializer().deserializeFromXml(it)
+            cardWallets_.add(CroCardWallet(data))
+        }
+        cardTransactions_.forEach { tx ->
+            cardWallets_.find { it.walletId == tx.walletId }?.transactions?.add(tx)
+        }
+
         walletsLiveData.postValue(wallets_)
         outsideWalletsLiveData.postValue(wallets_.filter { it.isOutsideWallet } as ArrayList<Wallet>)
-        cardWalletsLiveData.postValue(wallets_.filterIsInstance<CroCardWallet>() as ArrayList<Wallet>)
+        cardWalletsLiveData.postValue(cardWallets_)
         allWalletsLiveData.postValue(wallets_)
+        allWalletsLiveData.postValue(cardWallets_)
 
-        val walletNames_ = Array<String?>(wallets_.size) { _ -> null }
+        val walletNames_ = Array<String?>(wallets_.size + cardWallets_.size) { _ -> null }
+        val indexAll = wallets_.size
         wallets_.forEach {
             wallets_.indexOf(it).let { index ->
                 walletNames_[index] = it.getTypeString()
+            }
+        }
+        cardWallets_.forEach {
+            cardWallets_.indexOf(it).let { index ->
+                walletNames_[index + indexAll] = it.getTypeString()
             }
         }
         walletNames.postValue(walletNames_)
         wallets_.forEach {
             assetMaps.value!!.add(AssetData(it.walletId, getAssetMap(it.walletId)))
         }
+        cardWallets_.forEach {
+            assetMaps.value!!.add(AssetData(it.walletId, getCardAssetMap(it.walletId)))
+        }
 
         saveToRoomsDB()
+    }
+
+    private fun getCardAssetMap(walletId: Int): Map<String, String?> {
+        return when (isCoreInitialized && useCpp) {
+            true -> {
+
+                val map = mutableMapOf<String, String?>()
+                val moneySpent = getMoneySpentByWID(walletId)
+                val total = StringHelper.formatAmountToString(moneySpent)
+                map[R.id.money_spent_value.toString()] = total
+                map[R.id.assets_value.toString()] = null
+                map[R.id.rewards_value.toString()] = null
+                map[R.id.profit_loss_value.toString()] = null
+                map[R.id.assets_value_label.toString()] = null
+                map[R.id.rewards_label.toString()] = null
+                map[R.id.profit_loss_label.toString()] = null
+                map
+            }
+
+            false -> {
+                val specificWallet = appModel!!.txApp!!.wallets.find { it.walletId == walletId }
+                appModel!!.getAssetMap(specificWallet)
+            }
+        }
     }
 
     private fun saveToRoomsDB() {
@@ -697,8 +769,16 @@ class CoreService : Service() {
     private external fun getValueOfAssets(): Double
     private external fun getTotalBonus(): Double
 
+    /**
+     * getTotalValueOfAssetsCard
+     */
+    private external fun getTotalMoneySpentCard(): Double
+
     private external fun getTransactionsAsString(): Array<String>
     private external fun getWalletsAsString(): Array<String>
+
+    private external fun getCardTransactionsAsStrings(): Array<String>
+    private external fun getCardWalletsAsStrings(): Array<String>
 
     private external fun getValueOfAssetsByWID(walletID: Int): Double
     private external fun getTotalBonusByWID(walletID: Int): Double
@@ -797,6 +877,13 @@ class CoreService : Service() {
          */
         fun getValueOfAssetsFromWID(walletId: Int): Double {
             return if (isCoreInitialized && useCpp) {
+                if (walletsLiveData.value == null || walletsLiveData.value!!.isEmpty() || walletsLiveData.value!!.find { it.walletId == walletId } == null) {
+                    FileLog.w(
+                        "$TAG.getValueOfAssetsFromWID",
+                        "walletsLiveData is null or empty"
+                    )   //normal when only card tx
+                    return 1.0
+                }
                 try {
                     val w = walletsLiveData.value!!.find { it.walletId == walletId }
                     val valueOfWallet: Double

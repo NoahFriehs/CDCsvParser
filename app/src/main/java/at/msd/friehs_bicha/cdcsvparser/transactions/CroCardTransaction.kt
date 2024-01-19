@@ -119,11 +119,31 @@ open class CroCardTransaction(
         this.transactionTypeString = transactionType.toString()
     }
 
+    constructor(date: TransactionData) : this(
+        date.date.toString(),
+        date.description,
+        date.currencyType,
+        BigDecimal(date.amount),
+        BigDecimal(date.nativeAmount),
+        date.transactionTypeString
+    ) {
+        this.transactionId = date.transactionId
+        this.walletId = date.walletId
+        this.fromWalletId = date.fromWalletId
+        this.date = date.date
+        this.currencyType = date.currencyType
+        this.amountBonus = BigDecimal(date.amountBonus)
+        this.transHash = date.transHash
+        this.toCurrency = date.toCurrency
+        this.toAmount = BigDecimal(date.toAmount)
+        this.isOutsideTransaction = date.isOutsideTransaction
+        this.transactionTypeString = date.transactionTypeString
+    }
+
 
     override fun getTxTypeString(): CharSequence? {
         return transactionTypeString
     }
-
 
 
     override fun toString(): String {

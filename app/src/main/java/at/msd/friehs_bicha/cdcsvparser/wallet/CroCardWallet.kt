@@ -85,11 +85,28 @@ class CroCardWallet(
         }
     }
 
+
+    constructor(walletData: WalletData) : this(
+        walletData.currencyType,
+        BigDecimal(walletData.balance),
+        walletData.currencyType,
+        null
+    ) {
+        this.walletId = walletData.walletId
+        this.currencyType = walletData.currencyType
+        this.transactionType = walletData.currencyType
+        this.amount = BigDecimal(walletData.balance)
+        this.amountBonus = BigDecimal(walletData.bonusBalance)
+        this.moneySpent = BigDecimal(walletData.moneySpent)
+        this.isOutsideWallet = walletData.isOutsideWallet
+    }
+
+
     override fun addTransaction(transaction: Transaction) {
         val cardTransaction = transaction as CroCardTransaction
         val tt = cardTransaction.transactionTypeString
         if (tt == "EUR -> EUR") {
-            FileLog.i("CCW.addTx","Found EUR -> EUR: $tt")
+            FileLog.i("CCW.addTx", "Found EUR -> EUR: $tt")
         }
 
         var ignoreThisTx = false

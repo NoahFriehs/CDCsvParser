@@ -19,6 +19,8 @@ class TransactionsActivity : AppCompatActivity() {
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
         val mTransactionList: ArrayList<Transaction> = CoreService.transactionsLiveData.value!!
+        mTransactionList.addAll(CoreService.cardTransactionsLiveData.value!!)
+        mTransactionList.sortByDescending { it.date }
 
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, TransactionFragment(mTransactionList))
