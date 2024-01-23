@@ -6,10 +6,10 @@ import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.TimeSpan
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.utils.ColorTemplate
+//import com.github.mikephil.charting.data.Entry
+//import com.github.mikephil.charting.data.LineData
+//import com.github.mikephil.charting.data.LineDataSet
+//import com.github.mikephil.charting.utils.ColorTemplate
 import java.math.BigDecimal
 import java.util.Date
 
@@ -41,19 +41,19 @@ class TransactionManager(private val transactions: MutableList<Transaction>?) {
         return cumulativeAmounts[date]
     }
 
-    fun getGraphDataSet(): LineData {
-        val entries = mutableListOf<Entry>()
-        for ((index, transaction) in transactions?.withIndex()!!) {
-            val cumulativeAmount = cumulativeAmounts[transaction.date] ?: 0
-            entries.add(Entry(index.toFloat(), cumulativeAmount.toFloat()))
-        }
-
-        val lineDataSet = LineDataSet(entries, "Cumulative Amount")
-        lineDataSet.setColors(*ColorTemplate.COLORFUL_COLORS)
-        lineDataSet.valueTextSize = 12f
-
-        return LineData(lineDataSet)
-    }
+//    fun getGraphDataSet(): LineData {
+//        val entries = mutableListOf<Entry>()
+//        for ((index, transaction) in transactions?.withIndex()!!) {
+//            val cumulativeAmount = cumulativeAmounts[transaction.date] ?: 0
+//            entries.add(Entry(index.toFloat(), cumulativeAmount.toFloat()))
+//        }
+//
+//        val lineDataSet = LineDataSet(entries, "Cumulative Amount")
+//        lineDataSet.setColors(*ColorTemplate.COLORFUL_COLORS)
+//        lineDataSet.valueTextSize = 12f
+//
+//        return LineData(lineDataSet)
+//    }
 
     companion object {
 

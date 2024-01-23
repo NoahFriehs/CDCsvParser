@@ -60,8 +60,9 @@ class CoreService : Service() {
             return super.onStartCommand(null, flags, startId)
         }
 
-        if (AppModelManager.isInitialized()) {
+        if (AppModelManager.isInitialized()) {  // get AppModel from AppModelManager if it is already initialized
             appModel = AppModelManager.getInstance()
+            FileLog.i(TAG, "AppModel already initialized.")
         }
 
         makeSaveDirIfNeeded()
@@ -89,12 +90,6 @@ class CoreService : Service() {
                 ACTION_STOP_SERVICE -> {
                     FileLog.d(TAG, "Stopping service.")
                     stopSelf()
-                }
-
-                ACTION_RESTART_SERVICE -> {
-                    FileLog.d(TAG, "Restarting service.")
-                    //TODO: restartService()
-                    TODO()
                 }
 
                 else -> {
@@ -156,8 +151,8 @@ class CoreService : Service() {
                     FileLog.d(TAG, "Initialization with data successful.")
                     isRunning = true
                 } else {
-                    FileLog.e(TAG, "Initialization with data failed.")
-                    return
+                    FileLog.w(TAG, "Initialization with data failed.")
+                    return  //TODO: notify activity
                 }
                 checkAndSetModes()
             }
@@ -571,6 +566,7 @@ class CoreService : Service() {
             val appSettingsMap = it["appSettings"] as HashMap<String, Any>?
             val appSettings = AppSettings().fromHashMap(appSettingsMap!!)
             if (!appSettings.compareVersionsWithDefault()) {
+                FileLog.e(TAG, "Version mismatch")
                 return
             }
             hasCryptoTx = appSettings.hasCryptoTx == "true"
@@ -1086,8 +1082,9 @@ class CoreService : Service() {
 
         const val ACTION_START_SERVICE = "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE"
         const val ACTION_STOP_SERVICE = "at.msd.friehs_bicha.cdcsvparser.core.action.STOP_SERVICE"
-        const val ACTION_RESTART_SERVICE =
-            "at.msd.friehs_bicha.cdcsvparser.core.action.RESTART_SERVICE"
+
+        //const val ACTION_RESTART_SERVICE =
+        //    "at.msd.friehs_bicha.cdcsvparser.core.action.RESTART_SERVICE"
         const val ACTION_START_SERVICE_WITH_DATA =
             "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE_WITH_DATA"
         const val ACTION_START_SERVICE_WITH_FIREBASE_DATA =
