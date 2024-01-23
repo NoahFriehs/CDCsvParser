@@ -152,7 +152,8 @@ class CoreService : Service() {
                     isRunning = true
                 } else {
                     FileLog.w(TAG, "Initialization with data failed.")
-                    return  //TODO: notify activity
+                    errorCounter.postValue(errorCounter.value?.plus(1) ?: 1)
+                    return
                 }
                 checkAndSetModes()
             }
@@ -810,6 +811,8 @@ class CoreService : Service() {
 
         var currentWallet = MutableLiveData<Map<String, String?>>()
         val assetMaps = MutableLiveData<ArrayList<AssetData>>()
+
+        val errorCounter = MutableLiveData<Int>()
 
 
         var priceProvider: AssetValue = AssetValue.getInstance()

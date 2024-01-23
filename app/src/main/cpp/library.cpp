@@ -26,7 +26,7 @@ bool init(const std::string &logFilePath, const std::string &loadDirPath) {
     auto *transactionManager = new TransactionManager();
 
     DataHolder::GetInstance().SetTransactionManager(transactionManager);
-    if (DataHolder::GetInstance().checkSavedData() && false) {
+    if (DataHolder::GetInstance().checkSavedData() && !loadDirPath.empty()) {
         FileLog::i("library", "Saved data found, loading...");
         DataHolder::GetInstance().loadData(loadDirPath);
         FileLog::i("library", "Done");

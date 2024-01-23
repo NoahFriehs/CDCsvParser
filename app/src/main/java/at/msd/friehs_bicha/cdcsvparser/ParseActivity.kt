@@ -7,6 +7,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -51,6 +52,13 @@ class ParseActivity : AppCompatActivity() {
             FileLog.d("ParseActivity", "parsedDataLiveData changed")
             isReady = true
             hideProgressDialog()
+        }
+        CoreService.errorCounter.observe(this) {
+            FileLog.w("ParseActivity", "errorCounterLiveData changed")
+            Toast.makeText(this, "Error while parsing", Toast.LENGTH_LONG).show()
+            isReady = false
+            hideProgressDialog()
+            finish()
         }
     }
 
