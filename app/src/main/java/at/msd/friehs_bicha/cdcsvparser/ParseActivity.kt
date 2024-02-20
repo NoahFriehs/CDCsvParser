@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
+import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 
 class ParseActivity : AppCompatActivity() {
     private lateinit var progressDialog: Dialog
@@ -48,6 +49,7 @@ class ParseActivity : AppCompatActivity() {
      */
     private fun displayInformation() {
         CoreService.parsedDataLiveData.observe(this) {
+            Benchmarker.stop()
             displayTexts(it)
             FileLog.d("ParseActivity", "parsedDataLiveData changed")
             isReady = true

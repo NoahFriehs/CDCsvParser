@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 import at.msd.friehs_bicha.cdcsvparser.util.FileUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.firebase.auth.FirebaseAuth
@@ -186,6 +187,7 @@ class MainActivity : AppCompatActivity() {
         val selectedFile = files!![position]
         val list = FileUtil.getFileContent(selectedFile)
         try {
+            Benchmarker.start()
             CoreService.startServiceWithData(list, PreferenceHelper.getSelectedType(this).ordinal)
             callParseView()
         } catch (e: Exception) {
