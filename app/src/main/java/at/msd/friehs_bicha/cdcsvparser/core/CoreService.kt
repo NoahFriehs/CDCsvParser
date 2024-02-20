@@ -240,7 +240,8 @@ class CoreService : Service() {
                         allWallets.addAll(appModel?.txApp?.wallets ?: emptyList())
                         allWallets.addAll(appModel?.cardApp?.wallets ?: emptyList())
 
-                        allWalletsLiveData.postValue(allWallets.toCollection(ArrayList()))
+                        val noDuplicatesAllWallets = allWallets.distinctBy { it.walletId }
+                        allWalletsLiveData.postValue(noDuplicatesAllWallets.toCollection(ArrayList()))
 
                         val walletNames_ = Array<String?>(allWallets.size) { _ -> null }
 
