@@ -231,6 +231,7 @@ class MainActivity : AppCompatActivity() {
                 updateFiles()
             }
             try {
+                Benchmarker.start()
                 CoreService.startServiceWithData(
                     list,
                     PreferenceHelper.getSelectedType(this).ordinal
