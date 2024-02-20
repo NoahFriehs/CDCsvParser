@@ -230,24 +230,12 @@ class MainActivity : AppCompatActivity() {
                 files!![0].delete()
                 updateFiles()
             }
-            try {
-                Benchmarker.start()
-                CoreService.startServiceWithData(
-                    list,
-                    PreferenceHelper.getSelectedType(this).ordinal
-                )
-                callParseView()
-            } catch (e: IllegalArgumentException) {
-                FileLog.e("MainActivity", ":  Error while loading files : $e")
-                hideProgressDialog()
-                Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
-            } catch (e: RuntimeException) {
-                FileLog.w("MainActivity", ":  Error while loading files : $e")
-                hideProgressDialog()
-                Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
-                callParseView()
-            }
-
+            Benchmarker.start()
+            CoreService.startServiceWithData(
+                list,
+                PreferenceHelper.getSelectedType(this).ordinal
+            )
+            callParseView()
         }
     }
 
