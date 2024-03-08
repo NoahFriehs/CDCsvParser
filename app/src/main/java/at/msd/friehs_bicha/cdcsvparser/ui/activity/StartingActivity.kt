@@ -8,6 +8,7 @@ import at.msd.friehs_bicha.cdcsvparser.LoginActivity
 import at.msd.friehs_bicha.cdcsvparser.MainActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -62,7 +63,11 @@ class StartingActivity : ComponentActivity() {
             PreferenceHelper.getFastStartEnabled(applicationContext) && PreferenceHelper.getIsAppModelSavedLocal(
                 applicationContext
             )
-        if (isLocal) AppModelManager.setInstance(AppModel())
+        if (isLocal) {
+            AppModelManager.setInstance(AppModel())
+            CoreService.appModel = AppModelManager.getInstance()
+            CoreService.startService(false)
+        }
 
         val intent = Intent(this, MainActivity::class.java)
 

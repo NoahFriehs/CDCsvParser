@@ -229,6 +229,10 @@ class CoreService : Service() {
                                 return@launch
                             }
                         }
+                        while (appModel?.txApp == null && appModel?.cardApp == null) {
+                            FileLog.e(TAG, "appModel txApp is null")
+                            delay(500)
+                        }
                         walletsLiveData.postValue(appModel?.txApp?.wallets)
                         outsideWalletsLiveData.postValue(appModel?.txApp?.outsideWallets)
                         cardWalletsLiveData.postValue(appModel?.cardApp?.wallets)
@@ -253,10 +257,13 @@ class CoreService : Service() {
 
                         walletNames.postValue(walletNames_)
 
-                        val data = appModel?.parseMap
-                        if (data == null) {
-                            FileLog.e(TAG, "data is null")
-                            return@launch
+                        var data = appModel?.parseMap
+                        while (data == null) {
+                            FileLog.e(TAG, "data from appModel parseMap is null")
+                            //pause and try again
+                            delay(500)
+                            data = appModel?.parseMap
+                            //return@launch
                         }
                         parsedDataLiveData.postValue(data!!)
 
@@ -403,8 +410,10 @@ class CoreService : Service() {
         walletsLiveData.postValue(wallets_)
         outsideWalletsLiveData.postValue(wallets_.filter { it.isOutsideWallet } as ArrayList<Wallet>)
         cardWalletsLiveData.postValue(cardWallets_)
-        allWalletsLiveData.postValue(wallets_)
-        allWalletsLiveData.postValue(cardWallets_)
+        val allWalets = mutableListOf<Wallet>()
+        allWalets.addAll(wallets_)
+        allWalets.addAll(cardWallets_)
+        allWalletsLiveData.postValue(allWalets.toCollection(ArrayList()))
 
         val walletNames_ = Array<String?>(wallets_.size + cardWallets_.size) { _ -> null }
         val indexAll = wallets_.size
@@ -471,6 +480,7 @@ class CoreService : Service() {
         cardTransactionsLiveData.value?.let {
             cardTransactionDao.insertAll(it)
         }
+        PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
     }
 
     /**
@@ -532,10 +542,12 @@ class CoreService : Service() {
                     isInitialized = true
                     isRunning = true
                     FileLog.d(TAG, "AppModel already initialized.")
+                    provideDataToActivity()
                 } else {
                     if (PreferenceHelper.getIsAppModelSavedLocal(applicationContext)) {
                         AppModelManager.setInstance(AppModel())
                         isInitialized = true
+                        provideDataToActivity()
                     } else {
                         FileLog.e(TAG, "AppModel not initialized. No data available.")
                     }
@@ -818,7 +830,7 @@ class CoreService : Service() {
 
         var priceProvider: AssetValue = AssetValue.getInstance()
         var user = FirebaseAuth.getInstance().currentUser
-        private var appModel: AppModel? = null
+        internal var appModel: AppModel? = null
 
 
         val path: String
@@ -853,8 +865,10 @@ class CoreService : Service() {
         /**
          * Starts the CoreService
          */
-        fun startService() {
+        fun startService(useCpp: Boolean = true) {
             val intent = Intent(applicationContext, CoreService::class.java)
+            intent.action = ACTION_START_SERVICE
+            PreferenceHelper.setUseCpp(applicationContext, useCpp)
             applicationContext.startService(intent)
         }
 
