@@ -12,6 +12,7 @@ import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -62,8 +63,9 @@ class StartingActivity : ComponentActivity() {
         val isLocal =
             PreferenceHelper.getFastStartEnabled(applicationContext) && PreferenceHelper.getIsAppModelSavedLocal(
                 applicationContext
-            )
+            ) && false
         if (isLocal) {
+            Benchmarker.start()
             AppModelManager.setInstance(AppModel())
             CoreService.appModel = AppModelManager.getInstance()
             CoreService.startService(false)

@@ -338,6 +338,7 @@ void TransactionManager::setTransactions(std::vector<BaseTransaction> &transacti
 
     switch (mode) {
         case CDC:
+        case Kraken:
             transactions = transactions_;
             hasTxData = true;
             break;
@@ -638,7 +639,7 @@ void TransactionManager::clearAll() {
     FileLog::i("TransactionManager", "Cleared all data");
 }
 
-void TransactionManager::setWalletData(std::vector<WalletData> _wallets) {
+void TransactionManager::setWalletData(const std::vector<WalletData> &_wallets) {
     std::lock_guard<std::mutex> lock(mutex, std::adopt_lock);
     FileLog::i("TransactionManager", "Setting wallet data");
     for (auto &walletData: _wallets) {
@@ -653,7 +654,7 @@ void TransactionManager::setWalletData(std::vector<WalletData> _wallets) {
     }
 }
 
-void TransactionManager::setCardWalletData(std::vector<WalletData> _cardWallets) {
+void TransactionManager::setCardWalletData(const std::vector<WalletData> &_cardWallets) {
     std::lock_guard<std::mutex> lock(mutex, std::adopt_lock);
     FileLog::i("TransactionManager", "Setting card wallet data");
     for (auto &walletData: _cardWallets) {
@@ -665,7 +666,7 @@ void TransactionManager::setCardWalletData(std::vector<WalletData> _cardWallets)
     }
 }
 
-void TransactionManager::setTransactionData(std::vector<TransactionData> txData) {
+void TransactionManager::setTransactionData(const std::vector<TransactionData> &txData) {
     std::lock_guard<std::mutex> lock(mutex, std::adopt_lock);
     FileLog::i("TransactionManager", "Setting transaction data");
     for (auto &tx: txData) {
@@ -675,7 +676,7 @@ void TransactionManager::setTransactionData(std::vector<TransactionData> txData)
     }
 }
 
-void TransactionManager::setCardTransactionData(std::vector<TransactionData> txData) {
+void TransactionManager::setCardTransactionData(const std::vector<TransactionData> &txData) {
     std::lock_guard<std::mutex> lock(mutex, std::adopt_lock);
     FileLog::i("TransactionManager", "Setting card transaction data");
     for (auto &tx: txData) {
@@ -705,7 +706,7 @@ std::unique_ptr<Wallet> TransactionManager::getCardWallet(int walletId) {
 }
 
 //! Returns the number of active modes (1 = Crypto, 2 = Card, 3 = Crypto + Card)
-int TransactionManager::getActiveModes() {
+int TransactionManager::getActiveModes() const {
     int activeModes = 0;
     if (hasTxData) activeModes++;
     if (hasCardTxData) activeModes += 2;

@@ -139,7 +139,10 @@ class CoreService : Service() {
      */
     private fun handleStartServiceWithData(intent: Intent) {
         val data = intent.getStringArrayListExtra("data")
-        val mode = intent.getIntExtra("mode", 0)
+        var mode = intent.getIntExtra("mode", 0)
+        if (mode == AppType.Kraken.ordinal) {
+            mode = 4    //sync with cpp
+        }
         if (data == null) {
             FileLog.e(TAG, "Initialization with data failed. Data is null.")
             return
@@ -481,6 +484,7 @@ class CoreService : Service() {
             cardTransactionDao.insertAll(it)
         }
         PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
+        FileLog.d(TAG, "Data saved to RoomsDB")
     }
 
     /**
