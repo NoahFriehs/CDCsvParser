@@ -2,32 +2,31 @@ package at.msd.friehs_bicha.cdcsvparser.price
 
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import java.io.Serializable
-import java.util.*
 
 /**
  * Asset value class
  */
 class AssetValue : Serializable {
-    val cache: MutableList<PriceCache>
+    private val cache = PriceCache()
+    var isConnected = true
     var isRunning: Boolean
+    var priceProvider: BaseCryptoPrices = CryptoPricesCryptoCompare()
 
     init {
-        cache = ArrayList()
         isRunning = true
     }
 
     companion object {
-        private var instance: AssetValue? = null
+        private lateinit var instance: AssetValue
 
         /**
-         * Returns the instance of the AssetValue class
+         * Returns the running instance of AssetValue
          *
-         * @return the instance of the AssetValue class
+         * @return a instance of AssetValue
          */
-        fun getInstance(): AssetValue? {
-            if (instance == null) {
-                instance = AssetValue()
-            }
+        fun getInstance(): AssetValue {
+            if (this::instance.isInitialized) return instance
+            instance = AssetValue()
             return instance
         }
     }
@@ -35,40 +34,63 @@ class AssetValue : Serializable {
     /**
      * Returns the price of the entered symbol
      *
-     * @param symbol the symbol for which the price is needed
-     * @return the price of the symbol
+     * @param symbol_ the symbol for which the price is needed
+     * @return the price of the symbol or 0 if an error occurred
      */
-    @Throws(InterruptedException::class)
-    fun getPrice(symbol: String): Double {
+    fun getPrice(symbol_: String): Double {
         //val prices = StaticPrices()
-        //return prices.prices[symbol]    //use this if api does nor work
+        //return prices.prices[symbol]!!    //use this if api does nor work
 
-        if (symbol == "EUR") return 1.0
+        if (symbol_ == "EUR") return 1.0 //euro is always 1, replace with api if needed
 
-        var price = checkCache(symbol)
-        if (price != -1.0) {
-            isRunning = true
-            return price
+        if (cache.testCache(symbol_)) {
+            return cache.checkCache(symbol_)
         }
 
-        val cryptoPrices = CryptoPricesCryptoCompare()
-        val priceApi = cryptoPrices.getPrice(symbol)
-        if (priceApi == null) {
-            FileLog.e("AssetValue", "No price found for: $symbol")
+        if (!isConnected) {
+            FileLog.e("AssetValue", "No internet connection")
             isRunning = false
             return 0.0
         }
-        if (priceApi != 0.0) {
-            cache.add(PriceCache(symbol, priceApi))
-            return priceApi
+
+        when (val priceApi = priceProvider.getPrice(symbol_)) {
+            null -> {
+                //FileLog.e("AssetValue", "API error")
+                isRunning = false
+                return 0.0
+            }
+
+            0.0 -> {
+                //FileLog.e("AssetValue", "No price found for: $symbol_")   //does not exist at API-Endpoint
+                cache.addPrice(symbol_, priceApi)
+                return 0.0
+            }
+            -1.0 -> {
+                FileLog.e("AssetValue", "API error")
+                isRunning = false
+                //return 0.0
+            }
+            else -> {
+                cache.addPrice(symbol_, priceApi)
+                isRunning = true
+                return priceApi
+            }
         }
-        var symbol = symbol
+
+
+        var symbol = symbol_
         symbol = overrideSymbol(symbol)
-        price = checkCache(symbol)
+        val price = cache.checkCache(symbol)
         if (price != -1.0) {
             isRunning = true
             return price
         }
+
+        val prices = StaticPrices()
+        if (prices.prices.containsKey(symbol)) {
+            return prices.prices[symbol]!!
+        }
+
         FileLog.e("AssetValue", "No price found for: $symbol")
         return 0.0
     }
@@ -85,27 +107,50 @@ class AssetValue : Serializable {
         return if (symbol == "LUNA2") "terra-luna-2" else symbol
     }
 
-    /**
-     * Checks if the price of the symbol is stored
-     *
-     * @param symbol the symbol to be checked for
-     * @return a price if it has it it else -1
-     */
-    private fun checkCache(symbol: String): Double {
-        var i = 0
-        while (i < cache.size) {
-            if (cache[i].isOlderThanFiveMinutes) {
-                FileLog.d("AssetValue", "removed cache for ${cache[i].id}")
-                cache.removeAt(i)
-                i--
-                continue
-            }
-            if (cache[i].id == symbol) {
-                FileLog.d("AssetValue", "used cache for $symbol")
-                return cache[i].price
-            }
-            i++
-        }
-        return (-1).toDouble()
+
+    fun loadCache(symbols: List<String>): Boolean {
+        Thread {
+            symbols.forEach { getPrice(it) }
+        }.start()
+        if (!isConnected || !isRunning) return false
+        return true
     }
+
+    fun reloadCache(): Boolean {
+        Thread {
+            cache.reloadCache(this)
+        }.start()
+        if (!isConnected || !isRunning) return false
+        return true
+    }
+
+    fun check() {
+        Thread {
+            when (val priceApi = priceProvider.getPrice("BTC")) {
+                null -> {
+                    //FileLog.e("AssetValue", "API error")
+                    isRunning = false
+                }
+
+                0.0 -> {
+                    FileLog.e(
+                        "AssetValue",
+                        "No price found for: BTC"
+                    )   //does not exist at API-Endpoint
+                }
+
+                -1.0 -> {
+                    FileLog.e("AssetValue", "API error")
+                    isRunning = false
+                    //return 0.0
+                }
+
+                else -> {
+                    cache.addPrice("BTC", priceApi)
+                    isRunning = true
+                }
+            }
+        }.start()
+    }
+
 }

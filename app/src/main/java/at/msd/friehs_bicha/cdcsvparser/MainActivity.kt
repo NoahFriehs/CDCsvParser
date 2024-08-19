@@ -1,28 +1,27 @@
 package at.msd.friehs_bicha.cdcsvparser
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
-import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
-import at.msd.friehs_bicha.cdcsvparser.app.AppType
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
+import androidx.core.content.res.ResourcesCompat
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
+import at.msd.friehs_bicha.cdcsvparser.util.FileUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
-import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import java.io.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -30,7 +29,6 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
     var context: Context? = null
-    var appModel: AppModel? = null
     var files: Array<File>? = null
     var user = FirebaseAuth.getInstance().currentUser
     private lateinit var progressDialog: Dialog
@@ -73,6 +71,15 @@ class MainActivity : AppCompatActivity() {
             setSpinner(dropdown)
             btnHistory.setOnClickListener { onBtnHistoryClick(dropdown) }
         }
+
+        if (intent.hasExtra("fastStart")) {
+            fastStart()
+        }
+    }
+
+    private fun fastStart() {
+        val intent = Intent(this@MainActivity, ParseActivity::class.java)
+        startActivity(intent)
     }
 
 
@@ -85,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         updateFiles()
         val dropdown = findViewById<Spinner>(R.id.spinner_history)
         val btnHistory = findViewById<Button>(R.id.btn_history)
-        if (files!!.size == 0) {
+        if (files!!.isEmpty()) {
             setHistory("disabled", dropdown, btnHistory)
         } else {
             setHistory("enabled", dropdown, btnHistory)
@@ -102,8 +109,7 @@ class MainActivity : AppCompatActivity() {
      * @param btnHistory the button to de/activate
      */
     private fun setHistory(type: String, dropdown: Spinner, btnHistory: Button) {
-        val res = resources
-        val drawable = res.getDrawable(R.drawable.round_button_layer_list)  //TODO is deprecated
+        val drawable = ResourcesCompat.getDrawable(resources, R.drawable.round_button_layer_list, null)
         when (type) {
             "disabled" -> {
                 // Disable the button
@@ -112,7 +118,7 @@ class MainActivity : AppCompatActivity() {
                 btnHistory.setTextColor(Color.DKGRAY)
                 btnHistory.background = drawable
                 //Disable the dropdown
-                val items = arrayOf(getResources().getString(R.string.no_history))
+                val items = arrayOf(resources.getString(R.string.no_history))
                 val adapter =
                     ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
                 dropdown.adapter = adapter
@@ -147,19 +153,18 @@ class MainActivity : AppCompatActivity() {
      *
      * @param spinner spinner to fill
      */
+    @SuppressLint("SimpleDateFormat")
     private fun setSpinner(spinner: Spinner) {
         val fileNames = ArrayList<String>()
         val sdf = SimpleDateFormat("M-d-yyyy-hh-mm-ss")
         val dateFormat = SimpleDateFormat("d.M hh:mm")
         var filename: String
-        var date: Date?
         for (f in files!!) {
             if (!f.isFile || !f.name.endsWith(".csv")) continue
             filename = f.name
             filename = filename.substring(0, filename.length - 4)
             try {
-                date = sdf.parse(filename)
-                filename = dateFormat.format(date)
+                filename = dateFormat.format(sdf.parse(filename))
             } catch (e: ParseException) {
                 e.printStackTrace()
                 FileLog.e("MainActivity", "setSpinner: Date parse error: $e")
@@ -180,20 +185,14 @@ class MainActivity : AppCompatActivity() {
         showProgressDialog()
         val position = spinner.selectedItemPosition
         val selectedFile = files!![position]
-        val list = getFileContent(selectedFile)
+        val list = FileUtil.getFileContent(selectedFile)
         try {
-            appModel = AppModel(
-                list,
-                PreferenceHelper.getSelectedType(this),
-                PreferenceHelper.getUseStrictType(this)
-            )
+            Benchmarker.start()
+            CoreService.startServiceWithData(list, PreferenceHelper.getSelectedType(this).ordinal)
             callParseView()
         } catch (e: Exception) {
             hideProgressDialog()
-            val text: CharSequence? = e.message
-            val duration = Toast.LENGTH_SHORT
-            val toast = Toast.makeText(context, text, duration)
-            toast.show()
+            Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -214,7 +213,7 @@ class MainActivity : AppCompatActivity() {
             val now = Date()
             val time = dateFormat.format(now)
             val filename = "$time.csv"
-            val list = getFileContentFromUri(fileUri)
+            val list = FileUtil.getFileContentFromUri(this, fileUri!!)
             try {
                 applicationContext.openFileOutput(filename, MODE_APPEND).use { fos ->
                     for (element in list) {
@@ -223,7 +222,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: IOException) {
-                e.printStackTrace()
                 FileLog.e("MainActivity", ":  Error while writing to file : $e")
             }
             //delete oldest file if already 7 files in array
@@ -232,44 +230,19 @@ class MainActivity : AppCompatActivity() {
                 files!![0].delete()
                 updateFiles()
             }
-            try {
-                appModel = AppModel(
-                    list,
-                    PreferenceHelper.getSelectedType(this),
-                    PreferenceHelper.getUseStrictType(this)
-                )
-                callParseView()
-            } catch (e: IllegalArgumentException) {
-                FileLog.e("MainActivity", ":  Error while loading files : $e")
-                hideProgressDialog()
-                context = applicationContext
-                val text: CharSequence? = e.message
-                val duration = Toast.LENGTH_SHORT
-                val toast = Toast.makeText(context, text, duration)
-                toast.show()
-            } catch (e: RuntimeException) {
-                FileLog.e("MainActivity", ":  Error while loading files : $e")
-                val context = applicationContext
-                val text: CharSequence? = e.message
-                val duration = Toast.LENGTH_SHORT
-                val toast = Toast.makeText(context, text, duration)
-                toast.show()
-                callParseView()
-            }
-
+            Benchmarker.start()
+            CoreService.startServiceWithData(
+                list,
+                PreferenceHelper.getSelectedType(this).ordinal
+            )
+            callParseView()
         }
     }
 
     private fun callParseView(saveToDB: Boolean = true) {
-        if (appModel == null) {
-            Toast.makeText(context, "No valid data loaded", Toast.LENGTH_LONG).show()
-            FileLog.e("MainActivity", "No valid data loaded")
-            return
-        }
         if (saveToDB) {
-            if (user != null) saveToFireBaseDB()
+            CoreService.saveDataToFirebase()
         }
-        AppModelManager.setInstance(appModel!!)
         val intent = Intent(this@MainActivity, ParseActivity::class.java)
         hideProgressDialog()
         startActivity(intent)
@@ -281,16 +254,11 @@ class MainActivity : AppCompatActivity() {
      */
     private fun onBtnUploadClick() {
 
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // Permission is not granted
+        if (arePermissionsGranted(permissions())) {
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(
                     this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE
+                    permissions()[0]
                 )
             ) {
                 // Show an explanation to the user
@@ -301,20 +269,53 @@ class MainActivity : AppCompatActivity() {
                 ).show()
                 ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    permissions(),
                     readExternalStorageRequestCode
                 )
             } else {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    permissions(),
                     readExternalStorageRequestCode
                 )
             }
         } else {
             startChooseFile()
         }
+    }
+
+
+    var storagePermissions = arrayOf(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        //Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    var storagePermissions33 = arrayOf(
+        Manifest.permission.READ_MEDIA_IMAGES,
+        Manifest.permission.READ_MEDIA_AUDIO,
+        Manifest.permission.READ_MEDIA_VIDEO
+    )
+
+    private fun permissions(): Array<String> {
+        val p: Array<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            storagePermissions33
+        } else {
+            storagePermissions
+        }
+        return p
+    }
+
+    private fun arePermissionsGranted(permissions: Array<String>): Boolean {
+        for (permission in permissions) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
+        }
+        return true
     }
 
 
@@ -336,10 +337,8 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == Companion.readExternalStorageRequestCode) {
+        if (requestCode == readExternalStorageRequestCode) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission is granted. Continue the action or workflow
-                // in your app.
                 startChooseFile()
             } else {
                 FileLog.w("MainActivity", ": permission denied for external storage access")
@@ -348,72 +347,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * gets the file from the url then reads it and returns it
-     *
-     * @param uri url to file
-     * @return the content of the file in a ArrayList<Sting>
-    </Sting> */
-    private fun getFileContentFromUri(uri: Uri?): ArrayList<String> {
-        val fileContents = ArrayList<String>()
-        try {
-            // Get the ContentResolver for the current context.
-            val resolver = contentResolver
-
-            // Open an InputStream for the file represented by the Uri.
-            val inputStream = resolver.openInputStream(uri!!)
-
-            // Create a BufferedReader to read the file contents.
-            val reader = BufferedReader(InputStreamReader(inputStream))
-
-            // Read the file line by line and add each line to the fileContents list.
-            var line: String? = ""
-            while (line != null) {
-                line = reader.readLine()
-                if (line == null) break
-                fileContents.add(line)
-            }
-
-            // Close the BufferedReader and InputStream.
-            reader.close()
-            inputStream!!.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-            FileLog.e("MainActivity", ":  Error while getting file content from Uri : $e")
-
-        }
-        return fileContents
-    }
-
-    /**
-     * reads a file and returns it
-     *
-     * @param file a file
-     * @return the content of the file in a ArrayList<Sting>
-    </Sting> */
-    private fun getFileContent(file: File?): ArrayList<String> {
-        val fileContents = ArrayList<String>()
-        try {
-
-            // Create a BufferedReader to read the file contents.
-            val reader = BufferedReader(FileReader(file))
-
-            // Read the file line by line and add each line to the fileContents list.
-            var line: String? = ""
-            while (line != null) {
-                line = reader.readLine()
-                if (line == null) break
-                fileContents.add(line)
-            }
-
-            // Close the BufferedReader and InputStream.
-            reader.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-            FileLog.e("MainActivity", ":  Error while reading file : $e")
-        }
-        return fileContents
-    }
 
     private fun settingsButton() {
         val settingsButton = findViewById<Button>(R.id.settings_button)
@@ -424,143 +357,101 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun saveToFireBaseDB() {
-        val uid = FirebaseAuth.getInstance().currentUser!!.uid
-        val db = Firebase.firestore
-
-        var userMap = hashMapOf<String, Any>()
-
-        db.collection("user").document(uid).get().addOnSuccessListener {
-            if (it != null) {
-                userMap = it.data as HashMap<String, Any>
-            }
-
-            val appSettings = AppSettings(
-                uid,
-                PreferenceHelper.getSelectedType(this),
-                PreferenceHelper.getUseStrictType(this)
-            )
-            val appSettingsMap = appSettings.toHashMap()
-
-            userMap.putAll( if (appModel?.appType!! != AppType.CdCsvParser) {
-                hashMapOf(
-                    "appModelCard" to appModel!!.toHashMap(),
-                    "appSettings" to appSettingsMap
-                )
-            } else {
-                hashMapOf(
-                    "appModel" to appModel!!.toHashMap(),
-                    "appSettings" to appSettingsMap
-                )
-            })
-
-
-            db.collection("user").document(uid).set(userMap).addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    // Data saved successfully
-                    Toast.makeText(this, "Data saved successfully", Toast.LENGTH_SHORT).show()
-                } else {
-                    // Handle database error
-                    Toast.makeText(this, "Error saving data", Toast.LENGTH_SHORT).show()
-                    FileLog.e("MainActivity", "Error saving data to database ${task.exception}")
-                }
-            }
-        }
-
-
-    }
-
     private fun loadFromFireBaseDB() {
         showProgressDialog()
-        val uid = FirebaseAuth.getInstance().currentUser!!.uid
-        //val database = FirebaseDatabase.getInstance()
-        val db = Firebase.firestore
-        // Add data to the txApp object
+//        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+//        //val database = FirebaseDatabase.getInstance()
+//        val db = Firebase.firestore
+//        // Add data to the txApp object
+//
+//        val user = db.collection("user").document(uid)
+//        user.get()
+//            .addOnSuccessListener { document ->
+//                if (document != null) {
+//                    val userMap = document.data as HashMap<String, Any>?
+//                    if (userMap == null) {
+//                        Toast.makeText(this, "Error loading data", Toast.LENGTH_SHORT).show()
+//                        return@addOnSuccessListener
+//                    }
+//                    val appSettings = userMap["appSettings"] as HashMap<String, Any>?
+//
+//                    val dbVersion = appSettings?.get("dbVersion")
+//
+//                    if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
+//                        //when lower than this than it does not work with the db, has to switch to older version
+//                        val text =
+//                            "Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload."
+//                        Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+//                        return@addOnSuccessListener
+//                    }
+//
+//                    var txAppMap = userMap["appModel"] as HashMap<String, Any>?
+//                    if (txAppMap == null) {
+//                        txAppMap = userMap["appModelCard"] as HashMap<String, Any>?
+//                    }
+//
+//                    txAppMap = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser || userMap["appModelCard"] == null) {
+//                        userMap["appModel"] as HashMap<String, Any>?
+//                    } else {
+//                        userMap["appModelCard"] as HashMap<String, Any>?
+//                    }
+//
+//                    val appType = AppType.valueOf(appSettings["appType"] as String)
+//
+//                    val useStrictType = appSettings["useStrictType"] as Boolean
+//
+//                    var dbOutsideWallets: ArrayList<HashMap<String, *>>? = null
+//
+//                    if (txAppMap != null) {
+//                        val dbWallets = txAppMap["wallets"]
+//                        if (appType == AppType.CdCsvParser) {
+//                            dbOutsideWallets =
+//                                txAppMap["outsideWallets"] as ArrayList<HashMap<String, *>>?
+//                        }
+//                        val dbTransactions =
+//                            txAppMap["transactions"]
+//                        val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
+//                        val appTypeString = txAppMap["appType"] as String? ?: ""
+//                        val appType = AppType.valueOf(appTypeString)
+//
+//                        CoreService.startServiceWithFirebaseData(
+//                            dbWallets as ArrayList<HashMap<String, *>>?,
+//                            dbOutsideWallets,
+//                            dbTransactions as ArrayList<HashMap<String, *>>?,
+//                            appType,
+//                            amountTxFailed,
+//                            useStrictType
+//                        )
+//
+//                        PreferenceHelper.setSelectedType(this, appType)
+//                        PreferenceHelper.setUseStrictType(
+//                            this,
+//                            appSettings["useStrictType"] as Boolean
+//                        )
+//                        callParseView(saveToDB = false)
+//                    } else {
+//                        FileLog.w(
+//                            "MainActivity",
+//                            "loadFromFireBaseDB: txAppMap is null: userMap: $userMap"
+//                        )
+//                    }
+//                } else {
+//                    // Handle database error
+//                    FileLog.e("MainActivity", ":  Error document is null")
+//
+//                }
+//            }.addOnFailureListener { exception ->
+//                FileLog.e("MainActivity", ":  Error while loading document : ${exception.message}")
+//
+//            }
 
-        val user = db.collection("user").document(uid)
-        user.get()
-            .addOnSuccessListener { document ->
-                if (document != null) {
-                    val userMap = document.data as HashMap<String, Any>?
-                    if (userMap == null) {
-                        Toast.makeText(this, "Error loading data", Toast.LENGTH_SHORT).show()
-                        return@addOnSuccessListener
-                    }
-                    val appSettings = userMap["appSettings"] as HashMap<String, Any>?
+        //start ACTION_START_SERVICE_WITH_FIREBASE_DATA
+        val intent = Intent(this@MainActivity, CoreService::class.java)
+        intent.action = CoreService.ACTION_START_SERVICE_WITH_FIREBASE_DATA
+        startService(intent)
 
-                    val dbVersion = appSettings?.get("dbVersion")
+        callParseView(saveToDB = false)
 
-                    if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
-                        //when lower than this than it does not work with the db, has to switch to older version
-                        context = applicationContext
-                        val text =
-                            "Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload."
-                        val duration = Toast.LENGTH_LONG
-                        val toast = Toast.makeText(context, text, duration)
-                        toast.show()
-                        return@addOnSuccessListener
-                    }
-
-                    var txAppMap = userMap["appModel"] as HashMap<String, Any>?
-                    if (txAppMap == null) {
-                        txAppMap = userMap["appModelCard"] as HashMap<String, Any>?
-                    }
-
-                    txAppMap = if (PreferenceHelper.getSelectedType(applicationContext) == AppType.CdCsvParser || userMap["appModelCard"] == null) {
-                        userMap["appModel"] as HashMap<String, Any>?
-                        txAppMap ?: userMap["appModelCard"] as HashMap<String, Any>?
-                    } else {
-                        userMap["appModelCard"] as HashMap<String, Any>?
-                    }
-
-                    val appType = AppType.valueOf(appSettings["appType"] as String)
-
-                    val useStrictType = appSettings["useStrictType"] as Boolean
-
-                    var dbOutsideWallets: ArrayList<HashMap<String, *>>? = null
-
-                    if (txAppMap != null) {
-                        val dbWallets = txAppMap["wallets"]
-                        if (appType == AppType.CdCsvParser) {
-                            dbOutsideWallets =
-                                txAppMap["outsideWallets"] as ArrayList<HashMap<String, *>>?
-                        }
-                        val dbTransactions =
-                            txAppMap["transactions"]
-                        val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
-                        val appTypeString = txAppMap["appType"] as String? ?: ""
-                        val appType = AppType.valueOf(appTypeString)
-
-                        this.appModel = AppModel(
-                            dbWallets as ArrayList<HashMap<String, *>>?,
-                            dbOutsideWallets,
-                            dbTransactions as ArrayList<HashMap<String, *>>?,
-                            appType,
-                            amountTxFailed,
-                            useStrictType
-                        )
-
-                        PreferenceHelper.setSelectedType(this, appType)
-                        PreferenceHelper.setUseStrictType(
-                            this,
-                            appSettings["useStrictType"] as Boolean
-                        )
-                        callParseView(false)
-                    } else {
-                        FileLog.w(
-                            "MainActivity",
-                            "loadFromFireBaseDB: txAppMap is null: userMap: $userMap"
-                        )
-                    }
-                } else {
-                    // Handle database error
-                    FileLog.e("MainActivity", ":  Error document is null")
-
-                }
-            }.addOnFailureListener { exception ->
-                FileLog.e("MainActivity", ":  Error while loading document : ${exception.message}")
-
-            }
     }
 
     fun showProgressDialog() {

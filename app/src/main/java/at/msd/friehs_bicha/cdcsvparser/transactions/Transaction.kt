@@ -1,9 +1,14 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import com.google.firebase.Timestamp
 import java.io.Serializable
 import java.math.BigDecimal
@@ -13,8 +18,18 @@ import java.util.Date
 /**
  * Represents a Transaction object
  */
+@Entity(tableName = "transactions",
+    foreignKeys = [ForeignKey(
+        entity = Wallet::class,
+        parentColumns = ["walletId"],
+        childColumns = ["walletId"],
+        onDelete = ForeignKey.CASCADE
+    )]
+)
+@TypeConverters(Converter::class, Converter.BigDecimalConverter::class)
 open class Transaction : Serializable {
 
+    @PrimaryKey
     var transactionId: Int
 
     var description: String
@@ -152,12 +167,33 @@ open class Transaction : Serializable {
         this.isOutsideTransaction = outsideTransaction
     }
 
+    constructor(txData: TransactionData) {
+        this.transactionId = txData.transactionId
+        this.date = txData.date
+        this.description = txData.description
+        this.currencyType = txData.currencyType
+        this.amount = BigDecimal(txData.amount)
+        this.nativeAmount = BigDecimal(txData.nativeAmount)
+        this.amountBonus = BigDecimal(txData.amountBonus)
+        this.transactionType = txData.transactionType
+        this.transHash = txData.transHash
+        this.toCurrency = txData.toCurrency
+        this.toAmount = BigDecimal(txData.toAmount)
+        this.walletId = txData.walletId
+        this.fromWalletId = txData.fromWalletId
+        this.isOutsideTransaction = txData.isOutsideTransaction
+    }
+
 
     override fun toString(): String {
         return """${date.toString()}
                 Description: $description
                 Amount: ${nativeAmount.round(MathContext(5))} €
                 AssetAmount: ${amount.round(MathContext(5))} $currencyType"""
+    }
+
+    open fun getTxTypeString(): CharSequence? {
+        return transactionType.toString()
     }
 
     companion object {
@@ -270,8 +306,8 @@ open class Transaction : Serializable {
                 }
                 return t
             } else {
-                println(sa.contentToString())
-                println(sa.size)
+                FileLog.e("TxApp", sa.contentToString())
+                FileLog.e("TxApp", sa.size.toString())
                 FileLog.e(
                     "TxApp",
                     "Error while processing the following transaction: $line"

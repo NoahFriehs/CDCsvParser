@@ -1,5 +1,10 @@
 package at.msd.friehs_bicha.cdcsvparser.transactions
 
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.TypeConverters
+import at.msd.friehs_bicha.cdcsvparser.util.Converter
+import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import com.google.firebase.Timestamp
 import java.io.Serializable
 import java.math.BigDecimal
@@ -10,6 +15,15 @@ import java.util.Date
  * Cro card transaction
  *
  */
+@Entity(tableName = "card_transactions",
+    foreignKeys = [ForeignKey(
+        entity = CroCardWallet::class,
+        parentColumns = ["walletId"],
+        childColumns = ["walletId"],
+        onDelete = ForeignKey.CASCADE
+    )]
+)
+@TypeConverters(Converter::class, Converter.BigDecimalConverter::class)
 open class CroCardTransaction(
     date: String?,
     description: String,
@@ -64,6 +78,73 @@ open class CroCardTransaction(
     init {
         this.transactionTypeString = transactionType!!
     }
+
+    //constructor for all members:
+    constructor(
+        transactionId: Int,
+        description: String,
+        walletId: Int,
+        fromWalletId: Int,
+        date: Date,
+        currencyType: String,
+        amount: BigDecimal,
+        nativeAmount: BigDecimal,
+        amountBonus: BigDecimal,
+        transactionType: TransactionType,
+        transactionTypeString: String,
+        transHash: String?,
+        toCurrency: String?,
+        toAmount: BigDecimal?,
+        isOutsideTransaction: Boolean
+    ) : this(
+        date.toString(),
+        description,
+        currencyType,
+        amount,
+        nativeAmount,
+        transactionTypeString
+    ) {
+        this.transactionId = transactionId
+        this.walletId = walletId
+        this.fromWalletId = fromWalletId
+        this.date = date
+        this.currencyType = currencyType
+        this.amount = amount
+        this.nativeAmount = nativeAmount
+        this.amountBonus = amountBonus
+        this.transHash = transHash
+        this.toCurrency = toCurrency
+        this.toAmount = toAmount
+        this.isOutsideTransaction = isOutsideTransaction
+        this.transactionTypeString = transactionType.toString()
+    }
+
+    constructor(date: TransactionData) : this(
+        date.date.toString(),
+        date.description,
+        date.currencyType,
+        BigDecimal(date.amount),
+        BigDecimal(date.nativeAmount),
+        date.transactionTypeString
+    ) {
+        this.transactionId = date.transactionId
+        this.walletId = date.walletId
+        this.fromWalletId = date.fromWalletId
+        this.date = date.date
+        this.currencyType = date.currencyType
+        this.amountBonus = BigDecimal(date.amountBonus)
+        this.transHash = date.transHash
+        this.toCurrency = date.toCurrency
+        this.toAmount = BigDecimal(date.toAmount)
+        this.isOutsideTransaction = date.isOutsideTransaction
+        this.transactionTypeString = date.transactionTypeString
+    }
+
+
+    override fun getTxTypeString(): CharSequence? {
+        return transactionTypeString
+    }
+
 
     override fun toString(): String {
         if (currencyType != "EUR") {

@@ -81,37 +81,29 @@ object Converter {
         }
     }
 
-    /**
-     * Converts a BigDecimal to a Double
-     */
-    @TypeConverter
-    fun bdToDouble(bd: BigDecimal): Double {
-        return bd.toDouble()
+    fun doubleToStringConverter(number: Double?): String? {
+        return try {
+            val result: String = "%.20f".format(number).replace("0*$".toRegex(), "")
+            result
+        } catch (e: Exception) {
+            FileLog.w("Converter", "doubleToStringConverter: $number | ${e.message}")
+            null
+        }
     }
 
-    /**
-     * Converts a BigDecimal to a String
-     *
-     * @param value the BigDecimal to be converted
-     * @return the String of the BigDecimal
-     */
-    @JvmStatic
-    @TypeConverter
-    fun toString(value: BigDecimal?): String? {
-        return value?.toString()
+
+    class BigDecimalConverter {
+        @TypeConverter
+        fun fromBigDecimal(value: BigDecimal?): String? {
+            return value?.toString()
+        }
+
+        @TypeConverter
+        fun toBigDecimal(value: String?): BigDecimal? {
+            return value?.let { BigDecimal(it) }
+        }
     }
 
-    /**
-     * Converts a String to a BigDecimal
-     *
-     * @param value the String to be converted
-     * @return the BigDecimal of the String
-     */
-    @JvmStatic
-    @TypeConverter
-    fun toBigDecimal(value: String?): BigDecimal? {
-        return if (value == null) null else BigDecimal(value)
-    }
 
     @JvmStatic
     @TypeConverter

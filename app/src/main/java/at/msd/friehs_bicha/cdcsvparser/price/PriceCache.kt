@@ -1,20 +1,76 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import java.io.Serializable
 import java.time.Instant
 
 /**
- * Object to store price for a specific token for 5 mins
+ * Object to store prices for 5 mins
  */
-class PriceCache(id: String?, price: Double) : Serializable {
+class PriceCache : Serializable {
+    private val cache: HashMap<String, Cache> = HashMap()
+
+    /**
+     * Checks if the price of the symbol is stored
+     *
+     * @param symbol the symbol to be checked for
+     * @return a price if it has it it else -1
+     */
+    fun checkCache(symbol: String): Double {
+        val cacheToCheck = cache[symbol]
+        if (cacheToCheck != null)
+        {
+            if (cacheToCheck.isOlderThanFiveMinutes) {
+                FileLog.d("PriceCache", "removed cache for ${cacheToCheck.id}")
+                cache.remove(symbol)
+                return -1.0
+            }
+            return cacheToCheck.price
+        }
+        return -1.0
+    }
+
+    fun testCache(symbol: String): Boolean {
+        return cache.containsKey(symbol) && !cache[symbol]!!.isOlderThanFiveMinutes
+    }
+
+    /**
+     * Adds a price to the cache
+     *
+     * @param symbol the symbol of the price
+     * @param price the price to be added
+     */
+    fun addPrice(symbol: String, price: Double) {
+        val cacheToAdd = Cache(symbol, price)
+        cache[symbol] = cacheToAdd
+        FileLog.d("PriceCache", "added cache for ${cacheToAdd.id}")
+    }
+
+    fun reloadCache(assetValue: AssetValue) {
+        cache.forEach {
+            val price = assetValue.getPrice(it.key)
+            if (price != 0.0) {
+                cache[it.key] = Cache(it.key, price)
+            }
+        }
+    }
+
+
+}
+
+
+/**
+ * Cache class to store a symbol with the price and the time of creation
+ */
+class Cache(id: String?, price: Double) : Serializable {
     val id: String?
     val price: Double
     private val creationTime: Instant
 
     init {
-        creationTime = Instant.now()
         this.id = id
         this.price = price
+        creationTime = Instant.now()
     }
 
     /**

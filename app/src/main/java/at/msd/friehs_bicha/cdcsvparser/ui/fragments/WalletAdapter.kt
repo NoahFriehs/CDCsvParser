@@ -9,8 +9,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.AssetsFilterActivity
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.wallet.IWalletAdapterCallback
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 /**
@@ -25,10 +26,14 @@ class WalletAdapter(val wallets: List<Wallet>) :
             itemView.setOnClickListener {
                 val walletId =
                     itemView.findViewById<TextView>(R.id.walletId).text.toString().toInt()
-                val appModel = AppModelManager.getInstance()
-                val wallet = appModel.txApp!!.wallets.find { it.walletId == walletId }
+
+                if (!CoreService.isRunning) {
+                    FileLog.e("WalletAdapter", "CoreService is not running.")
+                    return@setOnClickListener
+                }
+
                 val intent = Intent(itemView.context, AssetsFilterActivity::class.java)
-                intent.putExtra("wallet", wallet)
+                intent.putExtra("walletID", walletId)
                 itemView.context.startActivity(intent)
             }
         }
@@ -46,9 +51,17 @@ class WalletAdapter(val wallets: List<Wallet>) :
 
     override fun onBindViewHolder(holder: WalletViewHolder, position: Int) {
         val wallet = wallets[position]
-        val waMap = AppModelManager.getInstance().getWalletAdapter(wallet)
+        val waMap = CoreService.getWalletAdapter(wallet.walletId)
+
         displayTexts(waMap, holder, holder.itemView.context)
     }
+
+
+    val readData = (object : IWalletAdapterCallback {
+        override fun onCallback(value: MutableMap<String, String?>, holder: WalletViewHolder) {
+            displayTexts(value, holder, holder.itemView.context)
+        }
+    })
 
 
     /**

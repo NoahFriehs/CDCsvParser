@@ -10,8 +10,9 @@ import android.widget.EditText
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
+import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 
@@ -19,6 +20,9 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
  * Activity for the wallet view page (wallet list)
  */
 class WalletViewActivity : AppCompatActivity() {
+
+    private var isCacheloaded = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_wallet_view)
@@ -26,8 +30,14 @@ class WalletViewActivity : AppCompatActivity() {
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 
-        val appModel = AppModelManager.getInstance()
-        val wallets = appModel.txApp!!.wallets
+        var wallets = CoreService.allWalletsLiveData.value ?: ArrayList<Wallet>()
+
+        if (wallets.isEmpty()) {
+            CoreService.walletsLiveData.value?.let {
+                wallets = it
+            }
+            isCacheloaded = true
+        }
 
         val spinnerValueSpinner = findViewById<Spinner>(R.id.sorting_value)
         val sortingValues = listOf<String>(
@@ -107,8 +117,8 @@ class WalletViewActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable) {
                 val text = editText.text.toString()
 
-                if (text == "") {
-                    sortedWallets = sortWallets(
+                sortedWallets = if (text == "") {
+                    sortWallets(
                         wallets,
                         spinnerValueSpinner.selectedItem.toString(),
                         spinnerTypeSpinner.selectedItem.toString()
@@ -116,7 +126,7 @@ class WalletViewActivity : AppCompatActivity() {
                 } else {
                     sortedWallets.clear()
                     sortedWallets.addAll(filterWalletsByUserSearch(wallets, text))
-                    sortedWallets = sortWallets(
+                    sortWallets(
                         sortedWallets,
                         spinnerValueSpinner.selectedItem.toString(),
                         spinnerTypeSpinner.selectedItem.toString()
@@ -164,7 +174,7 @@ class WalletViewActivity : AppCompatActivity() {
         when (sortingValue) {
             resources.getString(R.string.sort_amount) -> {
                 sortedWallets = sortedWallets.sortedByDescending {
-                    AppModelManager.getInstance().getValueOfAssets(it)
+                    CoreService.getValueOfAssetsFromWID(it.walletId)
                 }.toList() as ArrayList<Wallet>
             }
 
@@ -175,7 +185,7 @@ class WalletViewActivity : AppCompatActivity() {
 
             resources.getString(R.string.sort_percent) -> {
                 sortedWallets = sortedWallets.sortedWith(compareByDescending {
-                    val assetValue = AppModelManager.getInstance().getValueOfAssets(it)
+                    val assetValue = CoreService.getValueOfAssetsFromWID(it.walletId)
                     val percentProfit = assetValue / it.moneySpent.toDouble() * 100
                     percentProfit
                 }).toList() as ArrayList<Wallet>
@@ -183,7 +193,7 @@ class WalletViewActivity : AppCompatActivity() {
 
             resources.getString(R.string.sort_transactions) -> {
                 sortedWallets =
-                    sortedWallets.sortedWith(compareByDescending { it.transactions?.size ?: 0 })
+                    sortedWallets.sortedWith(compareByDescending { it.transactions.size })
                         .toList() as ArrayList<Wallet>
             }
         }
@@ -194,6 +204,9 @@ class WalletViewActivity : AppCompatActivity() {
     }
 
     fun filterWalletsByUserSearch(wallets: ArrayList<Wallet>, query: String): List<Wallet> {
-        return wallets.filter { it.currencyType?.contains(query, ignoreCase = true) == true }
+        if (wallets[0] is CroCardWallet) {
+            return wallets.filter { (it as CroCardWallet).transactionType!!.contains(query, ignoreCase = true) }
+        }
+        return wallets.filter { it.currencyType.contains(query, ignoreCase = true) }
     }
 }

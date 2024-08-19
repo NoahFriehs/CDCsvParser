@@ -12,7 +12,7 @@ open class DBWallet(wallet: Wallet?, overridTX: Boolean = false) : Serializable 
 
     var transactions: MutableList<DBTransaction?>? = null
 
-    var currencyType: String?
+    var currencyType: String
 
     var amount: Double
 

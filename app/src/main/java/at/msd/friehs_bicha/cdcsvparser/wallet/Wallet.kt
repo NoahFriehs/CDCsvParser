@@ -1,42 +1,50 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import java.io.Serializable
 import java.math.BigDecimal
 
 /**
  * Represents a basic Wallet
  */
+@Entity(tableName = "wallets")
+@TypeConverters(Converter::class, Converter.BigDecimalConverter::class)
 open class Wallet : Serializable {
 
+    @PrimaryKey
     var walletId: Int
 
+    @Ignore
+    var transactions: MutableList<Transaction?> = mutableListOf()
 
-    var transactions: MutableList<Transaction?>? = null
+    var currencyType: String
 
-    var currencyType: String?
+    var amount: BigDecimal = BigDecimal.ZERO
 
-    var amount: BigDecimal
+    var amountBonus: BigDecimal = BigDecimal.ZERO
 
-    var amountBonus: BigDecimal
-
-    var moneySpent: BigDecimal
+    var moneySpent: BigDecimal = BigDecimal.ZERO
 
     var isOutsideWallet = false
 
-    constructor(currencyType: String?, amount: BigDecimal?, nativeAmount: BigDecimal?) {
+    @Ignore
+    constructor(currencyType: String, amount: BigDecimal?, nativeAmount: BigDecimal?) {
         this.currencyType = currencyType
-        this.amount = BigDecimal(0)
         this.amount = this.amount.add(amount)
-        moneySpent = BigDecimal(0)
         moneySpent = moneySpent.add(nativeAmount)
-        amountBonus = BigDecimal(0)
+        amountBonus = BigDecimal.ZERO
         transactions = ArrayList()
         walletId = ++uidCounter
     }
 
+    @Ignore
     constructor(
-        currencyType: String?,
+        currencyType: String,
         amount: BigDecimal,
         amountBonus: BigDecimal,
         moneySpent: BigDecimal
@@ -49,8 +57,9 @@ open class Wallet : Serializable {
         walletId = ++uidCounter
     }
 
+    @Ignore
     constructor(
-        currencyType: String?,
+        currencyType: String,
         amount: BigDecimal,
         amountBonus: BigDecimal,
         moneySpent: BigDecimal,
@@ -60,13 +69,15 @@ open class Wallet : Serializable {
         this.amount = amount
         this.amountBonus = amountBonus
         this.moneySpent = moneySpent
-        this.transactions = transactions
+        if (transactions != null) {
+            this.transactions.addAll(transactions)
+        }
         walletId = ++uidCounter
     }
 
     constructor(
         walletId: Int,
-        currencyType: String?,
+        currencyType: String,
         amount: BigDecimal,
         amountBonus: BigDecimal,
         moneySpent: BigDecimal,
@@ -77,12 +88,14 @@ open class Wallet : Serializable {
         this.amount = amount
         this.amountBonus = amountBonus
         this.moneySpent = moneySpent
-        this.transactions = transactions
+        if (transactions != null) {
+            this.transactions = transactions
+        }
     }
 
     constructor(
         walletId: Int,
-        currencyType: String?,
+        currencyType: String,
         amount: BigDecimal,
         amountBonus: BigDecimal,
         moneySpent: BigDecimal
@@ -101,7 +114,6 @@ open class Wallet : Serializable {
         amountBonus = wallet.amountBonus
         moneySpent = wallet.moneySpent
         transactions = wallet.transactions
-        if (transactions == null) transactions = ArrayList()
         isOutsideWallet = wallet.isOutsideWallet
     }
 
@@ -112,15 +124,14 @@ open class Wallet : Serializable {
         amountBonus = BigDecimal(wallet.amountBonus)
         moneySpent = BigDecimal(wallet.moneySpent)
         wallet.transactions?.forEach { transaction ->
-            transactions?.add(transaction?.let { Transaction(it) })
+            transactions.add(transaction?.let { Transaction(it) })
         }
-        if (transactions == null) transactions = ArrayList()
         isOutsideWallet = wallet.isOutsideWallet
     }
 
     constructor(
         walletId: Long,
-        currencyType: String?,
+        currencyType: String,
         amount: Double,
         amountBonus: Double,
         moneySpent: Double,
@@ -134,6 +145,16 @@ open class Wallet : Serializable {
         this.moneySpent = BigDecimal(moneySpent)
         this.transactions = transactions
         this.isOutsideWallet = outsideWallet
+    }
+
+    constructor(data: WalletData) {
+        walletId = data.walletId
+        currencyType = data.currencyType
+        amount = BigDecimal(data.balance)
+        amountBonus = BigDecimal(data.bonusBalance)
+        moneySpent = BigDecimal(data.moneySpent)
+        isOutsideWallet = data.isOutsideWallet
+        transactions = ArrayList()
     }
 
     /**
@@ -164,6 +185,10 @@ open class Wallet : Serializable {
      */
     open fun addTransaction(transaction: Transaction) {
         throw UnsupportedOperationException()
+    }
+
+    open fun getTypeString(): String {
+        return currencyType
     }
 
 

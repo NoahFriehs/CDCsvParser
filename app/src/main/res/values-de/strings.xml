@@ -13,9 +13,9 @@
     <string name="all_transactions">Alle Transaktionen</string>
     <string name="choose_asset">Asset auswählen</string>
     <string name="amount_of_asset">Menge des Assets</string>
-    <string name="all_transactions_regarding">"Alle Transaktionen zu "</string>
+    <string name="all_transactions_regarding">Alle Transaktionen zu %s</string>
     <string name="show_history">Verlauf anzeigen</string>
-    <string name="coinGeckoAttribution">Alle Preise bereitgestellt von \n Crypto Compare API \n<a href="https://min-api.cryptocompare.com/">https://min-api.cryptocompare.com</a></string>
+    <string name="coinGeckoAttribution">Alle Preise bereitgestellt von \n<a href="https://min-api.cryptocompare.com/">CryptoCompare API</a></string>
     <string name="settings">Einstellungen</string>
     <string name="use_strict_wallet_type">Verwende strikten Wallet-Typ (Nur für Karten)</string>
     <string name="email">E-Mail:</string>
@@ -81,6 +81,11 @@
     <string name="assetvalue_placeholder">assetValue</string>
     <string name="asset_amount">Anzahl Coins:</string>
     <string name="description">Beschreibung:</string>
+    <string name="user_needs_to_autheticate">Der Benutzer muss sich neu authentifizieren.</string>
+    <string name="store_data_local_needed_for_faststart">Daten lokal speichern (erforderlich für FastStart)</string>
+    <string name="enable_faststart">FastStart einschalten</string>
+    <string name="overview_tab_crypto_text">Krypto</string>
+    <string name="overview_tab_card_text">Karte</string>
     <string name="user_deleted">Account wurde gelöscht</string>
 
 </resources>

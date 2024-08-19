@@ -4,6 +4,7 @@ import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionManager
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.io.Serializable
 import java.util.function.Consumer
 
@@ -31,7 +32,7 @@ class StandardTxApp : BaseApp, Serializable {
     }
 
     /**
-     * Constructor
+     * Constructor (from Firebase)
      *
      * @param tXs transactions
      * @param wTXs wallets
@@ -63,6 +64,39 @@ class StandardTxApp : BaseApp, Serializable {
 
         this.wallets = ArrayList(wTXs)
         this.outsideWallets = ArrayList(wTXsOutside)
+        this.amountTxFailed = amountTxFailed
+    }
+
+    /**
+     * Constructor (from AndroidDB)
+     *
+     * @param tXs transactions
+     * @param wTXs wallets
+     * @param wTXsOutside outside wallets
+     * @param amountTxFailed amount of failed transactions
+     * @param appType app type
+     * @param dummy dummy
+     */
+    constructor(tXs: MutableList<Transaction>, wTXs: MutableList<Wallet>, wTXsOutside: MutableList<Wallet>, amountTxFailed: Long, appType: AppType, dummy: Boolean)
+    {
+        this.transactions = tXs as ArrayList<Transaction>
+        when (appType) {
+            AppType.CdCsvParser -> {
+                wTXs.forEach(Consumer { wallet: Wallet ->
+                    wallets.add(CDCWallet(wallet, this))
+                })
+                wTXsOutside.forEach(Consumer { wallet: Wallet ->
+                    outsideWallets.add(CDCWallet(wallet, this))
+                })
+            }
+
+            else -> {
+                FileLog.e("TxApp:dbConstructor", "not implemented: $appType")
+                throw NotImplementedError("AppType $appType not implemented")
+            }
+
+        }
+
         this.amountTxFailed = amountTxFailed
     }
 

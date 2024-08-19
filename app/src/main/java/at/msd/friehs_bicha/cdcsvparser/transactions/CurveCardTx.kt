@@ -37,6 +37,10 @@ class CurveCardTx(
         }
     }
 
+    override fun getTxTypeString(): CharSequence? {
+        return transactionTypeString
+    }
+
     override fun toString(): String {
         return "${super.toString()} TxType='$txType'"
     }

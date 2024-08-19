@@ -3,5 +3,13 @@
     <string-array name="appTypes">
         <item>CdCsvParser</item>
         <item>CroCard</item>
+        <item>CurveCard</item>
+        <item>Default</item>
+        <item>Custom</item>
+        <item>Kraken</item>
+    </string-array>
+    <string-array name="core_modes">
+        <item>use C++ Core</item>
+        <item>use Kotlin Core</item>
     </string-array>
 </resources>

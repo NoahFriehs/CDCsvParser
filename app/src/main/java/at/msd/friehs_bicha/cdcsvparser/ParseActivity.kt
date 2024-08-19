@@ -7,14 +7,14 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
+import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 
 class ParseActivity : AppCompatActivity() {
-    var appModel: AppModel? = null
     private lateinit var progressDialog: Dialog
 
     @JvmField
@@ -29,46 +29,39 @@ class ParseActivity : AppCompatActivity() {
         // calling the action bar
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
-        getAppModel()
         val btnFilter = findViewById<Button>(R.id.btn_filter)
         val btnTx = findViewById<Button>(R.id.btn_all_tx)
         btnFilter.setOnClickListener {
-            if (appModel!!.isRunning) {
                 val intent = Intent(this@ParseActivity, WalletViewActivity::class.java)
                 startActivity(intent)
-            }
         }
         btnTx.setOnClickListener {
-            if (appModel!!.isRunning) {
-                val intent = Intent(this@ParseActivity, TransactionsActivity::class.java)
-                startActivity(intent)
-            }
+            val intent = Intent(this@ParseActivity, TransactionsActivity::class.java)
+            startActivity(intent)
         }
 
         //trys to get the prices from api and the prints the values depending on the answer of coingeko api
         displayInformation()
     }
 
-    private fun getAppModel() {
-        appModel = AppModelManager.getInstance()
-    }
-
     /**
      * Displays the prices of all assets
      */
     private fun displayInformation() {
-        //get and set prices
-        val t = Thread {
-            try {
-                displayTexts(appModel?.parseMap)
-                isReady = true
-                hideProgressDialog()
-            } catch (e: InterruptedException) {
-                FileLog.e("ParseActivity", " : $e")
-                throw RuntimeException(e)
-            }
+        CoreService.parsedDataLiveData.observe(this) {
+            Benchmarker.stop()
+            displayTexts(it)
+            FileLog.d("ParseActivity", "parsedDataLiveData changed")
+            isReady = true
+            hideProgressDialog()
         }
-        t.start()
+        CoreService.errorCounter.observe(this) {
+            FileLog.w("ParseActivity", "errorCounterLiveData changed")
+            Toast.makeText(this, "Error while parsing", Toast.LENGTH_LONG).show()
+            isReady = false
+            hideProgressDialog()
+            finish()
+        }
     }
 
     /**

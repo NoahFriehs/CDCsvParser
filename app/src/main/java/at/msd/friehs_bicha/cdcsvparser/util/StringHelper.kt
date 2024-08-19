@@ -81,19 +81,22 @@ object StringHelper {
      * @return the manipulated String
      */
     fun removeLastZeros(amount: String): String {
-        var amount = amount
-
-        val delimiter = if (amount.contains(",")) "," else "."
-
-        var amountParts = amount.split(delimiter)
-        if (amountParts.size == 2) {
-            if (amount.startsWith("0")) amount = amount.removePrefix("0")
-            if (amount.startsWith(delimiter)) amount = "0$amount"
-            amountParts = amount.split(delimiter)
-            if (amount.endsWith("0")) amount =
-                amountParts[0] + delimiter + amountParts[1].replace("0", "")
-            if (amount.endsWith(delimiter)) amount += "0"
+        val chars = amount.toCharArray()
+        var index = amount.length - 1
+        while (index >= 0) {
+            if (chars[index] != '0') {
+                break
+            }
+            index--
         }
-        return amount
+        var ret = if (index == amount.length - 1) {
+            amount
+        } else {
+            amount.substring(0, index + 1)
+        }
+        if (ret.endsWith(".") || ret.endsWith(",")) {
+            ret = ret.substring(0, ret.length - 1)
+        }
+        return ret
     }
 }

@@ -17,14 +17,43 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Spinner
+        android:id="@+id/core_mode_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/settings_spinner_height"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginTop="@dimen/settings_margin_top_bottom"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:entries="@array/core_modes"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/wallet_type_spinner" />
+
     <CheckBox
         android:id="@+id/use_strict_wallet_type_checkbox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
-        android:text="@string/use_strict_wallet_type"
+        app:layout_constraintTop_toBottomOf="@+id/wallet_type_spinner"
+        android:text="@string/use_strict_wallet_type" />
+
+    <CheckBox
+        android:id="@+id/cb_store_data_local"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/wallet_type_spinner" />
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@+id/use_strict_wallet_type_checkbox"
+        android:text="@string/store_data_local_needed_for_faststart" />
+
+    <CheckBox
+        android:id="@+id/cb_enable_fast_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        app:layout_constraintTop_toBottomOf="@+id/cb_store_data_local"
+        android:text="@string/enable_faststart" />
 
 
     <Button
@@ -41,7 +70,13 @@
         android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@+id/btn_about_us"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginBottom="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_button_font"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:background="@drawable/round_button_layer_list"
+        android:textAllCaps="false"
+        />
 
 
     <Button
@@ -69,13 +104,8 @@
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/basic_start_end_margin"
         android:background="@drawable/round_button_layer_list"
-        android:text="@string/logout"
         android:textAllCaps="false"
-        android:textSize="@dimen/basic_button_font"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@id/btn_delete_account"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
+        />
 
     <Button
         android:id="@+id/btn_delete_account"
