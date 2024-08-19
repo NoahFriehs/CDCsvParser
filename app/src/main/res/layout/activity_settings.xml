@@ -34,8 +34,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
-        app:layout_constraintTop_toBottomOf="@+id/wallet_type_spinner"
-        android:text="@string/use_strict_wallet_type" />
+        android:text="@string/use_strict_wallet_type"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/core_mode_spinner" />
 
     <CheckBox
         android:id="@+id/cb_store_data_local"
@@ -71,11 +72,6 @@
         app:layout_constraintBottom_toTopOf="@+id/btn_about_us"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginBottom="@dimen/basic_start_end_margin"
-        android:layout_marginEnd="@dimen/basic_button_font"
-        android:layout_marginStart="@dimen/basic_start_end_margin"
-        android:background="@drawable/round_button_layer_list"
-        android:textAllCaps="false"
         />
 
 
@@ -100,12 +96,35 @@
         android:id="@+id/btn_logout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="@string/logout"
+        android:textStyle="bold"
+        android:textSize="@dimen/basic_button_font"
+        app:layout_constraintBottom_toTopOf="@id/btn_delete_account"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/basic_start_end_margin"
         android:background="@drawable/round_button_layer_list"
         android:textAllCaps="false"
         />
+
+    <Button
+        android:id="@+id/btn_login"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginBottom="@dimen/basic_start_end_margin"
+        android:background="@drawable/round_button_layer_list"
+        android:text="@string/login"
+        android:textAllCaps="false"
+        android:textSize="@dimen/basic_button_font"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/btn_permission_request"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
 
     <Button
         android:id="@+id/btn_delete_account"
