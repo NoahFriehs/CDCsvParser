@@ -20,6 +20,12 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+# Keep native method owners so R8/ProGuard cannot rename classes that are
+# referenced from C++ by mangled JNI symbol (Java_at_msd_friehs_1bicha_...).
+-keepclasseswithmembers class at.msd.friehs_bicha.cdcsvparser.core.CoreService {
+    native <methods>;
+}
+
 -dontwarn org.bouncycastle.jsse.BCSSLParameters
 -dontwarn org.bouncycastle.jsse.BCSSLSocket
 -dontwarn org.bouncycastle.jsse.provider.BouncyCastleJsseProvider

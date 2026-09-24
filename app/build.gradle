@@ -8,6 +8,7 @@ plugins {
 android {
     namespace 'at.msd.friehs_bicha.cdcsvparser'
     compileSdk 33
+    ndkVersion "27.0.12077973"
 
     defaultConfig {
         applicationId "at.msd.friehs_bicha.cdcsvparser"
