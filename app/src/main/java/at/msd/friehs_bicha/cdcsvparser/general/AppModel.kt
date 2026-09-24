@@ -45,7 +45,6 @@ class AppModel : BaseAppModel, Serializable {
         appType: AppType,
         useStrictType: Boolean
     ) : super(appType) {
-        val copy = file.clone() as ArrayList<String>    //TODO: remove only for testing -> DEV_ZONE
         txApp = TxAppFactory.createTxApp(
             appType,
             AppStatus.NotStarted,
@@ -54,21 +53,7 @@ class AppModel : BaseAppModel, Serializable {
         )
         this.appType = txApp!!.appType
 
-        // DEV_ZONE
-        if (!CoreService.isRunning && false) {
-            applicationContext.startService(
-                Intent(
-                    applicationContext,
-                    CoreService::class.java
-                ).apply {
-                    action = CoreService.ACTION_START_SERVICE_WITH_DATA
-                    putExtra("data", copy)
-                    putExtra("mode", 0)
-                })
-        }
 
-
-        // DEV_ZONE
 
 
         if (PreferenceHelper.getIsDataLocal(applicationContext)) saveAppModelLocal()
@@ -530,16 +515,6 @@ class AppModel : BaseAppModel, Serializable {
 
 
 
-    fun getWalletAdapterWithCallback(
-        wallet: Wallet,
-        callback: IWalletAdapterCallback,
-        holder: WalletAdapter.WalletViewHolder
-    ) {
-//        Thread {
-//            val map = getWalletAdapter(wallet)
-//            callback.onCallback(map, holder)
-//        }.start()
-    }
 
     fun getTransactionAdapter(transaction: Transaction): MutableMap<String, String?> {
 

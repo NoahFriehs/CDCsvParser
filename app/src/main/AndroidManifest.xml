@@ -15,10 +15,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CDCsvParser">
-        <activity
-            android:name=".ui.activity.OverviewActivity"
-            android:exported="false"
-            android:theme="@style/Theme.CDCsvParser" />
+
         <activity
             android:name=".ui.activity.AboutUsActivity"
             android:exported="false"
@@ -89,7 +86,6 @@
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
-        <service android:name=".networkstateservice.NetworkStateService" />
         <service android:name=".core.CoreService" />
     </application>
 

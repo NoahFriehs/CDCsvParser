@@ -21,7 +21,6 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
  */
 class WalletViewActivity : AppCompatActivity() {
 
-    private var isCacheloaded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +35,6 @@ class WalletViewActivity : AppCompatActivity() {
             CoreService.walletsLiveData.value?.let {
                 wallets = it
             }
-            isCacheloaded = true
         }
 
         val spinnerValueSpinner = findViewById<Spinner>(R.id.sorting_value)

@@ -30,14 +30,14 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
                 FileLog.e("CroCardTxApp", " Error: $e")
                 e.printStackTrace()
             }
-            println("We have " + this.transactions.size + " transaction(s).")
+            FileLog.d("CroCardTxApp", "We have " + this.transactions.size + " transaction(s).")
             try {
                 fillWallet()
             } catch (e: Exception) {
                 FileLog.e("CroCardTxApp", " Error: $e")
                 e.printStackTrace()
             }
-            println("we have " + this.wallets.size + " different transactions.")
+            FileLog.d("CroCardTxApp", "we have " + this.wallets.size + " different transactions.")
             //((CroCardWallet)wallets.get(0)).writeAmount();
         }
     }
@@ -100,8 +100,7 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
                     )
                     transactions.add(t)
                 } else {
-                    println(sa.contentToString())
-                    println(sa.size)
+                    FileLog.d("CroCardTxApp", "Unparsed line, columns: ${sa.size}")
                 }
             } catch (e: Exception) {
                 throw RuntimeException(e)
@@ -116,7 +115,7 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
      * @param walletsExisting wallets existing
      */
     private fun fillWallet(walletsExisting: Boolean = false) {
-        println("Filling Wallets")
+        FileLog.d("CroCardTxApp", "Filling Wallets")
         if (!walletsExisting) {
             wallets.add(CroCardWallet("EUR", BigDecimal.ZERO, "EUR -> EUR", this))
             for (t in transactions) {
@@ -137,7 +136,7 @@ class CroCardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: 
                     }
             }
         }
-        println("Wallets filled")
+        FileLog.d("CroCardTxApp", "Wallets filled")
     }
 
 

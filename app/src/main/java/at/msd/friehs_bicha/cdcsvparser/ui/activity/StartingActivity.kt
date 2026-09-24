@@ -60,10 +60,10 @@ class StartingActivity : ComponentActivity() {
     }
 
     private fun fastStart() {
-        val isLocal =
-            PreferenceHelper.getFastStartEnabled(applicationContext) && PreferenceHelper.getIsAppModelSavedLocal(
-                applicationContext
-            ) && false
+        // Fast start (skip Login when a local model exists) is intentionally
+        // disabled - the old DEV_ZONE hard-coded "&& false" hid that. The
+        // preference flags are kept for re-enabling.
+        val isLocal = false
         if (isLocal) {
             Benchmarker.start()
             AppModelManager.setInstance(AppModel())
