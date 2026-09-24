@@ -82,9 +82,11 @@ object Converter {
     }
 
     fun doubleToStringConverter(number: Double?): String? {
+        if (number == null) return null
         return try {
-            val result: String = "%.20f".format(number).replace("0*$".toRegex(), "")
-            result
+            // Locale-independent: String.format would write a comma as the
+            // decimal separator on e.g. de_DE devices.
+            java.math.BigDecimal.valueOf(number).toPlainString()
         } catch (e: Exception) {
             FileLog.w("Converter", "doubleToStringConverter: $number | ${e.message}")
             null

@@ -6,7 +6,12 @@ import okhttp3.Request
 import org.json.JSONObject
 
 class CryptoPricesCryptoCompare : BaseCryptoPrices() {
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .callTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
     private val baseUrl = "https://min-api.cryptocompare.com/data/"
 
     override fun getPrice(symbol: String): Double? {

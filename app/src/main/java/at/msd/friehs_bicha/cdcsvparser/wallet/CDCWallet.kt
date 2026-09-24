@@ -23,8 +23,6 @@ class CDCWallet : Wallet, Serializable {
         this.isOutsideWallet = isOutsideWallet!!
     }
 
-    constructor(wallet: Wallet?) : super(wallet)
-
     constructor(DBWallet: DBWallet?) : super(DBWallet)
     constructor(
         walletId: Long,

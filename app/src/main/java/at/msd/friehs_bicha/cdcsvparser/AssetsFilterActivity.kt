@@ -122,9 +122,11 @@ class AssetsFilterActivity : AppCompatActivity() {
             resources.getString(R.string.all_transactions_regarding, specificWallet.getTypeString())
 
 
-        //get and set prices
-        val t = Thread { displayTexts(CoreService.getAssetMap(specificWallet.walletId)) }
-        t.start()
+        //get and set prices (JNI - must run on the core thread, then update on UI)
+        val texts = CoreService.onCoreThread {
+            CoreService.getAssetMap(specificWallet.walletId)
+        }
+        displayTexts(texts)
     }
 
     /**

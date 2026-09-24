@@ -107,8 +107,8 @@ open class Wallet : Serializable {
         this.moneySpent = moneySpent
     }
 
-    constructor(wallet: Wallet?) {
-        walletId = wallet!!.walletId
+    constructor(wallet: Wallet) {
+        walletId = wallet.walletId
         currencyType = wallet.currencyType
         amount = wallet.amount
         amountBonus = wallet.amountBonus

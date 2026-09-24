@@ -7,35 +7,12 @@ import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.TimeSpan
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
 import java.math.BigDecimal
-import java.util.Date
 
 /**
- * Transaction Manager
- *
- * @property transactions List of transactions
- * @property cumulativeAmounts Map of cumulative amounts
- * @constructor Create empty Transaction Manager
+ * Transaction Manager: static helpers for parsing / wallet bookkeeping.
+ * (The class body itself carries no state; only the companion is used.)
  */
-class TransactionManager(private val transactions: MutableList<Transaction>?) {
-    private val cumulativeAmounts: MutableMap<Date, BigDecimal> = mutableMapOf()
-
-    init {
-        calculateCumulativeAmounts()
-    }
-
-    private fun calculateCumulativeAmounts() {
-        var balance = BigDecimal.ZERO
-        if (transactions != null) {
-            for (transaction in transactions) {
-                balance += transaction.amount
-                cumulativeAmounts[transaction.date!!] = balance
-            }
-        }
-    }
-
-    fun getBalanceAtDate(date: Date): BigDecimal? {
-        return cumulativeAmounts[date]
-    }
+class TransactionManager {
 
     companion object {
 

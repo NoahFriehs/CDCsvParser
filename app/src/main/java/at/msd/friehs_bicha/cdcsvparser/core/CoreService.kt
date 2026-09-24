@@ -39,6 +39,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -57,17 +58,7 @@ import java.util.function.Consumer
 
 class CoreService : Service() {
 
-    /**
-     * All core work - and in particular every JNI call into the C++ core -
-     * runs on this single "cpp-core" thread. The C++ TransactionManager is
-     * not thread-safe, so the whole JNI surface must stay on one thread;
-     * heavy Kotlin-core work (parsing, DB saves) uses it as well.
-     */
-    private val coreExecutor = Executors.newSingleThreadExecutor {
-        Thread(it, "cpp-core").apply { isDaemon = true }
-    }
-    private val serviceScope =
-        CoroutineScope(SupervisorJob() + coreExecutor.asCoroutineDispatcher())
+    private val serviceScope = CoroutineScope(SupervisorJob() + coreDispatcher)
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -75,7 +66,7 @@ class CoreService : Service() {
 
     override fun onDestroy() {
         serviceScope.cancel()
-        coreExecutor.shutdownNow()
+        CoreService.shutdownCoreThread()
         super.onDestroy()
     }
 
@@ -195,6 +186,10 @@ class CoreService : Service() {
                 if (initWithData(dataArray, data.size, coreMode, logFilePath)) {
                     FileLog.d(TAG, "Initialization with data successful.")
                     isRunning = true
+                    lastFailedLines = getFailedLines().coerceAtLeast(0)
+                    if (lastFailedLines > 0) {
+                        FileLog.w(TAG, "C++ core skipped $lastFailedLines unparsable CSV line(s).")
+                    }
                 } else {
                     FileLog.w(TAG, "Initialization with data failed.")
                     errorCounter.postValue(errorCounter.value?.plus(1) ?: 1)
@@ -536,11 +531,23 @@ class CoreService : Service() {
                 map
             }
 
-            false -> {
-                val specificWallet = appModel!!.txApp!!.wallets.find { it.walletId == walletId }
-                appModel!!.getAssetMap(specificWallet)
-            }
+            false -> walletAssetMapFromKotlinCore(walletId)
         }
+    }
+
+    /**
+     * Null-safe Kotlin-core fallback: look the wallet up without asserting
+     * the model / tx app into existence (card-only data has no txApp).
+     */
+    private fun walletAssetMapFromKotlinCore(walletId: Int): Map<String, String?> {
+        val app = appModel ?: return emptyMap()
+        val wallet = app.txApp?.wallets?.find { it.walletId == walletId }
+            ?: app.cardApp?.wallets?.find { it.walletId == walletId }
+        if (wallet == null) {
+            FileLog.w(TAG, "No wallet with id $walletId found")
+            return emptyMap()
+        }
+        return app.getAssetMap(wallet)
     }
 
     private fun saveToRoomsDB() {
@@ -603,10 +610,7 @@ class CoreService : Service() {
                 map
             }
 
-            false -> {
-                val specificWallet = appModel!!.txApp!!.wallets.find { it.walletId == walletId }
-                appModel!!.getAssetMap(specificWallet)
-            }
+            false -> walletAssetMapFromKotlinCore(walletId)
         }
     }
 
@@ -872,6 +876,8 @@ class CoreService : Service() {
 
 
     private external fun init(logFilePath: String, savePath: String): Boolean
+    private external fun getFailedLines(): Int
+
     private external fun initWithData(
         data: Array<String>,
         dataSize: Int,
@@ -918,6 +924,42 @@ class CoreService : Service() {
     companion object {
 
         private const val TAG = "CoreService"
+        private const val CORE_THREAD_NAME = "cpp-core"
+
+        /**
+         * All core work - and in particular every JNI call into the C++
+         * core - runs on this single "cpp-core" thread. The C++
+         * TransactionManager is not thread-safe, so the whole JNI surface
+         * must stay on one thread; heavy Kotlin-core work (parsing, DB
+         * saves) uses it as well.
+         */
+        private val coreExecutor = Executors.newSingleThreadExecutor {
+            Thread(it, CORE_THREAD_NAME).apply { isDaemon = true }
+        }
+        internal val coreDispatcher: CoroutineDispatcher = coreExecutor.asCoroutineDispatcher()
+
+        // Lines skipped by the C++ core in the last import (mirrors the
+        // Kotlin core's amountTxFailed)
+        @Volatile internal var lastFailedLines: Int = 0
+
+        /**
+         * Runs [block] on the core thread, blocking the caller until it
+         * returns. Passes through when already on the core thread.
+         */
+        fun <T> onCoreThread(block: () -> T): T {
+            if (Thread.currentThread().name == CORE_THREAD_NAME) return block()
+            val future = coreExecutor.submit(block)
+            val error = try {
+                return future.get(30, java.util.concurrent.TimeUnit.SECONDS)
+            } catch (e: java.util.concurrent.ExecutionException) {
+                e.cause ?: e
+            }
+            throw error
+        }
+
+        internal fun shutdownCoreThread() {
+            coreExecutor.shutdownNow()
+        }
 
         @Volatile var isCoreInitialized = false
         @Volatile var isInitialized = false

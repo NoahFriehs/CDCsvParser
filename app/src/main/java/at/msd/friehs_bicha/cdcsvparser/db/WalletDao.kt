@@ -16,10 +16,6 @@ interface WalletDao {
     @Query("SELECT * FROM wallets")
     fun getAllWallets(): List<WalletWithTransactions>
 
-    @Transaction
-    @Query("SELECT * FROM wallets")
-    fun getAllWalletsWithTransactions(): LiveData<List<WalletWithTransactions>>
-
     @Query("DELETE FROM wallets")
     fun deleteAll()
 

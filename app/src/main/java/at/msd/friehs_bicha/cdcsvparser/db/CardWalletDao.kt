@@ -21,10 +21,6 @@ interface CardWalletDao {
     @Query("SELECT * FROM card_wallets")
     fun getAllWallets(): List<CardWalletWithTransactions>
 
-    @Transaction
-    @Query("SELECT * FROM card_wallets")
-    fun getAllWalletsWithTransactions(): LiveData<List<CardWalletWithTransactions>>
-
     @Query("DELETE FROM card_wallets")
     fun deleteAll()
 

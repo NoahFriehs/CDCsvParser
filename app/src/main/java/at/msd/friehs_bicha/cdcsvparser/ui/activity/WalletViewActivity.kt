@@ -171,8 +171,10 @@ class WalletViewActivity : AppCompatActivity() {
         val isDesc = sortingType == resources.getString(R.string.sort_desc)
         when (sortingValue) {
             resources.getString(R.string.sort_amount) -> {
+                // The value getters are JNI calls - they must run on the
+                // single core thread, not the UI thread.
                 sortedWallets = sortedWallets.sortedByDescending {
-                    CoreService.getValueOfAssetsFromWID(it.walletId)
+                    CoreService.onCoreThread { CoreService.getValueOfAssetsFromWID(it.walletId) }
                 }.toList() as ArrayList<Wallet>
             }
 
@@ -183,7 +185,8 @@ class WalletViewActivity : AppCompatActivity() {
 
             resources.getString(R.string.sort_percent) -> {
                 sortedWallets = sortedWallets.sortedWith(compareByDescending {
-                    val assetValue = CoreService.getValueOfAssetsFromWID(it.walletId)
+                    val assetValue =
+                        CoreService.onCoreThread { CoreService.getValueOfAssetsFromWID(it.walletId) }
                     val percentProfit = assetValue / it.moneySpent.toDouble() * 100
                     percentProfit
                 }).toList() as ArrayList<Wallet>

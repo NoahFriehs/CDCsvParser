@@ -70,6 +70,13 @@ class ParseActivity : AppCompatActivity() {
             FileLog.d("ParseActivity", "parsedDataLiveData changed")
             isReady = true
             hideProgressDialog()
+            if (CoreService.lastFailedLines > 0) {
+                Toast.makeText(
+                    this,
+                    "${CoreService.lastFailedLines} unparsable line(s) were skipped",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
         CoreService.errorCounter.observe(this) {
             FileLog.w("ParseActivity", "errorCounterLiveData changed")

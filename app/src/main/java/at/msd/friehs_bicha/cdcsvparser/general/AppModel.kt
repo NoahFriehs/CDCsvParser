@@ -45,30 +45,28 @@ class AppModel : BaseAppModel, Serializable {
         appType: AppType,
         useStrictType: Boolean
     ) : super(appType) {
-        txApp = TxAppFactory.createTxApp(
+        val app = TxAppFactory.createTxApp(
             appType,
             AppStatus.NotStarted,
             useStrictType,
             hashMapOf(DataTypes.csvAsList to file)
         )
-        this.appType = txApp!!.appType
-
-
-
+        txApp = app
+        this.appType = app.appType
 
         if (PreferenceHelper.getIsDataLocal(applicationContext)) saveAppModelLocal()
         else PreferenceHelper.setIsAppModelSavedLocal(applicationContext, false)
         isRunning = true
         if (appType == AppType.CroCard) {
-            cardApp = txApp as CardTxApp
+            cardApp = app as CardTxApp
         }
-        if (txApp!!.amountTxFailed > 0) {
-            // Partial parse failures must not crash the app: continue with the
-            // parsed subset (the C++ core path behaves the same way and
-            // surfaces the count via log/UI).
+        // Partial parse failures must not crash the app: continue with the
+        // parsed subset (the C++ core path behaves the same way and
+        // surfaces the count via log/UI).
+        if (app.amountTxFailed > 0) {
             FileLog.w(
                 "AppModel",
-                "txApp: ${txApp!!.amountTxFailed} line(s) failed to parse, AppType: $appType - continuing with the parsed subset"
+                "txApp: ${app.amountTxFailed} line(s) failed to parse, AppType: $appType - continuing with the parsed subset"
             )
         }
     }
@@ -123,7 +121,7 @@ class AppModel : BaseAppModel, Serializable {
         get() {
             var totalPrice = BigDecimal(0)
             when (appType) {
-                AppType.CdCsvParser -> for (wallet in txApp!!.wallets) {
+                AppType.CdCsvParser -> for (wallet in txApp?.wallets ?: emptyList()) {
                     if (wallet.currencyType == "EUR") continue
                     totalPrice = totalPrice.add(wallet.moneySpent)
                 }
