@@ -3,12 +3,16 @@ package at.msd.friehs_bicha.cdcsvparser.price
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import java.io.Serializable
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Object to store prices for 5 mins
+ *
+ * Backed by a ConcurrentHashMap: the cache is written from the background
+ * price-check thread and read from the core/UI threads.
  */
 class PriceCache : Serializable {
-    private val cache: HashMap<String, Cache> = HashMap()
+    private val cache: ConcurrentHashMap<String, Cache> = ConcurrentHashMap()
 
     /**
      * Checks if the price of the symbol is stored

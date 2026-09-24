@@ -3,7 +3,6 @@ package at.msd.friehs_bicha.cdcsvparser.general
 import android.content.Intent
 import android.graphics.Color
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.SettingsActivity.Companion.useStrictType
 import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
@@ -15,7 +14,10 @@ import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletAdapter
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import at.msd.friehs_bicha.cdcsvparser.wallet.*
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.Serializable
@@ -344,10 +346,9 @@ class AppModel : BaseAppModel, Serializable {
         }
 
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun saveAppModelLocal()
     {
-        GlobalScope.launch {
+        appModelScope.launch {
             val walletDao = InstanceVars.db.walletDao()
             val txDao = InstanceVars.db.transactionDao()
             val cardWalletDao = InstanceVars.db.cardWalletDao()
@@ -389,7 +390,10 @@ class AppModel : BaseAppModel, Serializable {
 
     private fun loadAppModelLocal()
     {
-        Thread{
+        appModelScope.launch {
+            // The old code read a mutable static from SettingsActivity's
+            // companion; the setting now comes from the preferences.
+            val useStrictType = PreferenceHelper.getUseStrictType(applicationContext)
             val ws = InstanceVars.db.walletDao().getAllWallets()
             val txs = InstanceVars.db.transactionDao().getAllTransactions()
             val cws = InstanceVars.db.cardWalletDao().getAllWallets()
@@ -397,7 +401,7 @@ class AppModel : BaseAppModel, Serializable {
 
             if (ws.isEmpty() && txs.isEmpty() && cws.isEmpty() && cts.isEmpty()) {
                 FileLog.e("AppModel", "loadAppModelLocal: no data found in db")
-                return@Thread
+                return@launch
             }
 
             if (cws.isNotEmpty() && cts.isNotEmpty()) {
@@ -449,7 +453,7 @@ class AppModel : BaseAppModel, Serializable {
 
             if (txApp == null && cardApp == null) {
                 FileLog.e("AppModel", "loadAppModelLocal: no data found in db")
-                return@Thread
+                return@launch
             }
 
             if (txApp == null) {
@@ -457,7 +461,7 @@ class AppModel : BaseAppModel, Serializable {
             }
 
             isRunning = true
-        }.start()
+        }
     }
 
 
@@ -575,6 +579,10 @@ class AppModel : BaseAppModel, Serializable {
     }
 
     companion object {
+        // Bounded IO scope for the fire-and-forget Room writes below
+        // (replaces the old GlobalScope usage).
+        private val appModelScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
         /**
          * Returns the amount the asset is worth in EUR
          *

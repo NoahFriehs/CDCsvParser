@@ -2,32 +2,52 @@ package at.msd.friehs_bicha.cdcsvparser.price
 
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import java.io.Serializable
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /**
  * Asset value class
+ *
+ * All price lookups that touch the network run on a shared daemon
+ * executor thread (the old code spawned a fresh [Thread] per call, which
+ * is unbounded and racy). The volatile flags keep the success/failure
+ * state consistent across threads.
  */
-class AssetValue : Serializable {
+class AssetValue private constructor() : Serializable {
     private val cache = PriceCache()
+    @Volatile
     var isConnected = true
-    var isRunning: Boolean
+    @Volatile
+    var isRunning: Boolean = true
+
     var priceProvider: BaseCryptoPrices = CryptoPricesCryptoCompare()
 
-    init {
-        isRunning = true
-    }
-
     companion object {
-        private lateinit var instance: AssetValue
+        @Volatile
+        private var instance: AssetValue? = null
+
+        /**
+         * Shared single daemon thread for price checks (network calls).
+         */
+        private val executor: ExecutorService = Executors.newSingleThreadExecutor {
+            Thread(it, "price-check").apply { isDaemon = true }
+        }
 
         /**
          * Returns the running instance of AssetValue
          *
          * @return a instance of AssetValue
          */
+        @JvmStatic
         fun getInstance(): AssetValue {
-            if (this::instance.isInitialized) return instance
-            instance = AssetValue()
+            // Double-checked locking: the instance is immutable after
+            // construction (priceProvider is replaced atomically).
             return instance
+                ?: synchronized(AssetValue::class.java) {
+                    instance
+                        ?: AssetValue().also { instance = it }
+                }
         }
     }
 
@@ -38,9 +58,6 @@ class AssetValue : Serializable {
      * @return the price of the symbol or 0 if an error occurred
      */
     fun getPrice(symbol_: String): Double {
-        //val prices = StaticPrices()
-        //return prices.prices[symbol]!!    //use this if api does nor work
-
         if (symbol_ == "EUR") return 1.0 //euro is always 1, replace with api if needed
 
         if (cache.testCache(symbol_)) {
@@ -55,94 +72,68 @@ class AssetValue : Serializable {
 
         when (val priceApi = priceProvider.getPrice(symbol_)) {
             null -> {
-                //FileLog.e("AssetValue", "API error")
                 isRunning = false
                 return 0.0
             }
 
             0.0 -> {
-                //FileLog.e("AssetValue", "No price found for: $symbol_")   //does not exist at API-Endpoint
+                // does not exist at API-Endpoint
                 cache.addPrice(symbol_, priceApi)
                 return 0.0
             }
+
             -1.0 -> {
                 FileLog.e("AssetValue", "API error")
                 isRunning = false
-                //return 0.0
+                return 0.0
             }
+
             else -> {
                 cache.addPrice(symbol_, priceApi)
                 isRunning = true
                 return priceApi
             }
         }
-
-
-        var symbol = symbol_
-        symbol = overrideSymbol(symbol)
-        val price = cache.checkCache(symbol)
-        if (price != -1.0) {
-            isRunning = true
-            return price
-        }
-
-        val prices = StaticPrices()
-        if (prices.prices.containsKey(symbol)) {
-            return prices.prices[symbol]!!
-        }
-
-        FileLog.e("AssetValue", "No price found for: $symbol")
-        return 0.0
     }
-
 
     /**
-     * Replaces symbols with the right ones
-     *
-     * @param symbol the symbol to be checked and if needed replaced
-     * @return the if needed replaced symbol
+     * Loads the prices of the given symbols on the background executor.
      */
-    private fun overrideSymbol(symbol: String): String {
-        if (symbol == "LUNA") return "terra-luna"
-        return if (symbol == "LUNA2") "terra-luna-2" else symbol
-    }
-
-
     fun loadCache(symbols: List<String>): Boolean {
-        Thread {
+        executor.execute {
             symbols.forEach { getPrice(it) }
-        }.start()
-        if (!isConnected || !isRunning) return false
-        return true
+        }
+        return isConnected && isRunning
     }
 
+    /**
+     * Reloads all cached prices on the background executor.
+     */
     fun reloadCache(): Boolean {
-        Thread {
+        executor.execute {
             cache.reloadCache(this)
-        }.start()
-        if (!isConnected || !isRunning) return false
-        return true
+        }
+        return isConnected && isRunning
     }
 
+    /**
+     * Checks network connectivity by fetching a probe price on the
+     * background executor.
+     */
     fun check() {
-        Thread {
+        executor.execute {
             when (val priceApi = priceProvider.getPrice("BTC")) {
                 null -> {
-                    //FileLog.e("AssetValue", "API error")
                     isRunning = false
                 }
 
                 0.0 -> {
-                    FileLog.e(
-                        "AssetValue",
-                        "No price found for: BTC"
-                    )   //does not exist at API-Endpoint
+                    FileLog.e("AssetValue", "No price found for: BTC")
                 }
 
                 -1.0 -> {
                     FileLog.e("AssetValue", "API error")
                     isRunning = false
-                    //return 0.0
                 }
 
                 else -> {
@@ -150,7 +141,11 @@ class AssetValue : Serializable {
                     isRunning = true
                 }
             }
-        }.start()
+        }
     }
 
+    internal fun shutdown() {
+        executor.shutdown()
+        executor.awaitTermination(1, TimeUnit.SECONDS)
+    }
 }

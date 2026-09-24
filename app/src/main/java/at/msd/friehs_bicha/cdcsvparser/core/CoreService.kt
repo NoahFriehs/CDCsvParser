@@ -38,21 +38,46 @@ import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.Executors
 import java.util.function.Consumer
 
 class CoreService : Service() {
 
+    /**
+     * All core work - and in particular every JNI call into the C++ core -
+     * runs on this single "cpp-core" thread. The C++ TransactionManager is
+     * not thread-safe, so the whole JNI surface must stay on one thread;
+     * heavy Kotlin-core work (parsing, DB saves) uses it as well.
+     * GlobalScope is no longer used anywhere.
+     */
+    private val coreExecutor = Executors.newSingleThreadExecutor {
+        Thread(it, "cpp-core").apply { isDaemon = true }
+    }
+    private val serviceScope =
+        CoroutineScope(SupervisorJob() + coreExecutor.asCoroutineDispatcher())
+
     override fun onBind(intent: Intent?): IBinder? {
         return null
+    }
+
+    override fun onDestroy() {
+        serviceScope.cancel()
+        coreExecutor.shutdownNow()
+        super.onDestroy()
     }
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -67,11 +92,9 @@ class CoreService : Service() {
             FileLog.i(TAG, "AppModel already initialized.")
         }
 
-        makeSaveDirIfNeeded()
-
         useCpp = PreferenceHelper.getUseCpp(applicationContext)
 
-        GlobalScope.launch {
+        serviceScope.launch {
             when (intent.action) {
                 ACTION_START_SERVICE -> {
                     handleStartService()
@@ -244,11 +267,19 @@ class CoreService : Service() {
             }
 
             false -> {
-                GlobalScope.launch {
+                serviceScope.launch {
                     try {
-                        while (!isRunning) {
-                            delay(500)
-                            FileLog.d(TAG, "Waiting for initialization to finish.")
+                        try {
+                            withTimeout(90_000) {
+                                while (!isRunning) {
+                                    delay(500)
+                                    FileLog.d(TAG, "Waiting for initialization to finish.")
+                                }
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            FileLog.e(TAG, "Timed out waiting for initialization to finish.")
+                            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+                            return@launch
                         }
                         FileLog.d(TAG, "isRunning")
                         if (appModel == null) {
@@ -259,9 +290,17 @@ class CoreService : Service() {
                                 return@launch
                             }
                         }
-                        while (appModel?.txApp == null && appModel?.cardApp == null) {
-                            FileLog.e(TAG, "appModel txApp is null")
-                            delay(500)
+                        try {
+                            withTimeout(60_000) {
+                                while (appModel?.txApp == null && appModel?.cardApp == null) {
+                                    FileLog.e(TAG, "appModel txApp is null")
+                                    delay(500)
+                                }
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            FileLog.e(TAG, "Timed out waiting for txApp/cardApp.")
+                            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+                            return@launch
                         }
                         walletsLiveData.postValue(appModel?.txApp?.wallets)
                         outsideWalletsLiveData.postValue(appModel?.txApp?.outsideWallets)
@@ -279,21 +318,26 @@ class CoreService : Service() {
 
                         val walletNames_ = Array<String?>(allWallets.size) { _ -> null }
 
-                        allWallets.forEach {
-                            allWallets.indexOf(it).let { index ->
-                                walletNames_[index] = it.getTypeString()
-                            }
+                        allWallets.forEachIndexed { index, wallet ->
+                            walletNames_[index] = wallet.getTypeString()
                         }
 
                         walletNames.postValue(walletNames_)
 
                         var data = appModel?.parseMap
-                        while (data == null) {
-                            FileLog.e(TAG, "data from appModel parseMap is null")
-                            //pause and try again
-                            delay(500)
-                            data = appModel?.parseMap
-                            //return@launch
+                        try {
+                            withTimeout(60_000) {
+                                while (data == null) {
+                                    FileLog.e(TAG, "data from appModel parseMap is null")
+                                    //pause and try again
+                                    delay(500)
+                                    data = appModel?.parseMap
+                                }
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            FileLog.e(TAG, "Timed out waiting for parseMap.")
+                            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+                            return@launch
                         }
                         parsedDataLiveData.postValue(data!!)
 
@@ -308,14 +352,17 @@ class CoreService : Service() {
                         appModel?.txApp?.outsideWallets?.forEach {
                             transactions_.addAll(it.transactions.toCollection(ArrayList()))
                         }
-                        while (transactions_.contains(null)) {
-                            FileLog.e(TAG, "transactions_ contains null")
-                            transactions_.remove(null)
+                        val validTransactions: ArrayList<Transaction> =
+                            ArrayList(transactions_.filterNotNull())
+                        if (validTransactions.size != transactions_.size) {
+                            FileLog.e(TAG, "transactions_ contained nulls, removed")
                         }
-                        transactionsLiveData.postValue(transactions_ as ArrayList<Transaction>)
+                        transactionsLiveData.postValue(validTransactions)
+                        val assetMaps_ = ArrayList<AssetData>()
                         allWallets.forEach {
-                            assetMaps.value!!.add(AssetData(it.walletId, getAssetMap(it.walletId)))
+                            assetMaps_.add(AssetData(it.walletId, getAssetMap(it.walletId)))
                         }
+                        assetMaps.postValue(assetMaps_)
                         saveToRoomsDB()
                     } catch (e: InterruptedException) {
                         FileLog.e(TAG, " : $e")
@@ -362,9 +409,16 @@ class CoreService : Service() {
                 map[R.id.rewards_value.toString()] = "no internet connection"
                 map[R.id.profit_loss_value.toString()] = "no internet connection"
                 map[R.id.money_spent_value.toString()] = totalMoneySpentString
-                //start thread to check if internet is back
-                GlobalScope.launch {
+                //check periodically if internet is back (on the cpp-core thread,
+                //because provideDataToActivityFromCppCore touches JNI)
+                serviceScope.launch {
+                    var checks = 0
                     while (!AssetValue.getInstance().isRunning) {
+                        checks++
+                        if (checks > 12) { // ~1 minute: give up and keep the placeholder
+                            FileLog.w(TAG, "Waiting for internet connection gave up.")
+                            return@launch
+                        }
                         FileLog.d(TAG, "Waiting for internet connection.")
                         delay(5000)
                         AssetValue.getInstance().check()
@@ -447,23 +501,21 @@ class CoreService : Service() {
 
         val walletNames_ = Array<String?>(wallets_.size + cardWallets_.size) { _ -> null }
         val indexAll = wallets_.size
-        wallets_.forEach {
-            wallets_.indexOf(it).let { index ->
-                walletNames_[index] = it.getTypeString()
-            }
+        wallets_.forEachIndexed { index, wallet ->
+            walletNames_[index] = wallet.getTypeString()
         }
-        cardWallets_.forEach {
-            cardWallets_.indexOf(it).let { index ->
-                walletNames_[index + indexAll] = it.getTypeString()
-            }
+        cardWallets_.forEachIndexed { index, wallet ->
+            walletNames_[index + indexAll] = wallet.getTypeString()
         }
         walletNames.postValue(walletNames_)
+        val assetMaps_ = ArrayList<AssetData>()
         wallets_.forEach {
-            assetMaps.value!!.add(AssetData(it.walletId, getAssetMap(it.walletId)))
+            assetMaps_.add(AssetData(it.walletId, getAssetMap(it.walletId)))
         }
         cardWallets_.forEach {
-            assetMaps.value!!.add(AssetData(it.walletId, getCardAssetMap(it.walletId)))
+            assetMaps_.add(AssetData(it.walletId, getCardAssetMap(it.walletId)))
         }
+        assetMaps.postValue(assetMaps_)
 
         saveToRoomsDB()
     }
@@ -589,9 +641,11 @@ class CoreService : Service() {
     }
 
     /**
-     * Loads the data from Firebase
+     * Loads the data from Firebase.
+     * Runs the (JNI-touching) loadFromMap on the cpp-core thread by
+     * suspending here instead of hopping to the Firestore callback thread.
      */
-    private fun loadFromFirebase() {
+    private suspend fun loadFromFirebase() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
             FileLog.e(TAG, "loadFromFirebase: user is null")
@@ -600,13 +654,26 @@ class CoreService : Service() {
         }
         val db = Firebase.firestore
 
+        val userMapDeferred = CompletableDeferred<HashMap<String, Any>>()
         FirebaseUtil.getUserDataFromFirestore(
             uid,
             db
-        ) { userMap ->
-            loadFromMap(userMap)
-            FileLog.i("FirebaseUtil", "User data loaded successfully")
+        ) { userMapDeferred.complete(it) }
+
+        // Bounded wait: the callback must fire on the cpp-core thread's
+        // continuation, and a missing document / network failure would
+        // otherwise block the core thread forever.
+        val userMap: HashMap<String, Any> = try {
+            withTimeout(60_000) {
+                userMapDeferred.await()
+            }
+        } catch (e: TimeoutCancellationException) {
+            FileLog.e(TAG, "Timed out waiting for the Firestore user document.")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+            return
         }
+        loadFromMap(userMap)
+        FileLog.i("FirebaseUtil", "User data loaded successfully")
     }
 
     /**
@@ -841,14 +908,14 @@ class CoreService : Service() {
 
         private const val TAG = "CoreService"
 
-        var isCoreInitialized = false
-        var isInitialized = false
-        var useCpp = true
+        @Volatile var isCoreInitialized = false
+        @Volatile var isInitialized = false
+        @Volatile var useCpp = true
 
-        var isRunning = false
+        @Volatile var isRunning = false
 
-        var hasCardTx = false
-        var hasCryptoTx = false
+        @Volatile var hasCardTx = false
+        @Volatile var hasCryptoTx = false
 
         var dataLiveData = MutableLiveData<List<String>>()
 
@@ -871,8 +938,8 @@ class CoreService : Service() {
 
 
         var priceProvider: AssetValue = AssetValue.getInstance()
-        var user = FirebaseAuth.getInstance().currentUser
-        internal var appModel: AppModel? = null
+        @Volatile var user = FirebaseAuth.getInstance().currentUser
+        @Volatile internal var appModel: AppModel? = null
 
 
         val path: String
@@ -897,13 +964,9 @@ class CoreService : Service() {
             }
         }
 
-        private fun makeSaveDirIfNeeded() {
-            val saveDir = File("/save")
-            if (!saveDir.exists()) {
-                saveDir.mkdir()
-            }
-        }
-
+        // (makeSaveDirIfNeeded removed: it created a directory at the
+        // filesystem root, which the app cannot write to and which the
+        // disabled native save feature no longer uses)
         /**
          * Starts the CoreService
          */
@@ -1017,16 +1080,12 @@ class CoreService : Service() {
          *
          * @return the transaction with the transactionId
          */
-        fun getTransaction(transactionId: Int): Transaction {
-            return when (isCoreInitialized) {
-                true -> {
-                    transactionsLiveData.value!!.find { it.transactionId == transactionId }!!
-                }
-
-                false -> {
-                    transactionsLiveData.value!!.find { it.transactionId == transactionId }!!
-                }
-            }
+        /**
+         * Returns the transaction with the given id, or null if it does not
+         * exist (instead of crashing on a null LiveData/value).
+         */
+        fun getTransaction(transactionId: Int): Transaction? {
+            return transactionsLiveData.value?.find { it.transactionId == transactionId }
         }
 
 
@@ -1047,11 +1106,15 @@ class CoreService : Service() {
             }
             appModel?.let {
                 user = FirebaseAuth.getInstance().currentUser   //refresh user
-                if (user != null) Thread {
-                    FirebaseUtil(applicationContext).saveDataToFirebase(
-                        it
-                    )
-                }.start()
+                if (user != null) {
+                    // Fire-and-forget on the IO pool: touches only the
+                    // Firebase SDK and the Kotlin model, never the C++ core.
+                    CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                        FirebaseUtil(applicationContext).saveDataToFirebase(
+                            it
+                        )
+                    }
+                }
             }
 
         }

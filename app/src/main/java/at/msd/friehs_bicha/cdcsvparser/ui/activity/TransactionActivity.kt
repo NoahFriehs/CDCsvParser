@@ -6,6 +6,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import java.math.BigDecimal
@@ -31,7 +32,11 @@ class TransactionActivity : AppCompatActivity() {
             return
         }
 
-        transaction = CoreService.getTransaction(transactionId)
+        transaction = CoreService.getTransaction(transactionId) ?: run {
+            FileLog.e("TransactionActivity", "No transaction found for id $transactionId")
+            finish()
+            return
+        }
 
         val tvType = findViewById<TextView>(R.id.tv_transaction_type)
         val tvDate = findViewById<TextView>(R.id.tv_date)
