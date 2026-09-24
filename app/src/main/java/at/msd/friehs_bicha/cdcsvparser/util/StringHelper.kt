@@ -8,6 +8,55 @@ import java.text.DecimalFormat
  */
 object StringHelper {
 
+    /**
+     * Splits a CSV line with RFC-4180 quote handling: a quoted field keeps
+     * embedded delimiters, doubled quotes inside a quoted field are an
+     * escaped quote, and quotes not at the start of a field are literals.
+     * For lines without quotes the result matches the old
+     * split(",").dropLastWhile { it.isEmpty() } behavior.
+     */
+    fun splitCsvLine(input: String, delimiter: Char = ','): List<String> {
+        val result = ArrayList<String>()
+        val current = StringBuilder()
+        var inQuotes = false
+        var i = 0
+
+        while (i < input.length) {
+            val c = input[i]
+            if (inQuotes) {
+                if (c == '"') {
+                    if (i + 1 < input.length && input[i + 1] == '"') {
+                        current.append('"')
+                        i++
+                    } else {
+                        inQuotes = false
+                    }
+                } else {
+                    current.append(c)
+                }
+            } else {
+                // A quote only opens a quoted field at the start of a field,
+                // so unquoted quotes stay literal.
+                if (c == '"' && current.isEmpty()) {
+                    inQuotes = true
+                } else if (c == delimiter) {
+                    result.add(current.toString())
+                    current.clear()
+                } else {
+                    current.append(c)
+                }
+            }
+            i++
+        }
+        result.add(current.toString())
+
+        if (result.isNotEmpty() && result.last().isEmpty() &&
+            input.isNotBlank() && input.endsWith(delimiter)
+        ) {
+            result.removeAt(result.size - 1)
+        }
+        return result
+    }
 
     /**
      * Formats an amount to a String

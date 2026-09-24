@@ -8,6 +8,7 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType
+import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import com.google.firebase.Timestamp
 import java.io.Serializable
@@ -227,7 +228,7 @@ open class Transaction : Serializable {
          * @return
          */
         private fun fromDefaultCsvLine(line: String): Transaction? {
-            val sa = line.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            val sa = StringHelper.splitCsvLine(line).toTypedArray()
             if (sa.size == 10 || sa.size == 11) {
                 val t = Transaction(
                     sa[0],
@@ -291,7 +292,7 @@ open class Transaction : Serializable {
          */
         private fun fromCdCsvParserCsvLine(line: String): Transaction? {
 
-            val sa = line.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            val sa = StringHelper.splitCsvLine(line).toTypedArray()
             if (sa.size == 10 || sa.size == 11) {
                 val t = Transaction(
                     sa[0],
