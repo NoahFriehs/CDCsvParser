@@ -15,8 +15,7 @@ TransactionType ttConverter(const std::string &s) {
     if (lowercase == "crypto_purchase") return crypto_purchase;
     if (lowercase == "supercharger_deposit") return supercharger_deposit;
     if (lowercase == "rewards_platform_deposit_credited") return rewards_platform_deposit_credited;
-    if (lowercase == "supercharger_reward_to_app_credited")
-        return supercharger_reward_to_app_credited;
+    if (lowercase == "supercharger_reward_to_app_credited") return supercharger_reward_to_app_credited;
     if (lowercase == "viban_purchase") return viban_purchase;
     if (lowercase == "crypto_earn_program_created") return crypto_earn_program_created;
     if (lowercase == "crypto_earn_interest_paid") return crypto_earn_interest_paid;

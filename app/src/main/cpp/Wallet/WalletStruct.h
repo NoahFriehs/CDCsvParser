@@ -48,8 +48,7 @@ struct CWalletStruct {
         tmStruct.notes = std::string(data.notes);
 
         for (int i = 0; i < data.numTransactions; i++) {
-            tmStruct.transactions.push_back(
-                    CTransactionStruct::convertToTransactionStruct(data.transactions[i]));
+            tmStruct.transactions.push_back(CTransactionStruct::convertToTransactionStruct(data.transactions[i]));
         }
 
         return tmStruct;
@@ -59,21 +58,20 @@ struct CWalletStruct {
     static CWalletStruct convertToCWalletStruct(const WalletStruct &data) {
         CWalletStruct tmStruct;
         tmStruct.walletId = data.walletId;
-        stringToCharArray(tmStruct.currencyType, data.currencyType);
+        stringToCharArray(tmStruct.currencyType, sizeof(tmStruct.currencyType), data.currencyType);
         tmStruct.balance = data.balance;
         tmStruct.nativeBalance = data.nativeBalance;
         tmStruct.bonusBalance = data.bonusBalance;
         tmStruct.moneySpent = data.moneySpent;
         tmStruct.isOutsideWallet = data.isOutsideWallet;
-        stringToCharArray(tmStruct.notes, data.notes);
+        stringToCharArray(tmStruct.notes, sizeof(tmStruct.notes), data.notes);
 
         for (int i = 0; i < data.transactions.size(); i++) {
             if (i >= MAX_TRANSACTIONS) {
                 FileLog::w("WalletStruct", "Too many transactions to convert to CWalletStruct");
                 break;
             }
-            tmStruct.transactions[i] = CTransactionStruct::convertToCTransactionStruct(
-                    data.transactions[i]);
+            tmStruct.transactions[i] = CTransactionStruct::convertToCTransactionStruct(data.transactions[i]);
         }
         tmStruct.numTransactions = data.transactions.size();
 

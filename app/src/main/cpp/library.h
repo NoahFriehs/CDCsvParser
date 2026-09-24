@@ -16,9 +16,9 @@ extern "C" {
 bool init(const std::string &logFilePath, const std::string &loadDirPath);
 
 //! \brief Initializes the library with the given data, mode, log file path and load directory path.
-bool initWithData(const std::vector<std::string> &data, uint mode, const std::string &logFilePath);
+bool initWithData(const std::vector<std::string> &data, int mode, const std::string &logFilePath);
 
-//! \brief Saves the data to the given dir path.
+//! \brief Initializes the library with the given data, mode, log file path and load directory path.
 void save(const std::string &filePath);
 
 //! \brief Loads the saved data from the given dir path.
@@ -27,7 +27,7 @@ void loadData(const std::string &dirPath);
 //! \brief Returns the active modes. (1 = Crypto, 2 = Card, 3 = Crypto + Card)
 int getActiveModes();
 
-void calculate();
+//void calculate();
 
 //! \brief Resets the library.
 void clearAll();
