@@ -47,6 +47,11 @@ android {
     buildFeatures {
         viewBinding true
     }
+    testOptions {
+        // Android framework calls (Log, etc.) in unit tests return default
+        // values instead of throwing "not mocked"
+        unitTests.setReturnDefaultValues(true)
+    }
     externalNativeBuild {
         cmake {
             path file('src/main/cpp/CMakeLists.txt')
