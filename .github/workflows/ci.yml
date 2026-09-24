@@ -19,19 +19,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK/CMake (versions pinned in app/build.gradle)
+      - name: Install Android SDK packages (versions pinned in app/build.gradle)
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "ndk;27.0.12077973" "cmake;3.22.1" "platforms;android-37"
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          # The image ships one cmdline-tools version; don't hardcode it.
+          SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          # Licenses may already be accepted on the image; ignore failures.
+          yes | "$SDKM" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
+          # Note: the API 37 package ID carries a minor suffix (android-37.0);
+          # older repository snapshots may only know "android-37" - try both.
+          "$SDKM" --sdk_root="$ANDROID_HOME" \
+            "ndk;27.0.12077973" "cmake;3.22.1" "platforms;android-37.0" \
+          || "$SDKM" --sdk_root="$ANDROID_HOME" \
+            "ndk;27.0.12077973" "cmake;3.22.1" "platforms;android-37"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build debug APK (compiles the C++ core via NDK)
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Run JVM unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
