@@ -84,7 +84,11 @@ class LoginActivity : AppCompatActivity() {
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         // Password reset email sent successfully
-                        Toast.makeText(this, "Password reset email sent", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            R.string.password_reset_email_sent,
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
                         // Password reset email failed to send
                         Toast.makeText(

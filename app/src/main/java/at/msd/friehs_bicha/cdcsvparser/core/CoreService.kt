@@ -1176,7 +1176,7 @@ class CoreService : Service() {
             val uid = FirebaseAuth.getInstance().currentUser?.uid
             if (uid == null) {
                 FileLog.e(TAG, "saveToFireBase: user is null")
-                Toast.makeText(applicationContext, "Error saving data", Toast.LENGTH_SHORT).show()
+                Toast.makeText(applicationContext, R.string.error_saving_data, Toast.LENGTH_SHORT).show()
                 return
             }
             val appSettings = AppSettings(

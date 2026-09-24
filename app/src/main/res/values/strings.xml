@@ -95,4 +95,10 @@
     <string name="overview_tab_crypto_text">Crypto</string>
     <string name="overview_tab_card_text">Card</string>
     <string name="user_deleted">Account has been deleted</string>
+
+    <string name="parsing_timeout">Parsing did not finish in time</string>
+    <string name="error_while_parsing">Error while parsing</string>
+    <string name="error_saving_data">Error saving data</string>
+    <string name="password_reset_email_sent">Password reset email sent</string>
+    <string name="unparsable_lines_skipped" formatted="false">Unparsable lines were skipped: %1$d</string>
 </resources>

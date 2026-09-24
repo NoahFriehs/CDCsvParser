@@ -23,7 +23,7 @@ class ParseActivity : AppCompatActivity() {
     private val parseTimeout = Runnable {
         if (!isFinishing) {
             FileLog.e(TAG, "Parsing did not finish within $PARSE_TIMEOUT_MS ms - giving up.")
-            Toast.makeText(this, "Parsing did not finish in time", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.parsing_timeout, Toast.LENGTH_LONG).show()
             finish()
         }
     }
@@ -73,14 +73,14 @@ class ParseActivity : AppCompatActivity() {
             if (CoreService.lastFailedLines > 0) {
                 Toast.makeText(
                     this,
-                    "${CoreService.lastFailedLines} unparsable line(s) were skipped",
+                    getString(R.string.unparsable_lines_skipped, CoreService.lastFailedLines),
                     Toast.LENGTH_LONG
                 ).show()
             }
         }
         CoreService.errorCounter.observe(this) {
             FileLog.w("ParseActivity", "errorCounterLiveData changed")
-            Toast.makeText(this, "Error while parsing", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.error_while_parsing, Toast.LENGTH_LONG).show()
             isReady = false
             hideProgressDialog()
             finish()

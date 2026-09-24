@@ -88,4 +88,10 @@
     <string name="overview_tab_card_text">Karte</string>
     <string name="user_deleted">Account wurde gelöscht</string>
 
+
+    <string name="parsing_timeout">Das Analysieren war nicht rechtzeitig fertig</string>
+    <string name="error_while_parsing">Fehler beim Analysieren</string>
+    <string name="error_saving_data">Fehler beim Speichern der Daten</string>
+    <string name="password_reset_email_sent">Passwort-Reset-E-Mail gesendet</string>
+    <string name="unparsable_lines_skipped" formatted="false">Nicht verwertbare Zeilen wurden übersprungen: %1$d</string>
 </resources>
