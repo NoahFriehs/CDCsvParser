@@ -376,8 +376,6 @@ class AppModel : BaseAppModel, Serializable {
     private fun loadAppModelLocal()
     {
         appModelScope.launch {
-            // The old code read a mutable static from SettingsActivity's
-            // companion; the setting now comes from the preferences.
             val useStrictType = PreferenceHelper.getUseStrictType(applicationContext)
             val ws = InstanceVars.db.walletDao().getAllWallets()
             val txs = InstanceVars.db.transactionDao().getAllTransactions()

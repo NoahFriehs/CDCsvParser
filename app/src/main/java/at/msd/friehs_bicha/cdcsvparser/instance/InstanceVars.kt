@@ -15,11 +15,6 @@ object InstanceVars {
         initLogging()
         initDB()
         initServices()
-        initGlobalReceivers()
-    }
-
-    private fun initGlobalReceivers() {
-        //register global receivers here
     }
 
     private fun initServices() {

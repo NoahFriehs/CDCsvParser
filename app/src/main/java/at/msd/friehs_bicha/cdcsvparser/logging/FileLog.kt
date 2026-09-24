@@ -21,9 +21,7 @@ import kotlin.concurrent.thread
  * For warnings use FileLog.w
  * For info use FileLog.i
  *
- * All lines are queued and written by a single daemon writer thread
- * (the previous implementation opened, appended and closed the file for
- * every single log call).
+ * All lines are queued and written by a single daemon writer thread.
  */
 class FileLog {
 

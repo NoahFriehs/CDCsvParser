@@ -62,7 +62,6 @@ class CoreService : Service() {
      * runs on this single "cpp-core" thread. The C++ TransactionManager is
      * not thread-safe, so the whole JNI surface must stay on one thread;
      * heavy Kotlin-core work (parsing, DB saves) uses it as well.
-     * GlobalScope is no longer used anywhere.
      */
     private val coreExecutor = Executors.newSingleThreadExecutor {
         Thread(it, "cpp-core").apply { isDaemon = true }
@@ -550,9 +549,8 @@ class CoreService : Service() {
         val cardWalletDao = InstanceVars.db.cardWalletDao()
         val cardTransactionDao = InstanceVars.db.cardTransactionDao()
 
-        // Replace, don't append: the inserts use REPLACE for primary keys,
-        // but rows whose ids were never re-imported would otherwise stay
-        // behind forever. Children first (FK constraint), parents second.
+        // Delete before re-insert (children first, FK constraint): rows
+        // whose ids were never re-imported must not survive as stale data.
         txDao.deleteAll()
         walletDao.deleteAll()
         cardTransactionDao.deleteAll()
@@ -630,7 +628,6 @@ class CoreService : Service() {
 
             false -> {
                 if (AppModelManager.isInitialized()) {
-                    // tf we doing here
                     isInitialized = true
                     isRunning = true
                     FileLog.d(TAG, "AppModel already initialized.")
@@ -670,9 +667,8 @@ class CoreService : Service() {
             userMapDeferred.complete(result.getOrNull())
         }
 
-        // Bounded wait: the callback must fire on the cpp-core thread's
-        // continuation, and a missing document / network failure would
-        // otherwise block the core thread forever.
+        // Bounded wait: a missing document / network failure must not
+        // block the core thread forever.
         val userMap: HashMap<String, Any>? = try {
             withTimeout(60_000) {
                 userMapDeferred.await()
@@ -979,9 +975,6 @@ class CoreService : Service() {
             }
         }
 
-        // (makeSaveDirIfNeeded removed: it created a directory at the
-        // filesystem root, which the app cannot write to and which the
-        // disabled native save feature no longer uses)
         /**
          * Starts the CoreService
          */
@@ -1212,9 +1205,6 @@ class CoreService : Service() {
 
         const val ACTION_START_SERVICE = "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE"
         const val ACTION_STOP_SERVICE = "at.msd.friehs_bicha.cdcsvparser.core.action.STOP_SERVICE"
-
-        //const val ACTION_RESTART_SERVICE =
-        //    "at.msd.friehs_bicha.cdcsvparser.core.action.RESTART_SERVICE"
         const val ACTION_START_SERVICE_WITH_DATA =
             "at.msd.friehs_bicha.cdcsvparser.core.action.START_SERVICE_WITH_DATA"
         const val ACTION_START_SERVICE_WITH_FIREBASE_DATA =

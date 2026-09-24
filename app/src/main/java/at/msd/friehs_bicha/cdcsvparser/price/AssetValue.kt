@@ -9,10 +9,8 @@ import java.util.concurrent.TimeUnit
 /**
  * Asset value class
  *
- * All price lookups that touch the network run on a shared daemon
- * executor thread (the old code spawned a fresh [Thread] per call, which
- * is unbounded and racy). The volatile flags keep the success/failure
- * state consistent across threads.
+ * Price lookups that touch the network run on a shared daemon executor.
+ * The volatile flags keep success/failure state consistent across threads.
  */
 class AssetValue private constructor() : Serializable {
     private val cache = PriceCache()
@@ -41,8 +39,7 @@ class AssetValue private constructor() : Serializable {
          */
         @JvmStatic
         fun getInstance(): AssetValue {
-            // Double-checked locking: the instance is immutable after
-            // construction (priceProvider is replaced atomically).
+            // Double-checked locking; the instance is final after construction.
             return instance
                 ?: synchronized(AssetValue::class.java) {
                     instance
