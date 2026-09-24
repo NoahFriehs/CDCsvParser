@@ -20,15 +20,20 @@ object PreferenceHelper {
     const val USE_CPP = "USE_CPP"
 
     /**
-     * returns the selected app type
+     * Returns the selected app type.
      *
-     * @param context the context
-     * @return the selected app type
+     * The type is persisted by name (stable across enum re-orderings).
+     * Installs from before that change stored the ordinal under the same
+     * key, so the integer value is still honored as a fallback.
      */
     fun getSelectedType(context: Context): AppType {
         val settings = context.getSharedPreferences(PREFS_NAME, 0)
-        val storedType = settings.getInt(TYPE_KEY, 0)
-        return AppType.values()[storedType]
+        val name = settings.getString(TYPE_KEY, null)
+        if (name != null) {
+            return AppType.values().firstOrNull { it.name == name } ?: AppType.CdCsvParser
+        }
+        val legacyOrdinal = settings.getInt(TYPE_KEY, -1)
+        return AppType.values().getOrElse(legacyOrdinal) { AppType.CdCsvParser }
     }
 
     /**
@@ -51,7 +56,7 @@ object PreferenceHelper {
     fun setSelectedType(context: Context, type: AppType) {
         val settings = context.getSharedPreferences(PREFS_NAME, 0)
         val editor = settings.edit()
-        editor.putInt(TYPE_KEY, type.ordinal)
+        editor.putString(TYPE_KEY, type.name)
         editor.apply()
     }
 

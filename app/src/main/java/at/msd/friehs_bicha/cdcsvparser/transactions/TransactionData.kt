@@ -53,7 +53,7 @@ class TransactionData(
         this.amount = amount
         this.nativeAmount = nativeAmount
         this.amountBonus = amountBonus
-        this.transactionType = TransactionType.values()[transactionTypeOrdinal]
+        this.transactionType = fromOrdinal(transactionTypeOrdinal)
         this.date = Date(dateYear, dateMonth, dateDay, dateHours, dateMinutes, dateSeconds)
     }
 

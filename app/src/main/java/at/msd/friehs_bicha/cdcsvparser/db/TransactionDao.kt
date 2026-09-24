@@ -35,6 +35,6 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions")
     fun getAllTransactions(): List<Transaction>
 
-    @Query("DELETE FROM wallets")
+    @Query("DELETE FROM transactions")
     fun deleteAll()
 }

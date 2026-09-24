@@ -17,8 +17,9 @@ interface CardWalletDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(wallets: List<CroCardWallet>)
 
+    @Transaction
     @Query("SELECT * FROM card_wallets")
-    fun getAllWallets(): List<CardWalletWithTransactions>   //TODO changed from CroCardWallet, not testet
+    fun getAllWallets(): List<CardWalletWithTransactions>
 
     @Transaction
     @Query("SELECT * FROM card_wallets")

@@ -76,8 +76,13 @@ class AppModel : BaseAppModel, Serializable {
             cardApp = txApp as CardTxApp
         }
         if (txApp!!.amountTxFailed > 0) {
-            FileLog.e("AppModel", "txApp: amountTxFailed, AppType: $appType")
-            throw RuntimeException("${txApp?.amountTxFailed} transaction(s) failed")
+            // Partial parse failures must not crash the app: continue with the
+            // parsed subset (the C++ core path behaves the same way and
+            // surfaces the count via log/UI).
+            FileLog.w(
+                "AppModel",
+                "txApp: ${txApp!!.amountTxFailed} line(s) failed to parse, AppType: $appType - continuing with the parsed subset"
+            )
         }
     }
 

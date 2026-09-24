@@ -22,9 +22,11 @@ class TransactionsActivity : AppCompatActivity() {
             CoreService.transactionsLiveData.value?.let { ArrayList(CoreService.transactionsLiveData.value!!) }
                 ?: ArrayList()
         CoreService.cardTransactionsLiveData.value?.let { mTransactionList.addAll(CoreService.cardTransactionsLiveData.value!!) }
-        val mTransactionSet = mTransactionList.toSet()
+        // Transaction does not override equals(), so deduplicate explicitly
+        // by transaction id.
+        val unique = mTransactionList.distinctBy { it.transactionId }
         mTransactionList.clear()
-        mTransactionList.addAll(mTransactionSet)
+        mTransactionList.addAll(unique)
         mTransactionList.sortByDescending { it.date }
 
         supportFragmentManager.beginTransaction()

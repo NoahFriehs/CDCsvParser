@@ -40,8 +40,10 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -104,17 +106,25 @@ class CoreService : Service() {
     /**
      * Saves the data to Firebase
      */
-    private fun handleSaveDataToFirebase() {
+    private suspend fun handleSaveDataToFirebase() {
         user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
             FileLog.e(TAG, "User is null")
             return
         }
 
-        //wait until walletNames is set
-        while (walletNames.value == null) {
-            FileLog.v(TAG, "Waiting for walletNames to be set.")
-            suspend { delay(500) }
+        //wait until walletNames is set (bounded, so we can never spin forever)
+        try {
+            withTimeout(30_000) {
+                while (walletNames.value == null) {
+                    FileLog.v(TAG, "Waiting for walletNames to be set.")
+                    delay(500)
+                }
+            }
+        } catch (e: TimeoutCancellationException) {
+            FileLog.e(TAG, "Timed out waiting for walletNames to be set.")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+            return
         }
 
         saveToFireBase()
@@ -123,15 +133,21 @@ class CoreService : Service() {
     /**
      * Loads the data from Firebase
      */
-    private fun handleStartServiceWithFirebaseData(intent: Intent) {
-        GlobalScope.launch {
-            loadFromFirebase()
-            while (!isRunning) {
-                FileLog.d(TAG, "Waiting for FB initialization to finish.")
-                delay(500)
+    private suspend fun handleStartServiceWithFirebaseData(intent: Intent) {
+        loadFromFirebase()
+        try {
+            withTimeout(90_000) {
+                while (!isRunning) {
+                    FileLog.d(TAG, "Waiting for FB initialization to finish.")
+                    delay(500)
+                }
             }
-            provideDataToActivity()
+        } catch (e: TimeoutCancellationException) {
+            FileLog.e(TAG, "Timed out waiting for Firebase load to finish.")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+            return
         }
+        provideDataToActivity()
     }
 
     /**
@@ -139,18 +155,22 @@ class CoreService : Service() {
      */
     private fun handleStartServiceWithData(intent: Intent) {
         val data = intent.getStringArrayListExtra("data")
-        var mode = intent.getIntExtra("mode", 0)
-        if (mode == AppType.Kraken.ordinal) {
-            mode = 4    //sync with cpp
-        }
+        val mode = intent.getIntExtra("mode", 0)
         if (data == null) {
             FileLog.e(TAG, "Initialization with data failed. Data is null.")
             return
         }
         when (isCoreInitialized && useCpp) {
             true -> {
+                val appType = AppType.safeFromOrdinal(mode)
+                val coreMode = CoreModeMapper.toCoreMode(appType)
+                if (coreMode == null) {
+                    FileLog.e(TAG, "AppType $appType is not supported by the C++ core.")
+                    errorCounter.postValue((errorCounter.value ?: 0) + 1)
+                    return
+                }
                 val dataArray = Array<String>(data.size) { i -> data[i] }
-                if (initWithData(dataArray, data.size, mode, logFilePath)) {
+                if (initWithData(dataArray, data.size, coreMode, logFilePath)) {
                     FileLog.d(TAG, "Initialization with data successful.")
                     isRunning = true
                 } else {
@@ -167,7 +187,7 @@ class CoreService : Service() {
                     isRunning = true
                     isInitialized = true
                 } else {
-                    appModel = AppModel(data, AppType.fromOrdinal(mode), false)
+                    appModel = AppModel(data, AppType.safeFromOrdinal(mode), false)
                     AppModelManager.setInstance(appModel!!)
                 }
                 isInitialized = true
@@ -175,6 +195,13 @@ class CoreService : Service() {
                 appModel?.let {
                     hasCardTx = it.hasCard()
                     hasCryptoTx = it.hasTxModule()
+                    val failed = it.txApp?.amountTxFailed ?: 0L
+                    if (failed > 0) {
+                        FileLog.w(
+                            TAG,
+                            "Parsing finished with $failed failed line(s), continuing with the parsed subset."
+                        )
+                    }
                 }
             }
         }
@@ -537,6 +564,7 @@ class CoreService : Service() {
                     provideDataToActivity()
                 } else {
                     FileLog.w(TAG, "Initialization failed.")
+                    errorCounter.postValue((errorCounter.value ?: 0) + 1)
                 }
             }
 
@@ -564,7 +592,12 @@ class CoreService : Service() {
      * Loads the data from Firebase
      */
     private fun loadFromFirebase() {
-        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            FileLog.e(TAG, "loadFromFirebase: user is null")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+            return
+        }
         val db = Firebase.firestore
 
         FirebaseUtil.getUserDataFromFirestore(
@@ -581,8 +614,13 @@ class CoreService : Service() {
      */
     private fun loadFromMap(userMap: HashMap<String, Any>) {
         userMap.let {
-            val appSettingsMap = it["appSettings"] as HashMap<String, Any>?
-            val appSettings = AppSettings().fromHashMap(appSettingsMap!!)
+            val appSettingsMap = it["appSettings"] as? HashMap<String, Any>
+            if (appSettingsMap == null) {
+                FileLog.e(TAG, "loadFromMap: appSettings missing in user document")
+                errorCounter.postValue((errorCounter.value ?: 0) + 1)
+                return
+            }
+            val appSettings = AppSettings().fromHashMap(appSettingsMap)
             if (!appSettings.compareVersionsWithDefault()) {
                 FileLog.e(TAG, "Version mismatch")
                 return
@@ -894,37 +932,25 @@ class CoreService : Service() {
          * @return the amount the asset is worth in EUR
          */
         fun getValueOfAssetsFromWID(walletId: Int): Double {
-            return if (isCoreInitialized && useCpp) {
-                if (walletsLiveData.value == null || walletsLiveData.value!!.isEmpty() || walletsLiveData.value!!.find { it.walletId == walletId } == null) {
-                    FileLog.w(
-                        "$TAG.getValueOfAssetsFromWID",
-                        "walletsLiveData is null or empty"
-                    )   //normal when only card tx
-                    return 1.0
-                }
-                try {
-                    val w = walletsLiveData.value!!.find { it.walletId == walletId }
-                    val valueOfWallet: Double
-                    val price = w!!.currencyType.let { AssetValue.getInstance().getPrice(it) }
-                    val amount = w.amount
-                    valueOfWallet = price * amount.toDouble()
-                    valueOfWallet
-                } catch (e: Exception) {
-                    FileLog.e("$TAG.getValueOfAssets", "Exception: $e")
-                    0.0
-                }
-            } else
-                try {
-                    val w = appModel!!.txApp!!.wallets.find { it.walletId == walletId }
-                    val valueOfWallet: Double
-                    val price = w!!.currencyType.let { AssetValue.getInstance().getPrice(it) }
-                    val amount = w.amount
-                    valueOfWallet = price * amount.toDouble()
-                    valueOfWallet
-                } catch (e: Exception) {
-                    FileLog.e("$TAG.getValueOfAssets", "Exception: $e")
-                    0.0
-                }
+            val w: Wallet? = if (isCoreInitialized && useCpp) {
+                walletsLiveData.value?.find { it.walletId == walletId }
+            } else {
+                appModel?.txApp?.wallets?.find { it.walletId == walletId }
+            }
+            if (w == null) {
+                FileLog.w(
+                    "$TAG.getValueOfAssetsFromWID",
+                    "No wallet found for id $walletId"
+                )   //normal when only card tx
+                return 0.0
+            }
+            return try {
+                val price = AssetValue.getInstance().getPrice(w.currencyType)
+                price * w.amount.toDouble()
+            } catch (e: Exception) {
+                FileLog.e("$TAG.getValueOfAssetsFromWID", "Exception: $e")
+                0.0
+            }
         }
 
 
@@ -934,24 +960,23 @@ class CoreService : Service() {
          * @return the amounts of the asset in the wallet
          */
         fun getWalletAdapter(walletId: Int): Map<String, String?> {
-            return when (isCoreInitialized && useCpp) {
-                true -> {
-                    val w = allWalletsLiveData.value!!.find { it.walletId == walletId }
-                    AppModel.getWalletAdapter(w!!)
-                }
-
-                false -> {
-                    val w = appModel!!.txApp!!.wallets.find { it.walletId == walletId }
-                    AppModel.getWalletAdapter(w!!)
-                }
+            val w: Wallet? = if (isCoreInitialized && useCpp) {
+                allWalletsLiveData.value?.find { it.walletId == walletId }
+            } else {
+                appModel?.txApp?.wallets?.find { it.walletId == walletId }
             }
+            if (w == null) {
+                FileLog.w("$TAG.getWalletAdapter", "No wallet found for id $walletId")
+                return emptyMap()
+            }
+            return AppModel.getWalletAdapter(w)
         }
 
         /**
          * Returns the AssetMap of the wallet
          */
         fun getAssetMap(walletId: Int): Map<String, String?> {
-            return assetMaps.value!!.find { it.walletId == walletId }!!.data
+            return assetMaps.value?.find { it.walletId == walletId }?.data ?: emptyMap()
         }
 
 
@@ -1035,7 +1060,12 @@ class CoreService : Service() {
          * Saves the data to Firebase
          */
         private fun saveToFireBase() {
-            val uid = FirebaseAuth.getInstance().currentUser!!.uid
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            if (uid == null) {
+                FileLog.e(TAG, "saveToFireBase: user is null")
+                Toast.makeText(applicationContext, "Error saving data", Toast.LENGTH_SHORT).show()
+                return
+            }
             val appSettings = AppSettings(
                 uid,
                 PreferenceHelper.getSelectedType(applicationContext),

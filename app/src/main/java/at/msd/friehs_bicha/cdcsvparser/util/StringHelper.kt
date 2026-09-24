@@ -58,8 +58,10 @@ object StringHelper {
      * @return true if version1 is greater than version2
      */
     fun compareVersions(version1: String, version2: String): Boolean {
-        val parts1 = version1.split(".").map { it.toInt() }
-        val parts2 = version2.split(".").map { it.toInt() }
+        // Tolerate non-numeric suffixes like "1.0.0-beta".
+        val toPart: (String) -> Int = { it.takeWhile { c -> c.isDigit() }.toIntOrNull() ?: 0 }
+        val parts1 = version1.split(".").map(toPart)
+        val parts2 = version2.split(".").map(toPart)
         val length = maxOf(parts1.size, parts2.size)
         for (i in 0 until length) {
             val part1 = parts1.getOrElse(i) { 0 }

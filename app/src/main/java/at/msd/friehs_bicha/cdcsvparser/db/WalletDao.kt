@@ -38,6 +38,7 @@ interface WalletDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(wallets: List<Wallet>)
 
+    @Transaction
     @Query("SELECT * FROM wallets")
     fun getAllWallets(): List<WalletWithTransactions>
 

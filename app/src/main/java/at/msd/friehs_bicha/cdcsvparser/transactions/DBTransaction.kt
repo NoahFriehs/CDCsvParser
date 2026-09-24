@@ -26,7 +26,8 @@ open class DBTransaction(transaction: Transaction) : Serializable {
 
     var amountBonus: Double?
 
-    var transactionType: TransactionType?
+    // Stored as the enum name: Firestore cannot round-trip enum objects.
+    var transactionType: String?
 
     var transHash: String? = null
 
@@ -46,7 +47,7 @@ open class DBTransaction(transaction: Transaction) : Serializable {
         amount = transaction.amount.toDouble()
         nativeAmount = transaction.nativeAmount.toDouble()
         amountBonus = transaction.amountBonus?.toDouble()
-        transactionType = transaction.transactionType
+        transactionType = transaction.transactionType?.name
         transHash = transaction.transHash
         toCurrency = transaction.toCurrency
         toAmount = transaction.toAmount?.toDouble()

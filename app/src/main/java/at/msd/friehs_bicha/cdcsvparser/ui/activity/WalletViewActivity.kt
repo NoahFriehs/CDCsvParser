@@ -204,6 +204,7 @@ class WalletViewActivity : AppCompatActivity() {
     }
 
     fun filterWalletsByUserSearch(wallets: ArrayList<Wallet>, query: String): List<Wallet> {
+        if (wallets.isEmpty()) return emptyList()
         if (wallets[0] is CroCardWallet) {
             return wallets.filter { (it as CroCardWallet).transactionType!!.contains(query, ignoreCase = true) }
         }

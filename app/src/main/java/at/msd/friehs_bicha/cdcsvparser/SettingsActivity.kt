@@ -195,14 +195,19 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun deleteUser(user: FirebaseUser?) {
+        if (user == null) {
+            FileLog.e("Settings-DeleteUser", "deleteUser: user is null")
+            return
+        }
         val db = Firebase.firestore
-        db.collection("user").document(user!!.uid).set(hashMapOf("deleted" to true))
-
+        // Delete the data document first and do NOT write a placeholder before
+        // it: if the delete fails (offline, rules, quota) the user's document
+        // must stay untouched instead of being wiped by the placeholder write.
         db.collection("user").document(user.uid).delete().addOnCompleteListener {
             if (it.isSuccessful) {
                 FileLog.d("Settings-DeleteUser", "User deleted from database.")
             } else {
-                FileLog.d("Settings-DeleteUser", "User could not be deleted from database.")
+                FileLog.e("Settings-DeleteUser", "User could not be deleted from database: ${it.exception}")
             }
         }
 
@@ -212,10 +217,11 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this, resources.getString(R.string.user_deleted), Toast.LENGTH_LONG)
                     .show()
             } else {
-                if (task.exception != null) {
-                    FileLog.d("Settings-DeleteUser", task.exception.toString())
+                val exception = task.exception
+                if (exception != null) {
+                    FileLog.d("Settings-DeleteUser", exception.toString())
                 }
-                if (task.exception.toString().contains("requires recent authentication")) {
+                if (exception?.toString()?.contains("requires recent authentication") == true) {
                     FileLog.d(
                         "Settings-DeleteUser",
                         "User needs to reauthenticate."

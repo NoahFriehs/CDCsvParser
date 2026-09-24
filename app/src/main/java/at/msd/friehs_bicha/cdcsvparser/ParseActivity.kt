@@ -3,6 +3,8 @@ package at.msd.friehs_bicha.cdcsvparser
 import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
@@ -17,6 +19,15 @@ import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 class ParseActivity : AppCompatActivity() {
     private lateinit var progressDialog: Dialog
 
+    private val timeoutHandler = Handler(Looper.getMainLooper())
+    private val parseTimeout = Runnable {
+        if (!isFinishing) {
+            FileLog.e(TAG, "Parsing did not finish within $PARSE_TIMEOUT_MS ms - giving up.")
+            Toast.makeText(this, "Parsing did not finish in time", Toast.LENGTH_LONG).show()
+            finish()
+        }
+    }
+
     @JvmField
     @Volatile
     var isReady = false
@@ -25,6 +36,11 @@ class ParseActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         showProgressDialog()
         setContentView(R.layout.activity_parse)
+
+        // Watchdog: if neither parsed data nor an error arrives (e.g. a core
+        // failure that never emits an event), bail out instead of leaving the
+        // user on a progress screen forever.
+        timeoutHandler.postDelayed(parseTimeout, PARSE_TIMEOUT_MS)
 
         // calling the action bar
         val actionBar = supportActionBar
@@ -112,12 +128,21 @@ class ParseActivity : AppCompatActivity() {
     fun showProgressDialog() {
         progressDialog = Dialog(this)
         progressDialog.setContentView(R.layout.progress_icon)
-        progressDialog.setCancelable(false)
+        // Cancelable so the user always has an escape hatch; dismissing it
+        // leaves the screen.
+        progressDialog.setCancelable(true)
         progressDialog.setCanceledOnTouchOutside(false)
+        progressDialog.setOnDismissListener { finish() }
         progressDialog.show()
     }
 
     fun hideProgressDialog() {
+        timeoutHandler.removeCallbacks(parseTimeout)
         progressDialog.dismiss()
+    }
+
+    companion object {
+        private const val TAG = "ParseActivity"
+        private const val PARSE_TIMEOUT_MS = 90_000L
     }
 }

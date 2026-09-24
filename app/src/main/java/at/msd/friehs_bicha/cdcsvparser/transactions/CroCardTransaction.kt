@@ -172,22 +172,24 @@ open class CroCardTransaction(
          * @return
          */
         fun fromDb(transaction: HashMap<String, *>): CroCardTransaction {
+            // Firestore returns 32-bit integers as Int, so all number casts go
+            // through Number instead of a hard as-Long cast.
             return CroCardTransaction(
-                transaction["transactionId"] as Long,
-                transaction["description"] as String,
-                (transaction["walletId"] as Long).toInt(),
-                (transaction["fromWalletId"] as Long).toInt(),
-                (transaction["date"] as Timestamp).toDate(),
-                transaction["currencyType"] as String,
-                transaction["amount"] as Double,
-                transaction["nativeAmount"] as Double,
-                transaction["amountBonus"] as Double,
-                transaction["transactionType"] as String,
-                transaction["transHash"] as String?,
-                transaction["toCurrency"] as String?,
-                transaction["toAmount"] as Double?,
-                transaction["outsideTransaction"] as Boolean,
-                transaction["transactionTypeString"] as String
+                (transaction["transactionId"] as? Number)?.toLong() ?: 0L,
+                transaction["description"] as? String ?: "",
+                (transaction["walletId"] as? Number)?.toInt() ?: 0,
+                (transaction["fromWalletId"] as? Number)?.toInt() ?: 0,
+                (transaction["date"] as? Timestamp)?.toDate() ?: java.util.Date(0),
+                transaction["currencyType"] as? String ?: "",
+                (transaction["amount"] as? Number)?.toDouble() ?: 0.0,
+                (transaction["nativeAmount"] as? Number)?.toDouble() ?: 0.0,
+                (transaction["amountBonus"] as? Number)?.toDouble() ?: 0.0,
+                transaction["transactionType"] as? String ?: "",
+                transaction["transHash"] as? String,
+                transaction["toCurrency"] as? String,
+                (transaction["toAmount"] as? Number)?.toDouble(),
+                transaction["outsideTransaction"] as? Boolean ?: false,
+                transaction["transactionTypeString"] as? String ?: ""
             )
         }
     }

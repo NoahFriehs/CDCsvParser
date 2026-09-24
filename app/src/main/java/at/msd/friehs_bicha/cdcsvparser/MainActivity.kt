@@ -36,6 +36,11 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val PICKFILE_REQUEST_CODE = 1
         const val readExternalStorageRequestCode: Int = 102
+
+        // Single source for the history file name pattern (write + parse).
+        // Older versions wrote "M-d-y-H-m-s" which is still tolerated on read
+        // failures (raw file name is shown instead).
+        const val HISTORY_FILE_PATTERN = "yyyy-MM-dd-HH-mm-ss"
     }
 
 
@@ -156,8 +161,10 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SimpleDateFormat")
     private fun setSpinner(spinner: Spinner) {
         val fileNames = ArrayList<String>()
-        val sdf = SimpleDateFormat("M-d-yyyy-hh-mm-ss")
-        val dateFormat = SimpleDateFormat("d.M hh:mm")
+        // Files imported by this version use HISTORY_FILE_PATTERN. Files from
+        // older versions are simply shown with their raw file name.
+        val sdf = SimpleDateFormat(HISTORY_FILE_PATTERN)
+        val dateFormat = SimpleDateFormat("d.M HH:mm")
         var filename: String
         for (f in files!!) {
             if (!f.isFile || !f.name.endsWith(".csv")) continue
@@ -208,8 +215,8 @@ class MainActivity : AppCompatActivity() {
             showProgressDialog()
             // Get the URI of the selected file
             val fileUri = data.data
-            //create filename with format M-d-y-H-m-s
-            val dateFormat = SimpleDateFormat("M-d-y-H-m-s")
+            // create filename with format yyyy-MM-dd-HH-mm-ss (see HISTORY_FILE_PATTERN)
+            val dateFormat = SimpleDateFormat(HISTORY_FILE_PATTERN)
             val now = Date()
             val time = dateFormat.format(now)
             val filename = "$time.csv"

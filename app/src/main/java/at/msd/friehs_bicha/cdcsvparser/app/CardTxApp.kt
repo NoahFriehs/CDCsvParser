@@ -65,10 +65,7 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
     private fun getTransactions(input: ArrayList<String>): ArrayList<CroCardTransaction> {
         return when (AppTypeIdentifier.getAppType(input)) {
             AppType.CdCsvParser -> parseCroCard(input)
-            AppType.CurveCard -> {
-                parseCurveCard(input)
-                ArrayList<CroCardTransaction>()
-            }
+            AppType.CurveCard -> parseCurveCard(input)
 
             else -> {
                 FileLog.e(
@@ -86,10 +83,11 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
      * Parse CurveCard csv file
      *
      * @param input csv file as String list
+     * @return the parsed CurveCard transactions
      */
-    private fun parseCurveCard(input: ArrayList<String>) {
+    private fun parseCurveCard(input: ArrayList<String>): ArrayList<CroCardTransaction> {
         input.removeAt(0)
-        val transactions = ArrayList<CurveCardTx>()
+        val transactions = ArrayList<CroCardTransaction>()
 
         // Create a DecimalFormat that fits your requirements
         val symbols = DecimalFormatSymbols()
@@ -98,10 +96,12 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
         val pattern = "#,##"
         val decimalFormat = DecimalFormat(pattern, symbols)
         decimalFormat.isParseBigDecimal = true
-        for (transaction in input) {
+        input.forEachIndexed { index, line ->
             try {
-                transaction.replace(",,", ", ,")
-                val sa = transaction.split(",".toRegex())
+                // Note: the replacement result must be used - the original
+                // line is immutable.
+                val cleaned = line.replace(",,", ", ,")
+                val sa = cleaned.split(",".toRegex())
                 if (sa.size == 11) {
                     val t = CurveCardTx(
                         sa[0],
@@ -118,14 +118,14 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
                     )
                     transactions.add(t)
                 } else {
-                    FileLog.e("CardTxApp", "Wrong number of columns in CurveCard file: $sa")
+                    FileLog.e("CardTxApp", "Wrong number of columns in CurveCard file, line $index: ${sa.size} columns")
                 }
             } catch (e: Exception) {
-                FileLog.e("CardTxApp", "Error parsing CurveCard file: " + e.message)
+                FileLog.e("CardTxApp", "Error parsing CurveCard file, line $index: " + e.message)
                 throw RuntimeException(e)
             }
         }
-        this.transactions.addAll(transactions)
+        return transactions
     }
 
     /**
@@ -145,10 +145,10 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
         val pattern = "#,##"
         val decimalFormat = DecimalFormat(pattern, symbols)
         decimalFormat.isParseBigDecimal = true
-        for (transaction in input) {
+        input.forEachIndexed { index, line ->
             try {
                 val sa =
-                    transaction.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    line.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 if (sa.size == 9) {
                     val t = CroCardTransaction(
                         sa[0],
@@ -160,8 +160,7 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
                     )
                     transactions.add(t)
                 } else {
-                    println(sa.contentToString())
-                    println(sa.size)
+                    FileLog.w("CardTxApp", "Wrong number of columns in CroCard file, line $index: ${sa.size} columns")
                 }
             } catch (e: Exception) {
                 throw RuntimeException(e)

@@ -46,5 +46,7 @@ fun stringToTransactionType(str: String?): TransactionType {
 }
 
 fun fromOrdinal(ordinal: Int): TransactionType {
-    return TransactionType.values()[ordinal]
+    // Out-of-range ordinals (e.g. a C++ core enum value that has no Kotlin
+    // counterpart) must not crash the app.
+    return TransactionType.values().getOrElse(ordinal) { TransactionType.STRING }
 }

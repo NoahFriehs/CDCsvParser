@@ -111,12 +111,14 @@ class CDCWallet : Wallet, Serializable {
          * @return
          */
         fun fromDb(wallet: HashMap<String, *>): CDCWallet {
-            val walletId = wallet["walletId"] as Long
-            val currencyType = wallet["currencyType"] as String
-            val amount = wallet["amount"] as Double
-            val amountBonus = wallet["amountBonus"] as Double
-            val moneySpent = wallet["moneySpent"] as Double
-            val outsideWallet = wallet["outsideWallet"] as Boolean
+            // Firestore returns 32-bit integers as Int, so all number casts go
+            // through Number instead of a hard as-Long cast.
+            val walletId = (wallet["walletId"] as? Number)?.toLong() ?: 0L
+            val currencyType = wallet["currencyType"] as? String ?: ""
+            val amount = (wallet["amount"] as? Number)?.toDouble() ?: 0.0
+            val amountBonus = (wallet["amountBonus"] as? Number)?.toDouble() ?: 0.0
+            val moneySpent = (wallet["moneySpent"] as? Number)?.toDouble() ?: 0.0
+            val outsideWallet = wallet["outsideWallet"] as? Boolean ?: false
             val transactionsList =
                 wallet["transactions"] as MutableList<java.util.HashMap<String, *>?>?
             val transactions = ArrayList<Transaction?>()
