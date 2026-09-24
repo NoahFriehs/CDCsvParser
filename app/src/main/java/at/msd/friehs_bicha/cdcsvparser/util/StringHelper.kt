@@ -50,9 +50,9 @@ object StringHelper {
         }
         result.add(current.toString())
 
-        if (result.isNotEmpty() && result.last().isEmpty() &&
-            input.isNotBlank() && input.endsWith(delimiter)
-        ) {
+        // Match the legacy split(...).dropLastWhile { it.isEmpty() } behavior:
+        // trailing empty tokens (e.g. from a trailing delimiter) are dropped.
+        while (result.isNotEmpty() && result.last().isEmpty()) {
             result.removeAt(result.size - 1)
         }
         return result
