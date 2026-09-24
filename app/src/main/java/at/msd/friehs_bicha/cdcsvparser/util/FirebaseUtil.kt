@@ -17,159 +17,183 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
+/**
+ * Firebase helpers.
+ *
+ * All Firestore work is callback based: the old versions "returned" a map
+ * that could only be empty (the listener filled a local variable after the
+ * function returned) and callers hid the race with Thread.sleep(...),
+ * which blocked the calling thread and only sometimes worked.
+ */
 class FirebaseUtil(private val context: Context) {
 
-    val userMapLiveData = MutableLiveData<HashMap<String, Any>>()
+    val userMapLiveData = MutableLiveData<HashMap<String, Any>?>()
     var userMapError = false
 
-    fun saveDataToFirebase(appModel: AppModel) {    //TODO: let service execute this @CoreService
-        val uid = FirebaseAuth.getInstance().currentUser!!.uid
-        val db = Firebase.firestore
-
-        var userMap = getUserDataFromFirestore(
-            uid,
-            db
-        ) //it's a live data, so we have to wait for it to be set
-        Thread.sleep(300)
-        userMap = userMapLiveData.value ?: hashMapOf<String, Any>()
-        if (userMap.isEmpty()) {
-            FileLog.i("FirebaseUtil", "userMap is null or empty when saving")
+    /**
+     * Saves the local app model to the user's Firebase document.
+     * The existing document (if any) is fetched first so that unrelated
+     * fields are preserved.
+     *
+     * @return false immediately if there is no signed-in user, otherwise
+     * the save is performed asynchronously (result via toast + log).
+     */
+    fun saveDataToFirebase(appModel: AppModel): Boolean {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            FileLog.e("FirebaseUtil", "saveDataToFirebase: user is null")
+            return false
         }
+        val uid = user.uid
+        val db = Firebase.firestore
 
         val appSettings = AppSettings(
             uid,
             PreferenceHelper.getSelectedType(context),
             PreferenceHelper.getUseStrictType(context)
         )
-        val appSettingsMap = appSettings.toHashMap()
 
-        userMap.let {
-            val dataMap = hashMapOf("appSettings" to appSettingsMap)
+        getUserDataFromFirestore(uid, db) { result ->
+            val existing = result.getOrNull() ?: hashMapOf<String, Any>()
+            if (result.isFailure && existing.isEmpty()) {
+                FileLog.i("FirebaseUtil", "No existing user document, creating a new one")
+            }
 
+            val dataMap = hashMapOf<String, Any>("appSettings" to appSettings.toHashMap())
             if (appModel.hasCard()) {
                 dataMap["appModelCard"] = appModel.toHashMap(AppType.CroCard)
             }
             if (appModel.hasTxModule()) {
                 dataMap["appModel"] = appModel.toHashMap()
             }
+            existing.putAll(dataMap)
 
-            it.putAll(dataMap)
-
-            db.collection("user").document(uid).set(it)
+            db.collection("user").document(uid).set(existing)
                 .addOnCompleteListener { task ->
                     handleFirebaseTaskResult(task, "Data saved successfully", "Error saving data")
                 }
         }
+        return true
     }
 
+    /**
+     * Loads the user's document from Firebase and starts the core service
+     * with it (or shows an error for an incompatible/empty database).
+     */
     fun loadDataFromFirebase() {
-        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            FileLog.e("FirebaseUtil", "loadDataFromFirebase: user is null")
+            return
+        }
         val db = Firebase.firestore
 
-        val userMap = getUserDataFromFirestore(
-            uid,
-            db
-        ) //it's a live data, so we have to wait for it to be set
-        Thread.sleep(1000)
-        userMapLiveData.value = userMap ?: hashMapOf<String, Any>()
+        getUserDataFromFirestore(user.uid, db) { result ->
+            if (result.isFailure) {
+                userMapError = true
+                userMapLiveData.value = null
+                val message = "Your database has nothing saved."
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                FileLog.e("FirebaseUtil", message)
+                return@getUserDataFromFirestore
+            }
+            val userMap = result.getOrNull() ?: hashMapOf()
+            userMapLiveData.value = userMap
 
-        userMap?.let {
-            val appSettings = it["appSettings"] as HashMap<String, Any>?
-            val dbVersion = appSettings?.get("dbVersion")
+            val appSettings = userMap["appSettings"] as? HashMap<String, Any>
+            val dbVersion = appSettings?.get("dbVersion")?.toString()
 
-            if (StringHelper.compareVersions(dbVersion as String, "1.0.0")) {
+            if (dbVersion != null && StringHelper.compareVersions(dbVersion, "1.0.0")) {
                 val text =
                     "Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload."
                 Toast.makeText(context, text, Toast.LENGTH_LONG).show()
-                return
+                return@getUserDataFromFirestore
             }
 
             var hasCard = false
             var hasTxModule = false
 
-            PreferenceHelper.setUseStrictType(
-                InstanceVars.applicationContext,
-                appSettings["useStrictType"] as Boolean
-            )
+            appSettings?.get("useStrictType")?.let {
+                if (it is Boolean) {
+                    PreferenceHelper.setUseStrictType(InstanceVars.applicationContext, it)
+                } else {
+                    FileLog.w("FirebaseUtil", "useStrictType missing or not a Boolean")
+                }
+            }
 
-            if (it.containsKey("appModelCard")) {
+            (userMap["appModelCard"] as? HashMap<String, Any>)?.let { txAppMap ->
                 hasCard = true
                 FileLog.i("FirebaseUtil", "hasCard")
-                processCardData(it["appModelCard"] as HashMap<String, Any>, appSettings)
+                processCardData(txAppMap, appSettings)
             }
-            if (it.containsKey("appModel")) {
+            (userMap["appModel"] as? HashMap<String, Any>)?.let { txAppMap ->
                 hasTxModule = true
                 FileLog.i("FirebaseUtil", "hasTxModule")
-                processTxModuleData(it["appModel"] as HashMap<String, Any>, appSettings)
+                processTxModuleData(txAppMap, appSettings)
             }
 
             if (!hasCard && !hasTxModule) {
-                val text =
-                    "Your database has nothing saved."
-                Toast.makeText(context, text, Toast.LENGTH_LONG).show()
-                FileLog.e("FirebaseUtil", text)
-                return
+                val message = "Your database has nothing saved."
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                FileLog.e("FirebaseUtil", message)
+                return@getUserDataFromFirestore
             }
 
             InstanceVars.applicationContext.startService(
-                Intent(
-                    InstanceVars.applicationContext,
-                    CoreService::class.java
-                ).apply {
-                    action = CoreService.ACTION_START_SERVICE_WITH_FIREBASE_DATA
-                })
-
-
+                Intent(InstanceVars.applicationContext, CoreService::class.java)
+                    .apply { action = CoreService.ACTION_START_SERVICE_WITH_FIREBASE_DATA })
         }
-
     }
 
     private fun processTxModuleData(
         txAppMap: HashMap<String, Any>,
-        appSettings: HashMap<String, Any>
+        appSettings: HashMap<String, Any>?
     ) {
-        val dbWallets = txAppMap["wallets"]
+        val dbWallets =
+            txAppMap["wallets"] as? java.util.ArrayList<java.util.HashMap<String, *>>
         val dbOutsideWallets =
-            txAppMap["outsideWallets"] as java.util.ArrayList<java.util.HashMap<String, *>>?
+            txAppMap["outsideWallets"] as? java.util.ArrayList<java.util.HashMap<String, *>>
         val dbTransactions =
-            txAppMap["transactions"]
-        val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
-        val appTypeString = txAppMap["appType"] as String? ?: ""
-        val appType = AppType.valueOf(appTypeString)
+            txAppMap["transactions"] as? java.util.ArrayList<java.util.HashMap<String, *>>
+        val amountTxFailed = (txAppMap["amountTxFailed"] as? Number)?.toLong() ?: 0
+        val appType = AppType.safeFromName(txAppMap["appType"] as? String ?: "")
+            ?: return
 
         CoreService.firebaseDataLiveData.value?.add(
             FirebaseAppmodel(
-                dbWallets as java.util.ArrayList<java.util.HashMap<String, *>>?,
+                dbWallets,
                 dbOutsideWallets,
-                dbTransactions as java.util.ArrayList<java.util.HashMap<String, *>>?,
+                dbTransactions,
                 appType,
                 amountTxFailed,
-                appSettings["useStrictType"] as Boolean
+                appSettings?.get("useStrictType") as? Boolean ?: true
             )
         )
     }
 
-    private fun processCardData(txAppMap: HashMap<String, Any>, appSettings: HashMap<String, Any>) {
-        val dbOutsideWallets: ArrayList<java.util.HashMap<String, *>>? = null
-        val dbWallets = txAppMap["wallets"]
+    private fun processCardData(
+        txAppMap: HashMap<String, Any>,
+        appSettings: HashMap<String, Any>?
+    ) {
+        val dbWallets =
+            txAppMap["wallets"] as? java.util.ArrayList<java.util.HashMap<String, *>>
         val dbTransactions =
-            txAppMap["transactions"]
-        val amountTxFailed = txAppMap["amountTxFailed"] as Long? ?: 0
-        val appTypeString = txAppMap["appType"] as String? ?: ""
-        val appType = AppType.valueOf(appTypeString)
+            txAppMap["transactions"] as? java.util.ArrayList<java.util.HashMap<String, *>>
+        val amountTxFailed = (txAppMap["amountTxFailed"] as? Number)?.toLong() ?: 0
+        val appType = AppType.safeFromName(txAppMap["appType"] as? String ?: "")
+            ?: return
 
         CoreService.firebaseDataLiveData.value?.add(
             FirebaseAppmodel(
-                dbWallets as ArrayList<java.util.HashMap<String, *>>?,
-                dbOutsideWallets,
-                dbTransactions as ArrayList<java.util.HashMap<String, *>>?,
+                dbWallets,
+                null,
+                dbTransactions,
                 appType,
                 amountTxFailed,
-                appSettings["useStrictType"] as Boolean
+                appSettings?.get("useStrictType") as? Boolean ?: true
             )
         )
     }
-
 
     private fun handleFirebaseTaskResult(
         task: Task<Void>,
@@ -186,36 +210,30 @@ class FirebaseUtil(private val context: Context) {
     }
 
     companion object {
+        /**
+         * Fetches the user document. The callback receives a non-null
+         * [Result] in every case: success with the document data (an empty
+         * map if the document has no fields), or a failure when the
+         * document does not exist / the request failed.
+         */
         fun getUserDataFromFirestore(
             uid: String,
             db: FirebaseFirestore,
-            callbackMethod: ((HashMap<String, Any>) -> Unit)? = null
-        ): HashMap<String, Any> {
-            val user = db.collection("user").document(uid)
-            var userMap = HashMap<String, Any>()
-            user.get()
+            callbackMethod: (Result<HashMap<String, Any>>) -> Unit
+        ) {
+            db.collection("user").document(uid).get()
                 .addOnSuccessListener { document ->
-                    if (document != null) {
-                        val userMap_ = document.data as HashMap<String, Any>?
-                        if (userMap == null) {
-                            Toast.makeText(
-                                InstanceVars.applicationContext,
-                                "Error loading data",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            FileLog.e("FirebaseUtil", "userMap is null")
-                            return@addOnSuccessListener
-                        }
-                        userMap = userMap_!!
-                        callbackMethod?.invoke(userMap)
+                    if (document != null && document.exists()) {
+                        callbackMethod(
+                            Result.success(
+                                (document.data as? HashMap<String, Any>) ?: hashMapOf()
+                            )
+                        )
                     } else {
-                        Toast.makeText(
-                            InstanceVars.applicationContext,
-                            "Error loading data",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        FileLog.e("FirebaseUtil", "document is null")
-                        return@addOnSuccessListener
+                        FileLog.i("FirebaseUtil", "User document does not exist: $uid")
+                        callbackMethod(
+                            Result.failure(Exception("User document does not exist: $uid"))
+                        )
                     }
                 }
                 .addOnFailureListener { exception ->
@@ -225,10 +243,8 @@ class FirebaseUtil(private val context: Context) {
                         Toast.LENGTH_SHORT
                     ).show()
                     FileLog.e("FirebaseUtil", "Error getting documents: $exception")
-                    return@addOnFailureListener
+                    callbackMethod(Result.failure(exception))
                 }
-
-            return userMap
         }
     }
 

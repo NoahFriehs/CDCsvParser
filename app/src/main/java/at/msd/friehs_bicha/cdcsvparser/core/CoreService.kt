@@ -550,6 +550,14 @@ class CoreService : Service() {
         val cardWalletDao = InstanceVars.db.cardWalletDao()
         val cardTransactionDao = InstanceVars.db.cardTransactionDao()
 
+        // Replace, don't append: the inserts use REPLACE for primary keys,
+        // but rows whose ids were never re-imported would otherwise stay
+        // behind forever. Children first (FK constraint), parents second.
+        txDao.deleteAll()
+        walletDao.deleteAll()
+        cardTransactionDao.deleteAll()
+        cardWalletDao.deleteAll()
+
         walletsLiveData.value?.let {
             walletDao.insertAll(it)
         }
@@ -654,21 +662,28 @@ class CoreService : Service() {
         }
         val db = Firebase.firestore
 
-        val userMapDeferred = CompletableDeferred<HashMap<String, Any>>()
+        val userMapDeferred = CompletableDeferred<HashMap<String, Any>?>()
         FirebaseUtil.getUserDataFromFirestore(
             uid,
             db
-        ) { userMapDeferred.complete(it) }
+        ) { result ->
+            userMapDeferred.complete(result.getOrNull())
+        }
 
         // Bounded wait: the callback must fire on the cpp-core thread's
         // continuation, and a missing document / network failure would
         // otherwise block the core thread forever.
-        val userMap: HashMap<String, Any> = try {
+        val userMap: HashMap<String, Any>? = try {
             withTimeout(60_000) {
                 userMapDeferred.await()
             }
         } catch (e: TimeoutCancellationException) {
             FileLog.e(TAG, "Timed out waiting for the Firestore user document.")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+            return
+        }
+        if (userMap == null) {
+            FileLog.e(TAG, "Firebase user document missing or unreadable.")
             errorCounter.postValue((errorCounter.value ?: 0) + 1)
             return
         }

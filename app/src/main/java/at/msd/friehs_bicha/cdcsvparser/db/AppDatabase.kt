@@ -18,9 +18,6 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun cardTransactionDao(): CardTransactionDao
 
-
-    override fun clearAllTables() {}
-
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -29,7 +26,9 @@ abstract class AppDatabase : RoomDatabase() {
             if (INSTANCE == null) {
                 INSTANCE = Room.databaseBuilder(context.applicationContext,
                         AppDatabase::class.java, "my-database-name")
-                        .fallbackToDestructiveMigration()
+                        // No fallbackToDestructiveMigration(): a schema
+                        // mismatch must fail loudly instead of silently
+                        // deleting the user's local data.
                         .build()
             }
             return INSTANCE
