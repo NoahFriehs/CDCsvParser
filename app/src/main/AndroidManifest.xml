@@ -2,11 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- No storage permissions: files are chosen through the SAF picker
+         (ACTION_GET_CONTENT), which does not need any of them. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -17,8 +14,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CDCsvParser"
-        tools:targetApi="31">
+        android:theme="@style/Theme.CDCsvParser">
         <activity
             android:name=".ui.activity.OverviewActivity"
             android:exported="false"
@@ -34,7 +30,6 @@
         <activity
             android:name=".ui.activity.StartingActivity"
             android:exported="true"
-            android:screenOrientation="fullSensor"
             android:theme="@style/Theme.CDCsvParser">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -89,7 +84,7 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />

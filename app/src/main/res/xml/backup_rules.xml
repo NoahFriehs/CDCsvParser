@@ -1,13 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older that API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Full backup rules (Android 11 and lower), ignored on API 31+.
+   Financial data and logs are kept local-only (see data_extraction_rules.xml).
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="database" path="my-database-name" />
+    <exclude domain="file" path="CDCsvParser.log" />
+    <exclude domain="file" path="log/" />
 </full-backup-content>

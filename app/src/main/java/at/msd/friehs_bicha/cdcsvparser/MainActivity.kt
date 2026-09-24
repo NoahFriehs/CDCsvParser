@@ -1,20 +1,16 @@
 package at.msd.friehs_bicha.cdcsvparser
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Color
-import android.os.Build
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.*
-import androidx.annotation.RequiresApi
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -33,10 +29,15 @@ class MainActivity : AppCompatActivity() {
     var user = FirebaseAuth.getInstance().currentUser
     private lateinit var progressDialog: Dialog
 
-    companion object {
-        private const val PICKFILE_REQUEST_CODE = 1
-        const val readExternalStorageRequestCode: Int = 102
+    // SAF file picker (ActivityResult API): no storage permissions are
+    // needed for ACTION_GET_CONTENT, so the old READ_EXTERNAL_STORAGE /
+    // READ_MEDIA_* permission dance is gone.
+    private val pickFile =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            if (uri != null) onFileSelected(uri) else hideProgressDialog()
+        }
 
+    companion object {
         // Single source for the history file name pattern (write + parse).
         // Older versions wrote "M-d-y-H-m-s" which is still tolerated on read
         // failures (raw file name is shown instead).
@@ -207,43 +208,36 @@ class MainActivity : AppCompatActivity() {
      * is called on successful file select and saves it to storage.
      * Also reads the file and then calls the parse view
      */
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == PICKFILE_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
-            showProgressDialog()
-            // Get the URI of the selected file
-            val fileUri = data.data
-            // create filename with format yyyy-MM-dd-HH-mm-ss (see HISTORY_FILE_PATTERN)
-            val dateFormat = SimpleDateFormat(HISTORY_FILE_PATTERN)
-            val now = Date()
-            val time = dateFormat.format(now)
-            val filename = "$time.csv"
-            val list = FileUtil.getFileContentFromUri(this, fileUri!!)
-            try {
-                applicationContext.openFileOutput(filename, MODE_APPEND).use { fos ->
-                    for (element in list) {
-                        fos.write(element.toByteArray())
-                        fos.write("\n".toByteArray()) // add a newline after each element
-                    }
+    private fun onFileSelected(fileUri: Uri) {
+        showProgressDialog()
+        // create filename with format yyyy-MM-dd-HH-mm-ss (see HISTORY_FILE_PATTERN)
+        val dateFormat = SimpleDateFormat(HISTORY_FILE_PATTERN)
+        val now = Date()
+        val time = dateFormat.format(now)
+        val filename = "$time.csv"
+        val list = FileUtil.getFileContentFromUri(this, fileUri)
+        try {
+            applicationContext.openFileOutput(filename, MODE_PRIVATE).use { fos ->
+                for (element in list) {
+                    fos.write(element.toByteArray())
+                    fos.write("\n".toByteArray()) // add a newline after each element
                 }
-            } catch (e: IOException) {
-                FileLog.e("MainActivity", ":  Error while writing to file : $e")
             }
-            //delete oldest file if already 7 files in array
-            updateFiles()
-            while (files!!.size > 7) {
-                files!![0].delete()
-                updateFiles()
-            }
-            Benchmarker.start()
-            CoreService.startServiceWithData(
-                list,
-                PreferenceHelper.getSelectedType(this).ordinal
-            )
-            callParseView()
+        } catch (e: IOException) {
+            FileLog.e("MainActivity", ":  Error while writing to file : $e")
         }
+        //delete oldest file if already 7 files in array
+        updateFiles()
+        while (files!!.size > 7) {
+            files!![0].delete()
+            updateFiles()
+        }
+        Benchmarker.start()
+        CoreService.startServiceWithData(
+            list,
+            PreferenceHelper.getSelectedType(this).ordinal
+        )
+        callParseView()
     }
 
     private fun callParseView(saveToDB: Boolean = true) {
@@ -257,101 +251,11 @@ class MainActivity : AppCompatActivity() {
 
 
     /**
-     * start action to let the user select a file
+     * start action to let the user select a file (SAF, no permissions)
      */
     private fun onBtnUploadClick() {
-
-        if (arePermissionsGranted(permissions())) {
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(
-                    this,
-                    permissions()[0]
-                )
-            ) {
-                // Show an explanation to the user
-                Toast.makeText(
-                    this,
-                    "Permission needed to read files to be able to load the file",
-                    Toast.LENGTH_SHORT
-                ).show()
-                ActivityCompat.requestPermissions(
-                    this,
-                    permissions(),
-                    readExternalStorageRequestCode
-                )
-            } else {
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(
-                    this,
-                    permissions(),
-                    readExternalStorageRequestCode
-                )
-            }
-        } else {
-            startChooseFile()
-        }
-    }
-
-
-    var storagePermissions = arrayOf(
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-        //Manifest.permission.WRITE_EXTERNAL_STORAGE
-    )
-
-    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-    var storagePermissions33 = arrayOf(
-        Manifest.permission.READ_MEDIA_IMAGES,
-        Manifest.permission.READ_MEDIA_AUDIO,
-        Manifest.permission.READ_MEDIA_VIDEO
-    )
-
-    private fun permissions(): Array<String> {
-        val p: Array<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            storagePermissions33
-        } else {
-            storagePermissions
-        }
-        return p
-    }
-
-    private fun arePermissionsGranted(permissions: Array<String>): Boolean {
-        for (permission in permissions) {
-            if (ContextCompat.checkSelfPermission(this, permission)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                return false
-            }
-        }
-        return true
-    }
-
-
-    private fun startChooseFile() {
-        // Create an Intent object to allow the user to select a file
-        val chooseFile = Intent(Intent.ACTION_GET_CONTENT)
-
-        // Set the type of file that the user can select
-        chooseFile.type = "*/*"
-
-        // Start the activity to let the user select a file
-        startActivityForResult(chooseFile, PICKFILE_REQUEST_CODE)
-    }
-
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == readExternalStorageRequestCode) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startChooseFile()
-            } else {
-                FileLog.w("MainActivity", ": permission denied for external storage access")
-                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
-            }
-        }
+        showProgressDialog()
+        pickFile.launch("*/*")
     }
 
 

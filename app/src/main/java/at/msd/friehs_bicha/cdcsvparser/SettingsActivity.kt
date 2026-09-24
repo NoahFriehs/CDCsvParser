@@ -1,9 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -12,12 +9,8 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.Spinner
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import at.msd.friehs_bicha.cdcsvparser.MainActivity.Companion.readExternalStorageRequestCode
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.databinding.ActivitySettingsBinding
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -40,7 +33,6 @@ class SettingsActivity : AppCompatActivity() {
     lateinit var btnLogout: Button
     lateinit var btnLogin: Button
     lateinit var btnDeleteUser: Button
-    lateinit var btnPermissionRequest: Button
     lateinit var btnAboutUs: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,7 +49,6 @@ class SettingsActivity : AppCompatActivity() {
         useStrictTypeCheckbox = binding.useStrictWalletTypeCheckbox
         cbStoreDataLocal = findViewById(R.id.cb_store_data_local)
         cbEnableFastStart = findViewById(R.id.cb_enable_fast_start)
-        btnPermissionRequest = findViewById(R.id.btn_permission_request)
         btnAboutUs = findViewById(R.id.btn_about_us)
         btnLogout = findViewById(R.id.btn_logout)
         btnLogin = findViewById(R.id.btn_login)
@@ -171,15 +162,6 @@ class SettingsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        if (arePermissionsGranted(permissions())) {
-            btnPermissionRequest.visibility = View.GONE
-        } else {
-            btnPermissionRequest.visibility = View.VISIBLE
-            btnPermissionRequest.setOnClickListener {
-                requestExternalStoragePermission()
-            }
-        }
-
         val auth = FirebaseAuth.getInstance()
         val user = auth.currentUser
 
@@ -245,99 +227,7 @@ class SettingsActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun requestExternalStoragePermission() {
-        if (arePermissionsGranted(permissions())
-        ) {
-            // Permission already granted
-            Toast.makeText(this, "Permissions already granted", Toast.LENGTH_SHORT).show()
-            btnPermissionRequest.visibility = View.GONE
-        } else {
-            // Permission not granted
-            if (ActivityCompat.shouldShowRequestPermissionRationale(
-                    this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                )
-            ) {
-                // Display a rationale for the user to grant the permission
-                AlertDialog.Builder(this)
-                    .setTitle(resources.getString(R.string.permission_needed))
-                    .setMessage(resources.getString(R.string.permission_needed_text))   //TODO: change text
-                    .setPositiveButton(
-                        "ok"
-                    ) { _, _ ->
-                        //Prompt the user once explanation has been shown
-                        ActivityCompat.requestPermissions(
-                            this,
-                            permissions(),
-                            readExternalStorageRequestCode
-                        )
-                    }
-                    .create()
-                    .show()
 
-            } else {
-                // Request the permission directly without showing the rationale
-                ActivityCompat.requestPermissions(
-                    this,
-                    permissions(),
-                    readExternalStorageRequestCode
-                )
-            }
-        }
-    }
-
-    var storagePermissions = arrayOf(
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-        //Manifest.permission.WRITE_EXTERNAL_STORAGE
-    )
-
-    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-    var storagePermissions33 = arrayOf(
-        Manifest.permission.READ_MEDIA_IMAGES,
-        Manifest.permission.READ_MEDIA_AUDIO,
-        Manifest.permission.READ_MEDIA_VIDEO
-    )
-
-    private fun permissions(): Array<String> {
-        val p: Array<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            storagePermissions33
-        } else {
-            storagePermissions
-        }
-        return p
-    }
-
-    private fun arePermissionsGranted(permissions: Array<String>): Boolean {
-        for (permission in permissions) {
-            if (ContextCompat.checkSelfPermission(this, permission)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                return false
-            }
-        }
-        return true
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == readExternalStorageRequestCode) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED && arePermissionsGranted(permissions())) {
-                // Permission granted
-                btnPermissionRequest.visibility = View.GONE
-            } else {
-                // Permission denied
-                Toast.makeText(
-                    this,
-                    resources.getString(R.string.permission_denied),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
 
 
     companion object {

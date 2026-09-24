@@ -244,11 +244,11 @@ open class Transaction : Serializable {
                 }
                 return t
             } else {
-                println(sa.contentToString())
-                println(sa.size)
+                // Do NOT log the raw line: it contains the user's
+                // transaction details (description, amounts, hash).
                 FileLog.e(
                     "TxApp",
-                    "Error while processing the following transaction: $line"
+                    "Error processing transaction line, columns: ${sa.size} (line length: ${line.length})"
                 )
             }
             return null
