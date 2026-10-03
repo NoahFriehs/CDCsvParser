@@ -16,7 +16,9 @@ enum class TransactionType {
     supercharger_withdrawal,  //Withdrawal from supercharger
     lockup_lock,  //lock for stake
     crypto_withdrawal,  //withdrawal
-    crypto_deposit, referral_card_cashback,  //Card Cashback
+    crypto_deposit,
+    crypto_transfer,  //Non-taxable transfers (BlockPit)
+    referral_card_cashback,  //Card Cashback
     reimbursement,  //Money back for Spotify
     card_cashback_reverted,  //Cashbackreverted
     crypto_earn_program_withdrawn,  //Withdraw from earn
@@ -26,6 +28,9 @@ enum class TransactionType {
     dust_conversion_credited,  //Dust conversion end
     dust_conversion_debited,  //Dust conversion start
     crypto_viban_exchange,  //sell
+    crypto_airdrop_credited,  //Airdrop (BlockPit)
+    crypto_bounty_credited,  //Bounty/Cashback (BlockPit)
+    crypto_gift_received,  //Gift (BlockPit)
     STRING //for Card und unknown things
 }
 
