@@ -241,7 +241,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun callParseView(saveToDB: Boolean = true) {
-        if (saveToDB) {
+        if (saveToDB && FirebaseAuth.getInstance().currentUser != null) {
             CoreService.saveDataToFirebase()
         }
         val intent = Intent(this@MainActivity, ParseActivity::class.java)

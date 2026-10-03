@@ -122,10 +122,18 @@ double getMoneySpent(int walletId) {
 
 
 std::vector<std::string> getWalletsAsStrings() {
-    const auto &wallets = DataHolder::GetInstance().GetTransactionManager()->getWallets();
+    // Regular + outside wallets: transactions may legally reference an
+    // outside wallet's id, and the Kotlin Room layer enforces that as a
+    // foreign key, so the complete set must be exported.
+    auto *tm = DataHolder::GetInstance().GetTransactionManager();
+    const auto &wallets = tm->getWallets();
+    const auto &outWallets = tm->getOutWallets();
     std::vector<std::string> vec;
-    vec.reserve(wallets.size());
+    vec.reserve(wallets.size() + outWallets.size());
     for (const auto &wallet: wallets) {
+        vec.emplace_back(wallet.second.getWalletData()->serializeToXml());
+    }
+    for (const auto &wallet: outWallets) {
         vec.emplace_back(wallet.second.getWalletData()->serializeToXml());
     }
     FileLog::i("library", "Returning " + std::to_string(vec.size()) + " wallets");

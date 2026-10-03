@@ -135,11 +135,13 @@ class ParseActivity : AppCompatActivity() {
     fun showProgressDialog() {
         progressDialog = Dialog(this)
         progressDialog.setContentView(R.layout.progress_icon)
-        // Cancelable so the user always has an escape hatch; dismissing it
-        // leaves the screen.
+        // Cancelable so the user always has an escape hatch; a user cancel
+        // leaves the screen. This is onCancel (user action only), not
+        // onDismiss - hideProgressDialog() dismisses programmatically on
+        // success and must not finish the screen.
         progressDialog.setCancelable(true)
         progressDialog.setCanceledOnTouchOutside(false)
-        progressDialog.setOnDismissListener { finish() }
+        progressDialog.setOnCancelListener { finish() }
         progressDialog.show()
     }
 
