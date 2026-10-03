@@ -36,12 +36,9 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         BinaryUtil.h
         Transaction/TransactionStruct.h
         Wallet/WalletStruct.h
-        TransactionManager/TMState.cpp
-        TransactionManager/TMState.h
         Util/CharUtil.h
         Util/Util.cpp
-        Util/CharUtil.cpp
-        MagicNumbers.h)
+        Util/CharUtil.cpp)
 
 
 include_directories(XML)
