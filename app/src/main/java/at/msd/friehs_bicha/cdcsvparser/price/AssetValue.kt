@@ -94,21 +94,68 @@ class AssetValue private constructor() : Serializable {
     }
 
     /**
-     * Loads the prices of the given symbols on the background executor.
+     * Returns the prices of the given symbols on the calling thread.
+     *
+     * Fresh cache entries are served directly; everything else is resolved
+     * with one bulk provider call and cached for five minutes.
+     *
+     * @param symbols the symbols for which prices are needed ("EUR" is 1.0)
+     * @return a map from symbol to price; a missing key means no price is known
+     */
+    fun getPricesBulk(symbols: List<String>): Map<String, Double> {
+        val prices = LinkedHashMap<String, Double>()
+        val missing = linkedSetOf<String>()
+        for (symbol in symbols) {
+            when {
+                symbol == "EUR" -> prices[symbol] = 1.0
+                cache.testCache(symbol) -> prices[symbol] = cache.checkCache(symbol)
+                else -> missing.add(symbol)
+            }
+        }
+        if (missing.isEmpty()) return prices
+        if (!isConnected) {
+            FileLog.e("AssetValue", "No internet connection")
+            isRunning = false
+            return prices
+        }
+        val bulk = priceProvider.getPricesBulk(missing.toList())
+        bulk.forEach { (symbol, price) ->
+            cache.addPrice(symbol, price)
+            prices[symbol] = price
+        }
+        isRunning = bulk.isNotEmpty()
+        return prices
+    }
+
+    /**
+     * Loads the prices of the given symbols with one bulk provider call on
+     * the background executor. Symbols already covered by a fresh cache
+     * entry are skipped.
      */
     fun loadCache(symbols: List<String>): Boolean {
         executor.execute {
-            symbols.forEach { getPrice(it) }
+            val missing = symbols.filter { it != "EUR" && !cache.testCache(it) }.distinct()
+            if (missing.isEmpty()) return@execute
+            val bulk = priceProvider.getPricesBulk(missing)
+            bulk.forEach { (symbol, price) -> cache.addPrice(symbol, price) }
+            isRunning = bulk.isNotEmpty()
         }
         return isConnected && isRunning
     }
 
     /**
-     * Reloads all cached prices on the background executor.
+     * Reloads all cached prices with one bulk provider call on the
+     * background executor. Symbols whose fresh price could not be fetched
+     * keep their previous cache entry.
      */
     fun reloadCache(): Boolean {
         executor.execute {
-            cache.reloadCache(this)
+            val symbols = cache.keys()
+            if (symbols.isEmpty()) return@execute
+            val bulk = priceProvider.getPricesBulk(symbols)
+            bulk.forEach { (symbol, price) ->
+                if (price != 0.0) cache.addPrice(symbol, price)
+            }
         }
         return isConnected && isRunning
     }
@@ -119,18 +166,14 @@ class AssetValue private constructor() : Serializable {
      */
     fun check() {
         executor.execute {
-            when (val priceApi = priceProvider.getPrice("BTC")) {
+            when (val priceApi = priceProvider.getPricesBulk(listOf("BTC"))["BTC"]) {
                 null -> {
+                    FileLog.e("AssetValue", "API error")
                     isRunning = false
                 }
 
                 0.0 -> {
                     FileLog.e("AssetValue", "No price found for: BTC")
-                }
-
-                -1.0 -> {
-                    FileLog.e("AssetValue", "API error")
-                    isRunning = false
                 }
 
                 else -> {

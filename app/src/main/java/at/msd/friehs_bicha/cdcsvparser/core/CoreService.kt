@@ -371,11 +371,11 @@ class CoreService : Service() {
     private fun provideDataToActivityFromCppCore() {
         calculateWalletBalances()
 
-        val currencies = getCurrencies()
-        val prices = Array<Double>(currencies.size) { _ -> 0.0 }
-        currencies.forEach {
-            prices[currencies.indexOf(it)] = priceProvider.getPrice(it)
-        }
+        val currencies = getCurrencies().toList()
+        // One bulk price resolution (cache-aware): one CoinGecko call per batch
+        // instead of one network call per symbol.
+        val bulkPrices = priceProvider.getPricesBulk(currencies)
+        val prices = Array<Double>(currencies.size) { i -> bulkPrices[currencies[i]] ?: 0.0 }
         setPrice(prices)
 
         // get Data from Core and set it to the LiveData

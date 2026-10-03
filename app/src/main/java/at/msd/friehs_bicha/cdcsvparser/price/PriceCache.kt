@@ -50,6 +50,13 @@ class PriceCache : Serializable {
         FileLog.d("PriceCache", "added cache for ${cacheToAdd.id}")
     }
 
+    /**
+     * Returns a snapshot of the cached symbols.
+     *
+     * @return all symbols that currently have a cache entry (may be stale)
+     */
+    fun keys(): List<String> = cache.keys.toList()
+
     fun reloadCache(assetValue: AssetValue) {
         cache.forEach {
             val price = assetValue.getPrice(it.key)

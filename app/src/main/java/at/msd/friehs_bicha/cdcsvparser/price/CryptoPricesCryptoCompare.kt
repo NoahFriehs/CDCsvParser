@@ -15,6 +15,11 @@ import java.util.concurrent.TimeUnit
  *    rate limited. Once CryptoCompare answers with an auth error it is
  *    skipped for the rest of the session (circuit break).
  *
+ * Bulk lookups prefer a single CoinGecko `simple/price` call per batch of
+ * ids (mirrors the core tester's CoinGeckoPriceProvider) instead of one
+ * call per symbol; 429 cooldowns scale up (45 s x count, cap 5 min)
+ * instead of hammering the rate limit.
+ *
  * @return null on failure, 0.0 when the symbol is unknown.
  */
 class CryptoPricesCryptoCompare : BaseCryptoPrices() {
@@ -33,11 +38,30 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     private var nextCoinGeckoCallMs = 0L
     @Volatile
     private var coinGeckoCooldownUntilMs = 0L
+    @Volatile
+    private var consecutive429 = 0
 
     override fun getPrice(symbol: String): Double? {
         val ccPrice = if (ccBroken) null else fetchCryptoCompare(symbol)
         if (ccPrice != null) return ccPrice
         return fetchCoinGecko(symbol)
+    }
+
+    override fun getPricesBulk(symbols: List<String>): Map<String, Double> {
+        if (symbols.isEmpty()) return emptyMap()
+        // Pass 1: CryptoCompare, one call per symbol, while the circuit is closed.
+        val prices = LinkedHashMap<String, Double>()
+        val remaining = linkedSetOf<String>()
+        for (symbol in symbols) {
+            val ccPrice = if (ccBroken) null else fetchCryptoCompare(symbol)
+            if (ccPrice == null) remaining.add(symbol) else prices[symbol] = ccPrice
+        }
+        if (remaining.isEmpty()) return prices
+        // Pass 2: everything left goes to one bulk CoinGecko call per batch.
+        for (chunk in remaining.chunked(BULK_BATCH_SIZE)) {
+            fetchCoinGeckoBulk(chunk)?.forEach { (symbol, price) -> prices[symbol] = price }
+        }
+        return prices
     }
 
     private fun fetchCryptoCompare(symbol: String): Double? {
@@ -70,10 +94,10 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
             val url = "${cgBaseUrl}simple/price?ids=$coinId&vs_currencies=eur"
             val response = client.newCall(Request.Builder().url(url).build()).execute()
             if (response.code == 429) {
-                coinGeckoCooldownUntilMs = System.currentTimeMillis() + 45_000L
-                FileLog.w(TAG_CG, "Rate limited; cooling down for 45 s.")
+                noteCoinGecko429()
                 return null
             }
+            noteCoinGeckoSuccess()
             val json = JSONObject(response.body?.string().orEmpty())
             val price = json.optJSONObject(coinId)?.optDouble("eur")
             if (price != null && price.isFinite()) price else null
@@ -101,10 +125,10 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
             val url = "${cgBaseUrl}search?query=$symbol"
             val response = client.newCall(Request.Builder().url(url).build()).execute()
             if (response.code == 429) {
-                coinGeckoCooldownUntilMs = System.currentTimeMillis() + 60_000L
-                FileLog.w(TAG_CG, "Search rate limited; cooling down for 60 s.")
+                noteCoinGecko429()
                 return null
             }
+            noteCoinGeckoSuccess()
             val json = JSONObject(response.body?.string().orEmpty())
             var found: String? = null
             json.optJSONArray("coins")?.let { coins ->
@@ -123,6 +147,69 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
             FileLog.d(TAG_CG, "CoinGecko search failed for $symbol: $e")
             null
         }
+    }
+
+    /**
+     * One CoinGecko `simple/price` call for a batch of symbols.
+     *
+     * @return a map from symbol to price with entries only for symbols whose
+     *         id could be resolved and that came back in the response
+     *         (0.0 = known id without a price); null if the call failed.
+     */
+    private fun fetchCoinGeckoBulk(symbols: List<String>): Map<String, Double>? {
+        return try {
+            waitOutIfCoolingDown()
+            spacing()
+            val idToSymbol = LinkedHashMap<String, String>()
+            val idList = StringBuilder()
+            for (symbol in symbols) {
+                val coinId = resolveCoinGeckoId(symbol) ?: continue // unresolved: no price
+                idToSymbol.putIfAbsent(coinId, symbol)
+                if (idList.isNotEmpty()) idList.append(',')
+                idList.append(coinId)
+            }
+            if (idList.isEmpty()) return null
+            val url = "${cgBaseUrl}simple/price?ids=$idList&vs_currencies=eur"
+            val response = client.newCall(Request.Builder().url(url).build()).execute()
+            if (response.code == 429) {
+                noteCoinGecko429()
+                return null
+            }
+            noteCoinGeckoSuccess()
+            val json = JSONObject(response.body?.string().orEmpty())
+            if (json.has("error")) {
+                FileLog.w(TAG_CG, "CoinGecko bulk error: ${json.optString("error")}")
+                return null
+            }
+            val prices = LinkedHashMap<String, Double>()
+            for ((coinId, symbol) in idToSymbol) {
+                val price = json.optJSONObject(coinId)?.optDouble("eur")
+                if (price != null && price.isFinite()) prices[symbol] = price
+            }
+            prices
+        } catch (e: Exception) {
+            FileLog.d(TAG_CG, "Failed to get bulk prices from CoinGecko: $e")
+            null
+        }
+    }
+
+    /**
+     * Escalating cooldown for CoinGecko rate limits: 45 s per consecutive 429,
+     * capped at 5 min. Reset on the first successful response.
+     */
+    private fun noteCoinGecko429() {
+        consecutive429++
+        val cooldownMs = minOf(45_000L * consecutive429, 300_000L)
+        coinGeckoCooldownUntilMs = System.currentTimeMillis() + cooldownMs
+        FileLog.w(
+            TAG_CG,
+            "Rate limited (consecutive #$consecutive429); cooling down ${cooldownMs / 1000} s."
+        )
+    }
+
+    private fun noteCoinGeckoSuccess() {
+        if (consecutive429 > 0) FileLog.d(TAG_CG, "CoinGecko recovered after $consecutive429 rate limit(s).")
+        consecutive429 = 0
     }
 
     /** Spacing for the key-free CoinGecko tier (~1 request/s). */
@@ -144,6 +231,9 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     companion object {
         private const val TAG_CC = "CryptoCompare"
         private const val TAG_CG = "CoinGecko"
+
+        /** Max ids per bulk `simple/price` call; larger lists are chunked. */
+        private const val BULK_BATCH_SIZE = 30
         private val KEY_MAPPINGS = mapOf(
             "BTC" to "bitcoin", "ETH" to "ethereum", "DOGE" to "dogecoin",
             "CRO" to "crypto-com-chain", "EUR" to "eur", "ETHW" to "ethereum-pow-iou",
