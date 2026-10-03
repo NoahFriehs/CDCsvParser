@@ -27,7 +27,7 @@
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginTop="@dimen/wallet_sortBy_margin_top"
         android:text="@string/sort_by"
-        android:textColor="@color/black"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="@dimen/basic_labels_fontsize"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="@+id/sorting_value" />

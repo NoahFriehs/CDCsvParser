@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.firebase.auth.FirebaseAuth
+import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
 
 class LoginActivity : AppCompatActivity() {
 
@@ -24,6 +25,7 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+        EdgeToEdge.enable(this, findViewById(android.R.id.content))
 
         etEmail = findViewById(R.id.et_email)
         etPassword = findViewById(R.id.et_password)

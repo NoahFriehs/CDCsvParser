@@ -15,6 +15,7 @@ import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.activity.WalletViewActivity
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
+import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
 
 class ParseActivity : AppCompatActivity() {
     private lateinit var progressDialog: Dialog
@@ -36,6 +37,7 @@ class ParseActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         showProgressDialog()
         setContentView(R.layout.activity_parse)
+        EdgeToEdge.enable(this, findViewById(android.R.id.content))
 
         // Watchdog: if neither parsed data nor an error arrives (e.g. a core
         // failure that never emits an event), bail out instead of leaving the

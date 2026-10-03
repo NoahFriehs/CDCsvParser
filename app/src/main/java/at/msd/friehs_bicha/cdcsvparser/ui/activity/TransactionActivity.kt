@@ -10,6 +10,7 @@ import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import java.math.BigDecimal
+import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
 
 /**
  * Activity for the transaction page that shows the details of a transaction
@@ -21,6 +22,7 @@ class TransactionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_transaction)
+        EdgeToEdge.enable(this, findViewById(android.R.id.content))
 
         // calling the action bar
         val actionBar = supportActionBar

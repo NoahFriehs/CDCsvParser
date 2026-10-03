@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionFragment
+import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
 
 class TransactionsActivity : AppCompatActivity() {
 
@@ -15,6 +16,7 @@ class TransactionsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_transactions)
+        EdgeToEdge.enable(this, findViewById(android.R.id.content))
         val actionBar = supportActionBar
         actionBar!!.setDisplayHomeAsUpEnabled(true)
 

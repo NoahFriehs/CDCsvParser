@@ -21,7 +21,7 @@
         android:layout_marginTop="@dimen/basic_text_start_end_margin"
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         android:text="@string/btc_placeholder"
-        android:textColor="@color/black"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="@dimen/basic_labels_fontsize"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

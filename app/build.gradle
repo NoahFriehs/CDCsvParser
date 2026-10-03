@@ -13,11 +13,7 @@ android {
     defaultConfig {
         applicationId "at.msd.friehs_bicha.cdcsvparser"
         minSdk 26
-        // 34, not 35: API 35+ devices force edge-to-edge for targetSdk 35,
-        // which breaks the classic action-bar layout app-wide (content is
-        // laid out under the bar, statusBarColor ignored). Raising this
-        // again requires a proper edge-to-edge/insets pass first.
-        targetSdk 34
+        targetSdk 35 // edge-to-edge handled per activity via util.EdgeToEdge
         versionCode 1
         versionName "1.0"
 

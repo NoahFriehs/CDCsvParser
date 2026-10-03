@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light theme: dark status-bar icons on the light edge-to-edge bar -->
+    <bool name="window_light_status_bar">true</bool>
+</resources>

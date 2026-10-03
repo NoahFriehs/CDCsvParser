@@ -14,6 +14,7 @@ import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionFragment
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
+import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
 
 class AssetsFilterActivity : AppCompatActivity() {
     var context: Context? = null
@@ -26,6 +27,7 @@ class AssetsFilterActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_assets_filter)
+        EdgeToEdge.enable(this, findViewById(android.R.id.content))
         // calling the action bar
         val actionBar = supportActionBar
         context = applicationContext

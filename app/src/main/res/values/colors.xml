@@ -1,5 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material 3 color roles - light scheme.
+  Identity: deep violet primary, teal secondary, amber (money) tertiary,
+  violet-tinted neutral surfaces.
+-->
 <resources>
+    <color name="primary">#5B21B6</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#E9E2FB</color>
+    <color name="on_primary_container">#27116B</color>
+
+    <color name="secondary">#0F766E</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="secondary_container">#CFF3EC</color>
+    <color name="on_secondary_container">#0A4A41</color>
+
+    <color name="tertiary">#B45309</color>
+    <color name="on_tertiary">#FFFFFF</color>
+    <color name="tertiary_container">#FDE8CB</color>
+    <color name="on_tertiary_container">#3F2602</color>
+
+    <color name="background">#FAF8FF</color>
+    <color name="on_background">#1C1726</color>
+    <color name="surface">#FAF8FF</color>
+    <color name="on_surface">#1C1726</color>
+    <color name="surface_variant">#E6E0EE</color>
+    <color name="on_surface_variant">#4B4557</color>
+
+    <color name="error">#BA1A1A</color>
+    <color name="on_error">#FFFFFF</color>
+
+    <!-- Legacy names kept for references outside the theme -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -8,4 +39,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="link_blue">#0000FF</color>
+
+    <!-- Fixed (theme-independent) brand color for the splash screen -->
+    <color name="splash_background">#5B21B6</color>
 </resources>

@@ -67,7 +67,6 @@
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/basic_start_end_margin"
-        android:background="@drawable/round_button_layer_list"
         android:text="@string/about_us"
         android:textAllCaps="false"
         android:textSize="@dimen/basic_button_font"
@@ -90,7 +89,6 @@
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/basic_start_end_margin"
-        android:background="@drawable/round_button_layer_list"
         android:textAllCaps="false"
         />
 
@@ -101,7 +99,6 @@
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/basic_start_end_margin"
-        android:background="@drawable/round_button_layer_list"
         android:text="@string/login"
         android:textAllCaps="false"
         android:textSize="@dimen/basic_button_font"
@@ -118,7 +115,6 @@
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/settings_margin_top_bottom"
-        android:background="@drawable/round_button_layer_list"
         android:text="@string/delete_account"
         android:textAllCaps="false"
         android:textSize="20sp"

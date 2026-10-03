@@ -6,6 +6,7 @@ import android.view.MenuItem
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
 
 /**
  * Activity for the about us page
@@ -19,6 +20,7 @@ class AboutUsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_about_us)
+        EdgeToEdge.enable(this, findViewById(android.R.id.content))
         val actionBar = supportActionBar
         actionBar?.setDisplayHomeAsUpEnabled(true)
 

@@ -22,6 +22,7 @@ import java.io.*
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
 
 class MainActivity : AppCompatActivity() {
     var context: Context? = null
@@ -51,6 +52,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        EdgeToEdge.enable(this, findViewById(android.R.id.content))
         context = applicationContext
 
         user = FirebaseAuth.getInstance().currentUser
@@ -115,15 +117,10 @@ class MainActivity : AppCompatActivity() {
      * @param btnHistory the button to de/activate
      */
     private fun setHistory(type: String, dropdown: Spinner, btnHistory: Button) {
-        val drawable = ResourcesCompat.getDrawable(resources, R.drawable.round_button_layer_list, null)
+        // The Material 3 button styles its disabled/enabled state itself
         when (type) {
             "disabled" -> {
-                // Disable the button
                 btnHistory.isEnabled = false
-                btnHistory.setBackgroundColor(Color.LTGRAY)
-                btnHistory.setTextColor(Color.DKGRAY)
-                btnHistory.background = drawable
-                //Disable the dropdown
                 val items = arrayOf(resources.getString(R.string.no_history))
                 val adapter =
                     ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, items)
@@ -132,11 +129,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             "enabled" -> {
-                // Enable the button
                 btnHistory.isEnabled = true
-                btnHistory.setTextColor(Color.WHITE)
-                btnHistory.background = drawable
-                //Enable the dropdown
                 dropdown.isEnabled = true
                 setSpinner(dropdown)
             }

@@ -102,7 +102,6 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_margin="@dimen/login_basic_start_end_margin"
-        android:background="@drawable/round_button_layer_list"
         android:text="@string/use_app_without_login"
         android:textAllCaps="false"
         android:textStyle="bold"

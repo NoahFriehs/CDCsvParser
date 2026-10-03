@@ -1,5 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Material 3 color roles - dark scheme (see values/colors.xml). -->
 <resources>
+    <color name="primary">#CBBDFB</color>
+    <color name="on_primary">#34126B</color>
+    <color name="primary_container">#433085</color>
+    <color name="on_primary_container">#E9E0FF</color>
+
+    <color name="secondary">#7FDCCE</color>
+    <color name="on_secondary">#05443B</color>
+    <color name="secondary_container">#11554B</color>
+    <color name="on_secondary_container">#C8F5EC</color>
+
+    <color name="tertiary">#F2BA6C</color>
+    <color name="on_tertiary">#3F2602</color>
+    <color name="tertiary_container">#66460F</color>
+    <color name="on_tertiary_container">#FFE4B5</color>
+
+    <color name="background">#121017</color>
+    <color name="on_background">#E6E1EF</color>
+    <color name="surface">#121017</color>
+    <color name="on_surface">#E6E1EF</color>
+    <color name="surface_variant">#464053</color>
+    <color name="on_surface_variant">#C8C2D6</color>
+
+    <color name="error">#FFB4AB</color>
+    <color name="on_error">#690005</color>
+
+    <!-- Legacy names kept for references outside the theme -->
     <color name="purple_200">#FF4D2E81</color>
     <color name="purple_500">#FF26005D</color>
     <color name="purple_700">#FF140033</color>

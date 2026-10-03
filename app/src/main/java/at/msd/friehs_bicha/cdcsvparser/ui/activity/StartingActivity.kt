@@ -18,6 +18,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
 
 /**
  * Activity for the starting page/ splash screen
@@ -26,6 +27,7 @@ class StartingActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_starting)
+        EdgeToEdge.enable(this, findViewById(android.R.id.content))
 
         InstanceVars.init(applicationContext)
 
