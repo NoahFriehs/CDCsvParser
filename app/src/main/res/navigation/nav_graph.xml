@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/mainFragment">
+
+    <fragment
+        android:id="@+id/mainFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.MainFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_main" />
+
+    <fragment
+        android:id="@+id/parseFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.ParseFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_parse" />
+
+    <fragment
+        android:id="@+id/transactionsFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.TransactionsFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_transactions" />
+
+    <fragment
+        android:id="@+id/transactionDetailFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionDetailFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_transaction">
+        <argument
+            android:name="transactionID"
+            android:defaultValue="-1"
+            app:argType="integer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/walletViewFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletViewFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_wallet_view" />
+
+    <fragment
+        android:id="@+id/assetsFilterFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.ui.fragments.AssetsFilterFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_assets_filter">
+        <argument
+            android:name="walletID"
+            android:defaultValue="-1"
+            app:argType="integer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.SettingsFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_settings" />
+
+    <fragment
+        android:id="@+id/aboutUsFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.ui.fragments.AboutUsFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_about_us" />
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.ui.fragments.LoginFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_login" />
+
+    <fragment
+        android:id="@+id/signUpFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.ui.fragments.SignUpFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_sign_up" />
+</navigation>

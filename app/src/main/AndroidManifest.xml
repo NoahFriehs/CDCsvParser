@@ -17,14 +17,6 @@
         android:theme="@style/Theme.CDCsvParser">
 
         <activity
-            android:name=".ui.activity.AboutUsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.CDCsvParser" />
-        <activity
-            android:name=".ui.activity.TransactionActivity"
-            android:exported="false"
-            android:theme="@style/Theme.CDCsvParser" />
-        <activity
             android:name=".ui.activity.StartingActivity"
             android:exported="true"
             android:theme="@style/Theme.CDCsvParser">
@@ -34,51 +26,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ui.activity.WalletViewActivity"
-            android:exported="false">
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity>
-        <activity
-            android:name=".LoginActivity"
-            android:exported="false">
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity>
-        <activity
-            android:name=".SignUpActivity"
-            android:exported="false" />
-        <activity
-            android:name=".TransactionsActivity"
-            android:exported="false">
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity>
-        <activity
-            android:name=".AssetsFilterActivity"
-            android:exported="false">
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity>
-        <activity
-            android:name=".ParseActivity"
-            android:exported="false">
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity>
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false">
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity>
+        <!-- Single-activity host; the other screens are nav destinations -->
         <activity
             android:name=".MainActivity"
             android:exported="false">

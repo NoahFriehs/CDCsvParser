@@ -30,7 +30,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -67,6 +68,8 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.16.0'
     implementation 'androidx.annotation:annotation:1.9.1'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.10.2'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.10.2'
 
     implementation platform('com.google.firebase:firebase-bom:33.10.0')
     implementation 'com.google.firebase:firebase-auth'

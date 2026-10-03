@@ -1,17 +1,18 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.fragments
 
 import android.content.Context
-import android.content.Intent
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.fragment.app.FragmentActivity
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
-import at.msd.friehs_bicha.cdcsvparser.ui.activity.TransactionActivity
 
 /**
  * [TransactionAdapter] that can display a [List<Transaction>].
@@ -25,9 +26,12 @@ class TransactionAdapter(private val transactions: List<Transaction>) :
             itemView.setOnClickListener {
                 val transactionId =
                     itemView.findViewById<TextView>(R.id.tv_transactionId).text.toString().toInt()
-                val intent = Intent(itemView.context, TransactionActivity::class.java)
-                intent.putExtra("transactionID", transactionId)
-                itemView.context.startActivity(intent)
+                (itemView.context as? FragmentActivity)?.let {
+                    it.findNavController(R.id.nav_host_fragment).navigate(
+                        R.id.transactionDetailFragment,
+                        Bundle().apply { putInt("transactionID", transactionId) }
+                    )
+                }
             }
         }
     }
