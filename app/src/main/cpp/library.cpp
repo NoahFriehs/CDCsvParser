@@ -291,6 +291,9 @@ jobjectArray stringsToJArray(JNIEnv *env, const std::vector<std::string> &values
 }
 
 // Read a java.lang.String[] into std::vector<std::string>.
+// The UTF chars must be released (in the inner scope) while the element's
+// local reference is still valid - deleting it first makes
+// ReleaseStringUTFChars touch a popped reference and the runtime aborts.
 bool jArrayToStrings(JNIEnv *env, jobjectArray array, std::vector<std::string> &out) {
     if (array == nullptr) return false;
     jsize len = env->GetArrayLength(array);
@@ -298,9 +301,11 @@ bool jArrayToStrings(JNIEnv *env, jobjectArray array, std::vector<std::string> &
     for (jsize i = 0; i < len; i++) {
         auto element = env->GetObjectArrayElement(array, i);
         if (element == nullptr) continue;
-        ScopedUtfChars utf(env, (jstring) element);
+        {
+            ScopedUtfChars utf(env, (jstring) element);
+            if (utf) out.emplace_back(utf.value());
+        }
         env->DeleteLocalRef(element);
-        if (utf) out.emplace_back(utf.value());
     }
     return true;
 }
