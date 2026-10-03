@@ -1,11 +1,13 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.fragments
 
 import android.graphics.Color
+import android.graphics.PorterDuff
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
@@ -23,6 +25,7 @@ class WalletAdapter : RecyclerView.Adapter<WalletAdapter.WalletViewHolder>() {
 
     class WalletViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val name: TextView = itemView.findViewById(R.id.currencyType)
+        val dot: View = itemView.findViewById(R.id.tv_color_dot)
         val amount: TextView = itemView.findViewById(R.id.amount)
         val assetValue: TextView = itemView.findViewById(R.id.amountValue)
         val percentProfit: TextView = itemView.findViewById(R.id.percentProfit)
@@ -59,10 +62,16 @@ class WalletAdapter : RecyclerView.Adapter<WalletAdapter.WalletViewHolder>() {
         holder.transactionCount.text = row.transactionCount.toString()
         holder.percentProfit.setTextColor(
             when (row.trend) {
-                ProfitTrend.POSITIVE -> Color.GREEN
-                ProfitTrend.NEUTRAL -> Color.GRAY
-                ProfitTrend.NEGATIVE -> Color.RED
+                ProfitTrend.POSITIVE -> ContextCompat.getColor(holder.itemView.context, R.color.trend_positive)
+                ProfitTrend.NEUTRAL -> ContextCompat.getColor(holder.itemView.context, R.color.on_surface)
+                ProfitTrend.NEGATIVE -> ContextCompat.getColor(holder.itemView.context, R.color.trend_negative)
             }
+        )
+        // Stable per-currency hue so a dot keeps its color across re-sorts.
+        val hue = (Math.abs(row.name.hashCode().toLong()).toDouble() / Int.MAX_VALUE) * 360.0
+        holder.dot.background.setColorFilter(
+            Color.HSVToColor(floatArrayOf(hue.toFloat(), 0.35f, 0.55f)),
+            PorterDuff.Mode.SRC_IN
         )
     }
 

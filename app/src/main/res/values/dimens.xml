@@ -35,7 +35,7 @@
     <dimen name="login_middle_top_margin">20dp</dimen>
 
     <!--main dimensions -->
-    <dimen name="main_headline_font">40sp</dimen>
+    <dimen name="main_headline_font">34sp</dimen>
     <dimen name="main_middle_font">16sp</dimen>
     <dimen name="main_small_font">12sp</dimen>
     <dimen name="main_headline_padding_margin">16dp</dimen>
@@ -49,6 +49,7 @@
 
     <!--settings dimensions -->
     <dimen name="settings_spinner_height">40dp</dimen>
+    <dimen name="settings_small_margin_top">14dp</dimen>
     <dimen name="settings_margin_top_bottom">20dp</dimen>
 
     <!--sign_up dimensions -->
@@ -72,6 +73,9 @@
 
     <!--fragment_wallet dimensions -->
     <dimen name="fragment_wallet_small_margin_left">5dp</dimen>
+
+    <!--transaction row dimensions -->
+    <dimen name="icon_container_indent">54dp</dimen>
 
     <!--progress_icon dimensions -->
     <dimen name="progress_icon_text_margin_left">5dp</dimen>

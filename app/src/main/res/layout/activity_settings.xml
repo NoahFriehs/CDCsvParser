@@ -1,124 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <Spinner
-        android:id="@+id/wallet_type_spinner"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tl_app_type"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_spinner_height"
+        android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginTop="@dimen/settings_margin_top_bottom"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:entries="@array/appTypes"
+        android:hint="@string/app_type_label"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <Spinner
-        android:id="@+id/core_mode_spinner"
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/wallet_type_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            tools:ignore="LabelFor" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tl_core_mode"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_spinner_height"
+        android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
-        android:layout_marginTop="@dimen/settings_margin_top_bottom"
+        android:layout_marginTop="@dimen/settings_small_margin_top"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:entries="@array/core_modes"
+        android:hint="@string/core_mode_label"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/wallet_type_spinner" />
+        app:layout_constraintTop_toBottomOf="@+id/tl_app_type">
 
-    <CheckBox
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/core_mode_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            tools:ignore="LabelFor" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/use_strict_wallet_type_checkbox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginTop="@dimen/settings_small_margin_top"
         android:text="@string/use_strict_wallet_type"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/core_mode_spinner" />
+        app:layout_constraintTop_toBottomOf="@+id/tl_core_mode" />
 
-    <CheckBox
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/cb_store_data_local"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintLeft_toLeftOf="parent"
         android:layout_marginStart="@dimen/basic_start_end_margin"
-        app:layout_constraintTop_toBottomOf="@+id/use_strict_wallet_type_checkbox"
-        android:text="@string/store_data_local_needed_for_faststart" />
+        android:layout_marginTop="@dimen/settings_small_margin_top"
+        android:text="@string/store_data_local_needed_for_faststart"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/use_strict_wallet_type_checkbox" />
 
-    <CheckBox
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/cb_enable_fast_start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintLeft_toLeftOf="parent"
         android:layout_marginStart="@dimen/basic_start_end_margin"
-        app:layout_constraintTop_toBottomOf="@+id/cb_store_data_local"
-        android:text="@string/enable_faststart" />
+        android:layout_marginTop="@dimen/settings_small_margin_top"
+        android:text="@string/enable_faststart"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cb_store_data_local" />
 
-
-
-
-
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_about_us"
+        style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:layout_marginBottom="@dimen/basic_start_end_margin"
+        android:layout_marginTop="@dimen/settings_margin_top_bottom"
         android:text="@string/about_us"
         android:textAllCaps="false"
         android:textSize="@dimen/basic_button_font"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/btn_logout"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cb_enable_fast_start" />
 
-
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_logout"
+        style="@style/Widget.Material3.Button.OutlinedButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginBottom="@dimen/settings_small_margin_top"
         android:text="@string/logout"
-        android:textStyle="bold"
+        android:textAllCaps="false"
         android:textSize="@dimen/basic_button_font"
         app:layout_constraintBottom_toTopOf="@id/btn_delete_account"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_delete_account"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:layout_marginBottom="@dimen/basic_start_end_margin"
+        android:layout_marginBottom="@dimen/settings_small_margin_top"
+        android:text="@string/delete_account"
         android:textAllCaps="false"
-        />
+        android:textSize="20sp"
+        app:layout_constraintBottom_toTopOf="@id/btn_login"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_login"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:layout_marginBottom="@dimen/basic_start_end_margin"
+        android:layout_marginBottom="@dimen/settings_margin_top_bottom"
         android:text="@string/login"
         android:textAllCaps="false"
         android:textSize="@dimen/basic_button_font"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
-
-
-    <Button
-        android:id="@+id/btn_delete_account"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/basic_start_end_margin"
-        android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:layout_marginBottom="@dimen/settings_margin_top_bottom"
-        android:text="@string/delete_account"
-        android:textAllCaps="false"
-        android:textSize="20sp"
-        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent" />

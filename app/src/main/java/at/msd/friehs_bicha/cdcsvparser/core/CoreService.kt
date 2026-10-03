@@ -409,7 +409,7 @@ class CoreService : Service() {
                     var checks = 0
                     while (!AssetValue.getInstance().isRunning) {
                         checks++
-                        if (checks > 12) { // ~1 minute: give up and keep the placeholder
+                        if (checks > 36) { // ~3 minutes: give up and keep the placeholder
                             FileLog.w(TAG, "Waiting for internet connection gave up.")
                             return@launch
                         }

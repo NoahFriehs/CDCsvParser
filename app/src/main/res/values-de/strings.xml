@@ -94,4 +94,13 @@
     <string name="error_saving_data">Fehler beim Speichern der Daten</string>
     <string name="password_reset_email_sent">Passwort-Reset-E-Mail gesendet</string>
     <string name="unparsable_lines_skipped" formatted="false">Nicht verwertbare Zeilen wurden übersprungen: %1$d</string>
+    <string name="parsing_text">Ihre Datei wird analysiert…</string>
+    <string name="metric_value_placeholder">0 €</string>
+    <string name="search_hint">Transaktionen durchsuchen</string>
+    <string name="filter_all">Alle</string>
+    <string name="allocation_title">Portfolio-Allokation</string>
+    <string name="no_allocation_data">Noch keine Werte zum Darstellen</string>
+    <string name="app_type_label">App-Typ</string>
+    <string name="core_mode_label">Berechnung</string>
+    <string name="file_history_placeholder">Noch keine Dateien</string>
 </resources>

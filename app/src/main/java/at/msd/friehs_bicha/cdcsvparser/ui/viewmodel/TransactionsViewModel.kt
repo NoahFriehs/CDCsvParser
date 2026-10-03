@@ -8,6 +8,7 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.transactionRow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -34,6 +35,34 @@ class TransactionsViewModel : ViewModel() {
     val rows: StateFlow<List<TransactionRow>> =
         allTransactions.map { list -> list.map { transactionRow(it) } }
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    /** Free-text filter applied client-side over description and currency. */
+    private val searchQuery = MutableStateFlow("")
+
+    /** Currency filter for the chip row; null means "all". */
+    private val assetFilter = MutableStateFlow<String?>(null)
+
+    /** The rows matching the current search query and asset chip. */
+    val visibleRows: StateFlow<List<TransactionRow>> =
+        combine(rows, searchQuery, assetFilter) { list, query, asset ->
+            val q = query.trim().lowercase()
+            list.filter { row ->
+                val matchesQuery = q.isEmpty() ||
+                    row.description.lowercase().contains(q) ||
+                    row.currency.lowercase().contains(q)
+                val matchesAsset = asset == null || row.currency == asset
+                matchesQuery && matchesAsset
+            }
+        }
+            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    fun onSearchChanged(query: String) {
+        searchQuery.value = query
+    }
+
+    fun onAssetFilterChanged(currency: String?) {
+        assetFilter.value = currency
+    }
 
     /** Rows of the transaction list for whatever wallet the [selectedWalletId] flow points to. */
     fun rowsForWallet(selectedWalletId: Flow<Int>): StateFlow<List<TransactionRow>> =

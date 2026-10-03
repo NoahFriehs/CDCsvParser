@@ -40,6 +40,9 @@
     <color name="white">#FFFFFFFF</color>
     <color name="link_blue">#0000FF</color>
 
+    <color name="trend_positive">#1B7F3B</color>
+    <color name="trend_negative">#BA1A1A</color>
+
     <!-- Fixed (theme-independent) brand color for the splash screen -->
     <color name="splash_background">#5B21B6</color>
 </resources>

@@ -3,8 +3,10 @@ package at.msd.friehs_bicha.cdcsvparser
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import at.msd.friehs_bicha.cdcsvparser.ui.display.ProfitTrend
+import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletSortKey
 import at.msd.friehs_bicha.cdcsvparser.ui.display.sortWalletRows
+import at.msd.friehs_bicha.cdcsvparser.ui.display.transactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.transactionRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.walletRow
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
@@ -68,6 +70,17 @@ class RowModelsTest {
         val row = walletRow(w)
         assertEquals("BTC", row.name)
         assertEquals(0.0, row.assetValue, 0.0001)
+    }
+
+    @Test
+    fun transactionIconMapsFamilies() {
+        assertEquals(TransactionIcon.CREDIT, transactionIcon("crypto_deposit"))
+        assertEquals(TransactionIcon.CREDIT, transactionIcon("crypto_airdrop_credited"))
+        assertEquals(TransactionIcon.PURCHASE, transactionIcon("crypto_purchase"))
+        assertEquals(TransactionIcon.DEBIT, transactionIcon("crypto_withdrawal"))
+        assertEquals(TransactionIcon.DEBIT, transactionIcon("crypto_wallet_swap_debited"))
+        assertEquals(TransactionIcon.OTHER, transactionIcon("STRING"))
+        assertEquals(TransactionIcon.OTHER, transactionIcon(null))
     }
 
     @Test

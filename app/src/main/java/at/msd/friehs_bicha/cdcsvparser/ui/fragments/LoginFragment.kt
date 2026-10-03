@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
+import com.google.android.material.snackbar.Snackbar
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.R
@@ -36,8 +36,8 @@ class LoginFragment : Fragment() {
         tvErrorMessage = view.findViewById(R.id.tv_error_message)
         val btnLogin: Button = view.findViewById(R.id.btn_login)
         val btnWithoutLogin: Button = view.findViewById(R.id.btn_without_login)
-        val btnForgotPassword: TextView = view.findViewById(R.id.btn_forgot_password)
-        val btnSignup: TextView = view.findViewById(R.id.btn_signup)
+        val btnForgotPassword: Button = view.findViewById(R.id.btn_forgot_password)
+        val btnSignup: Button = view.findViewById(R.id.btn_signup)
 
         auth = FirebaseAuth.getInstance()
 
@@ -79,11 +79,13 @@ class LoginFragment : Fragment() {
             FirebaseAuth.getInstance().sendPasswordResetEmail(email)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        Toast.makeText(requireContext(), R.string.password_reset_email_sent, Toast.LENGTH_SHORT)
-                            .show()
+                        view?.let {
+                            Snackbar.make(it, R.string.password_reset_email_sent, Snackbar.LENGTH_SHORT).show()
+                        }
                     } else {
-                        Toast.makeText(requireContext(), "Failed to send password reset email", Toast.LENGTH_SHORT)
-                            .show()
+                        view?.let {
+                            Snackbar.make(it, R.string.error_login_failed, Snackbar.LENGTH_SHORT).show()
+                        }
                     }
                 }
         }

@@ -1,6 +1,5 @@
 package at.msd.friehs_bicha.cdcsvparser
 
-import android.app.Dialog
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -9,27 +8,29 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.progressindicator.LinearProgressIndicator
+import com.google.android.material.snackbar.Snackbar
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 
 /**
- * Parse/overview screen: progress while the core processes the CSV, then the
- * aggregate values. Watchdog + cancelable progress dialog prevent being stuck
- * on the progress screen forever.
+ * Parse/overview screen: an in-screen progress indicator while the core
+ * processes the CSV, then the aggregate values as metric cards. A watchdog
+ * pops the screen if parsing cannot finish.
  */
 class ParseFragment : Fragment() {
-
-    private var progressDialog: Dialog? = null
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val parseTimeout = Runnable {
         if (!isResumed) return@Runnable
         FileLog.e(TAG, "Parsing did not finish within $PARSE_TIMEOUT_MS ms - giving up.")
-        Toast.makeText(requireContext(), R.string.parsing_timeout, Toast.LENGTH_LONG).show()
+        view?.let {
+            Snackbar.make(it, R.string.parsing_timeout, Snackbar.LENGTH_LONG).show()
+        }
         popBack()
     }
 
@@ -43,7 +44,7 @@ class ParseFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        showProgressDialog()
+        setParsingState(view, true)
         timeoutHandler.postDelayed(parseTimeout, PARSE_TIMEOUT_MS)
 
         view.findViewById<Button>(R.id.btn_filter).setOnClickListener {
@@ -57,9 +58,14 @@ class ParseFragment : Fragment() {
 
     override fun onDestroyView() {
         timeoutHandler.removeCallbacks(parseTimeout)
-        progressDialog?.setOnCancelListener(null)
-        hideProgressDialog()
         super.onDestroyView()
+    }
+
+    private fun setParsingState(view: View, parsing: Boolean) {
+        view.findViewById<LinearProgressIndicator>(R.id.parse_progress).visibility =
+            if (parsing) View.VISIBLE else View.GONE
+        view.findViewById<View>(R.id.parse_status).visibility =
+            if (parsing) View.VISIBLE else View.GONE
     }
 
     private fun popBack() {
@@ -75,20 +81,20 @@ class ParseFragment : Fragment() {
             Benchmarker.stop()
             displayTexts(view, it)
             FileLog.d(TAG, "parsedDataLiveData changed")
-            hideProgressDialog()
+            setParsingState(view, false)
             if (CoreService.lastFailedLines > 0) {
-                Toast.makeText(
-                    requireContext(),
+                Snackbar.make(
+                    view,
                     getString(R.string.unparsable_lines_skipped, CoreService.lastFailedLines),
-                    Toast.LENGTH_LONG
+                    Snackbar.LENGTH_LONG
                 ).show()
             }
         }
         CoreService.errorCounter.observe(viewLifecycleOwner) { count ->
             if (count == null || count <= initialErrors) return@observe
             FileLog.w(TAG, "errorCounterLiveData changed: $count")
-            Toast.makeText(requireContext(), R.string.error_while_parsing, Toast.LENGTH_LONG).show()
-            hideProgressDialog()
+            Snackbar.make(view, R.string.error_while_parsing, Snackbar.LENGTH_LONG).show()
+            setParsingState(view, false)
             popBack()
         }
     }
@@ -117,30 +123,34 @@ class ParseFragment : Fragment() {
 
                 else -> {
                     textView.text = value
+                    if (key == "profit_loss_value") {
+                        textView.setTextColor(trendColor(view, firstNumber(value)))
+                    }
                 }
             }
         }
     }
 
-    private fun showProgressDialog() {
-        if (progressDialog?.isShowing == true) return
-        val dialog = Dialog(requireContext())
-        dialog.setContentView(R.layout.progress_icon)
-        // Cancelable so the user always has an escape hatch; a user cancel
-        // leaves the screen. onCancel only (user action) - the programmatic
-        // dismiss on success must not pop the screen.
-        dialog.setCancelable(true)
-        dialog.setCanceledOnTouchOutside(false)
-        dialog.setOnCancelListener { popBack() }
-        dialog.show()
-        progressDialog = dialog
+    /** Extracts the first number of a formatted value like "-123.4 €". */
+    private fun firstNumber(formatted: String): Double? {
+        val match = Regex("-?[\\d.]+").find(formatted) ?: return null
+        return match.value.replace(",", ".").toDoubleOrNull()
     }
 
-    private fun hideProgressDialog() {
-        timeoutHandler.removeCallbacks(parseTimeout)
-        val dialog = progressDialog ?: return
-        progressDialog = null
-        if (dialog.isShowing) dialog.dismiss()
+    private fun trendColor(view: View, value: Double?): Int {
+        val default = ContextCompat.getColor(requireContext(), R.color.on_surface)
+        return when {
+            value == null -> default
+            value > 0 -> ContextCompat.getColor(
+                requireContext(), R.color.trend_positive
+            )
+
+            value < 0 -> ContextCompat.getColor(
+                requireContext(), R.color.trend_negative
+            )
+
+            else -> default
+        }
     }
 
     companion object {

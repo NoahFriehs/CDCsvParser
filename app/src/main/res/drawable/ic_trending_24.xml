@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <!-- rising trend line -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M3,17 L9,11 L13,15 L21,7 L21,10 L13,18 L9,14 L3,20 Z" />
+</vector>

@@ -9,27 +9,62 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+/** Row icon family, resolved by the adapter to a drawable + tint. */
+enum class TransactionIcon { CREDIT, DEBIT, PURCHASE, OTHER }
+
 /** One pre-formatted row for the transaction list. Pure data, safe for diffing. */
 data class TransactionRow(
     val id: Int,
     val date: String,
+    val monthKey: String,
     val description: String,
+    val currency: String,
     val nativeAmount: String,
+    val nativeSigned: Double,
     val assetAmount: String,
+    val icon: TransactionIcon,
 )
+
+private val INCOME_TYPES = setOf(
+    "crypto_deposit", "crypto_transfer", "crypto_earn_interest_paid",
+    "crypto_airdrop_credited", "crypto_bounty_credited", "crypto_gift_received",
+    "dust_conversion_credited", "rewards_platform_deposit_credited",
+    "admin_wallet_credited", "reimbursement", "supercharger_reward_to_app_credited",
+    "referral_card_cashback", "card_cashback_reverted",
+)
+
+private val PURCHASE_TYPES = setOf("crypto_purchase", "viban_purchase")
+
+/** Maps a transaction type to its row icon family. */
+fun transactionIcon(typeName: String?): TransactionIcon {
+    return when (typeName) {
+        in INCOME_TYPES -> TransactionIcon.CREDIT
+        in PURCHASE_TYPES -> TransactionIcon.PURCHASE
+        "crypto_withdrawal", "crypto_wallet_swap_debited", "supercharger_withdrawal", "lockup_lock" ->
+            TransactionIcon.DEBIT
+
+        else -> TransactionIcon.OTHER
+    }
+}
 
 fun transactionRow(transaction: Transaction): TransactionRow {
     val dateFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.getDefault())
+    val monthFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+    val native = transaction.nativeAmount.toDouble()
     return TransactionRow(
         id = transaction.transactionId,
         date = transaction.date?.let { dateFormat.format(it) } ?: "",
+        monthKey = transaction.date?.let { monthFormat.format(it) } ?: "",
         description = transaction.description,
-        nativeAmount = StringHelper.formatAmountToString(transaction.nativeAmount.toDouble()),
+        currency = transaction.currencyType,
+        nativeAmount = StringHelper.formatAmountToString(native),
+        nativeSigned = native,
         assetAmount = StringHelper.formatAmountToString(
             transaction.amount.toDouble(),
             6,
             transaction.currencyType
         ),
+        icon = transactionIcon(transaction.transactionType?.name),
     )
 }
 
@@ -48,6 +83,7 @@ data class WalletRow(
     val amountValue: Double,
     val assetValue: Double,
     val percentProfit: Double,
+    val isOutside: Boolean,
 )
 
 fun walletRow(wallet: Wallet): WalletRow {
@@ -70,6 +106,7 @@ fun walletRow(wallet: Wallet): WalletRow {
         amountValue = wallet.amount.toDouble(),
         assetValue = assetValue,
         percentProfit = percentProfit,
+        isOutside = wallet.isOutsideWallet,
     )
 }
 

@@ -9,12 +9,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.Spinner
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -61,7 +60,7 @@ class MainFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         user = FirebaseAuth.getInstance().currentUser
 
-        val dropdown = view.findViewById<Spinner>(R.id.spinner_history)
+        val dropdown = view.findViewById<MaterialAutoCompleteTextView>(R.id.spinner_history)
         val btnParse = view.findViewById<Button>(R.id.btn_parse)
         val btnHistory = view.findViewById<Button>(R.id.btn_history)
         val btnLoadFromDB = view.findViewById<Button>(R.id.btn_loadFromDb)
@@ -78,10 +77,10 @@ class MainFragment : Fragment() {
         updateFiles()
 
         if (files!!.isEmpty()) {
-            setHistory("disabled", dropdown, btnHistory)
+            setHistory(view, "disabled", dropdown, btnHistory)
         } else {
             setSpinner(dropdown)
-            setHistory("enabled", dropdown, btnHistory)
+            setHistory(view, "enabled", dropdown, btnHistory)
             btnHistory.setOnClickListener { onBtnHistoryClick(dropdown) }
         }
 
@@ -95,12 +94,12 @@ class MainFragment : Fragment() {
         super.onResume()
         updateFiles()
         val view = view ?: return
-        val dropdown = view.findViewById<Spinner>(R.id.spinner_history)
+        val dropdown = view.findViewById<MaterialAutoCompleteTextView>(R.id.spinner_history)
         val btnHistory = view.findViewById<Button>(R.id.btn_history)
         if (files!!.isEmpty()) {
-            setHistory("disabled", dropdown, btnHistory)
+            setHistory(view, "disabled", dropdown, btnHistory)
         } else {
-            setHistory("enabled", dropdown, btnHistory)
+            setHistory(view, "enabled", dropdown, btnHistory)
             btnHistory.setOnClickListener { onBtnHistoryClick(dropdown) }
         }
     }
@@ -119,10 +118,10 @@ class MainFragment : Fragment() {
     }
 
     /**
-     * Fills a spinner with parsed names of the global file var
+     * Fills the dropdown with parsed names of the global file var
      */
     @SuppressLint("SimpleDateFormat")
-    private fun setSpinner(spinner: Spinner) {
+    private fun fileDisplayNames(): List<String> {
         val fileNames = ArrayList<String>()
         val sdf = SimpleDateFormat(HISTORY_FILE_PATTERN)
         val dateFormat = SimpleDateFormat("d.M HH:mm")
@@ -138,19 +137,19 @@ class MainFragment : Fragment() {
             }
             fileNames.add(filename)
         }
-        val fileNamesAdapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, fileNames)
-        spinner.adapter = fileNamesAdapter
+        return fileNames
     }
 
-    private fun setHistory(type: String, dropdown: Spinner, btnHistory: Button) {
+    private fun setSpinner(dropdown: MaterialAutoCompleteTextView) {
+        dropdown.setSimpleItems(fileDisplayNames().toTypedArray())
+    }
+
+    private fun setHistory(root: View, type: String, dropdown: MaterialAutoCompleteTextView, btnHistory: Button) {
         // The Material 3 button styles its disabled/enabled state itself
         when (type) {
             "disabled" -> {
                 btnHistory.isEnabled = false
-                val items = arrayOf(getString(R.string.no_history))
-                dropdown.adapter =
-                    ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, items)
+                dropdown.setSimpleItems(arrayOf(getString(R.string.no_history)))
                 dropdown.isEnabled = false
             }
 
@@ -158,17 +157,22 @@ class MainFragment : Fragment() {
                 btnHistory.isEnabled = true
                 dropdown.isEnabled = true
                 setSpinner(dropdown)
+                dropdown.setText(getFirstItemOrNull(), false)
             }
         }
     }
 
+    private fun getFirstItemOrNull(): String? = fileDisplayNames().firstOrNull()
+
     /**
-     * Gets the file selected in the spinner, reads it and starts the parse.
+     * Gets the file selected in the dropdown, reads it and starts the parse.
      */
-    private fun onBtnHistoryClick(spinner: Spinner) {
+    private fun onBtnHistoryClick(dropdown: MaterialAutoCompleteTextView) {
         showProgressDialog()
         try {
-            val position = spinner.selectedItemPosition
+            val names = fileDisplayNames()
+            val selected = dropdown.text.toString()
+            val position = names.indexOf(selected).coerceAtLeast(0)
             val selectedFile = files!![position]
             val list = FileUtil.getFileContent(selectedFile)
             Benchmarker.start()
@@ -176,7 +180,7 @@ class MainFragment : Fragment() {
             callParseView()
         } catch (e: Exception) {
             hideProgressDialog()
-            Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show()
+            view?.let { Snackbar.make(it, e.message ?: getString(R.string.error_empty_fields), Snackbar.LENGTH_SHORT).show() }
         }
     }
 
@@ -189,7 +193,7 @@ class MainFragment : Fragment() {
         } catch (e: Exception) {
             hideProgressDialog()
             FileLog.e("MainFragment", "Error handling selected file: $e")
-            Toast.makeText(requireContext(), e.message, Toast.LENGTH_LONG).show()
+            view?.let { Snackbar.make(it, e.message ?: getString(R.string.error_while_parsing), Snackbar.LENGTH_LONG).show() }
         }
     }
 

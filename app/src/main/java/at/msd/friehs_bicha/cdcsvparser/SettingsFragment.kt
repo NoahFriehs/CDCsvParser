@@ -4,11 +4,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.Button
-import android.widget.CheckBox
-import android.widget.Spinner
-import android.widget.Toast
+import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
@@ -42,11 +41,11 @@ class SettingsFragment : Fragment() {
         var selectedType: AppType = AppType.CdCsvParser
         var useCpp = true
 
-        val appTypeSpinner: Spinner = binding.walletTypeSpinner
-        val coreModeSpinner: Spinner = binding.coreModeSpinner
-        val useStrictTypeCheckbox: CheckBox = binding.useStrictWalletTypeCheckbox
-        val cbStoreDataLocal: CheckBox = binding.root.findViewById(R.id.cb_store_data_local)
-        val cbEnableFastStart: CheckBox = binding.root.findViewById(R.id.cb_enable_fast_start)
+        val appTypeSpinner: MaterialAutoCompleteTextView = binding.walletTypeSpinner
+        val coreModeSpinner: MaterialAutoCompleteTextView = binding.coreModeSpinner
+        val useStrictTypeCheckbox: MaterialSwitch = binding.useStrictWalletTypeCheckbox
+        val cbStoreDataLocal: MaterialSwitch = binding.root.findViewById(R.id.cb_store_data_local)
+        val cbEnableFastStart: MaterialSwitch = binding.root.findViewById(R.id.cb_enable_fast_start)
         val btnAboutUs: Button = binding.root.findViewById(R.id.btn_about_us)
         val btnLogout: Button = binding.root.findViewById(R.id.btn_logout)
         val btnLogin: Button = binding.root.findViewById(R.id.btn_login)
@@ -58,11 +57,13 @@ class SettingsFragment : Fragment() {
         selectedType = PreferenceHelper.getSelectedType(requireContext())
         useStrictType = PreferenceHelper.getUseStrictType(requireContext())
 
-        appTypeSpinner.setSelection(selectedType.ordinal)
-        coreModeSpinner.setSelection(0)
-        if (!PreferenceHelper.getUseCpp(requireContext())) {
-            coreModeSpinner.setSelection(1)
-        }
+        appTypeSpinner.setSimpleItems(resources.getStringArray(R.array.appTypes))
+        coreModeSpinner.setSimpleItems(resources.getStringArray(R.array.core_modes))
+        appTypeSpinner.setText(resources.getStringArray(R.array.appTypes)[selectedType.ordinal], false)
+        coreModeSpinner.setText(
+            resources.getStringArray(R.array.core_modes)[if (PreferenceHelper.getUseCpp(requireContext())) 0 else 1],
+            false
+        )
         useStrictTypeCheckbox.isEnabled = selectedType != AppType.CroCard
         useStrictTypeCheckbox.isChecked = useStrictType
         useStrictTypeCheckbox.setOnCheckedChangeListener { _, isChecked ->
@@ -82,27 +83,15 @@ class SettingsFragment : Fragment() {
             PreferenceHelper.setFastStartEnabled(requireContext(), isChecked)
         }
 
-        appTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?, view: View, position: Int, id: Long
-            ) {
-                selectedType = AppType.values()[position]
-                PreferenceHelper.setSelectedType(requireContext(), selectedType)
-                useStrictTypeCheckbox.isEnabled = position != 0
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        appTypeSpinner.setOnItemClickListener { _, _, position, _ ->
+            selectedType = AppType.values()[position]
+            PreferenceHelper.setSelectedType(requireContext(), selectedType)
+            useStrictTypeCheckbox.isEnabled = position != 0
         }
 
-        coreModeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?, view: View, position: Int, id: Long
-            ) {
-                useCpp = position == 0
-                PreferenceHelper.setUseCpp(requireContext(), useCpp)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        coreModeSpinner.setOnItemClickListener { _, _, position, _ ->
+            useCpp = position == 0
+            PreferenceHelper.setUseCpp(requireContext(), useCpp)
         }
 
         btnAboutUs.setOnClickListener {
@@ -175,8 +164,7 @@ class SettingsFragment : Fragment() {
         user.delete().addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 FileLog.d("Settings-DeleteUser", "User account deleted.")
-                Toast.makeText(requireContext(), getString(R.string.user_deleted), Toast.LENGTH_LONG)
-                    .show()
+                view?.let { Snackbar.make(it, R.string.user_deleted, Snackbar.LENGTH_LONG).show() }
             } else {
                 val exception = task.exception
                 if (exception != null) {
@@ -184,11 +172,9 @@ class SettingsFragment : Fragment() {
                 }
                 if (exception?.toString()?.contains("requires recent authentication") == true) {
                     FileLog.d("Settings-DeleteUser", "User needs to reauthenticate.")
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.user_needs_to_autheticate),
-                        Toast.LENGTH_LONG
-                    ).show()
+                    view?.let {
+                        Snackbar.make(it, R.string.user_needs_to_autheticate, Snackbar.LENGTH_LONG).show()
+                    }
                 }
             }
         }

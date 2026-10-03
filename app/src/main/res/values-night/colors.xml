@@ -35,4 +35,6 @@
     <color name="black">#FFFFFFFF</color>
     <color name="white">#FF000000</color>
     <color name="link_blue">#000033</color>
+    <color name="trend_positive">#7DD48A</color>
+    <color name="trend_negative">#F2B8B5</color>
 </resources>

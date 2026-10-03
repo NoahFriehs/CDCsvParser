@@ -101,4 +101,13 @@
     <string name="error_saving_data">Error saving data</string>
     <string name="password_reset_email_sent">Password reset email sent</string>
     <string name="unparsable_lines_skipped" formatted="false">Unparsable lines were skipped: %1$d</string>
+    <string name="parsing_text">Parsing your file…</string>
+    <string name="metric_value_placeholder">0 €</string>
+    <string name="search_hint">Search transactions</string>
+    <string name="filter_all">All</string>
+    <string name="allocation_title">Portfolio allocation</string>
+    <string name="no_allocation_data">No values to chart yet</string>
+    <string name="app_type_label">App type</string>
+    <string name="core_mode_label">Calculator</string>
+    <string name="file_history_placeholder">No files yet</string>
 </resources>

@@ -8,12 +8,12 @@
 
     <TextView
         android:id="@+id/tv_welcome_text"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_text_start_end_margin"
         android:layout_marginTop="@dimen/main_headline_padding_margin"
-        android:padding="@dimen/main_headline_padding_margin"
+        android:layout_marginEnd="@dimen/main_big_margin_bottom"
         android:text="@string/welcome_message"
-        android:textAlignment="center"
         android:textColor="?attr/colorOnSurface"
         android:textSize="@dimen/main_headline_font"
         android:textStyle="bold"
@@ -21,18 +21,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/settings_button"
+        style="@style/Widget.Material3.Button.IconButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/settings"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:contentDescription="@string/settings"
+        app:icon="@drawable/ic_settings_24"
+        app:layout_constraintBottom_toBottomOf="@id/tv_welcome_text"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_welcome_text" />
+        app:layout_constraintTop_toTopOf="@id/tv_welcome_text" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_parse"
+        style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
@@ -42,6 +45,9 @@
         android:textAllCaps="false"
         android:textSize="@dimen/basic_button_font"
         android:textStyle="bold"
+        app:icon="@drawable/ic_upload_24"
+        app:iconGravity="textStart"
+        app:iconSize="26dp"
         app:layout_constraintBottom_toTopOf="@+id/history_text"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -50,59 +56,53 @@
         android:id="@+id/history_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/main_middle_margin_bottom"
+        android:layout_marginBottom="@dimen/main_small_margin_bottom"
         android:text="@string/history_text"
         android:textAlignment="center"
-        android:textColor="?attr/colorOnSurface"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="@dimen/main_middle_font"
-        app:layout_constraintBottom_toTopOf="@id/history_label"
+        app:layout_constraintBottom_toTopOf="@id/tl_history"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <TextView
-        android:id="@+id/history_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/basic_start_end_margin"
-        android:layout_marginBottom="@dimen/basic_start_end_margin"
-        android:text="@string/history"
-        android:textAlignment="center"
-        android:textColor="?attr/colorOnSurface"
-        android:textSize="@dimen/main_small_font"
-        app:layout_constraintBottom_toTopOf="@id/spinner_history"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Spinner
-        android:id="@+id/spinner_history"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tl_history"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:layout_marginBottom="@dimen/main_big_margin_bottom"
-        android:background="@android:drawable/btn_dropdown"
-        android:spinnerMode="dropdown"
+        android:layout_marginBottom="@dimen/main_small_margin_bottom"
+        android:hint="@string/history"
         app:layout_constraintBottom_toTopOf="@id/btn_history"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:ignore="MissingConstraints" />
+        app:layout_constraintStart_toStartOf="parent">
 
-    <Button
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/spinner_history"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            tools:ignore="LabelFor" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_history"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:layout_marginBottom="@dimen/main_middle_margin_bottom"
+        android:layout_marginBottom="@dimen/main_small_margin_bottom"
         android:text="@string/show_history"
         android:textAllCaps="false"
         android:textSize="@dimen/basic_button_font"
-        android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@+id/btn_loadFromDb"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_loadFromDb"
+        style="@style/Widget.Material3.Button.OutlinedButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
@@ -111,10 +111,8 @@
         android:text="@string/load_latest_from_database"
         android:textAllCaps="false"
         android:textSize="@dimen/basic_button_font"
-        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

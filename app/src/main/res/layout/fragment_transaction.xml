@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
     android:orientation="horizontal">
 
     <TextView
@@ -13,86 +15,98 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/tv_date"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <FrameLayout
+        android:id="@+id/icon_container"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        android:layout_marginTop="@dimen/basic_text_start_end_margin"
-        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
-        android:text="@string/date_placeholder"
+        android:background="@drawable/tonal_icon_container"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <TextView
-        android:id="@+id/tv_description"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        android:text="@string/description"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_date" />
-
+        <ImageView
+            android:id="@+id/iv_icon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/transaction_type"
+            tools:src="@drawable/ic_trending_24"
+            tools:tint="?attr/colorPrimary" />
+    </FrameLayout>
 
     <TextView
         android:id="@+id/tv_descriptionValue"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
-        android:text="@string/descriptionvalue_placeholder"
-        app:layout_constraintLeft_toRightOf="@id/tv_description"
-        app:layout_constraintTop_toBottomOf="@id/tv_date" />
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/tv_date"
+        app:layout_constraintEnd_toStartOf="@id/tv_amountValue"
+        app:layout_constraintStart_toEndOf="@id/icon_container"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        tools:text="Buy BTC" />
 
     <TextView
-        android:id="@+id/amount"
-        android:layout_width="wrap_content"
+        android:id="@+id/tv_date"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        android:text="@string/amount"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_description" />
+        android:layout_marginStart="@dimen/fragment_wallet_small_margin_left"
+        android:layout_marginEnd="@dimen/basic_text_start_end_margin"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/tv_amountValue"
+        app:layout_constraintStart_toEndOf="@id/icon_container"
+        app:layout_constraintTop_toBottomOf="@id/tv_descriptionValue"
+        tools:text="Wed Oct 01 21:30:23 UTC 2026" />
 
     <TextView
         android:id="@+id/tv_amountValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
-        android:text="@string/amountvalue_placeholder"
-        app:layout_constraintLeft_toRightOf="@+id/amount"
-        app:layout_constraintTop_toBottomOf="@id/tv_description" />
-
-    <TextView
-        android:id="@+id/tv_assetAmount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        android:text="@string/asset_amount"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/amount" />
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/tv_assetAmountValue"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        tools:text="-499.99 €" />
 
     <TextView
         android:id="@+id/tv_assetAmountValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/fragment_transaction_value_margin_start"
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
-        android:text="@string/assetvalue_placeholder"
-        app:layout_constraintLeft_toRightOf="@+id/tv_assetAmount"
-        app:layout_constraintTop_toBottomOf="@id/amount" />
+        android:layout_marginTop="2dp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_amountValue"
+        tools:text="0.00205761 BTC" />
 
     <View
         android:id="@+id/divider"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="@dimen/divider_height"
-        android:layout_marginStart="@dimen/basic_text_start_end_margin"
-        android:layout_marginTop="@dimen/divider_margin_top"
+        android:layout_marginStart="@dimen/icon_container_indent"
+        android:layout_marginTop="14dp"
         android:layout_marginEnd="@dimen/basic_text_start_end_margin"
         android:background="?android:attr/listDivider"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_assetAmount" />
-
+        app:layout_constraintTop_toBottomOf="@id/tv_date" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

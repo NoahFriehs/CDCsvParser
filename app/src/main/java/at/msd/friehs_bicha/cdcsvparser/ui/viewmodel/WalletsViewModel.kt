@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -41,6 +42,11 @@ class WalletsViewModel : ViewModel() {
             filtered.map { walletRow(it) }
                 .let { sortWalletRows(it, key, ascending) }
         }
+            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    /** Unfiltered, unsorted rows — feeds the allocation overview. */
+    val allRows: StateFlow<List<WalletRow>> =
+        walletSource.map { source -> source.map { walletRow(it) } }
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun onSearchChanged(query: String) {

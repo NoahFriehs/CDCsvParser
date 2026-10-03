@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <!-- gear: stroked ring + eight teeth (cardinal + diagonals) -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="2.6"
+        android:pathData="M12,5.2 A6.8,6.8 0 1 0 12,18.8 A6.8,6.8 0 1 0 12,5.2 Z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M10.9,0.8 L13.1,0.8 L13.1,5 L10.9,5 Z M10.9,19 L13.1,19 L13.1,23.2 L10.9,23.2 Z M0.8,10.9 L5,10.9 L5,13.1 L0.8,13.1 Z M19,10.9 L23.2,10.9 L23.2,13.1 L19,13.1 Z" />
+    <group
+        android:name="diagonal"
+        android:rotation="45"
+        android:pivotX="12"
+        android:pivotY="12">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M11.2,1.4 L12.8,1.4 L12.8,5 L11.2,5 Z M11.2,19 L12.8,19 L12.8,22.6 L11.2,22.6 Z" />
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M1.4,11.2 L5,11.2 L5,12.8 L1.4,12.8 Z M19,11.2 L22.6,11.2 L22.6,12.8 L19,12.8 Z" />
+    </group>
+</vector>
