@@ -23,7 +23,7 @@ import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
  */
 class ParseFragment : Fragment() {
 
-    private lateinit var progressDialog: Dialog
+    private var progressDialog: Dialog? = null
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val parseTimeout = Runnable {
@@ -57,13 +57,8 @@ class ParseFragment : Fragment() {
 
     override fun onDestroyView() {
         timeoutHandler.removeCallbacks(parseTimeout)
-        try {
-            if (::progressDialog.isInitialized && progressDialog.isShowing) {
-                progressDialog.setOnCancelListener(null)
-                progressDialog.dismiss()
-            }
-        } catch (ignored: IllegalStateException) {
-        }
+        progressDialog?.setOnCancelListener(null)
+        hideProgressDialog()
         super.onDestroyView()
     }
 
@@ -73,6 +68,9 @@ class ParseFragment : Fragment() {
     }
 
     private fun displayInformation(view: View) {
+        // The counter is cumulative across runs; only a value newer than the
+        // one already replayed to this observer counts as an error of this run.
+        val initialErrors = CoreService.errorCounter.value ?: 0
         CoreService.parsedDataLiveData.observe(viewLifecycleOwner) {
             Benchmarker.stop()
             displayTexts(view, it)
@@ -86,8 +84,9 @@ class ParseFragment : Fragment() {
                 ).show()
             }
         }
-        CoreService.errorCounter.observe(viewLifecycleOwner) {
-            FileLog.w(TAG, "errorCounterLiveData changed")
+        CoreService.errorCounter.observe(viewLifecycleOwner) { count ->
+            if (count == null || count <= initialErrors) return@observe
+            FileLog.w(TAG, "errorCounterLiveData changed: $count")
             Toast.makeText(requireContext(), R.string.error_while_parsing, Toast.LENGTH_LONG).show()
             hideProgressDialog()
             popBack()
@@ -124,20 +123,24 @@ class ParseFragment : Fragment() {
     }
 
     private fun showProgressDialog() {
-        progressDialog = Dialog(requireContext())
-        progressDialog.setContentView(R.layout.progress_icon)
+        if (progressDialog?.isShowing == true) return
+        val dialog = Dialog(requireContext())
+        dialog.setContentView(R.layout.progress_icon)
         // Cancelable so the user always has an escape hatch; a user cancel
         // leaves the screen. onCancel only (user action) - the programmatic
         // dismiss on success must not pop the screen.
-        progressDialog.setCancelable(true)
-        progressDialog.setCanceledOnTouchOutside(false)
-        progressDialog.setOnCancelListener { popBack() }
-        progressDialog.show()
+        dialog.setCancelable(true)
+        dialog.setCanceledOnTouchOutside(false)
+        dialog.setOnCancelListener { popBack() }
+        dialog.show()
+        progressDialog = dialog
     }
 
-    fun hideProgressDialog() {
+    private fun hideProgressDialog() {
         timeoutHandler.removeCallbacks(parseTimeout)
-        progressDialog.dismiss()
+        val dialog = progressDialog ?: return
+        progressDialog = null
+        if (dialog.isShowing) dialog.dismiss()
     }
 
     companion object {

@@ -35,7 +35,7 @@ class MainFragment : Fragment() {
 
     var files: Array<File>? = null
     var user = FirebaseAuth.getInstance().currentUser
-    private lateinit var progressDialog: Dialog
+    private var progressDialog: Dialog? = null
 
     // SAF file picker (ActivityResult API): no storage permissions are
     // needed for ACTION_GET_CONTENT.
@@ -167,10 +167,10 @@ class MainFragment : Fragment() {
      */
     private fun onBtnHistoryClick(spinner: Spinner) {
         showProgressDialog()
-        val position = spinner.selectedItemPosition
-        val selectedFile = files!![position]
-        val list = FileUtil.getFileContent(selectedFile)
         try {
+            val position = spinner.selectedItemPosition
+            val selectedFile = files!![position]
+            val list = FileUtil.getFileContent(selectedFile)
             Benchmarker.start()
             CoreService.startServiceWithData(list, PreferenceHelper.getSelectedType(requireContext()).ordinal)
             callParseView()
@@ -183,8 +183,17 @@ class MainFragment : Fragment() {
     /**
      * is called on successful file selection and saves it to storage.
      */
-    private fun onFileSelected(fileUri: Uri) {
-        showProgressDialog()
+    private fun onFileSelected(fileUri: Uri) {  // dialog is already up from the upload click
+        try {
+            handleFileSelected(fileUri)
+        } catch (e: Exception) {
+            hideProgressDialog()
+            FileLog.e("MainFragment", "Error handling selected file: $e")
+            Toast.makeText(requireContext(), e.message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun handleFileSelected(fileUri: Uri) {
         val dateFormat = SimpleDateFormat(HISTORY_FILE_PATTERN)
         val now = Date()
         val time = dateFormat.format(now)
@@ -198,7 +207,7 @@ class MainFragment : Fragment() {
                 }
             }
         } catch (e: IOException) {
-            FileLog.e("MainFragment", ":  Error while writing to file : $e")
+            FileLog.e("MainFragment", "Error while writing to file: $e")
         }
         updateFiles()
         while (files!!.size > 7) {
@@ -235,14 +244,20 @@ class MainFragment : Fragment() {
     }
 
     fun showProgressDialog() {
-        progressDialog = Dialog(requireContext())
-        progressDialog.setContentView(R.layout.progress_icon)
-        progressDialog.setCancelable(false)
-        progressDialog.setCanceledOnTouchOutside(false)
-        progressDialog.show()
+        // Idempotent: a second call must not create a second dialog - the
+        // first one would then be leaked (non-cancelable and never dismissed).
+        if (progressDialog?.isShowing == true) return
+        val dialog = Dialog(requireContext())
+        dialog.setContentView(R.layout.progress_icon)
+        dialog.setCancelable(false)
+        dialog.setCanceledOnTouchOutside(false)
+        dialog.show()
+        progressDialog = dialog
     }
 
     fun hideProgressDialog() {
-        progressDialog.dismiss()
+        val dialog = progressDialog ?: return
+        progressDialog = null
+        if (dialog.isShowing) dialog.dismiss()
     }
 }
