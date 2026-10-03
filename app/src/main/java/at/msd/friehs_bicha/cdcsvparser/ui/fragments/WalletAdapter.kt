@@ -1,6 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.fragments
 
-import android.content.Context
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,99 +10,66 @@ import androidx.fragment.app.FragmentActivity
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
-import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
-import at.msd.friehs_bicha.cdcsvparser.wallet.IWalletAdapterCallback
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
+import at.msd.friehs_bicha.cdcsvparser.ui.display.ProfitTrend
+import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
 
 /**
- *
- * [RecyclerView.Adapter<WalletAdapter.WalletViewHolder>] that can display a [List<Wallet>].
+ * [RecyclerView.Adapter] that displays pre-formatted [WalletRow]s.
+ * Rows are supplied via [submit]; item clicks navigate to the asset filter.
  */
-class WalletAdapter(val wallets: List<Wallet>) :
-    RecyclerView.Adapter<WalletAdapter.WalletViewHolder>() {
+class WalletAdapter : RecyclerView.Adapter<WalletAdapter.WalletViewHolder>() {
+
+    private var rows: List<WalletRow> = emptyList()
 
     class WalletViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val name: TextView = itemView.findViewById(R.id.currencyType)
+        val amount: TextView = itemView.findViewById(R.id.amount)
+        val assetValue: TextView = itemView.findViewById(R.id.amountValue)
+        val percentProfit: TextView = itemView.findViewById(R.id.percentProfit)
+        val transactionCount: TextView = itemView.findViewById(R.id.amountTransactions)
+        val walletIdView: TextView = itemView.findViewById(R.id.walletId)
+
         init {
             itemView.setOnClickListener {
-                val walletId =
-                    itemView.findViewById<TextView>(R.id.walletId).text.toString().toInt()
-
-                if (!CoreService.isRunning) {
-                    FileLog.e("WalletAdapter", "CoreService is not running.")
-                    return@setOnClickListener
-                }
-
-                (itemView.context as? FragmentActivity)?.let {
-                    it.findNavController(R.id.nav_host_fragment).navigate(
-                        R.id.assetsFilterFragment,
-                        Bundle().apply { putInt("walletID", walletId) }
-                    )
+                (itemView.tag as? Int)?.let { walletId ->
+                    (itemView.context as? FragmentActivity)?.let {
+                        it.findNavController(R.id.nav_host_fragment).navigate(
+                            R.id.assetsFilterFragment,
+                            Bundle().apply { putInt("walletID", walletId) }
+                        )
+                    }
                 }
             }
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): WalletViewHolder {
-        return WalletViewHolder(
-            LayoutInflater.from(parent.context).inflate(
-                R.layout.fragment_wallet,
-                parent,
-                false
-            )
-        )
+        val itemView = LayoutInflater.from(parent.context)
+            .inflate(R.layout.fragment_wallet, parent, false)
+        return WalletViewHolder(itemView)
     }
 
     override fun onBindViewHolder(holder: WalletViewHolder, position: Int) {
-        val wallet = wallets[position]
-        val waMap = CoreService.getWalletAdapter(wallet.walletId)
-
-        displayTexts(waMap, holder, holder.itemView.context)
+        val row = rows[position]
+        holder.itemView.tag = row.walletId
+        holder.name.text = row.name
+        holder.amount.text = row.amountText
+        holder.assetValue.text = row.assetValueText
+        holder.percentProfit.text = row.percentText
+        holder.transactionCount.text = row.transactionCount.toString()
+        holder.percentProfit.setTextColor(
+            when (row.trend) {
+                ProfitTrend.POSITIVE -> Color.GREEN
+                ProfitTrend.NEUTRAL -> Color.GRAY
+                ProfitTrend.NEGATIVE -> Color.RED
+            }
+        )
     }
 
+    override fun getItemCount(): Int = rows.size
 
-    val readData = (object : IWalletAdapterCallback {
-        override fun onCallback(value: MutableMap<String, String?>, holder: WalletViewHolder) {
-            displayTexts(value, holder, holder.itemView.context)
-        }
-    })
-
-
-    /**
-     * Displays the prices of wallet
-     *
-     * @param texts the Map<String></String>, String> which should be displayed with id of View and text to set pairs
-     */
-    private fun displayTexts(
-        texts: Map<String, String?>?,
-        holder: WalletViewHolder,
-        context: Context
-    ) {
-        texts!!.forEach { (key: String?, value: String?) ->
-            if (key == "COLOR") {
-                val color = value!!.toInt()
-                holder.itemView.findViewById<TextView>(R.id.percentProfit).setTextColor(color)
-                return@forEach
-            }
-            val textView = holder.itemView.findViewById<TextView>(
-                holder.itemView.resources.getIdentifier(
-                    key,
-                    "id",
-                    context.packageName
-                )
-            )
-            if (textView == null) {
-                FileLog.e("WalletAdapter", "textView is null for key: $key")
-                return@forEach
-            }
-            if (value == null) {
-                textView.visibility = View.INVISIBLE
-            } else {
-                textView.text = value
-            }
-        }
+    fun submit(newRows: List<WalletRow>) {
+        rows = newRows
+        notifyDataSetChanged()
     }
-
-
-    override fun getItemCount() = wallets.size
 }

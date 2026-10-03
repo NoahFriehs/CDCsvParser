@@ -11,19 +11,19 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
-import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
+import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletSortKey
+import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletListFragment
+import at.msd.friehs_bicha.cdcsvparser.ui.viewmodel.WalletsViewModel
 
 /**
- * Wallet view screen: searchable, sortable list of all wallets (hosting the
- * existing WalletListFragment in the container).
+ * Wallet view screen: searchable, sortable list of all wallets, backed by
+ * [WalletsViewModel] and hosted in the list fragment container.
  */
 class WalletViewFragment : Fragment() {
 
-    private var wallets = ArrayList<Wallet>()
-    private var sortedWallets = ArrayList<Wallet>()
+    private val viewModel: WalletsViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,148 +36,80 @@ class WalletViewFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        wallets = CoreService.allWalletsLiveData.value ?: ArrayList<Wallet>()
-        if (wallets.isEmpty()) {
-            wallets = CoreService.walletsLiveData.value ?: ArrayList()
-        }
-        sortedWallets = ArrayList(wallets)
-
-        val spinnerValueSpinner = view.findViewById<Spinner>(R.id.sorting_value)
-        val sortingValues = listOf(
-            getString(R.string.sort_amount),
-            getString(R.string.sort_amount_asset),
-            getString(R.string.sort_percent),
-            getString(R.string.sort_transactions)
-        )
-        spinnerValueSpinner.adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, sortingValues)
-
-        val spinnerTypeSpinner = view.findViewById<Spinner>(R.id.sorting_type)
-        val sortingTypes = listOf(
-            getString(R.string.sort_desc),
-            getString(R.string.sort_asc)
-        )
-        spinnerTypeSpinner.adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, sortingTypes)
-
-        spinnerValueSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                adapterView: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                val typePosition = spinnerTypeSpinner.selectedItemPosition
-                sortedWallets =
-                    sortWallets(sortedWallets, sortingValues[position], sortingTypes[typePosition])
-                showList()
-            }
-
-            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
-        }
-
-        spinnerTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                adapterView: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                val valuePosition = spinnerValueSpinner.selectedItemPosition
-                sortedWallets =
-                    sortWallets(sortedWallets, sortingValues[valuePosition], sortingTypes[position])
-                showList()
-            }
-
-            override fun onNothingSelected(adapterView: AdapterView<*>?) {}
-        }
-
-        val editText = view.findViewById<EditText>(R.id.search_bar)
-        editText.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-
-            override fun afterTextChanged(s: Editable) {
-                val text = editText.text.toString()
-                sortedWallets = if (text == "") {
-                    sortWallets(
-                        wallets,
-                        spinnerValueSpinner.selectedItem.toString(),
-                        spinnerTypeSpinner.selectedItem.toString()
-                    )
-                } else {
-                    sortedWallets.clear()
-                    sortedWallets.addAll(filterWalletsByUserSearch(wallets, text))
-                    sortWallets(
-                        sortedWallets,
-                        spinnerValueSpinner.selectedItem.toString(),
-                        spinnerTypeSpinner.selectedItem.toString()
-                    )
-                }
-                showList()
-            }
-        })
-
-        sortedWallets = sortWallets(
-            wallets,
-            getString(R.string.sort_amount),
-            getString(R.string.sort_desc)
-        )
-        showList()
-    }
-
-    private fun showList() {
-        if (isAdded && !childFragmentManager.isStateSaved) {
+        if (!childFragmentManager.isStateSaved) {
             childFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, WalletListFragment(sortedWallets))
+                .replace(R.id.fragment_container, WalletListFragment(viewModel.rows))
                 .commit()
         }
+
+        val spinnerValue = view.findViewById<Spinner>(R.id.sorting_value)
+        spinnerValue.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            listOf(
+                getString(R.string.sort_amount),
+                getString(R.string.sort_amount_asset),
+                getString(R.string.sort_percent),
+                getString(R.string.sort_transactions)
+            )
+        )
+
+        val spinnerType = view.findViewById<Spinner>(R.id.sorting_type)
+        spinnerType.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            listOf(
+                getString(R.string.sort_desc),
+                getString(R.string.sort_asc)
+            )
+        )
+
+        val onValueSelected = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parentView: AdapterView<*>?,
+                selectedItemView: View?,
+                position: Int,
+                id: Long
+            ) {
+                applySort(spinnerValue.selectedItemPosition, spinnerType.selectedItemPosition)
+            }
+
+            override fun onNothingSelected(parentView: AdapterView<*>?) {}
+        }
+        val onTypeSelected = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parentView: AdapterView<*>?,
+                selectedItemView: View?,
+                position: Int,
+                id: Long
+            ) {
+                applySort(spinnerValue.selectedItemPosition, spinnerType.selectedItemPosition)
+            }
+
+            override fun onNothingSelected(parentView: AdapterView<*>?) {}
+        }
+        spinnerValue.onItemSelectedListener = onValueSelected
+        spinnerType.onItemSelectedListener = onTypeSelected
+
+        val search = view.findViewById<EditText>(R.id.search_bar)
+        search.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun afterTextChanged(s: Editable) {
+                viewModel.onSearchChanged(s.toString())
+            }
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+        })
     }
 
-    private fun sortWallets(
-        wallets: ArrayList<Wallet>,
-        sortingValue: String,
-        sortingType: String
-    ): ArrayList<Wallet> {
-        if (wallets.size <= 1) {
-            return wallets
+    private fun applySort(valuePosition: Int, typePosition: Int) {
+        val key = when (valuePosition) {
+            0 -> WalletSortKey.AMOUNT
+            1 -> WalletSortKey.ASSET_VALUE
+            2 -> WalletSortKey.PERCENT
+            3 -> WalletSortKey.TRANSACTIONS
+            else -> WalletSortKey.AMOUNT
         }
-        var sorted = wallets
-        val isDesc = sortingType == getString(R.string.sort_desc)
-        when (sortingValue) {
-            getString(R.string.sort_amount) -> {
-                sorted = sorted.sortedByDescending {
-                    CoreService.onCoreThread { CoreService.getValueOfAssetsFromWID(it.walletId) }
-                }.toList() as ArrayList<Wallet>
-            }
-
-            getString(R.string.sort_amount_asset) -> {
-                sorted = sorted.sortedByDescending { it.amount }.toList() as ArrayList<Wallet>
-            }
-
-            getString(R.string.sort_percent) -> {
-                sorted = sorted.sortedWith(compareByDescending {
-                    val assetValue =
-                        CoreService.onCoreThread { CoreService.getValueOfAssetsFromWID(it.walletId) }
-                    assetValue / it.moneySpent.toDouble() * 100
-                }).toList() as ArrayList<Wallet>
-            }
-
-            getString(R.string.sort_transactions) -> {
-                sorted = sorted.sortedWith(compareByDescending { it.transactions.size })
-                    .toList() as ArrayList<Wallet>
-            }
-        }
-        if (!isDesc) sorted.reverse()
-        return sorted
-    }
-
-    private fun filterWalletsByUserSearch(wallets: ArrayList<Wallet>, query: String): List<Wallet> {
-        if (wallets.isEmpty()) return emptyList()
-        if (wallets[0] is CroCardWallet) {
-            return wallets.filter { (it as CroCardWallet).transactionType!!.contains(query, ignoreCase = true) }
-        }
-        return wallets.filter { it.currencyType.contains(query, ignoreCase = true) }
+        val ascending = typePosition == 1
+        viewModel.onSortChanged(key, ascending)
     }
 }

@@ -9,11 +9,18 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
-import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
+import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
+import at.msd.friehs_bicha.cdcsvparser.ui.viewmodel.TransactionsViewModel
+import at.msd.friehs_bicha.cdcsvparser.ui.viewmodel.WalletsViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Asset filter screen: per-wallet aggregate values + the wallet's
@@ -21,7 +28,11 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
  */
 class AssetsFilterFragment : Fragment() {
 
-    private var walletList: MutableList<Wallet> = mutableListOf()
+    private val walletsViewModel: WalletsViewModel by viewModels()
+    private val transactionsViewModel: TransactionsViewModel by viewModels()
+
+    private val selectedWalletId = MutableStateFlow(-1)
+    private var wallets: List<WalletRow> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,35 +45,41 @@ class AssetsFilterFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!childFragmentManager.isStateSaved) {
+            childFragmentManager.beginTransaction()
+                .replace(
+                    R.id.fragment_container,
+                    TransactionFragment(transactionsViewModel.rowsForWallet(selectedWalletId))
+                )
+                .commit()
+        }
+
         val dropdown = view.findViewById<Spinner>(R.id.asset_spinner)
-        val items = CoreService.walletNames.value ?: arrayOf()
-        walletList = CoreService.allWalletsLiveData.value ?: mutableListOf()
+        val allRegardingTx = view.findViewById<TextView>(R.id.all_regarding_tx)
 
-        if (items.isEmpty()) {
-            FileLog.e(TAG, "items is empty")
-            return
-        }
-
-        dropdown.adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, items)
-
-        val indexObj = dropdown.selectedItem ?: return
-        var specificWallet = walletList.find { it.getTypeString() == indexObj }
-
-        val intentWalletId = arguments?.getInt("walletID", -1) ?: -1
-        if (intentWalletId != -1) {
-            val wallet = walletList.find { it.walletId == intentWalletId }
-            if (wallet != null) {
-                specificWallet = wallet
-            } else {
-                FileLog.e(TAG, "Wallet not found")
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                walletsViewModel.rows.collect { rows ->
+                    if (!isAdded) return@collect
+                    wallets = rows
+                    if (rows.isEmpty()) return@collect
+                    dropdown.adapter = ArrayAdapter(
+                        requireContext(),
+                        android.R.layout.simple_spinner_dropdown_item,
+                        rows.map { it.name }.toTypedArray()
+                    )
+                    val intentWalletId = arguments?.getInt("walletID", -1) ?: -1
+                    val selectedIndex = if (intentWalletId != -1) {
+                        rows.indexOfFirst { it.walletId == intentWalletId }
+                    } else {
+                        0
+                    }
+                    val index = if (selectedIndex >= 0) selectedIndex else 0
+                    dropdown.setSelection(index)
+                    selectWallet(view, rows[index], allRegardingTx)
+                }
             }
-            walletList.indexOf(wallet).let { if (it >= 0) dropdown.setSelection(it) }
         }
-
-        displayInformation(view, specificWallet, view.findViewById(R.id.all_regarding_tx))
-
-        if (specificWallet != null) showTransactions(specificWallet)
 
         dropdown.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
@@ -71,38 +88,19 @@ class AssetsFilterFragment : Fragment() {
                 position: Int,
                 id: Long
             ) {
-                val specificWallet = walletList[position]
-                showTransactions(specificWallet)
-                displayInformation(view, specificWallet, view.findViewById(R.id.all_regarding_tx))
+                if (position in wallets.indices) {
+                    selectWallet(view, wallets[position], allRegardingTx)
+                }
             }
 
             override fun onNothingSelected(parentView: AdapterView<*>?) {}
         }
     }
 
-    private fun showTransactions(specificWallet: Wallet) {
-        if (!childFragmentManager.isStateSaved) {
-            childFragmentManager.beginTransaction()
-                .replace(
-                    R.id.fragment_container,
-                    TransactionFragment(specificWallet.transactions as ArrayList<Transaction>)
-                )
-                .commit()
-        }
-    }
-
-    private fun displayInformation(view: View, specificWallet: Wallet?, allRegardingTx: TextView) {
-        if (specificWallet == null) {
-            FileLog.e(TAG, "specificWallet is null")
-            return
-        }
-
-        allRegardingTx.text =
-            getString(R.string.all_transactions_regarding, specificWallet.getTypeString())
-
-        val texts = CoreService.onCoreThread {
-            CoreService.getAssetMap(specificWallet.walletId)
-        }
+    private fun selectWallet(view: View, wallet: WalletRow, allRegardingTx: TextView) {
+        selectedWalletId.value = wallet.walletId
+        allRegardingTx.text = getString(R.string.all_transactions_regarding, wallet.name)
+        val texts = CoreService.onCoreThread { CoreService.getAssetMap(wallet.walletId) }
         displayTexts(view, texts)
     }
 
@@ -111,6 +109,10 @@ class AssetsFilterFragment : Fragment() {
             val textView = view.findViewById<TextView>(
                 resources.getIdentifier(key, "id", requireContext().packageName)
             )
+            if (textView == null) {
+                FileLog.e(TAG, "textView is null for key: $key")
+                return@forEach
+            }
             if (value == null) {
                 textView.visibility = View.INVISIBLE
             } else {

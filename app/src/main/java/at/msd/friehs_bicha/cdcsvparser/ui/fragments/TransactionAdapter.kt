@@ -1,6 +1,5 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.fragments
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,77 +9,55 @@ import androidx.fragment.app.FragmentActivity
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
-import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
-import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
 
 /**
- * [TransactionAdapter] that can display a [List<Transaction>].
- * The [TransactionAdapter] is used in [TransactionFragment].
+ * [RecyclerView.Adapter] that displays pre-formatted [TransactionRow]s.
+ * Rows are supplied via [submit]; item clicks navigate to the detail screen.
  */
-class TransactionAdapter(private val transactions: List<Transaction>) :
-    RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
+class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
+
+    private var rows: List<TransactionRow> = emptyList()
 
     class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val date: TextView = itemView.findViewById(R.id.tv_date)
+        val description: TextView = itemView.findViewById(R.id.tv_descriptionValue)
+        val nativeAmount: TextView = itemView.findViewById(R.id.tv_amountValue)
+        val assetAmount: TextView = itemView.findViewById(R.id.tv_assetAmountValue)
+
         init {
             itemView.setOnClickListener {
-                val transactionId =
-                    itemView.findViewById<TextView>(R.id.tv_transactionId).text.toString().toInt()
-                (itemView.context as? FragmentActivity)?.let {
-                    it.findNavController(R.id.nav_host_fragment).navigate(
-                        R.id.transactionDetailFragment,
-                        Bundle().apply { putInt("transactionID", transactionId) }
-                    )
+                (itemView.tag as? Int)?.let { id ->
+                    (itemView.context as? FragmentActivity)?.let {
+                        it.findNavController(R.id.nav_host_fragment).navigate(
+                            R.id.transactionDetailFragment,
+                            Bundle().apply { putInt("transactionID", id) }
+                        )
+                    }
                 }
             }
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransactionViewHolder {
-
-        return TransactionViewHolder(
-            LayoutInflater.from(parent.context).inflate(
-                R.layout.fragment_transaction,
-                parent,
-                false
-            )
-        )
-
+        val itemView = LayoutInflater.from(parent.context)
+            .inflate(R.layout.fragment_transaction, parent, false)
+        return TransactionViewHolder(itemView)
     }
 
     override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
-//        Thread {
-        val transaction = transactions[position]
-        val waMap = CoreService.getTransactionAdapter(transaction)
-        displayTexts(waMap, holder, holder.itemView.context)
-//        }.start()
+        val row = rows[position]
+        holder.itemView.tag = row.id
+        holder.date.text = row.date
+        holder.description.text = row.description
+        holder.nativeAmount.text = row.nativeAmount
+        holder.assetAmount.text = row.assetAmount
     }
 
-    override fun getItemCount(): Int = transactions.size
+    override fun getItemCount(): Int = rows.size
 
-    private fun displayTexts(
-        texts: Map<String, String?>?,
-        holder: TransactionViewHolder,
-        context: Context
-    ) {
-        texts!!.forEach { (key: String?, value: String?) ->
-            val textView = holder.itemView.findViewById<TextView>(
-                holder.itemView.resources.getIdentifier(
-                    key,
-                    "id",
-                    context.packageName
-                )
-            )
-            if (textView == null) {
-                FileLog.e("TransactionAdapter", "textView is null for key: $key")
-                return@forEach
-            }
-            if (value == null) {
-                textView.visibility = View.INVISIBLE
-            } else {
-                textView.text = value
-            }
-        }
+    fun submit(newRows: List<TransactionRow>) {
+        rows = newRows
+        notifyDataSetChanged()
     }
-
 }

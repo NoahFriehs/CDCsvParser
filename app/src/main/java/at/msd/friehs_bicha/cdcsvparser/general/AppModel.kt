@@ -512,34 +512,7 @@ class AppModel : BaseAppModel, Serializable {
 
 
 
-    fun getTransactionAdapter(transaction: Transaction): MutableMap<String, String?> {
-
-        //TDOO: make this better for CardTransactions
-
-        val defaultLocale = Locale.getDefault()
-        val dateFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", defaultLocale)
-        val map: MutableMap<String, String?> = HashMap()
-
-        if (transaction is CroCardTransaction) {
-            map[R.id.tv_assetAmountValue.toString()] =
-                formatAmountToString(
-                    transaction.amount.toDouble(),
-                    6,
-                    transaction.transactionTypeString
-                )
-        } else {
-            map[R.id.tv_assetAmountValue.toString()] =
-                formatAmountToString(transaction.amount.toDouble(), 6, transaction.currencyType)
-        }
-
-        map[R.id.tv_transactionId.toString()] = transaction.transactionId.toString()
-        map[R.id.tv_date.toString()] = transaction.date?.let { dateFormat.format(it).toString() }
-        map[R.id.tv_descriptionValue.toString()] = transaction.description
-        map[R.id.tv_amountValue.toString()] =
-            formatAmountToString(transaction.nativeAmount.toDouble())
-
-        return map
-    }
+    
 
     fun hasCard(): Boolean {
         return cardApp != null || appType == AppType.CroCard || appType == AppType.CurveCard
@@ -575,37 +548,7 @@ class AppModel : BaseAppModel, Serializable {
             }
         }
 
-        fun getWalletAdapter(wallet: Wallet): Map<String, String?> {
-            val assetValue = getValueOfAssets(wallet)
-            var percentProfit = assetValue / wallet.moneySpent.toDouble() * 100
-            if (percentProfit.isNaN()) {
-                percentProfit = 0.0
-            }
-            val assetValueString = formatAmountToString(assetValue, 5)
-            val amountString =
-                formatAmountToString(wallet.amount.toDouble(), 5, wallet.currencyType)
-            val color: Int = if (percentProfit > 100) {
-                Color.GREEN
-            } else if (percentProfit == 100.0 || percentProfit == 0.0) {
-                Color.GRAY
-            } else {
-                Color.RED
-            }
-
-            val walletName: String = if (wallet is CroCardWallet) wallet.transactionType.toString()
-            else wallet.currencyType
-
-            val map: MutableMap<String, String?> = mutableMapOf()
-            map[R.id.walletId.toString()] = wallet.walletId.toString()
-            map[R.id.currencyType.toString()] = walletName
-            map[R.id.amount.toString()] = amountString
-            map[R.id.amountValue.toString()] = assetValueString
-            map[R.id.percentProfit.toString()] =
-                formatAmountToString(percentProfit - 100, 2, "%", true)
-            map[R.id.amountTransactions.toString()] = wallet.transactions.count().toString()
-            map["COLOR"] = color.toString()
-            return map
-        }
+        
     }
 
 }

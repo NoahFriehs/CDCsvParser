@@ -551,32 +551,39 @@ class CoreService : Service() {
     }
 
     private fun saveToRoomsDB() {
-        val walletDao = InstanceVars.db.walletDao()
-        val txDao = InstanceVars.db.transactionDao()
-        val cardWalletDao = InstanceVars.db.cardWalletDao()
-        val cardTransactionDao = InstanceVars.db.cardTransactionDao()
+        // A constraint conflict here must never kill the app: the in-memory
+        // (C++ core + LiveData) state stays the source of truth and the next
+        // parse retries the save.
+        try {
+            val walletDao = InstanceVars.db.walletDao()
+            val txDao = InstanceVars.db.transactionDao()
+            val cardWalletDao = InstanceVars.db.cardWalletDao()
+            val cardTransactionDao = InstanceVars.db.cardTransactionDao()
 
-        // Delete before re-insert (children first, FK constraint): rows
-        // whose ids were never re-imported must not survive as stale data.
-        txDao.deleteAll()
-        walletDao.deleteAll()
-        cardTransactionDao.deleteAll()
-        cardWalletDao.deleteAll()
+            // Delete before re-insert (children first, FK constraint): rows
+            // whose ids were never re-imported must not survive as stale data.
+            txDao.deleteAll()
+            walletDao.deleteAll()
+            cardTransactionDao.deleteAll()
+            cardWalletDao.deleteAll()
 
-        walletsLiveData.value?.let {
-            walletDao.insertAll(it)
+            walletsLiveData.value?.let {
+                walletDao.insertAll(it)
+            }
+            transactionsLiveData.value?.let {
+                txDao.insertAll(it)
+            }
+            cardWalletsLiveData.value?.let {
+                cardWalletDao.insertAll(it as ArrayList<CroCardWallet>)
+            }
+            cardTransactionsLiveData.value?.let {
+                cardTransactionDao.insertAll(it)
+            }
+            PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
+            FileLog.d(TAG, "Data saved to RoomsDB")
+        } catch (e: Exception) {
+            FileLog.e(TAG, "Failed to save data to Room DB: $e")
         }
-        transactionsLiveData.value?.let {
-            txDao.insertAll(it)
-        }
-        cardWalletsLiveData.value?.let {
-            cardWalletDao.insertAll(it as ArrayList<CroCardWallet>)
-        }
-        cardTransactionsLiveData.value?.let {
-            cardTransactionDao.insertAll(it)
-        }
-        PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
-        FileLog.d(TAG, "Data saved to RoomsDB")
     }
 
     /**
@@ -1068,74 +1075,10 @@ class CoreService : Service() {
 
 
         /**
-         * Returns the amounts of the asset in the wallet
-         *
-         * @return the amounts of the asset in the wallet
-         */
-        fun getWalletAdapter(walletId: Int): Map<String, String?> {
-            val w: Wallet? = if (isCoreInitialized && useCpp) {
-                allWalletsLiveData.value?.find { it.walletId == walletId }
-            } else {
-                appModel?.txApp?.wallets?.find { it.walletId == walletId }
-            }
-            if (w == null) {
-                FileLog.w("$TAG.getWalletAdapter", "No wallet found for id $walletId")
-                return emptyMap()
-            }
-            return AppModel.getWalletAdapter(w)
-        }
-
-        /**
          * Returns the AssetMap of the wallet
          */
         fun getAssetMap(walletId: Int): Map<String, String?> {
             return assetMaps.value?.find { it.walletId == walletId }?.data ?: emptyMap()
-        }
-
-
-        /**
-         * Returns the stats of transaction
-         *
-         * @return the stats of transaction
-         */
-        fun getTransactionAdapter(transaction: Transaction): Map<String, String?> {
-            return when (isCoreInitialized) {
-                true -> {
-                    val defaultLocale = Locale.getDefault()
-                    val dateFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", defaultLocale)
-                    val map: MutableMap<String, String?> = java.util.HashMap()
-                    map[R.id.tv_assetAmountValue.toString()] =
-                        StringHelper.formatAmountToString(
-                            transaction.amount.toDouble(),
-                            6,
-                            transaction.currencyType
-                        )
-                    map[R.id.tv_transactionId.toString()] = transaction.transactionId.toString()
-                    map[R.id.tv_date.toString()] =
-                        transaction.date?.let { dateFormat.format(it).toString() }
-                    map[R.id.tv_descriptionValue.toString()] = transaction.description
-                    map[R.id.tv_amountValue.toString()] =
-                        StringHelper.formatAmountToString(transaction.nativeAmount.toDouble())
-                    map
-                }
-
-                false -> {
-                    appModel!!.getTransactionAdapter(transaction)
-                }
-            }
-        }
-
-        /**
-         * Returns the transaction with the transactionId
-         *
-         * @return the transaction with the transactionId
-         */
-        /**
-         * Returns the transaction with the given id, or null if it does not
-         * exist (instead of crashing on a null LiveData/value).
-         */
-        fun getTransaction(transactionId: Int): Transaction? {
-            return transactionsLiveData.value?.find { it.transactionId == transactionId }
         }
 
 
