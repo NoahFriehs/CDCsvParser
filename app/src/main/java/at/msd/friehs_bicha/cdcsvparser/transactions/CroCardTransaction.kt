@@ -2,6 +2,7 @@ package at.msd.friehs_bicha.cdcsvparser.transactions
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Ignore
 import androidx.room.TypeConverters
 import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
@@ -79,6 +80,7 @@ open class CroCardTransaction(
         this.transactionTypeString = transactionType!!
     }
 
+    @Ignore
     //constructor for all members:
     constructor(
         transactionId: Int,
@@ -117,6 +119,49 @@ open class CroCardTransaction(
         this.toAmount = toAmount
         this.isOutsideTransaction = isOutsideTransaction
         this.transactionTypeString = transactionType.toString()
+    }
+
+    /** Constructor matching all persisted properties (required by Room). */
+    constructor(
+        transactionId: Int,
+        description: String,
+        walletId: Int,
+        fromWalletId: Int,
+        date: Date?,
+        currencyType: String,
+        amount: BigDecimal,
+        nativeAmount: BigDecimal,
+        amountBonus: BigDecimal?,
+        transactionType: TransactionType?,
+        transHash: String?,
+        toCurrency: String?,
+        toAmount: BigDecimal?,
+        isOutsideTransaction: Boolean,
+        notes: String,
+        transactionTypeString: String
+    ) : this(
+        date?.toString(),
+        description,
+        currencyType,
+        amount,
+        nativeAmount,
+        transactionTypeString
+    ) {
+        this.transactionId = transactionId
+        this.walletId = walletId
+        this.fromWalletId = fromWalletId
+        this.date = date
+        this.currencyType = currencyType
+        this.amount = amount
+        this.nativeAmount = nativeAmount
+        this.amountBonus = amountBonus
+        this.transactionType = transactionType
+        this.transHash = transHash
+        this.toCurrency = toCurrency
+        this.toAmount = toAmount
+        this.isOutsideTransaction = isOutsideTransaction
+        this.notes = notes
+        this.transactionTypeString = transactionTypeString
     }
 
     constructor(date: TransactionData) : this(

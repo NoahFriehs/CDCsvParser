@@ -93,6 +93,7 @@ open class Wallet : Serializable {
         }
     }
 
+    @Ignore
     constructor(
         walletId: Int,
         currencyType: String,
@@ -105,6 +106,23 @@ open class Wallet : Serializable {
         this.amount = amount
         this.amountBonus = amountBonus
         this.moneySpent = moneySpent
+    }
+
+    /** Constructor matching all persisted properties (required by Room). */
+    constructor(
+        walletId: Int,
+        currencyType: String,
+        amount: BigDecimal,
+        amountBonus: BigDecimal,
+        moneySpent: BigDecimal,
+        isOutsideWallet: Boolean
+    ) {
+        this.walletId = walletId
+        this.currencyType = currencyType
+        this.amount = amount
+        this.amountBonus = amountBonus
+        this.moneySpent = moneySpent
+        this.isOutsideWallet = isOutsideWallet
     }
 
     constructor(wallet: Wallet) {

@@ -48,28 +48,22 @@ class CroCardWallet(
         this.isOutsideWallet = outsideWallet
     }
 
-    //constructor for all members:
+    /** Constructor matching all persisted properties (required by Room). */
     constructor(
         walletId: Int,
         currencyType: String,
-        amount: BigDecimal?,
-        amountBonus: BigDecimal?,
+        amount: BigDecimal,
+        amountBonus: BigDecimal,
         moneySpent: BigDecimal,
         isOutsideWallet: Boolean,
         transactionType: String?
-    ) : this(
-        currencyType,
-        amount,
-        transactionType,
-        null
-    ) {
+    ) : this(currencyType, amount, transactionType, null) {
         this.walletId = walletId
         this.currencyType = currencyType
         this.transactionType = transactionType
-        this.amount = amount!!
-        this.amountBonus = amountBonus!!
+        this.amount = amount
+        this.amountBonus = amountBonus
         this.moneySpent = moneySpent
-        //if(transactions != null) this.transactions = transactions as MutableList<Transaction?>
         this.isOutsideWallet = isOutsideWallet
     }
 

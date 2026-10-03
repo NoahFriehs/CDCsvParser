@@ -2,6 +2,7 @@ package at.msd.friehs_bicha.cdcsvparser.transactions
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
@@ -84,6 +85,7 @@ open class Transaction : Serializable {
         transactionId = ++uidCounter
     }
 
+    @Ignore
     constructor(
         transactionId: Int,
         date: Date?,
@@ -166,6 +168,41 @@ open class Transaction : Serializable {
         this.walletId = walletId
         this.fromWalletId = fromWalletId
         this.isOutsideTransaction = outsideTransaction
+    }
+
+    /** Constructor matching all persisted properties (required by Room). */
+    constructor(
+        transactionId: Int,
+        description: String,
+        walletId: Int,
+        fromWalletId: Int,
+        date: Date?,
+        currencyType: String,
+        amount: BigDecimal,
+        nativeAmount: BigDecimal,
+        amountBonus: BigDecimal?,
+        transactionType: TransactionType?,
+        transHash: String?,
+        toCurrency: String?,
+        toAmount: BigDecimal?,
+        isOutsideTransaction: Boolean,
+        notes: String
+    ) {
+        this.transactionId = transactionId
+        this.description = description
+        this.walletId = walletId
+        this.fromWalletId = fromWalletId
+        this.date = date
+        this.currencyType = currencyType
+        this.amount = amount
+        this.nativeAmount = nativeAmount
+        this.amountBonus = amountBonus
+        this.transactionType = transactionType
+        this.transHash = transHash
+        this.toCurrency = toCurrency
+        this.toAmount = toAmount
+        this.isOutsideTransaction = isOutsideTransaction
+        this.notes = notes
     }
 
     constructor(txData: TransactionData) {
