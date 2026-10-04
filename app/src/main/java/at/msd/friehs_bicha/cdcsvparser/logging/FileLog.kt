@@ -22,6 +22,11 @@ import kotlin.concurrent.thread
  * For info use FileLog.i
  *
  * All lines are queued and written by a single daemon writer thread.
+ *
+ * The level values are the canonical ones for the whole app: the C++ core
+ * mirrors them exactly (`FileLog::LOG_VERBOSE..LOG_ERROR` in the core's
+ * FileLog.h) so a level can cross the JNI boundary unchanged; treat any new
+ * level plumbing as this scale (android.util.Log).
  */
 class FileLog {
 
