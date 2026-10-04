@@ -231,7 +231,7 @@ class CoreService : Service() {
                     return
                 }
                 val dataArray = Array<String>(data.size) { i -> data[i] }
-                if (initWithData(dataArray, data.size, coreMode, logFilePath)) {
+                if (initWithData(dataArray, data.size, coreMode, logFilePath, PARSE_BUDGET_MS)) {
                     FileLog.d(TAG, "Initialization with data successful.")
                     isRunning = true
                     lastFailedLines = getFailedLines().coerceAtLeast(0)
@@ -939,7 +939,8 @@ class CoreService : Service() {
         data: Array<String>,
         dataSize: Int,
         mode: Int,
-        logFilePath: String
+        logFilePath: String,
+        parseBudgetMs: Long
     ): Boolean
 
     private external fun save(savePath: String) //TODO: does not work in and
@@ -982,6 +983,11 @@ class CoreService : Service() {
 
         private const val TAG = "CoreService"
         private const val CORE_THREAD_NAME = "cpp-core"
+
+        // Hard wall-clock budget for one full parse in the C++ core: comfortably
+        // above a real parse (the 2444-line BlockPit export takes well under a
+        // second) and far below the 5-minute UI watchdog.
+        private const val PARSE_BUDGET_MS = 120_000L
 
         /**
          * All core work - and in particular every JNI call into the C++

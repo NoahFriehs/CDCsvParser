@@ -40,7 +40,10 @@ bool init(const std::string &logFilePath, const std::string &loadDirPath) {
     return false;
 }
 
-bool initWithData(const std::vector<std::string> &data, int mode, const std::string &logFilePath) {
+bool initWithData(const std::vector<std::string> &data, int mode,
+                  const std::string &logFilePath, long long parseBudgetMs) {
+
+    TransactionManager::setParseBudgetMs(parseBudgetMs);
 
     FileLog::init(logFilePath, true, FileLog::LOG_DEBUG);
 
@@ -79,6 +82,9 @@ bool initWithData(const std::vector<std::string> &data, int mode, const std::str
     FileLog::i("library", "Processing took " + std::to_string(end) + " milliseconds");
 
     dataHolder.SetTransactionManager(std::move(transactionManager));
+
+    // Release the budget for the next call on this thread.
+    TransactionManager::setParseBudgetMs(0);
 
     // return true if successful
     return dataHolder.isInitialized();
@@ -365,13 +371,15 @@ extern "C"
 JNIEXPORT jboolean JNICALL
 Java_at_msd_friehs_1bicha_cdcsvparser_core_CoreService_initWithData(JNIEnv *env, jobject,
                                                                     jobjectArray data,
-                                                                    jint, jint mode, jstring path) {
+                                                                    jint, jint mode,
+                                                                    jstring path,
+                                                                    jlong parseBudgetMs) {
     try {
         std::vector<std::string> lines;
         if (!jArrayToStrings(env, data, lines)) return JNI_FALSE;
         ScopedUtfChars pathChars(env, path);
         if (!pathChars) return JNI_FALSE;
-        return initWithData(lines, mode, pathChars.value()) ? JNI_TRUE : JNI_FALSE;
+        return initWithData(lines, mode, pathChars.value(), parseBudgetMs) ? JNI_TRUE : JNI_FALSE;
     } catch (const std::exception &e) {
         FileLog::e("library", "JNI initWithData failed: " + std::string(e.what()));
         return JNI_FALSE;
