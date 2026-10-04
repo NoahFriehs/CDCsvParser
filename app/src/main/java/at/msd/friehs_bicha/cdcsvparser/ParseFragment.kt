@@ -18,9 +18,14 @@ import com.google.android.material.snackbar.Snackbar
 import androidx.core.content.ContextCompat
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
+import at.msd.friehs_bicha.cdcsvparser.price.CryptoPricesCryptoCompare
+import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryProvider
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
+import java.time.LocalDate
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.ParseScreen
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletSeries
 import kotlinx.coroutines.launch
 
 /**
@@ -48,6 +53,13 @@ class ParseFragment : Fragment() {
     private val _values = mutableStateMapOf<String, String?>()
     private val _profitLossColor = mutableStateOf(androidx.compose.ui.graphics.Color.Unspecified)
     private val _dailySeries = mutableStateOf<List<String>>(emptyList())
+    /** "CUR;YYYY-MM-DD;balance;bonus" wallet lines (G36 historical pricing). */
+    private val _walletSeries = mutableStateOf<List<String>>(emptyList())
+    /** Fetched daily EUR price history per currency (grows in). */
+    private val _history = mutableStateOf<Map<String, PriceHistoryProvider.DailyPrices>>(emptyMap())
+    /** (done, total) of the history fetch pass; null before it starts. */
+    private val _historyProgress = mutableStateOf<Pair<Int, Int>?>(null)
+    private val _currentPrices = mutableStateOf<Map<String, Double>>(emptyMap())
     private val _noInternet = mutableStateOf(false)
     private val _attributionVisible = mutableStateOf(true)
 
@@ -65,6 +77,10 @@ class ParseFragment : Fragment() {
                         profitLossColor = _profitLossColor.value,
                         attributionVisible = _attributionVisible.value,
                         dailySeries = _dailySeries.value,
+                        walletSeries = _walletSeries.value,
+                        history = _history.value,
+                        historyProgress = _historyProgress.value,
+                        currentPrices = _currentPrices.value,
                         noInternet = _noInternet.value,
                         onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },
                         onAllTransactionsClick = { findNavController().navigate(R.id.transactionsFragment) },
@@ -151,6 +167,42 @@ class ParseFragment : Fragment() {
     private fun loadDailySeries() {
         viewLifecycleOwner.lifecycleScope.launch {
             _dailySeries.value = CoreService.dailySeries()
+            _walletSeries.value = CoreService.dailyWalletSeries()
+            launchHistoryPass()
+        }
+    }
+
+    /**
+     * G36: make sure the chart has the daily EUR price history for every
+     * currency that holds assets (cached on disk; only what is missing hits
+     * CoinGecko, one request per symbol, stopping early while the shared
+     * CoinGecko cooldown/blackout is active). The pass runs in the
+     * background; the chart re-values as soon as each symbol lands.
+     */
+    private fun launchHistoryPass() {
+        val walletRows = _walletSeries.value
+        val walletData = parseWalletSeries(walletRows)
+        val currencies = walletData.keys.toList()
+        if (currencies.isEmpty()) return
+        val provider = (AssetValue.getInstance().priceProvider as? CryptoPricesCryptoCompare) ?: return
+        val historyProvider = PriceHistoryProvider(provider)
+        val startDay = walletData.values.flatten().minOf { it.date.toEpochDay() }
+        val rangeDays = ((LocalDate.now().toEpochDay() - startDay).coerceAtLeast(0) + 1).toInt()
+        // The live prices the cards were valued with (pin for today's bucket).
+        val assets = AssetValue.getInstance()
+        _currentPrices.value = currencies.associateWith { assets.cachedPrice(it) }
+            .filterValues { it != null }
+            .mapValues { it.value!! }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val fetched = historyProvider.ensureAll(currencies, rangeDays) { done, total ->
+                _historyProgress.value = done to total
+            }
+            _history.value = _history.value + fetched
+            FileLog.i(
+                TAG,
+                "Price history: ${fetched.size} symbol(s) this pass " +
+                        "(${_history.value.size}/${currencies.size} cached total, range ${rangeDays} d)."
+            )
         }
     }
 

@@ -46,6 +46,8 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import androidx.compose.ui.text.LinkAnnotation
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryProvider
+import java.time.LocalDate
 
 /**
  * Parse/overview screen (Compose, P3.1). Metric cards + the chart panel
@@ -69,8 +71,17 @@ fun ParseScreen(
     attributionVisible: Boolean,
     /** Raw "series;YYYY-MM-DD;value" daily lines from the core (all 4 series). */
     dailySeries: List<String>,
-    /** The asset cards show the offline placeholder -> the price-based
-     *  series have no meaningful values. */
+    /** Raw "CUR;YYYY-MM-DD;balance;bonus" per-wallet daily lines (G36): the
+     *  basis for historical (point-in-time) pricing of the stock series. */
+    walletSeries: List<String>,
+    /** Fetched daily EUR price history per currency (may arrive in parts). */
+    history: Map<String, PriceHistoryProvider.DailyPrices>,
+    /** (done, total) of the history fetch pass, or null before it starts. */
+    historyProgress: Pair<Int, Int>?,
+    /** Live prices (the ones the cards use) - pin the bucket that contains
+     *  today so its point equals the card total. */
+    currentPrices: Map<String, Double>,
+    /** The asset cards show the offline placeholder. */
     noInternet: Boolean,
     onFilterClick: () -> Unit,
     onAllTransactionsClick: () -> Unit,
@@ -162,7 +173,14 @@ fun ParseScreen(
 
             if (dailySeries.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
-                ChartPanel(dailySeries = dailySeries, noInternet = noInternet)
+                ChartPanel(
+                    dailySeries = dailySeries,
+                    walletSeries = walletSeries,
+                    history = history,
+                    historyProgress = historyProgress,
+                    currentPrices = currentPrices,
+                    noInternet = noInternet,
+                )
             }
 
             if (attributionVisible) {
@@ -258,24 +276,56 @@ private fun attributionAnnotatedString(context: android.content.Context): Annota
 }
 
 /**
- * The G35 chart panel: series picker + time-frame picker (both M3
- * segmented rows) over the core's daily ledger series, bucketed in
- * [ChartData.kt]. Selection state is local UI state; switching is
- * network-free and takes the already-loaded daily points.
+ * The chart panel (G35, historical pricing G36): series picker + time-frame
+ * picker (both M3 segmented rows). The spent series buckets the core's daily
+ * flow; the stock series (value / P/L / rewards) value every bucket with the
+ * prices valid at its end date (see [historicalStockSeries]), using the
+ * fetched daily price history plus the live prices for today's bucket.
+ * Selection state is local UI state; switching is network-free.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ChartPanel(dailySeries: List<String>, noInternet: Boolean) {
+private fun ChartPanel(
+    dailySeries: List<String>,
+    walletSeries: List<String>,
+    history: Map<String, PriceHistoryProvider.DailyPrices>,
+    historyProgress: Pair<Int, Int>?,
+    currentPrices: Map<String, Double>,
+    noInternet: Boolean,
+) {
     val seriesData = remember(dailySeries) { parseDailySeries(dailySeries) }
+    val walletData = remember(walletSeries) { parseWalletSeries(walletSeries) }
     var selectedSeries by remember { mutableStateOf(ChartSeries.SPENT) }
     var timeFrame by remember { mutableStateOf(TimeFrame.MONTH) }
-    val points = remember(seriesData, selectedSeries, timeFrame) {
-        bucketize(
-            seriesData[selectedSeries].orEmpty(),
-            timeFrame,
-            selectedSeries.isFlow,
+    val priceSeriesMap = remember(history) {
+        history.mapValues { PriceSeries(it.value.points) }
+    }
+    val historical = remember(walletData, priceSeriesMap, seriesData, timeFrame, currentPrices) {
+        historicalStockSeries(
+            walletSeries = walletData,
+            prices = priceSeriesMap,
+            spentPoints = seriesData[ChartSeries.SPENT].orEmpty(),
+            frame = timeFrame,
+            today = LocalDate.now(),
+            currentPrices = currentPrices,
         )
     }
+    val points = remember(seriesData, historical, selectedSeries, timeFrame) {
+        if (selectedSeries.isFlow) {
+            bucketize(seriesData[selectedSeries].orEmpty(), timeFrame, isFlow = true)
+        } else {
+            when (selectedSeries) {
+                ChartSeries.VALUE -> historical.first
+                ChartSeries.PL -> historical.second
+                ChartSeries.BONUS -> historical.third
+
+                else -> emptyList()
+            }
+        }
+    }
+    val historyIncomplete = !selectedSeries.isFlow &&
+        historyProgress != null &&
+        historyProgress.first < historyProgress.second
 
     Column {
         Text(
@@ -306,9 +356,21 @@ private fun ChartPanel(dailySeries: List<String>, noInternet: Boolean) {
                 }
             }
         }
+        if (historyIncomplete) {
+            val done = historyProgress!!.first
+            val total = historyProgress!!.second
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.chart_history_loading, done, total),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Spacer(Modifier.height(12.dp))
         when {
-            noInternet && !selectedSeries.isFlow -> Text(
+            // Offline, and no price history to value the stock series from:
+            // nothing to show (a cached history is still drawable offline).
+            noInternet && !selectedSeries.isFlow && history.isEmpty() -> Text(
                 text = stringResource(R.string.no_internet_connection),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

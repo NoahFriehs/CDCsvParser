@@ -1027,6 +1027,20 @@ class CoreService : Service() {
         private external fun getDailySeries(): Array<String>
 
         /**
+         * Per-wallet daily series of the C++ core (G36, historical chart
+         * pricing): "CURRENCY;YYYY-MM-DD;runningBalance;runningBonus" token
+         * lines, unpriced, same scope as [dailySeries]. The chart code
+         * values each point with the prices valid at its time. Runs on the
+         * cpp-core thread.
+         */
+        suspend fun dailyWalletSeries(): List<String> = withContext(coreDispatcher) {
+            if (!isRunning) return@withContext emptyList()
+            getDailyWalletSeries()?.toList() ?: emptyList()
+        }
+
+        private external fun getDailyWalletSeries(): Array<String>
+
+        /**
          * All core work - and in particular every JNI call into the C++
          * core - runs on this single "cpp-core" thread. The C++
          * TransactionManager is not thread-safe, so the whole JNI surface

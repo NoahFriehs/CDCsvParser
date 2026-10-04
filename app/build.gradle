@@ -6,6 +6,18 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose'
 }
 
+// Optional CoinGecko demo key for LOCAL TESTING ONLY: a
+// `coingecko_api_key=` line in the gitignored root local.properties lands in
+// the DEBUG build (faster rate limits while developing); release builds stay
+// keyless and the key value never enters the repository.
+def cgApiKey = ""
+def cgKeyFile = new File(rootDir, 'local.properties')
+if (cgKeyFile.exists()) {
+    def p = new Properties()
+    cgKeyFile.withInputStream { p.load(it) }
+    cgApiKey = (p.getProperty('coingecko_api_key', '') ?: '').trim()
+}
+
 android {
     namespace 'at.msd.friehs_bicha.cdcsvparser'
     compileSdk 37
@@ -31,11 +43,14 @@ android {
 
     buildTypes {
         release {
+            // Always keyless (the debug key must never ship).
+            buildConfigField "String", "CG_API_KEY", "\"\""
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
+            buildConfigField "String", "CG_API_KEY", "\"$cgApiKey\""
             jniDebuggable true
             debuggable true
             minifyEnabled false

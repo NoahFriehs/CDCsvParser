@@ -15,6 +15,13 @@ import java.util.concurrent.TimeUnit
  */
 class AssetValue private constructor() : Serializable {
     private val cache = PriceCache()
+
+    /**
+     * The newest known (possibly stale) price for [symbol] WITHOUT any
+     * network access; null if the symbol is unknown to the cache.
+     */
+    fun cachedPrice(symbol: String): Double? = cache.getStale(symbol)
+            ?.takeIf { it.isFinite() && it > 0.0 }
     @Volatile
     var isConnected = true
     @Volatile

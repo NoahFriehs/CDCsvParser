@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
+import at.msd.friehs_bicha.cdcsvparser.BuildConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -9,6 +10,7 @@ import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
@@ -37,6 +39,20 @@ object PriceApi {
         .writeTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .callTimeout(30, TimeUnit.SECONDS)
+        .addInterceptor { chain ->
+            // Optional CoinGecko DEMO key: set in the DEBUG build from the
+            // gitignored root local.properties (faster limits while
+            // developing). Release builds carry "" and stay keyless.
+            val request = chain.request()
+            val key = BuildConfig.CG_API_KEY
+            if (key.isNotEmpty() && request.url.host.endsWith("coingecko.com")) {
+                chain.proceed(
+                    request.newBuilder().header("x-cg-demo-api-key", key).build()
+                )
+            } else {
+                chain.proceed(request)
+            }
+        }
         .build()
 
     private val json: Json = Json { ignoreUnknownKeys = true }
@@ -95,6 +111,19 @@ object PriceApi {
          */
         @GET("search")
         fun search(@Query("query") query: String): Call<CoinGeckoSearchResponse>
+
+        /**
+         * Daily price history: `coins/{id}/market_chart?vs_currency=eur&days=N`
+         * -> `{"prices": [[<ts ms>, <price>], ...]}` ascending. days = 1
+         * replies with ~5-minute points, days > 90 with one point per day
+         * (free/demo tier).
+         */
+        @GET("coins/{id}/market_chart")
+        fun marketChart(
+            @Path("id") id: String,
+            @Query("vs_currency") vsCurrency: String,
+            @Query("days") days: Int,
+        ): Call<MarketChartResponse>
     }
 
     @Serializable
@@ -107,9 +136,16 @@ object PriceApi {
     data class CoinGeckoSearchResponse(
         val coins: List<CoinGeckoSearchCoin> = emptyList(),
     )
+
+    /** `market_chart` reply (only the `prices` member is used). */
+    @Serializable
+    data class MarketChartResponse(
+        val prices: List<List<Double>> = emptyList(),
+    )
 }
 
 /** Convenience re-exports so call sites read `PriceApi.coinGecko.simplePrice(...)`. */
 typealias CcPriceResponse = PriceApi.CcPriceResponse
 typealias CoinGeckoSearchCoin = PriceApi.CoinGeckoSearchCoin
 typealias CoinGeckoSearchResponse = PriceApi.CoinGeckoSearchResponse
+typealias MarketChartResponse = PriceApi.MarketChartResponse

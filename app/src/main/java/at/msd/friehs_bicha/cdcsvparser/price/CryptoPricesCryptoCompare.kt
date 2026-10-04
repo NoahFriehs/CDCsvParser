@@ -305,6 +305,65 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     }
 
     /**
+     * True while the shared CoinGecko cooldown/blackout is active (callers
+     * should stop queuing further requests and retry later, e.g. on the
+     * next screen visit).
+     */
+    fun isCoinGeckoInCooldown(): Boolean = coinGeckoSkipMs() > 0
+
+    /**
+     * CoinGecko daily EUR price history for [symbol] over the last [days]
+     * days, ascending, one point per UTC calendar day (sub-daily replies -
+     * days = 1 carries ~5-minute resolution - are reduced to the last point
+     * of each day). Reuses the shared id resolution and the 429 cooldown /
+     * blackout state machine of the live price path.
+     *
+     * @return (utcEpochDay, price) pairs, or null when the id cannot be
+     *         resolved (unknown symbol), the call failed, or the cooldown
+     *         / blackout is active (transient - retry later).
+     */
+    fun getHistory(symbol: String, days: Int): List<Pair<Long, Double>>? {
+        if (days < 1) return null
+        if (coinGeckoSkipMs() > 0) {
+            FileLog.d(TAG_CG, "CoinGecko cooldown/blackout active; skipping history for $symbol.")
+            return null
+        }
+        return try {
+            val coinId = resolveCoinGeckoId(symbol) ?: return null
+            spacing()
+            executeClosed(cgApi.marketChart(coinId, "eur", days)) { response ->
+                when {
+                    response.code() == 429 -> {
+                        noteCoinGecko429()
+                        null
+                    }
+
+                    response.isSuccessful -> {
+                        noteCoinGeckoSuccess()
+                        val byDay = LinkedHashMap<Long, Double>()
+                        for (entry in response.body()?.prices.orEmpty()) {
+                            if (entry.size != 2) continue
+                            val ts = entry[0]
+                            val price = entry[1]
+                            if (!ts.isFinite() || !price.isFinite() || price < 0.0) continue
+                            byDay[(ts / 86_400_000L).toLong()] = price
+                        }
+                        byDay.entries.map { it.key to it.value }
+                    }
+
+                    else -> {
+                        FileLog.w(TAG_CG, "CoinGecko market_chart failed for $symbol (HTTP ${response.code()}, days=$days).")
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            FileLog.d(TAG_CG, "Failed to get history for $symbol: $e")
+            null
+        }
+    }
+
+    /**
      * One CoinGecko `simple/price` call for a batch of symbols.
      *
      * @return a map from symbol to price with entries only for symbols whose
