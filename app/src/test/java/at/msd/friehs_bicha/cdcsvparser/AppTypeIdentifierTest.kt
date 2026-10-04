@@ -53,4 +53,39 @@ class AppTypeIdentifierTest {
     fun unknownHeaderFallsBackToDefault() {
         assertEquals(AppType.Default, AppTypeIdentifier.getAppType(ArrayList(listOf("something,else", "line2"))))
     }
+
+    @Test
+    fun headerSniffingDetectsBlockPit() {
+        assertEquals(AppType.BlockPit, AppTypeIdentifier.getAppType(blockPitHeader))
+        assertEquals(AppType.BlockPit, AppTypeIdentifier.getAppType("\uFEFF" + blockPitHeader + "\r"))
+    }
+
+    @Test
+    fun headerSniffingDetectsKraken() {
+        val krakenHeader = "\"txid\",\"ordertxid\",\"pair\",\"time\",\"type\",\"ordertype\",\"price\",\"cost\",\"fee\",\"vol\",\"margin\",\"misc\",\"ledgers\""
+        assertEquals(AppType.Kraken, AppTypeIdentifier.getAppType(krakenHeader))
+    }
+
+    @Test
+    fun headerSniffingDetectsCurveCard() {
+        assertEquals(AppType.CurveCard, AppTypeIdentifier.getAppType(curveHeader))
+    }
+
+    @Test
+    fun headerSniffingIsNotDecisiveForSharedAndUnknownHeaders() {
+        // The CDC and the card format share one header -> not decisive.
+        assertEquals(null, AppTypeIdentifier.getAppType(cdcHeader))
+        assertEquals(null, AppTypeIdentifier.getAppType("\uFEFF" + cdcHeader))
+        assertEquals(null, AppTypeIdentifier.getAppType("something,else"))
+        assertEquals(null, AppTypeIdentifier.getAppType(null))
+        assertEquals(null, AppTypeIdentifier.getAppType("   "))
+    }
+
+    @Test
+    fun cdCardFamilyCheck() {
+        assertEquals(true, AppTypeIdentifier.isCdCardFamily(cdcHeader))
+        assertEquals(true, AppTypeIdentifier.isCdCardFamily("\uFEFF" + cdcHeader + "\r"))
+        assertEquals(false, AppTypeIdentifier.isCdCardFamily(blockPitHeader))
+        assertEquals(false, AppTypeIdentifier.isCdCardFamily(null))
+    }
 }

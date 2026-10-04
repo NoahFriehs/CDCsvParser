@@ -10,6 +10,7 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppStatus
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
+import at.msd.friehs_bicha.cdcsvparser.app.AppTypeIdentifier
 import at.msd.friehs_bicha.cdcsvparser.app.CardTxApp
 import at.msd.friehs_bicha.cdcsvparser.app.DataTypes
 import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
@@ -195,7 +196,27 @@ class CoreService : Service() {
                 return
             }
         }
-        val appType = AppType.safeFromOrdinal(mode)
+        val appTypeFromSettings = AppType.safeFromOrdinal(mode)
+        // A file with a distinctive header is parsed in that format,
+        // independent of the (possibly stale) app type selected in the
+        // settings; for unknown or shared (CDC/Card) headers the settings
+        // decide. This avoids "N lines failed / 0 transactions" when a
+        // comma-delimited file is parsed in BlockPit mode (or vice versa).
+        val firstLine = data.firstOrNull()
+        val headerType = AppTypeIdentifier.getAppType(firstLine)
+        val appType = when {
+            headerType != null -> headerType
+            // Shared Crypto.com header but the selected type knows a
+            // different format (e.g. a stale BlockPit selection): fall back
+            // to the crypto CDC format instead of failing every line.
+            AppTypeIdentifier.isCdCardFamily(firstLine) &&
+                appTypeFromSettings !in setOf(AppType.CdCsvParser, AppType.CroCard) -> AppType.CdCsvParser
+
+            else -> appTypeFromSettings
+        }
+        if (appType != appTypeFromSettings) {
+            FileLog.i(TAG, "File header indicates $appType; using it instead of the selected type $appTypeFromSettings.")
+        }
         if (appType == AppType.BlockPit && !(isCoreInitialized && useCpp)) {
             FileLog.e(TAG, "BlockPit files can only be parsed with the C++ core.")
             errorCounter.postValue((errorCounter.value ?: 0) + 1)
@@ -218,7 +239,9 @@ class CoreService : Service() {
                         FileLog.w(TAG, "C++ core skipped $lastFailedLines unparsable CSV line(s).")
                     }
                 } else {
-                    FileLog.w(TAG, "Initialization with data failed.")
+                    // The C++ side already logged the reason (e.g. "JNI
+                    // initWithData failed: Transactions is empty") to core.log.
+                    FileLog.w(TAG, "Initialization with data failed (${data.size} lines, mode $coreMode, type $appType).")
                     errorCounter.postValue(errorCounter.value?.plus(1) ?: 1)
                     return
                 }
