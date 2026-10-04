@@ -10,7 +10,6 @@ import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
-import at.msd.friehs_bicha.cdcsvparser.ui.fragments.WalletAdapter
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import at.msd.friehs_bicha.cdcsvparser.wallet.*

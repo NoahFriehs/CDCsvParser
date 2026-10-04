@@ -7,6 +7,7 @@
         here so that contract survives without a layout file.
     -->
     <item name="assets_valueP" type="id" />
+    <item name="assets_value" type="id" />
     <item name="money_spent_value" type="id" />
     <item name="profit_loss_value" type="id" />
     <item name="rewards_value" type="id" />
