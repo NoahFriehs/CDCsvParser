@@ -127,6 +127,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Grant KVM access
+        # The runner HAS /dev/kvm but the CI user is in no group, so
+        # android-emulator-runner fell back to -accel off (pure TCG): the
+        # API 35 image took ~11 min to boot and the whole lane ran
+        # 15-30x too slow. chmod is what takes effect for this run (group
+        # changes need a re-login, hence usermod as best effort).
+        run: |
+          sudo chmod 666 /dev/kvm
+          sudo usermod -a -G kvm "${USER:-runner}" || true
+
       - name: Run UI tests on the emulator
         uses: reactivecircus/android-emulator-runner@v2
         # API 35: a stable release system image. The API 37 dev-preview
@@ -140,10 +150,11 @@ jobs:
           # classic device profiles ("Medium Phone" no longer resolves, which
           # broke AVD creation). The tests are text-based (UiAutomator
           # By.text, no coordinates), so the auto-selected hardware is fine.
-          # -gpu swiftshader_indirect: the GHA runners have no host GPU, and
-          # the default (auto) backend died in the first run with
-          # "Failed to find ColorBuffer" / "Failed to bind to texture" -
-          # forcing software rendering.
+          # -gpu off: the runners have no usable host GL at all (no GPU,
+          # no working mesa) - both the default backend and
+          # swiftshader_indirect died with "Failed to find ColorBuffer" /
+          # "Failed to bind to texture". With no guest GL the OS falls back
+          # to CPU rendering; the tests are text-based and do not care.
           disable-animations: true
-          emulator-options: -no-snapshot -no-window -noaudio -gpu swiftshader_indirect
+          emulator-options: -no-snapshot -no-window -noaudio -gpu off
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon
