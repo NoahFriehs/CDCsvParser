@@ -268,6 +268,31 @@
         app:layout_constraintTop_toBottomOf="@id/btn_filter" />
 
     <TextView
+        android:id="@+id/spend_chart_label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:layout_marginTop="@dimen/main_small_margin_bottom"
+        android:text="@string/spend_over_time"
+        android:textSize="@dimen/basic_button_font"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_all_tx" />
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/spend_chart"
+        android:layout_width="0dp"
+        android:layout_height="180dp"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/spend_chart_label" />
+
+    <TextView
         android:id="@+id/coinGeckoApiLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -278,6 +303,6 @@
         android:textAlignment="center"
         android:textColorLink="@color/link_blue"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_all_tx" />
+        app:layout_constraintTop_toBottomOf="@id/spend_chart" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

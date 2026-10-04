@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.progressindicator.LinearProgressIndicator
@@ -16,6 +17,15 @@ import com.google.android.material.snackbar.Snackbar
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
+import com.github.mikephil.charting.charts.LineChart
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.formatter.ValueFormatter
+import kotlinx.coroutines.launch
 
 /**
  * Parse/overview screen: an in-screen progress indicator while the core
@@ -84,6 +94,7 @@ class ParseFragment : Fragment() {
             Benchmarker.stop()
             displayTexts(view, it)
             FileLog.d(TAG, "parsedDataLiveData changed")
+            renderSpendChart(view)
             setParsingState(view, false)
             if (CoreService.lastFailedLines > 0) {
                 Snackbar.make(
@@ -153,6 +164,70 @@ class ParseFragment : Fragment() {
             )
 
             else -> default
+        }
+    }
+
+    /**
+     * The "Geld ausgegeben" history as a monthly line chart, below the metric
+     * cards. The numbers come from the C++ core (same accounting as the card
+     * total, EUR inner wallet excluded like there).
+     */
+    private fun renderSpendChart(view: View) {
+        val chart = view.findViewById<LineChart>(R.id.spend_chart)
+        val label = view.findViewById<TextView>(R.id.spend_chart_label)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val series = CoreService.moneySpentSeries()
+            if (series.isEmpty()) {
+                chart.visibility = View.GONE
+                label.visibility = View.GONE
+                return@launch
+            }
+            val months = ArrayList<String>(series.size)
+            val entries = ArrayList<Entry>(series.size)
+            series.forEachIndexed { index, raw ->
+                val parts = raw.split(";")
+                if (parts.size != 2) return@forEachIndexed
+                val value = parts[1].toDoubleOrNull() ?: return@forEachIndexed
+                months.add(parts[0])
+                entries.add(Entry(index.toFloat(), value.toFloat()))
+            }
+            if (entries.isEmpty()) {
+                chart.visibility = View.GONE
+                label.visibility = View.GONE
+                return@launch
+            }
+            val color = ContextCompat.getColor(requireContext(), R.color.primary)
+            val dataset = LineDataSet(entries, "").apply {
+                setDrawValues(false)
+                lineWidth = 2f
+                circleRadius = 3f
+                setCircleColor(color)
+                this.color = color
+            }
+            chart.apply {
+                visibility = View.VISIBLE
+                legend.isEnabled = false
+                description.isEnabled = false
+                setData(LineData(dataset))
+                xAxis.granularity = 1f
+                xAxis.setDrawGridLines(false)
+                xAxis.labelCount = 8
+                xAxis.valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String {
+                        val index = value.toInt()
+                        val key = months.getOrNull(index) ?: return ""
+                        // "YYYY-MM" -> e.g. "Mär 25" (the app locale applies)
+                        return runCatching {
+                            val parts = key.split("-").map { it.toInt() }
+                            LocalDate.of(parts[0], parts[1], 1)
+                                .format(DateTimeFormatter.ofPattern("MMM yy", Locale.getDefault()))
+                        }.getOrDefault(key)
+                    }
+                }
+                axisRight.isEnabled = false
+                invalidate()
+            }
+            label.visibility = View.VISIBLE
         }
     }
 

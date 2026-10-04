@@ -17,6 +17,7 @@
     <string name="history_delete_title">Datei löschen?</string>
     <string name="history_delete_message">Die Datei wird von diesem Gerät gelöscht und kann nicht wiederhergestellt werden.</string>
     <string name="history_deleted">Datei gelöscht</string>
+    <string name="spend_over_time">Ausgaben im Zeitverlauf (monatlich)</string>
     <string name="delete">Löschen</string>
     <string name="coinGeckoAttribution">Alle Preise bereitgestellt von \n<a href="https://min-api.cryptocompare.com/">CryptoCompare API</a></string>
     <string name="settings">Einstellungen</string>

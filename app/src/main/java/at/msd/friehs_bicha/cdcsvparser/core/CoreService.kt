@@ -48,6 +48,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -988,6 +989,18 @@ class CoreService : Service() {
         // above a real parse (the 2444-line BlockPit export takes well under a
         // second) and far below the 5-minute UI watchdog.
         private const val PARSE_BUDGET_MS = 120_000L
+
+        /**
+         * Money spent (same accounting as the "Geld ausgegeben" card, EUR inner
+         * wallet excluded) bucketed by calendar month, oldest first:
+         * "YYYY-MM;123.45". Runs on the cpp-core thread.
+         */
+        suspend fun moneySpentSeries(): List<String> = withContext(coreDispatcher) {
+            if (!isRunning) return@withContext emptyList()
+            getMoneySpentSeries()?.toList() ?: emptyList()
+        }
+
+        private external fun getMoneySpentSeries(): Array<String>
 
         /**
          * All core work - and in particular every JNI call into the C++
