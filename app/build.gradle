@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'com.google.devtools.ksp'
     id 'com.google.gms.google-services'
+    id 'org.jetbrains.kotlin.plugin.serialization'
 }
 
 android {
@@ -89,6 +90,10 @@ dependencies {
 
     implementation "androidx.datastore:datastore-preferences:1.2.1"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0"
+
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:3.0.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'

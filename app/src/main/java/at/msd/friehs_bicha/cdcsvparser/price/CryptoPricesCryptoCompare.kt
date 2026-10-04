@@ -2,12 +2,15 @@ package at.msd.friehs_bicha.cdcsvparser.price
 
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -32,15 +35,24 @@ import java.util.concurrent.atomic.AtomicInteger
  * @return null on failure, 0.0 when the symbol is unknown.
  */
 class CryptoPricesCryptoCompare : BaseCryptoPrices() {
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .writeTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .callTimeout(30, TimeUnit.SECONDS)
-        .build()
+    /** Typed Retrofit endpoints (shared client keeps the old timeouts). */
+    private val ccApi = PriceApi.cryptoCompare
+    private val cgApi = PriceApi.coinGecko
 
-    private val ccBaseUrl = "https://min-api.cryptocompare.com/data/"
-    private val cgBaseUrl = "https://api.coingecko.com/api/v3/"
+    /**
+     * Executes a Retrofit call, runs [block] on the response and releases
+     * any unconsumed body afterwards. (Retrofit 3's `Response` is no longer
+     * `Closeable`: a converted body has already drained its source, and any
+     * error/early-exit path exposes the unconsumed stream as `errorBody()`.)
+     */
+    private inline fun <T, R> executeClosed(call: retrofit2.Call<T>, block: (retrofit2.Response<T>) -> R): R {
+        val response = call.execute()
+        return try {
+            block(response)
+        } finally {
+            response.errorBody()?.close()
+        }
+    }
 
     private var ccBroken = false
     private val symbolToId = ConcurrentHashMap<String, String>()
@@ -126,24 +138,25 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     }
 
     private fun fetchCryptoCompare(symbol: String): Double? {
-        var response: okhttp3.Response? = null
         return try {
-            val url = "${ccBaseUrl}price?fsym=$symbol&tsyms=EUR"
-            response = client.newCall(Request.Builder().url(url).build()).execute()
-            if (response.code == 401 || response.code == 403) {
-                ccBroken = true
-                FileLog.w(TAG_CC, "CryptoCompare requires an API key now; falling back to CoinGecko.")
-                return null
+            executeClosed(ccApi.price(symbol, "EUR")) { response ->
+                if (response.code() == 401 || response.code() == 403) {
+                    ccBroken = true
+                    FileLog.w(TAG_CC, "CryptoCompare requires an API key now; falling back to CoinGecko.")
+                    return null
+                }
+                val body = response.body()
+                when {
+                    // {"EUR": 42000.5}
+                    body?.EUR != null -> body.EUR
+                    // {"Data": "-1"} -> symbol unknown
+                    body?.Data != null -> 0.0
+                    else -> null
+                }
             }
-            val json = JSONObject(response.body?.string().orEmpty())
-            if (json.has("EUR")) json.optDouble("EUR")
-            else if (json.has("Data")) 0.0 // symbol unknown
-            else null
         } catch (e: Exception) {
             FileLog.d(TAG_CC, "Failed to get price for $symbol from CryptoCompare: $e")
             null
-        } finally {
-            response?.close()
         }
     }
 
@@ -156,15 +169,14 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
         return try {
             spacing()
             val coinId = resolveCoinGeckoId(symbol) ?: return 0.0
-            val url = "${cgBaseUrl}simple/price?ids=$coinId&vs_currencies=eur"
-            client.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                if (response.code == 429) {
+            executeClosed(cgApi.simplePrice(coinId, "eur")) { response ->
+                if (response.code() == 429) {
                     noteCoinGecko429()
                     return null
                 }
                 noteCoinGeckoSuccess()
-                val json = JSONObject(response.body?.string().orEmpty())
-                val price = json.optJSONObject(coinId)?.optDouble("eur")
+                val json = response.body()?.jsonObject
+                val price = (json?.get(coinId) as? JsonObject)?.get("eur")?.jsonPrimitive?.doubleOrNull
                 if (price != null && price.isFinite()) price else null
             }
         } catch (e: Exception) {
@@ -274,24 +286,16 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
         }
         return try {
             spacing()
-            val url = "${cgBaseUrl}search?query=$symbol"
-            client.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                if (response.code == 429) {
+            executeClosed(cgApi.search(symbol)) { response ->
+                if (response.code() == 429) {
                     noteCoinGecko429()
                     return IdSearchResult.TransientError
                 }
                 noteCoinGeckoSuccess()
-                val json = JSONObject(response.body?.string().orEmpty())
-                var found: String? = null
-                json.optJSONArray("coins")?.let { coins ->
-                    for (i in 0 until coins.length()) {
-                        val coin = coins.optJSONObject(i) ?: continue
-                        if (coin.optString("symbol").equals(symbol, ignoreCase = true)) {
-                            found = coin.optString("id").ifEmpty { null }
-                            break
-                        }
-                    }
-                }
+                val found = response.body()?.coins
+                    ?.firstOrNull { it.symbol.equals(symbol, ignoreCase = true) }
+                    ?.id
+                    ?.ifEmpty { null }
                 found?.let { IdSearchResult.Found(it) } ?: IdSearchResult.NotInCatalog
             }
         } catch (e: Exception) {
@@ -323,21 +327,21 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
                 idList.append(coinId)
             }
             if (idList.isEmpty()) return null
-            val url = "${cgBaseUrl}simple/price?ids=$idList&vs_currencies=eur"
-            client.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                if (response.code == 429) {
+            executeClosed(cgApi.simplePrice(idList.toString(), "eur")) { response ->
+                if (response.code() == 429) {
                     noteCoinGecko429()
                     return null
                 }
                 noteCoinGeckoSuccess()
-                val json = JSONObject(response.body?.string().orEmpty())
-                if (json.has("error")) {
-                    FileLog.w(TAG_CG, "CoinGecko bulk error: ${json.optString("error")}")
+                val json = response.body()?.jsonObject
+                val error = (json?.get("error") as? JsonPrimitive)?.contentOrNull
+                if (error != null) {
+                    FileLog.w(TAG_CG, "CoinGecko bulk error: $error")
                     return null
                 }
                 val prices = LinkedHashMap<String, Double>()
                 for ((coinId, symbol) in idToSymbol) {
-                    val price = json.optJSONObject(coinId)?.optDouble("eur")
+                    val price = (json?.get(coinId) as? JsonObject)?.get("eur")?.jsonPrimitive?.doubleOrNull
                     if (price != null && price.isFinite()) prices[symbol] = price
                 }
                 prices
