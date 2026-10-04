@@ -73,3 +73,70 @@ jobs:
 
       - name: Run JVM unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
+
+  ui-tests:
+    name: Compose UI tests (emulator)
+    runs-on: ubuntu-latest
+    # Serial after build: reuses the saved NDK/CMake/platform cache and
+    # fails fast if lint/unit/assemble already failed.
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle (deps + wrapper)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Set up Android env
+        run: |
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+
+      - name: Restore installed NDK/CMake/platform (saved by the build job)
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            $ANDROID_HOME/ndk
+            $ANDROID_HOME/cmake
+            $ANDROID_HOME/platforms
+          key: android-sdk-${{ runner.os }}-ndk-27.0.12077973-cmake-3.22.1-p37
+          fail-on-cache-miss: false
+
+      - name: Install missing Android SDK packages
+        run: |
+          SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          yes | "$SDKM" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
+          "$SDKM" --sdk_root="$ANDROID_HOME" \
+            "ndk;27.0.12077973" "cmake;3.22.1" "platforms;android-37.0" \
+          || "$SDKM" --sdk_root="$ANDROID_HOME" \
+            "ndk;27.0.12077973" "cmake;3.22.1" "platforms;android-37"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run UI tests on the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        # API 35: a stable release system image. The API 37 dev-preview
+        # image removed android.hardware.input.InputManager.getInstance,
+        # which breaks Espresso's event injection (the tests deliberately
+        # avoid Espresso, but a stable image keeps the whole lane healthy).
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: Medium Phone
+          disable-animations: true
+          emulator-options: -no-snapshot -no-window -noaudio
+          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon
