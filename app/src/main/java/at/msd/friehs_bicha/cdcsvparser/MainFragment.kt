@@ -9,15 +9,19 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import androidx.compose.ui.platform.ComposeView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
-import android.widget.TextView
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.HistoryDialogFragment
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.MainScreen
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 import at.msd.friehs_bicha.cdcsvparser.util.FileUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
@@ -29,13 +33,18 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 /**
- * Main screen: import a CSV (new or from history) and jump into the overview.
+ * Main screen (Compose surface, P3.1): import a CSV (new or from history)
+ * and jump into the overview. The SAF upload flow, the history dialog and
+ * the progress dialog stay in the fragment.
  */
 class MainFragment : Fragment() {
 
     var files: Array<File>? = null
-    var user = FirebaseAuth.getInstance().currentUser
     private var progressDialog: Dialog? = null
+
+    /** Display name of the newest history file (recomputed on onResume). */
+    private val _newestHistoryFile = mutableStateOf<String?>(null)
+    private val _isSignedIn = mutableStateOf(FirebaseAuth.getInstance().currentUser != null)
 
     // SAF file picker (ActivityResult API): no storage permissions are
     // needed for ACTION_GET_CONTENT.
@@ -54,38 +63,39 @@ class MainFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.activity_main, container, false)
+        updateFiles()
+        _isSignedIn.value = FirebaseAuth.getInstance().currentUser != null
+        return ComposeView(requireContext()).apply {
+            setContent {
+                CdcsvTheme {
+                    MainScreen(
+                        isSignedIn = _isSignedIn.value,
+                        newestHistoryFile = _newestHistoryFile.value,
+                        onUploadClick = { onBtnUploadClick() },
+                        onHistoryClick = {
+                            HistoryDialogFragment().show(childFragmentManager, "history")
+                        },
+                        onLoadFromDbClick = { loadFromFireBaseDB() },
+                        onSettingsClick = { findNavController().navigate(R.id.settingsFragment) },
+                    )
+                }
+            }
+            // History dialog results (select / delete), as before.
+            childFragmentManager.setFragmentResultListener(
+                HistoryDialogFragment.REQUESTED_SELECT, this@MainFragment.viewLifecycleOwner
+            ) { _, bundle ->
+                val fileName = bundle.getString(HistoryDialogFragment.KEY_FILE)
+                    ?: return@setFragmentResultListener
+                startParseFromFile(fileName)
+            }
+            childFragmentManager.setFragmentResultListener(
+                HistoryDialogFragment.REQUESTED_DELETE, this@MainFragment.viewLifecycleOwner
+            ) { _, _ -> onHistoryDeleted() }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        user = FirebaseAuth.getInstance().currentUser
-
-        val btnParse = view.findViewById<Button>(R.id.btn_parse)
-        val btnLoadFromDB = view.findViewById<Button>(R.id.btn_loadFromDb)
-        if (user == null) {
-            btnLoadFromDB.visibility = View.GONE
-        } else {
-            btnLoadFromDB.visibility = View.VISIBLE
-        }
-        btnParse.setOnClickListener { onBtnUploadClick() }
-        btnLoadFromDB.setOnClickListener { loadFromFireBaseDB() }
-        view.findViewById<Button>(R.id.settings_button).setOnClickListener {
-            findNavController().navigate(R.id.settingsFragment)
-        }
-        updateFiles()
-        refreshHistoryUI(view)
-
-        childFragmentManager.setFragmentResultListener(
-            HistoryDialogFragment.REQUESTED_SELECT, viewLifecycleOwner
-        ) { _, bundle ->
-            val fileName = bundle.getString(HistoryDialogFragment.KEY_FILE)
-                ?: return@setFragmentResultListener
-            startParseFromFile(fileName)
-        }
-        childFragmentManager.setFragmentResultListener(
-            HistoryDialogFragment.REQUESTED_DELETE, viewLifecycleOwner
-        ) { _, _ -> onHistoryDeleted() }
 
         // The launcher activity can pass "fastStart" to go straight to parsing.
         if (requireActivity().intent.hasExtra("fastStart")) {
@@ -98,8 +108,9 @@ class MainFragment : Fragment() {
         // The parsed cards are strings from the last price pass; refresh them
         // in the background once the 5-minute cache TTL started to expire.
         CoreService.refreshPricesIfStale()
+        _isSignedIn.value = FirebaseAuth.getInstance().currentUser != null
         updateFiles()
-        view?.let { refreshHistoryUI(it) }
+        _newestHistoryFile.value = newestHistoryDisplayName()
     }
 
     private fun fastStart() {
@@ -116,28 +127,15 @@ class MainFragment : Fragment() {
     }
 
     /**
-     * Fills the dropdown with parsed names of the global file var
+     * Same name format as the history dialog rows: newest file first in
+     * "d.M. HH:mm"; null when there is no history at all (proper empty
+     * state - the whole section is hidden).
      */
     @SuppressLint("SimpleDateFormat")
-    private fun fileDisplayNames(): List<String> {
-        val fileNames = ArrayList<String>()
-        val sdf = SimpleDateFormat(HISTORY_FILE_PATTERN)
-        val dateFormat = SimpleDateFormat("d.M HH:mm")
-        var filename: String
-        for (f in files!!) {
-            if (!f.isFile || !f.name.endsWith(".csv")) continue
-            filename = f.name
-            filename = filename.substring(0, filename.length - 4)
-            try {
-                filename = dateFormat.format(sdf.parse(filename))
-            } catch (e: ParseException) {
-                // No timestamp in the file name (e.g. a renamed or imported
-                // file): show the raw name instead of an error.
-                FileLog.d("MainFragment", "History file without timestamp name, using raw name: $filename")
-            }
-            fileNames.add(filename)
-        }
-        return fileNames
+    private fun newestHistoryDisplayName(): String? {
+        val newest = files?.filter { it.isFile && it.name.endsWith(".csv") }
+            ?.maxByOrNull { it.lastModified() }?.name ?: return null
+        return displayNameFor(newest)
     }
 
     @SuppressLint("SimpleDateFormat")
@@ -146,28 +144,6 @@ class MainFragment : Fragment() {
         val sdf = SimpleDateFormat(HISTORY_FILE_PATTERN)
         val display = SimpleDateFormat("d.M. HH:mm")
         return runCatching { display.format(sdf.parse(raw)) }.getOrDefault(raw)
-    }
-
-    /**
-     * History row: newest first file name on the button, hidden entirely
-     * when there is nothing to offer (proper empty state).
-     */
-    private fun refreshHistoryUI(view: View) {
-        val label = view.findViewById<TextView>(R.id.history_text)
-        val btnHistory = view.findViewById<Button>(R.id.btn_history)
-        val hasFiles = !files.isNullOrEmpty()
-        label.visibility = if (hasFiles) View.VISIBLE else View.GONE
-        btnHistory.visibility = if (hasFiles) View.VISIBLE else View.GONE
-        if (hasFiles) {
-            btnHistory.isEnabled = true
-            // Same order as the history dialog: newest first.
-            val newest = files!!.filter { it.isFile && it.name.endsWith(".csv") }
-                .maxByOrNull { it.lastModified() }?.name
-            btnHistory.text = displayNameFor(newest) ?: getString(R.string.history)
-            btnHistory.setOnClickListener {
-                HistoryDialogFragment().show(childFragmentManager, "history")
-            }
-        }
     }
 
     /**
@@ -192,9 +168,8 @@ class MainFragment : Fragment() {
 
     private fun onHistoryDeleted() {
         updateFiles()
-        val view = view ?: return
-        Snackbar.make(view, R.string.history_deleted, Snackbar.LENGTH_SHORT).show()
-        refreshHistoryUI(view)
+        _newestHistoryFile.value = newestHistoryDisplayName()
+        view?.let { Snackbar.make(it, R.string.history_deleted, Snackbar.LENGTH_SHORT).show() }
     }
 
     /**

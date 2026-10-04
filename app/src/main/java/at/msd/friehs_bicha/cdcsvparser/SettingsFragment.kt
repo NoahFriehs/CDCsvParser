@@ -4,155 +4,142 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import com.google.android.material.materialswitch.MaterialSwitch
-import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import androidx.appcompat.app.AlertDialog
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
-import at.msd.friehs_bicha.cdcsvparser.databinding.ActivitySettingsBinding
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.SettingsScreen
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
+import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import androidx.appcompat.app.AlertDialog
 
+/**
+ * Settings screen (Compose surface, P3.1). Persistence + the Firebase
+ * confirm dialogs + logout stay here.
+ */
 class SettingsFragment : Fragment() {
 
-    private var _binding: ActivitySettingsBinding? = null
-    private val binding get() = _binding!!
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val snackbarHostState = SnackbarHostState()
+
+    // Settings values are read once into Compose state; writes go straight
+    // to PreferenceHelper (the DataStore-backed facade).
+    private val _appTypeIndex = mutableStateOf(0)
+    private val _coreModeIndex = mutableStateOf(0)
+    private val _useStrictType = mutableStateOf(false)
+    private val _dataLocal = mutableStateOf(false)
+    private val _fastStart = mutableStateOf(false)
+    private val _signedIn = mutableStateOf(auth.currentUser != null)
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = ActivitySettingsBinding.inflate(inflater, container, false)
-        return binding.root
+        readPreferences()
+        return ComposeView(requireContext()).apply {
+            setContent {
+                CdcsvTheme {
+                    SettingsScreen(
+                        appTypeOptions = resources.getStringArray(R.array.appTypes).toList(),
+                        appTypeSelected = _appTypeIndex.value,
+                        onAppTypeSelected = { index ->
+                            _appTypeIndex.value = index
+                            PreferenceHelper.setSelectedType(requireContext(), AppType.values()[index])
+                        },
+                        coreModeOptions = resources.getStringArray(R.array.core_modes).toList(),
+                        coreModeSelected = _coreModeIndex.value,
+                        onCoreModeSelected = { index ->
+                            _coreModeIndex.value = index
+                            PreferenceHelper.setUseCpp(requireContext(), index == 0)
+                        },
+                        useStrictType = _useStrictType.value,
+                        strictTypeEnabled = _appTypeIndex.value != AppType.CroCard.ordinal,
+                        onUseStrictTypeChange = {
+                            _useStrictType.value = it
+                            PreferenceHelper.setUseStrictType(requireContext(), it)
+                        },
+                        dataLocal = _dataLocal.value,
+                        onDataLocalChange = {
+                            _dataLocal.value = it
+                            PreferenceHelper.setIsDataLocal(requireContext(), it)
+                        },
+                        fastStart = _fastStart.value,
+                        fastStartEnabled = _dataLocal.value,
+                        onFastStartChange = {
+                            _fastStart.value = it
+                            PreferenceHelper.setFastStartEnabled(requireContext(), it)
+                        },
+                        isSignedIn = _signedIn.value,
+                        onAbout = { findNavController().navigate(R.id.aboutUsFragment) },
+                        onLogin = { findNavController().navigate(R.id.loginFragment) },
+                        onLogout = { confirmLogout() },
+                        onDeleteAccount = { confirmDeleteAccount() },
+                        snackbarHostState = snackbarHostState,
+                    )
+                }
+            }
+        }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    private fun readPreferences() {
+        _appTypeIndex.value = PreferenceHelper.getSelectedType(requireContext()).ordinal
+        _coreModeIndex.value = if (PreferenceHelper.getUseCpp(requireContext())) 0 else 1
+        _useStrictType.value = PreferenceHelper.getUseStrictType(requireContext())
+        _dataLocal.value = PreferenceHelper.getIsDataLocal(requireContext())
+        _fastStart.value = PreferenceHelper.getFastStartEnabled(requireContext())
+    }
 
-        var useStrictType = false
-        var selectedType: AppType = AppType.CdCsvParser
-        var useCpp = true
+    override fun onStart() {
+        super.onStart()
+        // No auth listener: the sign-in state cannot change while this
+        // screen is open (login/logout happen on their own screens and both
+        // navigate away), so a one-off read is correct and avoids a
+        // listener that would outlive the fragment.
+        _signedIn.value = auth.currentUser != null
+    }
 
-        val appTypeSpinner: MaterialAutoCompleteTextView = binding.walletTypeSpinner
-        val coreModeSpinner: MaterialAutoCompleteTextView = binding.coreModeSpinner
-        val useStrictTypeCheckbox: MaterialSwitch = binding.useStrictWalletTypeCheckbox
-        val cbStoreDataLocal: MaterialSwitch = binding.root.findViewById(R.id.cb_store_data_local)
-        val cbEnableFastStart: MaterialSwitch = binding.root.findViewById(R.id.cb_enable_fast_start)
-        val btnAboutUs: Button = binding.root.findViewById(R.id.btn_about_us)
-        val btnLogout: Button = binding.root.findViewById(R.id.btn_logout)
-        val btnLogin: Button = binding.root.findViewById(R.id.btn_login)
-        val btnDeleteUser: Button = binding.root.findViewById(R.id.btn_delete_account)
+    private fun confirmLogout() {
+        AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.logout))
+            .setMessage(getString(R.string.logoutQuestion))
+            .setPositiveButton(getString(R.string.yes)) { _, _ -> logout() }
+            .setNegativeButton(getString(R.string.no), null)
+            .create()
+            .show()
+    }
 
-        val auth = FirebaseAuth.getInstance()
+    private fun confirmDeleteAccount() {
+        AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.delete_account))
+            .setMessage(getString(R.string.deleteQuestion))
+            .setPositiveButton(getString(R.string.yes)) { _, _ -> deleteUser() }
+            .setNegativeButton(getString(R.string.no), null)
+            .create()
+            .show()
+    }
+
+    private fun deleteUser() {
         val user = auth.currentUser
-
-        selectedType = PreferenceHelper.getSelectedType(requireContext())
-        useStrictType = PreferenceHelper.getUseStrictType(requireContext())
-
-        appTypeSpinner.setSimpleItems(resources.getStringArray(R.array.appTypes))
-        coreModeSpinner.setSimpleItems(resources.getStringArray(R.array.core_modes))
-        appTypeSpinner.setText(resources.getStringArray(R.array.appTypes)[selectedType.ordinal], false)
-        coreModeSpinner.setText(
-            resources.getStringArray(R.array.core_modes)[if (PreferenceHelper.getUseCpp(requireContext())) 0 else 1],
-            false
-        )
-        useStrictTypeCheckbox.isEnabled = selectedType != AppType.CroCard
-        useStrictTypeCheckbox.isChecked = useStrictType
-        useStrictTypeCheckbox.setOnCheckedChangeListener { _, isChecked ->
-            useStrictType = isChecked
-            PreferenceHelper.setUseStrictType(requireContext(), isChecked)
-        }
-
-        cbStoreDataLocal.isChecked = PreferenceHelper.getIsDataLocal(requireContext())
-        cbStoreDataLocal.setOnCheckedChangeListener { _, isChecked ->
-            PreferenceHelper.setIsDataLocal(requireContext(), isChecked)
-            cbEnableFastStart.isEnabled = cbStoreDataLocal.isEnabled && cbStoreDataLocal.isChecked
-        }
-
-        cbEnableFastStart.isChecked = PreferenceHelper.getFastStartEnabled(requireContext())
-        cbEnableFastStart.isEnabled = cbStoreDataLocal.isEnabled && cbStoreDataLocal.isChecked
-        cbEnableFastStart.setOnCheckedChangeListener { _, isChecked ->
-            PreferenceHelper.setFastStartEnabled(requireContext(), isChecked)
-        }
-
-        appTypeSpinner.setOnItemClickListener { _, _, position, _ ->
-            selectedType = AppType.values()[position]
-            PreferenceHelper.setSelectedType(requireContext(), selectedType)
-            useStrictTypeCheckbox.isEnabled = position != 0
-        }
-
-        coreModeSpinner.setOnItemClickListener { _, _, position, _ ->
-            useCpp = position == 0
-            PreferenceHelper.setUseCpp(requireContext(), useCpp)
-        }
-
-        btnAboutUs.setOnClickListener {
-            findNavController().navigate(R.id.aboutUsFragment)
-        }
-
-        btnLogout.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle(getString(R.string.logout))
-                .setMessage(getString(R.string.logoutQuestion))
-                .setPositiveButton(getString(R.string.yes)) { _, _ -> logout(auth) }
-                .setNegativeButton(getString(R.string.no), null)
-                .create()
-                .show()
-        }
-
-        btnLogin.setOnClickListener {
-            findNavController().navigate(R.id.loginFragment)
-        }
-
-        btnDeleteUser.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle(getString(R.string.delete_account))
-                .setMessage(getString(R.string.deleteQuestion))
-                .setPositiveButton(getString(R.string.yes)) { _, _ -> deleteUser(user) }
-                .setNegativeButton(getString(R.string.no), null)
-                .create()
-                .show()
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (_binding == null) return
-
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user == null) {
-            _binding!!.root.findViewById<Button>(R.id.btn_logout).visibility = View.GONE
-            _binding!!.root.findViewById<Button>(R.id.btn_delete_account).visibility = View.GONE
-            _binding!!.root.findViewById<Button>(R.id.btn_login).visibility = View.VISIBLE
-        } else {
-            _binding!!.root.findViewById<Button>(R.id.btn_logout).visibility = View.VISIBLE
-            _binding!!.root.findViewById<Button>(R.id.btn_delete_account).visibility = View.VISIBLE
-            _binding!!.root.findViewById<Button>(R.id.btn_login).visibility = View.GONE
-        }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-
-    private fun deleteUser(user: FirebaseUser?) {
         if (user == null) {
             FileLog.e("Settings-DeleteUser", "deleteUser: user is null")
             return
         }
         val db = Firebase.firestore
-        // Delete the data document first and do NOT write a placeholder before
-        // it: if the delete fails (offline, rules, quota) the user's document
-        // must stay untouched instead of being wiped by the placeholder write.
+        // Delete the data document first and do NOT write a placeholder
+        // before it: if the delete fails (offline, rules, quota) the user's
+        // document must stay untouched instead of being wiped by the
+        // placeholder write.
         db.collection("user").document(user.uid).delete().addOnCompleteListener {
             if (it.isSuccessful) {
                 FileLog.d("Settings-DeleteUser", "User deleted from database.")
@@ -164,7 +151,9 @@ class SettingsFragment : Fragment() {
         user.delete().addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 FileLog.d("Settings-DeleteUser", "User account deleted.")
-                view?.let { Snackbar.make(it, R.string.user_deleted, Snackbar.LENGTH_LONG).show() }
+                view?.let { v ->
+                    Snackbar.make(v, R.string.user_deleted, Snackbar.LENGTH_LONG).show()
+                }
             } else {
                 val exception = task.exception
                 if (exception != null) {
@@ -172,16 +161,16 @@ class SettingsFragment : Fragment() {
                 }
                 if (exception?.toString()?.contains("requires recent authentication") == true) {
                     FileLog.d("Settings-DeleteUser", "User needs to reauthenticate.")
-                    view?.let {
-                        Snackbar.make(it, R.string.user_needs_to_autheticate, Snackbar.LENGTH_LONG).show()
+                    view?.let { v ->
+                        Snackbar.make(v, R.string.user_needs_to_autheticate, Snackbar.LENGTH_LONG).show()
                     }
                 }
             }
         }
-        logout(FirebaseAuth.getInstance())
+        logout()
     }
 
-    private fun logout(auth: FirebaseAuth) {
+    private fun logout() {
         if (!isAdded) return
         auth.signOut()
         findNavController().popBackStack(R.id.mainFragment, false)

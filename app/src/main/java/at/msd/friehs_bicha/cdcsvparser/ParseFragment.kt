@@ -6,30 +6,27 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.TextView
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.snackbar.Snackbar
+import androidx.core.content.ContextCompat
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
-import com.github.mikephil.charting.charts.LineChart
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.formatter.ValueFormatter
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.ParseScreen
 import kotlinx.coroutines.launch
 
 /**
- * Parse/overview screen: an in-screen progress indicator while the core
- * processes the CSV, then the aggregate values as metric cards.
+ * Parse/overview screen (Compose surface, P3.1). An in-screen progress
+ * indicator while the core processes the CSV, then the aggregate values as
+ * metric cards.
  *
  * A watchdog stops the progress indicator if the data cannot finish
  * arriving - but the screen stays up: parsed data (transaction list,
@@ -40,32 +37,45 @@ class ParseFragment : Fragment() {
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val parseTimeout = Runnable {
-        val v = view ?: return@Runnable
         if (!isResumed) return@Runnable
         FileLog.w(TAG, "Parsing did not finish within $PARSE_TIMEOUT_MS ms; staying on the screen with the data we have.")
-        setParsingState(v, false)
-        Snackbar.make(v, R.string.parsing_timeout, Snackbar.LENGTH_LONG).show()
+        _isParsing.value = false
+        view?.let { Snackbar.make(it, R.string.parsing_timeout, Snackbar.LENGTH_LONG).show() }
     }
+
+    private val _isParsing = mutableStateOf(true)
+    /** Core map keys (old layout ids) -> display value; null = hidden. */
+    private val _values = mutableStateMapOf<String, String?>()
+    private val _profitLossColor = mutableStateOf(androidx.compose.ui.graphics.Color.Unspecified)
+    private val _spendSeries = mutableStateOf<List<String>>(emptyList())
+    private val _attributionVisible = mutableStateOf(true)
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.activity_parse, container, false)
+        return ComposeView(requireContext()).apply {
+            setContent {
+                CdcsvTheme {
+                    ParseScreen(
+                        isParsing = _isParsing.value,
+                        values = _values.toMap(),
+                        profitLossColor = _profitLossColor.value,
+                        attributionVisible = _attributionVisible.value,
+                        spendSeries = _spendSeries.value,
+                        onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },
+                        onAllTransactionsClick = { findNavController().navigate(R.id.transactionsFragment) },
+                    )
+                }
+            }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setParsingState(view, true)
+        _isParsing.value = true
         timeoutHandler.postDelayed(parseTimeout, PARSE_TIMEOUT_MS)
-
-        view.findViewById<Button>(R.id.btn_filter).setOnClickListener {
-            findNavController().navigate(R.id.walletViewFragment)
-        }
-        view.findViewById<Button>(R.id.btn_all_tx).setOnClickListener {
-            findNavController().navigate(R.id.transactionsFragment)
-        }
         displayInformation(view)
     }
 
@@ -74,28 +84,16 @@ class ParseFragment : Fragment() {
         super.onDestroyView()
     }
 
-    private fun setParsingState(view: View, parsing: Boolean) {
-        view.findViewById<LinearProgressIndicator>(R.id.parse_progress).visibility =
-            if (parsing) View.VISIBLE else View.GONE
-        view.findViewById<View>(R.id.parse_status).visibility =
-            if (parsing) View.VISIBLE else View.GONE
-    }
-
-    private fun popBack() {
-        if (!isAdded) return
-        findNavController().popBackStack()
-    }
-
     private fun displayInformation(view: View) {
         // The counter is cumulative across runs; only a value newer than the
         // one already replayed to this observer counts as an error of this run.
         val initialErrors = CoreService.errorCounter.value ?: 0
         CoreService.parsedDataLiveData.observe(viewLifecycleOwner) {
             Benchmarker.stop()
-            displayTexts(view, it)
+            fillFromMap(it)
             FileLog.d(TAG, "parsedDataLiveData changed")
-            renderSpendChart(view)
-            setParsingState(view, false)
+            loadSpendSeries()
+            _isParsing.value = false
             if (CoreService.lastFailedLines > 0) {
                 Snackbar.make(
                     view,
@@ -108,39 +106,28 @@ class ParseFragment : Fragment() {
             if (count == null || count <= initialErrors) return@observe
             FileLog.w(TAG, "errorCounterLiveData changed: $count")
             Snackbar.make(view, R.string.error_while_parsing, Snackbar.LENGTH_LONG).show()
-            setParsingState(view, false)
+            _isParsing.value = false
             popBack()
         }
     }
 
-    private fun displayTexts(view: View, texts: Map<String, String?>?) {
+    private fun fillFromMap(texts: Map<String, String?>?) {
         if (texts == null) {
             FileLog.e(TAG, "texts is null")
             return
         }
+        _values.clear()
         texts.forEach { (key, value) ->
-            val textView = view.findViewById<TextView>(
-                resources.getIdentifier(key, "id", requireContext().packageName)
-            )
-            if (textView == null) {
-                FileLog.e(TAG, "textView is null for key: $key")
-                return
+            // The core signals "hide the API attribution" with an explicit
+            // null under this key (no crypto transactions in the file).
+            if (key == R.id.coinGeckoApiLabel.toString()) {
+                _attributionVisible.value = value != null
             }
-            when (value) {
-                "no internet connection" -> {
-                    textView.text = resources.getString(R.string.no_internet_connection)
-                }
-
-                null -> {
-                    textView.visibility = View.INVISIBLE
-                }
-
-                else -> {
-                    textView.text = value
-                    if (key == "profit_loss_value") {
-                        textView.setTextColor(trendColor(view, firstNumber(value)))
-                    }
-                }
+            if (value == null) return@forEach
+            _values[key] = value
+            if (key == R.id.profit_loss_value.toString()) {
+                _profitLossColor.value =
+                    androidx.compose.ui.graphics.Color.trendColor(firstNumber(value), this)
             }
         }
     }
@@ -151,83 +138,14 @@ class ParseFragment : Fragment() {
         return match.value.replace(",", ".").toDoubleOrNull()
     }
 
-    private fun trendColor(view: View, value: Double?): Int {
-        val default = ContextCompat.getColor(requireContext(), R.color.on_surface)
-        return when {
-            value == null -> default
-            value > 0 -> ContextCompat.getColor(
-                requireContext(), R.color.trend_positive
-            )
-
-            value < 0 -> ContextCompat.getColor(
-                requireContext(), R.color.trend_negative
-            )
-
-            else -> default
-        }
+    private fun popBack() {
+        if (!isAdded) return
+        findNavController().popBackStack()
     }
 
-    /**
-     * The "Geld ausgegeben" history as a monthly line chart, below the metric
-     * cards. The numbers come from the C++ core (same accounting as the card
-     * total, EUR inner wallet excluded like there).
-     */
-    private fun renderSpendChart(view: View) {
-        val chart = view.findViewById<LineChart>(R.id.spend_chart)
-        val label = view.findViewById<TextView>(R.id.spend_chart_label)
+    private fun loadSpendSeries() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val series = CoreService.moneySpentSeries()
-            if (series.isEmpty()) {
-                chart.visibility = View.GONE
-                label.visibility = View.GONE
-                return@launch
-            }
-            val months = ArrayList<String>(series.size)
-            val entries = ArrayList<Entry>(series.size)
-            series.forEachIndexed { index, raw ->
-                val parts = raw.split(";")
-                if (parts.size != 2) return@forEachIndexed
-                val value = parts[1].toDoubleOrNull() ?: return@forEachIndexed
-                months.add(parts[0])
-                entries.add(Entry(index.toFloat(), value.toFloat()))
-            }
-            if (entries.isEmpty()) {
-                chart.visibility = View.GONE
-                label.visibility = View.GONE
-                return@launch
-            }
-            val color = ContextCompat.getColor(requireContext(), R.color.primary)
-            val dataset = LineDataSet(entries, "").apply {
-                setDrawValues(false)
-                lineWidth = 2f
-                circleRadius = 3f
-                setCircleColor(color)
-                this.color = color
-            }
-            chart.apply {
-                visibility = View.VISIBLE
-                legend.isEnabled = false
-                description.isEnabled = false
-                setData(LineData(dataset))
-                xAxis.granularity = 1f
-                xAxis.setDrawGridLines(false)
-                xAxis.labelCount = 8
-                xAxis.valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        val index = value.toInt()
-                        val key = months.getOrNull(index) ?: return ""
-                        // "YYYY-MM" -> e.g. "Mär 25" (the app locale applies)
-                        return runCatching {
-                            val parts = key.split("-").map { it.toInt() }
-                            LocalDate.of(parts[0], parts[1], 1)
-                                .format(DateTimeFormatter.ofPattern("MMM yy", Locale.getDefault()))
-                        }.getOrDefault(key)
-                    }
-                }
-                axisRight.isEnabled = false
-                invalidate()
-            }
-            label.visibility = View.VISIBLE
+            _spendSeries.value = CoreService.moneySpentSeries()
         }
     }
 
@@ -237,5 +155,30 @@ class ParseFragment : Fragment() {
         // the price fetch, which can wait out CoinGecko's first (worst case
         // 300 s) rate-limit cooldown on a throttled egress IP.
         private const val PARSE_TIMEOUT_MS = 300_000L
+    }
+}
+
+/** Maps a +/- value to the trend color (or the default on-surface color). */
+private fun androidx.compose.ui.graphics.Color.Companion.trendColor(
+    value: Double?,
+    fragment: ParseFragment,
+): androidx.compose.ui.graphics.Color {
+    val ctx = fragment.requireContext()
+    return when {
+        value == null -> androidx.compose.ui.graphics.Color(
+            ContextCompat.getColor(ctx, R.color.on_surface)
+        )
+
+        value > 0 -> androidx.compose.ui.graphics.Color(
+            ContextCompat.getColor(ctx, R.color.trend_positive)
+        )
+
+        value < 0 -> androidx.compose.ui.graphics.Color(
+            ContextCompat.getColor(ctx, R.color.trend_negative)
+        )
+
+        else -> androidx.compose.ui.graphics.Color(
+            ContextCompat.getColor(ctx, R.color.on_surface)
+        )
     }
 }

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The parse/overview screen is now Compose (no XML layout), but the data
+        layer (CoreService, AppModel) keys its result maps by the historical
+        view-id integers: R.id.assets_valueP.toString() & co. Keep the ids
+        here so that contract survives without a layout file.
+    -->
+    <item name="assets_valueP" type="id" />
+    <item name="money_spent_value" type="id" />
+    <item name="profit_loss_value" type="id" />
+    <item name="rewards_value" type="id" />
+    <item name="assets_value_label" type="id" />
+    <item name="rewards_label" type="id" />
+    <item name="profit_loss_label" type="id" />
+    <item name="coinGeckoApiLabel" type="id" />
+</resources>
