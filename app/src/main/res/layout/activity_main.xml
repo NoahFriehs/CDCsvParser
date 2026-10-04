@@ -61,39 +61,21 @@
         android:textAlignment="center"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="@dimen/main_middle_font"
-        app:layout_constraintBottom_toTopOf="@id/tl_history"
+        app:layout_constraintBottom_toTopOf="@id/btn_history"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tl_history"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/basic_start_end_margin"
-        android:layout_marginEnd="@dimen/basic_start_end_margin"
-        android:layout_marginBottom="@dimen/main_small_margin_bottom"
-        android:hint="@string/history"
-        app:layout_constraintBottom_toTopOf="@id/btn_history"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-            android:id="@+id/spinner_history"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="none"
-            tools:ignore="LabelFor" />
-    </com.google.android.material.textfield.TextInputLayout>
-
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_history"
+        style="@style/Widget.Material3.Button.OutlinedButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/basic_start_end_margin"
         android:layout_marginEnd="@dimen/basic_start_end_margin"
         android:layout_marginBottom="@dimen/main_small_margin_bottom"
-        android:text="@string/show_history"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="@string/history"
         android:textAllCaps="false"
         android:textSize="@dimen/basic_button_font"
         app:layout_constraintBottom_toTopOf="@+id/btn_loadFromDb"

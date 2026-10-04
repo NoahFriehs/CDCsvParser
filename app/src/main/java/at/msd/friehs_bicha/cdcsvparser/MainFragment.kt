@@ -13,8 +13,9 @@ import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import android.widget.TextView
 import androidx.navigation.fragment.findNavController
+import at.msd.friehs_bicha.cdcsvparser.ui.fragments.HistoryDialogFragment
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
@@ -60,9 +61,7 @@ class MainFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         user = FirebaseAuth.getInstance().currentUser
 
-        val dropdown = view.findViewById<MaterialAutoCompleteTextView>(R.id.spinner_history)
         val btnParse = view.findViewById<Button>(R.id.btn_parse)
-        val btnHistory = view.findViewById<Button>(R.id.btn_history)
         val btnLoadFromDB = view.findViewById<Button>(R.id.btn_loadFromDb)
         if (user == null) {
             btnLoadFromDB.visibility = View.GONE
@@ -75,14 +74,18 @@ class MainFragment : Fragment() {
             findNavController().navigate(R.id.settingsFragment)
         }
         updateFiles()
+        refreshHistoryUI(view)
 
-        if (files!!.isEmpty()) {
-            setHistory(view, "disabled", dropdown, btnHistory)
-        } else {
-            setSpinner(dropdown)
-            setHistory(view, "enabled", dropdown, btnHistory)
-            btnHistory.setOnClickListener { onBtnHistoryClick(dropdown) }
+        childFragmentManager.setFragmentResultListener(
+            HistoryDialogFragment.REQUESTED_SELECT, viewLifecycleOwner
+        ) { _, bundle ->
+            val fileName = bundle.getString(HistoryDialogFragment.KEY_FILE)
+                ?: return@setFragmentResultListener
+            startParseFromFile(fileName)
         }
+        childFragmentManager.setFragmentResultListener(
+            HistoryDialogFragment.REQUESTED_DELETE, viewLifecycleOwner
+        ) { _, _ -> onHistoryDeleted() }
 
         // The launcher activity can pass "fastStart" to go straight to parsing.
         if (requireActivity().intent.hasExtra("fastStart")) {
@@ -96,15 +99,7 @@ class MainFragment : Fragment() {
         // in the background once the 5-minute cache TTL started to expire.
         CoreService.refreshPricesIfStale()
         updateFiles()
-        val view = view ?: return
-        val dropdown = view.findViewById<MaterialAutoCompleteTextView>(R.id.spinner_history)
-        val btnHistory = view.findViewById<Button>(R.id.btn_history)
-        if (files!!.isEmpty()) {
-            setHistory(view, "disabled", dropdown, btnHistory)
-        } else {
-            setHistory(view, "enabled", dropdown, btnHistory)
-            btnHistory.setOnClickListener { onBtnHistoryClick(dropdown) }
-        }
+        view?.let { refreshHistoryUI(it) }
     }
 
     private fun fastStart() {
@@ -145,40 +140,43 @@ class MainFragment : Fragment() {
         return fileNames
     }
 
-    private fun setSpinner(dropdown: MaterialAutoCompleteTextView) {
-        dropdown.setSimpleItems(fileDisplayNames().toTypedArray())
+    @SuppressLint("SimpleDateFormat")
+    private fun displayNameFor(fileName: String?): String? {
+        val raw = fileName?.removeSuffix(".csv") ?: return null
+        val sdf = SimpleDateFormat(HISTORY_FILE_PATTERN)
+        val display = SimpleDateFormat("d.M. HH:mm")
+        return runCatching { display.format(sdf.parse(raw)) }.getOrDefault(raw)
     }
 
-    private fun setHistory(root: View, type: String, dropdown: MaterialAutoCompleteTextView, btnHistory: Button) {
-        // The Material 3 button styles its disabled/enabled state itself
-        when (type) {
-            "disabled" -> {
-                btnHistory.isEnabled = false
-                dropdown.setSimpleItems(arrayOf(getString(R.string.no_history)))
-                dropdown.isEnabled = false
-            }
-
-            "enabled" -> {
-                btnHistory.isEnabled = true
-                dropdown.isEnabled = true
-                setSpinner(dropdown)
-                dropdown.setText(getFirstItemOrNull(), false)
+    /**
+     * History row: newest first file name on the button, hidden entirely
+     * when there is nothing to offer (proper empty state).
+     */
+    private fun refreshHistoryUI(view: View) {
+        val label = view.findViewById<TextView>(R.id.history_text)
+        val btnHistory = view.findViewById<Button>(R.id.btn_history)
+        val hasFiles = !files.isNullOrEmpty()
+        label.visibility = if (hasFiles) View.VISIBLE else View.GONE
+        btnHistory.visibility = if (hasFiles) View.VISIBLE else View.GONE
+        if (hasFiles) {
+            btnHistory.isEnabled = true
+            // Same order as the history dialog: newest first.
+            val newest = files!!.filter { it.isFile && it.name.endsWith(".csv") }
+                .maxByOrNull { it.lastModified() }?.name
+            btnHistory.text = displayNameFor(newest) ?: getString(R.string.history)
+            btnHistory.setOnClickListener {
+                HistoryDialogFragment().show(childFragmentManager, "history")
             }
         }
     }
 
-    private fun getFirstItemOrNull(): String? = fileDisplayNames().firstOrNull()
-
     /**
-     * Gets the file selected in the dropdown, reads it and starts the parse.
+     * Starts the parse for a file chosen in the history dialog.
      */
-    private fun onBtnHistoryClick(dropdown: MaterialAutoCompleteTextView) {
+    private fun startParseFromFile(fileName: String) {
         showProgressDialog()
         try {
-            val names = fileDisplayNames()
-            val selected = dropdown.text.toString()
-            val position = names.indexOf(selected).coerceAtLeast(0)
-            val selectedFile = files!![position]
+            val selectedFile = files!!.first { it.name == fileName }
             Benchmarker.start()
             CoreService.startServiceWithData(
                 null,
@@ -190,6 +188,13 @@ class MainFragment : Fragment() {
             hideProgressDialog()
             view?.let { Snackbar.make(it, e.message ?: getString(R.string.error_empty_fields), Snackbar.LENGTH_SHORT).show() }
         }
+    }
+
+    private fun onHistoryDeleted() {
+        updateFiles()
+        val view = view ?: return
+        Snackbar.make(view, R.string.history_deleted, Snackbar.LENGTH_SHORT).show()
+        refreshHistoryUI(view)
     }
 
     /**
