@@ -14,6 +14,7 @@ class CoreModeMapperTest {
         assertEquals(0, CoreModeMapper.toCoreMode(AppType.CdCsvParser))
         assertEquals(1, CoreModeMapper.toCoreMode(AppType.CroCard))
         assertEquals(4, CoreModeMapper.toCoreMode(AppType.Kraken))
+        assertEquals(5, CoreModeMapper.toCoreMode(AppType.BlockPit))
     }
 
     @Test
@@ -32,6 +33,7 @@ class AppTypeTest {
     fun safeFromOrdinalInBounds() {
         assertEquals(AppType.CdCsvParser, AppType.safeFromOrdinal(0))
         assertEquals(AppType.Kraken, AppType.safeFromOrdinal(5))
+        assertEquals(AppType.BlockPit, AppType.safeFromOrdinal(6))
     }
 
     @Test

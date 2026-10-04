@@ -3,8 +3,14 @@ package at.msd.friehs_bicha.cdcsvparser.app
 /**
  * App type enum
  */
+/**
+ * App type enum
+ *
+ * Ordinals are persisted and passed to the service intent: only append new
+ * constants here, never reorder or insert.
+ */
 enum class AppType {
-    CdCsvParser, CroCard, CurveCard, Default, Custom, Kraken;
+    CdCsvParser, CroCard, CurveCard, Default, Custom, Kraken, BlockPit;
 
 
     companion object {

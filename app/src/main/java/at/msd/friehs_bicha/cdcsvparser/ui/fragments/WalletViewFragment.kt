@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletSortKey
 import at.msd.friehs_bicha.cdcsvparser.ui.viewmodel.WalletsViewModel
 import com.github.mikephil.charting.charts.PieChart
@@ -43,6 +44,10 @@ class WalletViewFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // Rows render on the main thread from the 5-minute price cache; if
+        // that gap started while this screen was inactive, refresh in the
+        // background (stale values keep showing until the data posts back).
+        CoreService.refreshPricesIfStale()
 
         if (!childFragmentManager.isStateSaved) {
             childFragmentManager.beginTransaction()
@@ -138,8 +143,10 @@ class WalletViewFragment : Fragment() {
             return
         }
         val total = sliceable.sumOf { it.assetValue.toDouble() }
+        // Entries (and the legend that follows their order) go by allocation:
+        // biggest slice first.
         val entries = sliceable
-            .sortedBy { it.name }
+            .sortedByDescending { it.assetValue }
             .map { PieEntry(it.assetValue.toFloat(), it.name) }
         val dataSet = PieDataSet(entries, "")
         dataSet.colors = CHART_COLORS.map { ContextCompat.getColor(requireContext(), it) }.toMutableList()

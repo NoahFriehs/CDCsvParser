@@ -19,19 +19,22 @@ import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 
 /**
  * Parse/overview screen: an in-screen progress indicator while the core
- * processes the CSV, then the aggregate values as metric cards. A watchdog
- * pops the screen if parsing cannot finish.
+ * processes the CSV, then the aggregate values as metric cards.
+ *
+ * A watchdog stops the progress indicator if the data cannot finish
+ * arriving - but the screen stays up: parsed data (transaction list,
+ * wallets, money spent) is usable without live prices, and a late arrival
+ * still updates the metric cards through the same observer.
  */
 class ParseFragment : Fragment() {
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val parseTimeout = Runnable {
+        val v = view ?: return@Runnable
         if (!isResumed) return@Runnable
-        FileLog.e(TAG, "Parsing did not finish within $PARSE_TIMEOUT_MS ms - giving up.")
-        view?.let {
-            Snackbar.make(it, R.string.parsing_timeout, Snackbar.LENGTH_LONG).show()
-        }
-        popBack()
+        FileLog.w(TAG, "Parsing did not finish within $PARSE_TIMEOUT_MS ms; staying on the screen with the data we have.")
+        setParsingState(v, false)
+        Snackbar.make(v, R.string.parsing_timeout, Snackbar.LENGTH_LONG).show()
     }
 
     override fun onCreateView(
@@ -155,6 +158,9 @@ class ParseFragment : Fragment() {
 
     companion object {
         private const val TAG = "ParseFragment"
-        private const val PARSE_TIMEOUT_MS = 90_000L
+        // Parsing itself takes well under a second; the budget mostly covers
+        // the price fetch, which can wait out CoinGecko's first (worst case
+        // 300 s) rate-limit cooldown on a throttled egress IP.
+        private const val PARSE_TIMEOUT_MS = 300_000L
     }
 }

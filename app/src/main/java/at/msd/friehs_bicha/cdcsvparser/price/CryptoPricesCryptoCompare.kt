@@ -1,11 +1,14 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
+import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Crypto prices with a two-layer strategy:
@@ -19,6 +22,12 @@ import java.util.concurrent.TimeUnit
  * ids (mirrors the core tester's CoinGeckoPriceProvider) instead of one
  * call per symbol; 429 cooldowns scale up (45 s x count, cap 5 min)
  * instead of hammering the rate limit.
+ *
+ * Id resolution (map hit -> disk cache -> one API search) persists to
+ * `symbol_id_cache.json` in the app's private storage, including negative
+ * results (24 h) so junk symbols are only searched once. Bulk calls also
+ * cap the number of searches ([BULK_SEARCH_LIMIT]) so a file full of unknown
+ * tokens cannot turn into a search storm.
  *
  * @return null on failure, 0.0 when the symbol is unknown.
  */
@@ -35,11 +44,61 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
 
     private var ccBroken = false
     private val symbolToId = ConcurrentHashMap<String, String>()
+    private val unknownSymbols = ConcurrentHashMap<String, Long>() // symbol -> first-seen ts
     private var nextCoinGeckoCallMs = 0L
     @Volatile
     private var coinGeckoCooldownUntilMs = 0L
     @Volatile
     private var consecutive429 = 0
+
+    /**
+     * CoinGecko rate-limit state.
+     *
+     * Cooldowns are fast-fail gates, never sleeps: callers (often the
+     * cpp-core thread) must not be pinned waiting out a rate limit, and a
+     * throttled egress IP must not keep retrying 429s in the background
+     * after the user has left the screen. The app's existing
+     * "no internet -> probe every 5 s" recovery loop re-checks and the
+     * next probe after the cooldown runs is a no-network fast-fail until
+     * the cooldown is actually over.
+     */
+    @Volatile
+    private var cgBlackoutUntilMs = 0L
+
+    /** App-private `symbol_id_cache.json`; null when no context is available yet. */
+    private val idCacheFile: File? by lazy {
+        try {
+            File(InstanceVars.applicationContext.filesDir, "symbol_id_cache.json")
+        } catch (e: Exception) {
+            FileLog.d(TAG_CG, "No app context yet; the id cache stays in memory only.")
+            null
+        }
+    }
+
+    init {
+        loadIdCacheFile()
+    }
+
+    /**
+     * Returns the remaining CoinGecko wait time in ms if any call must skip
+     * the network right now (cooldown or blackout), else 0.
+     */
+    private fun coinGeckoSkipMs(): Long {
+        val now = System.currentTimeMillis()
+        val until = maxOf(coinGeckoCooldownUntilMs, cgBlackoutUntilMs)
+        return (until - now).coerceAtLeast(0)
+    }
+
+    /** Result of searching CoinGecko for a symbol's id. */
+    private sealed interface IdSearchResult {
+        data class Found(val id: String) : IdSearchResult
+
+        /** 200 response without a matching symbol - safe to remember. */
+        data object NotInCatalog : IdSearchResult
+
+        /** 429 / network / parse error - must NOT be cached as unknown. */
+        data object TransientError : IdSearchResult
+    }
 
     override fun getPrice(symbol: String): Double? {
         val ccPrice = if (ccBroken) null else fetchCryptoCompare(symbol)
@@ -57,9 +116,11 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
             if (ccPrice == null) remaining.add(symbol) else prices[symbol] = ccPrice
         }
         if (remaining.isEmpty()) return prices
-        // Pass 2: everything left goes to one bulk CoinGecko call per batch.
+        // Pass 2: everything left goes to one bulk CoinGecko call per batch;
+        // the search budget covers the whole call, not just one batch.
+        val searchBudget = AtomicInteger(BULK_SEARCH_LIMIT)
         for (chunk in remaining.chunked(BULK_BATCH_SIZE)) {
-            fetchCoinGeckoBulk(chunk)?.forEach { (symbol, price) -> prices[symbol] = price }
+            fetchCoinGeckoBulk(chunk, searchBudget)?.forEach { (symbol, price) -> prices[symbol] = price }
         }
         return prices
     }
@@ -87,65 +148,155 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     }
 
     private fun fetchCoinGecko(symbol: String): Double? {
+        val skip = coinGeckoSkipMs()
+        if (skip > 0) {
+            FileLog.d(TAG_CG, "CoinGecko cooldown/blackout active; skipping $symbol for now (${skip / 1000} s left).")
+            return null
+        }
         return try {
-            waitOutIfCoolingDown()
             spacing()
             val coinId = resolveCoinGeckoId(symbol) ?: return 0.0
             val url = "${cgBaseUrl}simple/price?ids=$coinId&vs_currencies=eur"
-            val response = client.newCall(Request.Builder().url(url).build()).execute()
-            if (response.code == 429) {
-                noteCoinGecko429()
-                return null
+            client.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                if (response.code == 429) {
+                    noteCoinGecko429()
+                    return null
+                }
+                noteCoinGeckoSuccess()
+                val json = JSONObject(response.body?.string().orEmpty())
+                val price = json.optJSONObject(coinId)?.optDouble("eur")
+                if (price != null && price.isFinite()) price else null
             }
-            noteCoinGeckoSuccess()
-            val json = JSONObject(response.body?.string().orEmpty())
-            val price = json.optJSONObject(coinId)?.optDouble("eur")
-            if (price != null && price.isFinite()) price else null
         } catch (e: Exception) {
             FileLog.d(TAG_CG, "Failed to get price for $symbol from CoinGecko: $e")
             null
         }
     }
 
-    /** Resolves a ticker symbol to its CoinGecko id (map, cache, then search). */
-    private fun resolveCoinGeckoId(symbol: String): String? {
+    /**
+     * Resolves a ticker symbol to its CoinGecko id (map, disk cache, then one
+     * search). [searchBudget] limits how many searches this resolution chain
+     * may spend (bulk calls pass one, single lookups pass null = unlimited).
+     */
+    private fun resolveCoinGeckoId(symbol: String, searchBudget: AtomicInteger? = null): String? {
         val upper = symbol.uppercase()
-        symbolToId[symbol]?.let { return it }
-        KEY_MAPPINGS[upper]?.let {
-            symbolToId[symbol] = it
-            return it
+        if (NO_LIVE_PRICE_SYMBOLS.contains(upper)) {
+            FileLog.d(TAG_CG, "No live price for $symbol (ambiguous ticker, see NO_LIVE_PRICE_SYMBOLS).")
+            return null
         }
-        return searchCoinGeckoId(upper)
+        symbolToId[symbol]?.let { return it }
+        KEY_MAPPINGS[upper]?.let { id ->
+            rememberId(symbol, id)
+            return id
+        }
+        unknownSymbols[symbol]?.let { seenAt ->
+            if (System.currentTimeMillis() - seenAt < NEGATIVE_CACHE_TTL_MS) return null
+            unknownSymbols.remove(symbol) // stale; search again
+        }
+        if (searchBudget != null && searchBudget.decrementAndGet() < 0) {
+            FileLog.d(TAG_CG, "Id search budget exhausted; not searching for $symbol")
+            return null
+        }
+        return when (val result = searchCoinGeckoId(upper)) {
+            is IdSearchResult.Found -> {
+                rememberId(symbol, result.id)
+                result.id
+            }
+
+            IdSearchResult.NotInCatalog -> {
+                rememberUnknown(symbol)
+                null
+            }
+
+            IdSearchResult.TransientError -> null
+        }
     }
 
-    private fun searchCoinGeckoId(symbol: String): String? {
-        return try {
-            waitOutIfCoolingDown()
-            spacing()
-            val url = "${cgBaseUrl}search?query=$symbol"
-            val response = client.newCall(Request.Builder().url(url).build()).execute()
-            if (response.code == 429) {
-                noteCoinGecko429()
-                return null
-            }
-            noteCoinGeckoSuccess()
-            val json = JSONObject(response.body?.string().orEmpty())
-            var found: String? = null
-            json.optJSONArray("coins")?.let { coins ->
-                for (i in 0 until coins.length()) {
-                    val coin = coins.optJSONObject(i) ?: continue
-                    if (coin.optString("symbol").equals(symbol, ignoreCase = true)) {
-                        found = coin.optString("id").ifEmpty { null }
-                        break
+    private fun rememberId(symbol: String, id: String) {
+        symbolToId[symbol] = id
+        saveIdCacheFile()
+    }
+
+    private fun rememberUnknown(symbol: String) {
+        unknownSymbols[symbol] = System.currentTimeMillis()
+        FileLog.d(TAG_CG, "No CoinGecko id found for $symbol (remembered for ${NEGATIVE_CACHE_TTL_MS / 3_600_000} h)")
+        saveIdCacheFile()
+    }
+
+    /** Loads the persisted symbol -> id cache (positive + still-fresh negative). */
+    private fun loadIdCacheFile() {
+        val file = idCacheFile ?: return
+        if (!file.exists()) return
+        try {
+            val json = JSONObject(file.readText())
+            for (key in json.keys()) {
+                val value = json.optString(key, "")
+                when {
+                    value.isEmpty() -> {}
+
+                    value.startsWith("!") -> {
+                        val seenAt = value.drop(1).toLongOrNull() ?: continue
+                        if (System.currentTimeMillis() - seenAt < NEGATIVE_CACHE_TTL_MS) {
+                            unknownSymbols[key] = seenAt
+                        }
                     }
+
+                    else -> symbolToId[key] = value
                 }
             }
-            found?.let { symbolToId[symbol] = it }
-            if (found == null) FileLog.d(TAG_CG, "No CoinGecko id found for $symbol")
-            found
+        } catch (e: Exception) {
+            FileLog.d(TAG_CG, "Failed to load the symbol id cache: $e")
+        }
+    }
+
+    /** Persists the symbol -> id cache (atomically: tmp file + rename). */
+    private fun saveIdCacheFile() {
+        val file = idCacheFile ?: return
+        try {
+            val json = JSONObject()
+            symbolToId.forEach { (key, id) -> json.put(key, id) }
+            unknownSymbols.forEach { (key, seenAt) -> json.put(key, "!$seenAt") }
+            val tmp = File(file.parentFile, file.name + ".tmp")
+            tmp.writeText(json.toString())
+            if (!tmp.renameTo(file)) {
+                tmp.copyTo(file, overwrite = true)
+                tmp.delete()
+            }
+        } catch (e: Exception) {
+            FileLog.d(TAG_CG, "Failed to save the symbol id cache: $e")
+        }
+    }
+
+    private fun searchCoinGeckoId(symbol: String): IdSearchResult {
+        if (coinGeckoSkipMs() > 0) {
+            FileLog.d(TAG_CG, "CoinGecko cooldown/blackout active; not searching for $symbol yet.")
+            return IdSearchResult.TransientError
+        }
+        return try {
+            spacing()
+            val url = "${cgBaseUrl}search?query=$symbol"
+            client.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                if (response.code == 429) {
+                    noteCoinGecko429()
+                    return IdSearchResult.TransientError
+                }
+                noteCoinGeckoSuccess()
+                val json = JSONObject(response.body?.string().orEmpty())
+                var found: String? = null
+                json.optJSONArray("coins")?.let { coins ->
+                    for (i in 0 until coins.length()) {
+                        val coin = coins.optJSONObject(i) ?: continue
+                        if (coin.optString("symbol").equals(symbol, ignoreCase = true)) {
+                            found = coin.optString("id").ifEmpty { null }
+                            break
+                        }
+                    }
+                }
+                found?.let { IdSearchResult.Found(it) } ?: IdSearchResult.NotInCatalog
+            }
         } catch (e: Exception) {
             FileLog.d(TAG_CG, "CoinGecko search failed for $symbol: $e")
-            null
+            IdSearchResult.TransientError
         }
     }
 
@@ -156,37 +307,41 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
      *         id could be resolved and that came back in the response
      *         (0.0 = known id without a price); null if the call failed.
      */
-    private fun fetchCoinGeckoBulk(symbols: List<String>): Map<String, Double>? {
+    private fun fetchCoinGeckoBulk(symbols: List<String>, searchBudget: AtomicInteger): Map<String, Double>? {
+        if (coinGeckoSkipMs() > 0) {
+            FileLog.d(TAG_CG, "CoinGecko cooldown/blackout active; skipping the bulk call.")
+            return null
+        }
         return try {
-            waitOutIfCoolingDown()
             spacing()
             val idToSymbol = LinkedHashMap<String, String>()
             val idList = StringBuilder()
             for (symbol in symbols) {
-                val coinId = resolveCoinGeckoId(symbol) ?: continue // unresolved: no price
+                val coinId = resolveCoinGeckoId(symbol, searchBudget) ?: continue // unresolved: no price
                 idToSymbol.putIfAbsent(coinId, symbol)
                 if (idList.isNotEmpty()) idList.append(',')
                 idList.append(coinId)
             }
             if (idList.isEmpty()) return null
             val url = "${cgBaseUrl}simple/price?ids=$idList&vs_currencies=eur"
-            val response = client.newCall(Request.Builder().url(url).build()).execute()
-            if (response.code == 429) {
-                noteCoinGecko429()
-                return null
+            client.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                if (response.code == 429) {
+                    noteCoinGecko429()
+                    return null
+                }
+                noteCoinGeckoSuccess()
+                val json = JSONObject(response.body?.string().orEmpty())
+                if (json.has("error")) {
+                    FileLog.w(TAG_CG, "CoinGecko bulk error: ${json.optString("error")}")
+                    return null
+                }
+                val prices = LinkedHashMap<String, Double>()
+                for ((coinId, symbol) in idToSymbol) {
+                    val price = json.optJSONObject(coinId)?.optDouble("eur")
+                    if (price != null && price.isFinite()) prices[symbol] = price
+                }
+                prices
             }
-            noteCoinGeckoSuccess()
-            val json = JSONObject(response.body?.string().orEmpty())
-            if (json.has("error")) {
-                FileLog.w(TAG_CG, "CoinGecko bulk error: ${json.optString("error")}")
-                return null
-            }
-            val prices = LinkedHashMap<String, Double>()
-            for ((coinId, symbol) in idToSymbol) {
-                val price = json.optJSONObject(coinId)?.optDouble("eur")
-                if (price != null && price.isFinite()) prices[symbol] = price
-            }
-            prices
         } catch (e: Exception) {
             FileLog.d(TAG_CG, "Failed to get bulk prices from CoinGecko: $e")
             null
@@ -201,15 +356,22 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
         consecutive429++
         val cooldownMs = minOf(45_000L * consecutive429, 300_000L)
         coinGeckoCooldownUntilMs = System.currentTimeMillis() + cooldownMs
-        FileLog.w(
-            TAG_CG,
-            "Rate limited (consecutive #$consecutive429); cooling down ${cooldownMs / 1000} s."
-        )
+        if (consecutive429 >= BLACKOUT_AFTER_429S) {
+            cgBlackoutUntilMs = System.currentTimeMillis() + BLACKOUT_MS
+            FileLog.w(
+                TAG_CG,
+                "Rate limited (consecutive #$consecutive429); backing off for ${BLACKOUT_MS / 60_000} min instead of retrying."
+            )
+        } else {
+            FileLog.w(TAG_CG, "Rate limited (consecutive #$consecutive429); cooling down ${cooldownMs / 1000} s.")
+        }
     }
 
     private fun noteCoinGeckoSuccess() {
         if (consecutive429 > 0) FileLog.d(TAG_CG, "CoinGecko recovered after $consecutive429 rate limit(s).")
+        if (cgBlackoutUntilMs != 0L) FileLog.d(TAG_CG, "CoinGecko blackout ended early.")
         consecutive429 = 0
+        cgBlackoutUntilMs = 0L
     }
 
     /** Spacing for the key-free CoinGecko tier (~1 request/s). */
@@ -219,21 +381,32 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
         nextCoinGeckoCallMs = System.currentTimeMillis() + 700L
     }
 
-    /** Waits until the cooldown expires (at most once per request, on the price thread). */
-    private fun waitOutIfCoolingDown() {
-        val wait = coinGeckoCooldownUntilMs - System.currentTimeMillis()
-        if (wait > 0) {
-            FileLog.d(TAG_CG, "Waiting ${wait / 1000}s for the CoinGecko cooldown.")
-            Thread.sleep(wait)
-        }
-    }
-
     companion object {
         private const val TAG_CC = "CryptoCompare"
         private const val TAG_CG = "CoinGecko"
 
         /** Max ids per bulk `simple/price` call; larger lists are chunked. */
         private const val BULK_BATCH_SIZE = 30
+
+        /** Max `/search` calls per bulk resolution; prevents a search storm. */
+        private const val BULK_SEARCH_LIMIT = 5
+
+        /** How long a "not in CoinGecko catalog" result is remembered. */
+        private const val NEGATIVE_CACHE_TTL_MS = 24L * 3_600_000
+
+        /** After this many consecutive 429s, stop touching CoinGecko at all... */
+        private const val BLACKOUT_AFTER_429S = 3
+
+        /** ...for this long (mirrors the tester's "too many rate limits" abort). */
+        private const val BLACKOUT_MS = 10L * 60_000
+
+        /**
+         * Uppercase tickers whose CoinGecko search match is known to be wrong
+         * (ambiguous tickers / non-crypto assets; cf. the comments in the
+         * tester's StaticPrices.h). They get a 0.0 price instead of a value
+         * from the wrong coin.
+         */
+        private val NO_LIVE_PRICE_SYMBOLS = setOf("XAU", "NFT", "XVVS", "BOOST", "CAT")
         private val KEY_MAPPINGS = mapOf(
             "BTC" to "bitcoin", "ETH" to "ethereum", "DOGE" to "dogecoin",
             "CRO" to "crypto-com-chain", "EUR" to "eur", "ETHW" to "ethereum-pow-iou",

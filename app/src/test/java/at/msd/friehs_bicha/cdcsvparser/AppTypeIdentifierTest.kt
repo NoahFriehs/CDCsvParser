@@ -11,6 +11,8 @@ class AppTypeIdentifierTest {
         "Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash"
     private val curveHeader =
         "Date (YYYY-MM-DD as UTC),Merchant,Txn Amount (Funding Card),Txn Currency (Funding Card),Txn Amount (Foreign Spend),Txn Currency (Foreign Spend),Card Name,Card Last 4 Digits,Type,Category,Notes"
+    private val blockPitHeader =
+        "Date (UTC);Integration Name;Label;Outgoing Asset;Outgoing Amount;Incoming Asset;Incoming Amount;Fee Asset (optional);Fee Amount (optional);Comment (optional);Trx. ID (optional);Source Type;Source Name"
 
     @Test
     fun detectsCdCsvParserHeader() {
@@ -31,6 +33,20 @@ class AppTypeIdentifierTest {
     @Test
     fun toleratesTrailingCrlf() {
         assertEquals(AppType.CdCsvParser, AppTypeIdentifier.getAppType(ArrayList(listOf(cdcHeader + "\r", "line2"))))
+    }
+
+    @Test
+    fun detectsBlockPitHeader() {
+        assertEquals(AppType.BlockPit, AppTypeIdentifier.getAppType(ArrayList(listOf(blockPitHeader, "line2"))))
+    }
+
+    @Test
+    fun detectsBlockPitHeaderWithBomAndCrlf() {
+        val bom = "\uFEFF"
+        assertEquals(
+            AppType.BlockPit,
+            AppTypeIdentifier.getAppType(ArrayList(listOf(bom + blockPitHeader + "\r", "line2")))
+        )
     }
 
     @Test

@@ -51,6 +51,21 @@ class PriceCache : Serializable {
     }
 
     /**
+     * Returns the last stored price even if it is past the 5-minute TTL.
+     * UI rows fall back to it instead of showing 0.0 while a background
+     * refresh is running.
+     *
+     * @return the stale price, or null if the symbol was never cached
+     */
+    fun getStale(symbol: String): Double? = cache[symbol]?.price
+
+    /**
+     * @return true if no cache entry is within the TTL anymore (empty cache
+     * or everything older than five minutes)
+     */
+    fun isStale(): Boolean = cache.values.none { !it.isOlderThanFiveMinutes }
+
+    /**
      * Returns a snapshot of the cached symbols.
      *
      * @return all symbols that currently have a cache entry (may be stale)

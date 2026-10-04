@@ -4,6 +4,7 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import at.msd.friehs_bicha.cdcsvparser.ui.display.ProfitTrend
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionIcon
+import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletSortKey
 import at.msd.friehs_bicha.cdcsvparser.ui.display.sortWalletRows
 import at.msd.friehs_bicha.cdcsvparser.ui.display.transactionIcon
@@ -81,6 +82,21 @@ class RowModelsTest {
         assertEquals(TransactionIcon.DEBIT, transactionIcon("crypto_wallet_swap_debited"))
         assertEquals(TransactionIcon.OTHER, transactionIcon("STRING"))
         assertEquals(TransactionIcon.OTHER, transactionIcon(null))
+    }
+
+    @Test
+    fun sortWalletRowsAmountKeySortsByEurValue() {
+        // 1 BTC worth of EUR vs. a million SHIB worth of cents: the two sort
+        // keys must disagree, in line with the UI labels "amount €" and
+        // "amount Asset".
+        val btc = WalletRow(1, "BTC", "1 BTC", "100.00 €", "+10 %", ProfitTrend.POSITIVE,
+            5, amountValue = 1.0, assetValue = 100.0, percentProfit = 110.0, isOutside = false)
+        val shib = WalletRow(2, "SHIB", "1000000 SHIB", "5.10 €", "+5 %", ProfitTrend.POSITIVE,
+            5, amountValue = 1_000_000.0, assetValue = 5.1, percentProfit = 105.0, isOutside = false)
+        val byEur = sortWalletRows(listOf(shib, btc), WalletSortKey.AMOUNT, false)
+        assertEquals("BTC", byEur.first().name) // 100 € > 5.10 € although 1 < 1,000,000 units
+        val byUnits = sortWalletRows(listOf(shib, btc), WalletSortKey.ASSET_VALUE, false)
+        assertEquals("SHIB", byUnits.first().name) // 1,000,000 units > 1 unit
     }
 
     @Test

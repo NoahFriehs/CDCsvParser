@@ -16,6 +16,7 @@ object AppTypeIdentifier {
         when {
             input[0].contains(AppTypeIdentifierCdCsv) -> return AppType.CdCsvParser
             input[0].contains(curveTxString) -> return AppType.CurveCard
+            input[0].contains(blockPitString) -> return AppType.BlockPit
         }
 
         return AppType.Default
@@ -26,5 +27,9 @@ object AppTypeIdentifier {
 
     private const val curveTxString =
         "Date (YYYY-MM-DD as UTC),Merchant,Txn Amount (Funding Card),Txn Currency (Funding Card),Txn Amount (Foreign Spend),Txn Currency (Foreign Spend),Card Name,Card Last 4 Digits,Type,Category,Notes"
+
+    // BlockPit exports are `;`-separated and start with "Date (UTC)";
+    // keep in sync with BLOCKPIT_HEADER in TransactionParser.cpp.
+    private const val blockPitString = "Date (UTC)"
 
 }

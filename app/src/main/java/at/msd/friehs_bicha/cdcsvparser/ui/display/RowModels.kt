@@ -128,9 +128,11 @@ fun sortWalletRows(
     ascending: Boolean
 ): List<WalletRow> {
     if (list.size <= 1) return list
+    // Must match the UI labels: "amount €" sorts the EUR value, "amount
+    // Asset" the raw amount in the wallet's own unit.
     val byValue: (WalletRow) -> Double = when (key) {
-        WalletSortKey.AMOUNT -> { it -> it.amountValue }
-        WalletSortKey.ASSET_VALUE -> { it -> it.assetValue }
+        WalletSortKey.AMOUNT -> { it -> it.assetValue }
+        WalletSortKey.ASSET_VALUE -> { it -> it.amountValue }
         WalletSortKey.PERCENT -> { it -> it.percentProfit }
         WalletSortKey.TRANSACTIONS -> { it -> it.transactionCount.toDouble() }
     }

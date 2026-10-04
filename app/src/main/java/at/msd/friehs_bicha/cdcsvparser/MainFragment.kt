@@ -92,6 +92,9 @@ class MainFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        // The parsed cards are strings from the last price pass; refresh them
+        // in the background once the 5-minute cache TTL started to expire.
+        CoreService.refreshPricesIfStale()
         updateFiles()
         val view = view ?: return
         val dropdown = view.findViewById<MaterialAutoCompleteTextView>(R.id.spinner_history)
@@ -133,7 +136,9 @@ class MainFragment : Fragment() {
             try {
                 filename = dateFormat.format(sdf.parse(filename))
             } catch (e: ParseException) {
-                FileLog.e("MainFragment", "setSpinner: Date parse error: $e")
+                // No timestamp in the file name (e.g. a renamed or imported
+                // file): show the raw name instead of an error.
+                FileLog.d("MainFragment", "History file without timestamp name, using raw name: $filename")
             }
             fileNames.add(filename)
         }
@@ -174,9 +179,12 @@ class MainFragment : Fragment() {
             val selected = dropdown.text.toString()
             val position = names.indexOf(selected).coerceAtLeast(0)
             val selectedFile = files!![position]
-            val list = FileUtil.getFileContent(selectedFile)
             Benchmarker.start()
-            CoreService.startServiceWithData(list, PreferenceHelper.getSelectedType(requireContext()).ordinal)
+            CoreService.startServiceWithData(
+                null,
+                PreferenceHelper.getSelectedType(requireContext()).ordinal,
+                selectedFile.name
+            )
             callParseView()
         } catch (e: Exception) {
             hideProgressDialog()
@@ -220,8 +228,9 @@ class MainFragment : Fragment() {
         }
         Benchmarker.start()
         CoreService.startServiceWithData(
-            list,
-            PreferenceHelper.getSelectedType(requireContext()).ordinal
+            null,
+            PreferenceHelper.getSelectedType(requireContext()).ordinal,
+            filename
         )
         callParseView()
     }

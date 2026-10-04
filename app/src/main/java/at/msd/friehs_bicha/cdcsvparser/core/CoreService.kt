@@ -24,6 +24,7 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.DBTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionData
+import at.msd.friehs_bicha.cdcsvparser.util.FileUtil
 import at.msd.friehs_bicha.cdcsvparser.util.FirebaseUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
@@ -51,6 +52,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.Executors
@@ -65,6 +67,7 @@ class CoreService : Service() {
     }
 
     override fun onDestroy() {
+        CoreService.service = null
         serviceScope.cancel()
         CoreService.shutdownCoreThread()
         super.onDestroy()
@@ -72,6 +75,7 @@ class CoreService : Service() {
 
     @OptIn(DelicateCoroutinesApi::class)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        CoreService.service = this
         if (intent == null) {
             FileLog.w(TAG, "Initialization failed. Intent is null.")
             return super.onStartCommand(null, flags, startId)
@@ -167,15 +171,38 @@ class CoreService : Service() {
      * Loads the data from Firebase
      */
     private fun handleStartServiceWithData(intent: Intent) {
-        val data = intent.getStringArrayListExtra("data")
         val mode = intent.getIntExtra("mode", 0)
-        if (data == null) {
-            FileLog.e(TAG, "Initialization with data failed. Data is null.")
+        // Large CSVs (e.g. BlockPit exports) do not fit into a binder parcel,
+        // so the caller passes the file name (the file always exists in
+        // private app storage) and we read the lines here.
+        val data = when {
+            intent.getStringExtra("file") != null -> {
+                val fileName = intent.getStringExtra("file")!!
+                try {
+                    FileUtil.getFileContent(File(filesDir, fileName))
+                } catch (e: IOException) {
+                    FileLog.e(TAG, "Reading $fileName from storage failed: $e")
+                    errorCounter.postValue((errorCounter.value ?: 0) + 1)
+                    return
+                }
+            }
+
+            intent.getStringArrayListExtra("data") != null ->
+                intent.getStringArrayListExtra("data")!!
+
+            else -> {
+                FileLog.e(TAG, "Initialization with data failed. Data is null.")
+                return
+            }
+        }
+        val appType = AppType.safeFromOrdinal(mode)
+        if (appType == AppType.BlockPit && !(isCoreInitialized && useCpp)) {
+            FileLog.e(TAG, "BlockPit files can only be parsed with the C++ core.")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
             return
         }
         when (isCoreInitialized && useCpp) {
             true -> {
-                val appType = AppType.safeFromOrdinal(mode)
                 val coreMode = CoreModeMapper.toCoreMode(appType)
                 if (coreMode == null) {
                     FileLog.e(TAG, "AppType $appType is not supported by the C++ core.")
@@ -204,7 +231,7 @@ class CoreService : Service() {
                     isRunning = true
                     isInitialized = true
                 } else {
-                    appModel = AppModel(data, AppType.safeFromOrdinal(mode), false)
+                    appModel = AppModel(data, appType, false)
                     AppModelManager.setInstance(appModel!!)
                 }
                 isInitialized = true
@@ -969,6 +996,27 @@ class CoreService : Service() {
         }
 
         @Volatile var isCoreInitialized = false
+
+        /** The running service instance (set from [CoreService.onStartCommand]). */
+        @Volatile private var service: CoreService? = null
+
+        /**
+         * Wallet/transaction rows read prices from the 5-minute-TTL cache on
+         * the main thread. Once that TTL gap starts, the rows fall back to
+         * stale values; this re-runs the cache-aware bulk price pass on the
+         * core thread so fresh values re-appear without the user re-parsing.
+         * (The provider-side cooldowns make this a fast-fail, not a storm.)
+         */
+        fun refreshPricesIfStale() {
+            val assetValues = AssetValue.getInstance()
+            if (assetValues.hasFreshPrices()) return
+            // An empty cache means nothing was parsed yet in this session;
+            // there is no core state to re-price.
+            if (assetValues.cacheKeys().isEmpty()) return
+            val running = service ?: return
+            FileLog.d(TAG, "Price cache stale; re-running the bulk price pass.")
+            coreExecutor.submit { running.provideDataToActivityFromCppCore() }
+        }
         @Volatile var isInitialized = false
         @Volatile var useCpp = true
 
@@ -1035,12 +1083,23 @@ class CoreService : Service() {
         }
 
         /**
-         * Starts the CoreService with the data
+         * Starts the CoreService with the data.
+         *
+         * If [fileName] (a file in the app's private storage) is given it is
+         * passed instead of the lines: binder transactions are size-capped
+         * (~512 KB), which large CSV exports exceed.
          */
-        fun startServiceWithData(data: ArrayList<String>, mode: Int) {
+        fun startServiceWithData(data: ArrayList<String>?, mode: Int, fileName: String? = null) {
+            check(data != null || fileName != null) {
+                "startServiceWithData needs data or a file name"
+            }
             val intent = Intent(applicationContext, CoreService::class.java)
             intent.action = ACTION_START_SERVICE_WITH_DATA
-            intent.putExtra("data", data)
+            val file = fileName
+            when {
+                file != null -> intent.putExtra("file", file)
+                else -> intent.putExtra("data", data!!)
+            }
             intent.putExtra("mode", mode)
             applicationContext.startService(intent)
         }

@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
+import android.os.Looper
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import java.io.Serializable
 import java.util.concurrent.ExecutorService
@@ -61,6 +62,21 @@ class AssetValue private constructor() : Serializable {
             return cache.checkCache(symbol_)
         }
 
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            // Row-building on the UI thread must never hit the network (a
+            // cache-cold file with many symbols would be one API call per
+            // row). The price comes from the bulk pass or later checks; in
+            // the TTL gap between passes, the stale value is shown instead
+            // of 0.0 (a 0.0 price reads as a -100% position).
+            val stale = cache.getStale(symbol_)
+            if (stale != null) {
+                FileLog.d("AssetValue", "No fresh price for $symbol_ on the main thread; using stale $stale.")
+                return stale
+            }
+            FileLog.d("AssetValue", "No price known for $symbol_ on the main thread; using 0.0.")
+            return 0.0
+        }
+
         if (!isConnected) {
             FileLog.e("AssetValue", "No internet connection")
             isRunning = false
@@ -94,6 +110,15 @@ class AssetValue private constructor() : Serializable {
     }
 
     /**
+     * @return true if the price cache still holds at least one entry within
+     * the 5-minute TTL (i.e. per-row price lookups return fresh values)
+     */
+    fun hasFreshPrices(): Boolean = !cache.isStale()
+
+    /** @return the symbols currently in the price cache (may be stale) */
+    fun cacheKeys(): List<String> = cache.keys()
+
+    /**
      * Returns the prices of the given symbols on the calling thread.
      *
      * Fresh cache entries are served directly; everything else is resolved
@@ -119,7 +144,12 @@ class AssetValue private constructor() : Serializable {
             return prices
         }
         val bulk = priceProvider.getPricesBulk(missing.toList())
-        bulk.forEach { (symbol, price) ->
+        // Cache every requested symbol: ones without a price are stored as
+        // 0.0 so per-wallet lookups afterwards are pure cache hits instead
+        // of one network call per row (see the main-thread guard in
+        // [getPrice]).
+        missing.forEach { symbol ->
+            val price = bulk[symbol] ?: 0.0
             cache.addPrice(symbol, price)
             prices[symbol] = price
         }
