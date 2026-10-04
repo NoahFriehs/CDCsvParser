@@ -136,7 +136,10 @@ jobs:
         with:
           api-level: 35
           arch: x86_64
-          profile: Medium Phone
+          # No `profile`: the newer avdmanager on ubuntu-latest dropped the
+          # classic device profiles ("Medium Phone" no longer resolves, which
+          # broke AVD creation). The tests are text-based (UiAutomator
+          # By.text, no coordinates), so the auto-selected hardware is fine.
           disable-animations: true
           emulator-options: -no-snapshot -no-window -noaudio
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon
