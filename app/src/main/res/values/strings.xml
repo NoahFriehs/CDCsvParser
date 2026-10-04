@@ -17,7 +17,15 @@
     <string name="history_delete_title">Delete file?</string>
     <string name="history_delete_message">The file is removed from this device and cannot be restored.</string>
     <string name="history_deleted">File deleted</string>
-    <string name="spend_over_time">Spend over time (monthly)</string>
+    <string name="overview_charts">Charts</string>
+    <string name="series_spent">Spent</string>
+    <string name="series_portfolio_value">Portfolio value</string>
+    <string name="series_bonus">Rewards</string>
+    <string name="timeframe_week">Week</string>
+    <string name="timeframe_month">Month</string>
+    <string name="timeframe_quarter">Quarter</string>
+    <string name="timeframe_year">Year</string>
+    <string name="chart_no_data">No data for this selection.</string>
     <string name="type_purchase">Purchase</string>
     <string name="type_income">Income</string>
     <string name="type_debit">Withdrawal</string>

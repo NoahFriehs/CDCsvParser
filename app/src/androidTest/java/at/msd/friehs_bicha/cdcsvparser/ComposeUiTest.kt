@@ -163,7 +163,7 @@ class ComposeUiTest {
         // in well under a second and the indicator is never observed.
         // (The spend-chart section only appears once the map was posted.)
         waitFor(
-            By.text(str(R.string.spend_over_time)),
+            By.text(str(R.string.overview_charts)),
             "parse overview not posted",
             180_000,
         )
@@ -188,7 +188,9 @@ class ComposeUiTest {
             "price attribution not posted",
             30_000,
         )
-        waitText(str(R.string.spend_over_time))
+        waitText(str(R.string.overview_charts))
+        // The G35 chart panel: the default series selection is visible.
+        waitText(str(R.string.series_spent))
     }
 
     @Test

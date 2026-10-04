@@ -17,7 +17,15 @@
     <string name="history_delete_title">Datei löschen?</string>
     <string name="history_delete_message">Die Datei wird von diesem Gerät gelöscht und kann nicht wiederhergestellt werden.</string>
     <string name="history_deleted">Datei gelöscht</string>
-    <string name="spend_over_time">Ausgaben im Zeitverlauf (monatlich)</string>
+    <string name="overview_charts">Diagramme</string>
+    <string name="series_spent">Ausgaben</string>
+    <string name="series_portfolio_value">Vermögen</string>
+    <string name="series_bonus">Belohnungen</string>
+    <string name="timeframe_week">Woche</string>
+    <string name="timeframe_month">Monat</string>
+    <string name="timeframe_quarter">Quartal</string>
+    <string name="timeframe_year">Jahr</string>
+    <string name="chart_no_data">Keine Daten für diese Auswahl.</string>
     <string name="type_purchase">Kauf</string>
     <string name="type_income">Einnahme</string>
     <string name="type_debit">Auszahlung</string>

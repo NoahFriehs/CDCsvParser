@@ -15,9 +15,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,16 +45,14 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import androidx.compose.ui.text.LinkAnnotation
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import at.msd.friehs_bicha.cdcsvparser.R
 
 /**
- * Parse/overview screen (Compose, P3.1). Metric cards + the monthly spend
- * line chart (MPAndroidChart via AndroidView, decision #4 - a custom Compose
- * chart only if everything works). All LiveData observation stays in the
- * fragment, which pushes plain values down.
+ * Parse/overview screen (Compose, P3.1). Metric cards + the chart panel
+ * (G35: selectable series + time frame, data from the core's daily ledger
+ * series) drawn with MPAndroidChart via AndroidView (decision #4 - a custom
+ * Compose chart only if everything works). All LiveData observation stays in
+ * the fragment, which pushes plain values down.
  */
 @Composable
 fun ParseScreen(
@@ -65,8 +67,11 @@ fun ParseScreen(
     profitLossColor: Color,
     /** Attribution footer stays up unless the core explicitly hid it (no crypto). */
     attributionVisible: Boolean,
-    /** Raw "YYYY-MM;amount" series of the money spent over time. */
-    spendSeries: List<String>,
+    /** Raw "series;YYYY-MM-DD;value" daily lines from the core (all 4 series). */
+    dailySeries: List<String>,
+    /** The asset cards show the offline placeholder -> the price-based
+     *  series have no meaningful values. */
+    noInternet: Boolean,
     onFilterClick: () -> Unit,
     onAllTransactionsClick: () -> Unit,
 ) {
@@ -155,14 +160,9 @@ fun ParseScreen(
                 Text(stringResource(R.string.all_transactions))
             }
 
-            if (spendSeries.isNotEmpty()) {
+            if (dailySeries.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
-                Text(
-                    text = stringResource(R.string.spend_over_time),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Spacer(Modifier.height(8.dp))
-                SpendLineChart(series = spendSeries)
+                ChartPanel(dailySeries = dailySeries, noInternet = noInternet)
             }
 
             if (attributionVisible) {
@@ -257,23 +257,103 @@ private fun attributionAnnotatedString(context: android.content.Context): Annota
     }
 }
 
-/** MPAndroidChart line chart for the monthly money-spent series. */
+/**
+ * The G35 chart panel: series picker + time-frame picker (both M3
+ * segmented rows) over the core's daily ledger series, bucketed in
+ * [ChartData.kt]. Selection state is local UI state; switching is
+ * network-free and takes the already-loaded daily points.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SpendLineChart(series: List<String>) {
-    val color = MaterialTheme.colorScheme.primary
-    val data = remember(series, color) {
-        val months = ArrayList<String>(series.size)
-        val entries = ArrayList<Entry>(series.size)
-        series.forEachIndexed { index, raw ->
-            val parts = raw.split(";")
-            if (parts.size != 2) return@forEachIndexed
-            val value = parts[1].toDoubleOrNull() ?: return@forEachIndexed
-            months.add(parts[0])
-            entries.add(Entry(index.toFloat(), value.toFloat()))
-        }
-        Triple(months, entries, color)
+private fun ChartPanel(dailySeries: List<String>, noInternet: Boolean) {
+    val seriesData = remember(dailySeries) { parseDailySeries(dailySeries) }
+    var selectedSeries by remember { mutableStateOf(ChartSeries.SPENT) }
+    var timeFrame by remember { mutableStateOf(TimeFrame.MONTH) }
+    val points = remember(seriesData, selectedSeries, timeFrame) {
+        bucketize(
+            seriesData[selectedSeries].orEmpty(),
+            timeFrame,
+            selectedSeries.isFlow,
+        )
     }
-    if (data.second.isEmpty()) return
+
+    Column {
+        Text(
+            text = stringResource(R.string.overview_charts),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Spacer(Modifier.height(8.dp))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            ChartSeries.entries.forEachIndexed { index, series ->
+                SegmentedButton(
+                    selected = selectedSeries == series,
+                    onClick = { selectedSeries = series },
+                    shape = SegmentedButtonDefaults.itemShape(index, ChartSeries.entries.size),
+                ) {
+                    Text(stringResource(series.labelRes))
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            TimeFrame.entries.forEachIndexed { index, frame ->
+                SegmentedButton(
+                    selected = timeFrame == frame,
+                    onClick = { timeFrame = frame },
+                    shape = SegmentedButtonDefaults.itemShape(index, TimeFrame.entries.size),
+                ) {
+                    Text(stringResource(frame.labelRes))
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        when {
+            noInternet && !selectedSeries.isFlow -> Text(
+                text = stringResource(R.string.no_internet_connection),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .padding(vertical = 48.dp),
+            )
+
+            points.isEmpty() -> Text(
+                text = stringResource(R.string.chart_no_data),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .padding(vertical = 48.dp),
+            )
+
+            else -> ChartLine(points = points, timeFrame = timeFrame)
+        }
+    }
+}
+
+/** String resource for a series button (P/L reuses the card label). */
+private val ChartSeries.labelRes: Int
+    get() = when (this) {
+        ChartSeries.SPENT -> R.string.series_spent
+        ChartSeries.VALUE -> R.string.series_portfolio_value
+        ChartSeries.PL -> R.string.profit_loss
+        ChartSeries.BONUS -> R.string.series_bonus
+    }
+
+private val TimeFrame.labelRes: Int
+    get() = when (this) {
+        TimeFrame.WEEK -> R.string.timeframe_week
+        TimeFrame.MONTH -> R.string.timeframe_month
+        TimeFrame.QUARTER -> R.string.timeframe_quarter
+        TimeFrame.YEAR -> R.string.timeframe_year
+    }
+
+/** MPAndroidChart line chart for one bucketed series. */
+@Composable
+private fun ChartLine(points: List<ChartPoint>, timeFrame: TimeFrame) {
+    val color = MaterialTheme.colorScheme.primary
 
     AndroidView(
         factory = { context ->
@@ -285,22 +365,22 @@ private fun SpendLineChart(series: List<String>) {
                 xAxis.labelCount = 8
                 xAxis.valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
-                        val index = value.toInt()
-                        val key = data.first.getOrNull(index) ?: return ""
-                        // "YYYY-MM" -> e.g. "Mär 25" (the app locale applies)
-                        return runCatching {
-                            val parts = key.split("-").map { it.toInt() }
-                            LocalDate.of(parts[0], parts[1], 1)
-                                .format(DateTimeFormatter.ofPattern("MMM yy", Locale.getDefault()))
-                        }.getOrDefault(key)
+                        // The chart may ask beyond the data range when zoomed.
+                        val point = points.getOrNull(value.toInt()) ?: return ""
+                        return bucketLabel(point.key, timeFrame)
                     }
                 }
                 axisRight.isEnabled = false
             }
         },
         update = { chart ->
-            val argb = toArgbInt(data.third)
-            val dataset = LineDataSet(data.second, "").apply {
+            val argb = toArgbInt(color)
+            val entries = ArrayList<Entry>(points.size).apply {
+                points.forEachIndexed { index, point ->
+                    add(Entry(index.toFloat(), point.value.toFloat()))
+                }
+            }
+            val dataset = LineDataSet(entries, "").apply {
                 setDrawValues(false)
                 lineWidth = 2f
                 circleRadius = 3f

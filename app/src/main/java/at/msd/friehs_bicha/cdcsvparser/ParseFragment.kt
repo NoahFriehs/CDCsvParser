@@ -47,7 +47,8 @@ class ParseFragment : Fragment() {
     /** Core map keys (old layout ids) -> display value; null = hidden. */
     private val _values = mutableStateMapOf<String, String?>()
     private val _profitLossColor = mutableStateOf(androidx.compose.ui.graphics.Color.Unspecified)
-    private val _spendSeries = mutableStateOf<List<String>>(emptyList())
+    private val _dailySeries = mutableStateOf<List<String>>(emptyList())
+    private val _noInternet = mutableStateOf(false)
     private val _attributionVisible = mutableStateOf(true)
 
     override fun onCreateView(
@@ -63,7 +64,8 @@ class ParseFragment : Fragment() {
                         values = _values.toMap(),
                         profitLossColor = _profitLossColor.value,
                         attributionVisible = _attributionVisible.value,
-                        spendSeries = _spendSeries.value,
+                        dailySeries = _dailySeries.value,
+                        noInternet = _noInternet.value,
                         onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },
                         onAllTransactionsClick = { findNavController().navigate(R.id.transactionsFragment) },
                     )
@@ -92,7 +94,7 @@ class ParseFragment : Fragment() {
             Benchmarker.stop()
             fillFromMap(it)
             FileLog.d(TAG, "parsedDataLiveData changed")
-            loadSpendSeries()
+            loadDailySeries()
             _isParsing.value = false
             if (CoreService.lastFailedLines > 0) {
                 Snackbar.make(
@@ -124,6 +126,9 @@ class ParseFragment : Fragment() {
                 _attributionVisible.value = value != null
             }
             if (value == null) return@forEach
+            if (key == R.id.assets_valueP.toString() && value == "no internet connection") {
+                _noInternet.value = true
+            }
             _values[key] = value
             if (key == R.id.profit_loss_value.toString()) {
                 _profitLossColor.value =
@@ -143,9 +148,9 @@ class ParseFragment : Fragment() {
         findNavController().popBackStack()
     }
 
-    private fun loadSpendSeries() {
+    private fun loadDailySeries() {
         viewLifecycleOwner.lifecycleScope.launch {
-            _spendSeries.value = CoreService.moneySpentSeries()
+            _dailySeries.value = CoreService.dailySeries()
         }
     }
 
