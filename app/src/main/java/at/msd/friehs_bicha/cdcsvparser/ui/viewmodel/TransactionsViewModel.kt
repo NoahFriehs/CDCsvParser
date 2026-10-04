@@ -5,6 +5,7 @@ import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
+import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.transactionRow
 import kotlinx.coroutines.flow.Flow
@@ -42,16 +43,20 @@ class TransactionsViewModel : ViewModel() {
     /** Currency filter for the chip row; null means "all". */
     private val assetFilter = MutableStateFlow<String?>(null)
 
-    /** The rows matching the current search query and asset chip. */
+    /** Type-family filter for the type chip row; empty means "all". */
+    private val typeFilter = MutableStateFlow<Set<TransactionIcon>>(emptySet())
+
+    /** The rows matching the current search query, asset chip and type chips. */
     val visibleRows: StateFlow<List<TransactionRow>> =
-        combine(rows, searchQuery, assetFilter) { list, query, asset ->
+        combine(rows, searchQuery, assetFilter, typeFilter) { list, query, asset, types ->
             val q = query.trim().lowercase()
             list.filter { row ->
                 val matchesQuery = q.isEmpty() ||
                     row.description.lowercase().contains(q) ||
                     row.currency.lowercase().contains(q)
                 val matchesAsset = asset == null || row.currency == asset
-                matchesQuery && matchesAsset
+                val matchesType = types.isEmpty() || row.icon in types
+                matchesQuery && matchesAsset && matchesType
             }
         }
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -62,6 +67,10 @@ class TransactionsViewModel : ViewModel() {
 
     fun onAssetFilterChanged(currency: String?) {
         assetFilter.value = currency
+    }
+
+    fun onTypeFilterChanged(types: Set<TransactionIcon>) {
+        typeFilter.value = types
     }
 
     /** Rows of the transaction list for whatever wallet the [selectedWalletId] flow points to. */

@@ -18,6 +18,10 @@
     <string name="history_delete_message">The file is removed from this device and cannot be restored.</string>
     <string name="history_deleted">File deleted</string>
     <string name="spend_over_time">Spend over time (monthly)</string>
+    <string name="type_purchase">Purchase</string>
+    <string name="type_income">Income</string>
+    <string name="type_debit">Withdrawal</string>
+    <string name="type_other">Other</string>
     <string name="delete">Delete</string>
     <string name="coinGeckoAttribution">All prices provided by \n<a href="https://min-api.cryptocompare.com/">CryptoCompare API</a></string>
     <string name="settings">Settings</string>

@@ -50,6 +50,26 @@
             app:singleSelection="true" />
     </HorizontalScrollView>
 
+    <HorizontalScrollView
+        android:id="@+id/type_chip_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/basic_start_end_margin"
+        android:layout_marginEnd="@dimen/basic_start_end_margin"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/chip_scroll"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/type_chip_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/main_small_margin_bottom"
+            android:singleLine="true"
+            app:singleSelection="false" />
+    </HorizontalScrollView>
+
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
@@ -58,6 +78,6 @@
         android:paddingEnd="@dimen/basic_start_end_margin"
         android:paddingTop="@dimen/basic_start_end_margin"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/chip_scroll" />
+        app:layout_constraintTop_toBottomOf="@id/type_chip_scroll" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

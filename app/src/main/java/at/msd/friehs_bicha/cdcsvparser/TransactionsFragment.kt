@@ -14,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.TransactionFragment
 import at.msd.friehs_bicha.cdcsvparser.ui.viewmodel.TransactionsViewModel
@@ -51,6 +52,25 @@ class TransactionsFragment : Fragment() {
         })
 
         wireChips(view.findViewById(R.id.chip_group))
+
+        // Type chips (multi-select): built in code because the XML attribute
+        // for checkable chips is not available; each tag carries the icon.
+        val typeChipGroup = view.findViewById<ChipGroup>(R.id.type_chip_group)
+        for (type in TransactionIcon.entries) {
+            typeChipGroup.addView(
+                Chip(requireContext()).apply {
+                    text = getString(TYPE_STRING.getValue(type))
+                    isCheckable = true
+                    tag = type
+                }
+            )
+        }
+        typeChipGroup.setOnCheckedStateChangeListener { group, checkedIds ->
+            val types = checkedIds
+                .mapNotNull { group.findViewById<Chip>(it)?.tag as? TransactionIcon }
+                .toSet()
+            viewModel.onTypeFilterChanged(types)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -95,5 +115,12 @@ class TransactionsFragment : Fragment() {
 
     companion object {
         private const val MAX_CHIPS = 12
+
+        private val TYPE_STRING = mapOf(
+            TransactionIcon.PURCHASE to R.string.type_purchase,
+            TransactionIcon.CREDIT to R.string.type_income,
+            TransactionIcon.DEBIT to R.string.type_debit,
+            TransactionIcon.OTHER to R.string.type_other,
+        )
     }
 }
