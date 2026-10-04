@@ -140,6 +140,10 @@ jobs:
           # classic device profiles ("Medium Phone" no longer resolves, which
           # broke AVD creation). The tests are text-based (UiAutomator
           # By.text, no coordinates), so the auto-selected hardware is fine.
+          # -gpu swiftshader_indirect: the GHA runners have no host GPU, and
+          # the default (auto) backend died in the first run with
+          # "Failed to find ColorBuffer" / "Failed to bind to texture" -
+          # forcing software rendering.
           disable-animations: true
-          emulator-options: -no-snapshot -no-window -noaudio
+          emulator-options: -no-snapshot -no-window -noaudio -gpu swiftshader_indirect
           script: ./gradlew :app:connectedDebugAndroidTest --no-daemon
