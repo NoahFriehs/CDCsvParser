@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brand glyph as a standalone vector (violet circle + growth bars + trend
+  line). The launcher's adaptive icon can't be loaded by Compose's
+  painterResource (VectorDrawables/rasters only), so in-app Compose screens
+  use this; it mirrors the adaptive icon layers 1:1.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#5B21B6"
+        android:pathData="M54,4A50,50 0 1 1 54,104A50,50 0 1 1 54,4Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,58H38A4,4 0 0 1 42,62V70A4,4 0 0 1 38,74H36A4,4 0 0 1 32,70V62A4,4 0 0 1 36,58Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M53,48H55A4,4 0 0 1 59,52V70A4,4 0 0 1 55,74H53A4,4 0 0 1 49,70V52A4,4 0 0 1 53,48Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M70,38H72A4,4 0 0 1 76,42V70A4,4 0 0 1 72,74H70A4,4 0 0 1 66,70V42A4,4 0 0 1 70,38Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M34,50L54,38L74,30"
+        android:strokeWidth="5"
+        android:strokeColor="#CFF3EC"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

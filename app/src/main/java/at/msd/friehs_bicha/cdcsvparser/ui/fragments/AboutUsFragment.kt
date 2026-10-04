@@ -5,12 +5,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
-import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.AboutScreen
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 
 /**
- * About screen.
+ * About screen (Compose surface, P3.1).
  */
 class AboutUsFragment : Fragment() {
 
@@ -23,23 +24,24 @@ class AboutUsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.activity_about_us, container, false)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        view.findViewById<TextView>(R.id.tv_mailString).setOnClickListener {
-            val emailIntent = createEmailIntent()
-            emailIntent.resolveActivity(requireContext().packageManager)?.let {
-                startActivity(Intent.createChooser(emailIntent, null))
+        return ComposeView(requireContext()).apply {
+            setContent {
+                CdcsvTheme {
+                    AboutScreen(onMailClick = { sendMail() })
+                }
             }
         }
     }
 
-    private fun createEmailIntent(): Intent {
-        return Intent(Intent.ACTION_SEND).apply {
+    private fun sendMail() {
+        if (!isAdded) return
+        val context = requireContext()
+        val emailIntent = Intent(Intent.ACTION_SEND).apply {
             type = "message/rfc822"
             putExtra(Intent.EXTRA_EMAIL, arrayOf(EMAIL_ADDRESS))
+        }
+        emailIntent.resolveActivity(context.packageManager)?.let {
+            startActivity(Intent.createChooser(emailIntent, null))
         }
     }
 }

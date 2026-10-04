@@ -180,14 +180,32 @@ class AssetValue private constructor() : Serializable {
      */
     fun reloadCache(): Boolean {
         executor.execute {
-            val symbols = cache.keys()
-            if (symbols.isEmpty()) return@execute
-            val bulk = priceProvider.getPricesBulk(symbols)
-            bulk.forEach { (symbol, price) ->
-                if (price != 0.0) cache.addPrice(symbol, price)
-            }
+            reloadCacheSync()
         }
         return isConnected && isRunning
+    }
+
+    /**
+     * Same as [reloadCache] but runs the bulk call on the CALLING thread
+     * and reports whether it actually refreshed anything. Used by the
+     * WorkManager price-refresh worker (a Worker must observe its own
+     * result; [reloadCache]'s fire-and-forget executor would outlive the
+     * worker's lifetime).
+     */
+    fun reloadCacheSync(): Boolean {
+        val symbols = cache.keys()
+        if (symbols.isEmpty()) return false
+        if (!isConnected) {
+            FileLog.e("AssetValue", "No internet connection")
+            isRunning = false
+            return false
+        }
+        val bulk = priceProvider.getPricesBulk(symbols)
+        bulk.forEach { (symbol, price) ->
+            if (price != 0.0) cache.addPrice(symbol, price)
+        }
+        isRunning = bulk.isNotEmpty()
+        return bulk.isNotEmpty()
     }
 
     /**

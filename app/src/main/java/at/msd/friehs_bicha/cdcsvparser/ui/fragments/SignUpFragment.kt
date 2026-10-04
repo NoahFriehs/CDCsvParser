@@ -1,55 +1,57 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.fragments
 
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.SignUpScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 
+/**
+ * Sign-up screen (Compose surface, P3.1). Validation + the Firebase
+ * create-user call stay here.
+ */
 class SignUpFragment : Fragment() {
 
-    private lateinit var auth: FirebaseAuth
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val _errorMessage = mutableStateOf<String?>(null)
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.activity_sign_up, container, false)
+        return ComposeView(requireContext()).apply {
+            setContent {
+                CdcsvTheme {
+                    SignUpScreen(
+                        onSignup = { email, password -> signUp(email, password) },
+                        errorMessage = _errorMessage.value,
+                    )
+                }
+            }
+        }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        auth = FirebaseAuth.getInstance()
+    private fun signUp(email: String, password: String) {
+        when {
+            email.isEmpty() -> _errorMessage.value =
+                getString(R.string.error_signup_email_empty)
 
-        view.findViewById<Button>(R.id.btn_signup).setOnClickListener {
-            val email = view.findViewById<EditText>(R.id.et_email).text.toString()
-            val password = view.findViewById<EditText>(R.id.et_password).text.toString()
-            if (TextUtils.isEmpty(email)) {
-                view.findViewById<TextView>(R.id.tv_error_message).text =
-                    getString(R.string.error_signup_email_empty)
-                return@setOnClickListener
-            }
-            if (TextUtils.isEmpty(password)) {
-                view.findViewById<TextView>(R.id.tv_error_message).text =
-                    getString(R.string.error_signup_pw_empty)
-                return@setOnClickListener
-            }
-            if (password.length < 6) {
-                view.findViewById<TextView>(R.id.tv_error_message).text =
-                    getString(R.string.error_signup_pw_to_short)
-                return@setOnClickListener
-            }
+            password.isEmpty() -> _errorMessage.value =
+                getString(R.string.error_signup_pw_empty)
 
-            auth.createUserWithEmailAndPassword(email, password)
+            password.length < 6 -> _errorMessage.value =
+                getString(R.string.error_signup_pw_to_short)
+
+            else -> auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         updateUI(auth.currentUser, "")
@@ -65,8 +67,7 @@ class SignUpFragment : Fragment() {
             if (!isAdded) return
             findNavController().popBackStack(R.id.mainFragment, false)
         } else {
-            view?.findViewById<TextView>(R.id.tv_error_message)?.text =
-                getString(R.string.error_signup_failed) + errorText
+            _errorMessage.value = getString(R.string.error_signup_failed) + errorText
         }
     }
 }
