@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CDCsvParser</string>
-    <string name="welcome_message">Wilkommen zu CDCsvParser</string>
+    <string name="welcome_message">Willkommen zu CDCsvParser</string>
     <string name="upload_file">Datei einlesen</string>
     <string name="history_text">oder wähle einen Upload aus dem Verlauf:</string>
     <string name="history">Upload Verlauf</string>
@@ -55,10 +55,10 @@
     <string name="yes">Ja</string>
     <string name="no">Nein</string>
     <string name="deleteQuestion">Sind Sie sicher, dass Sie Ihr Konto löschen möchten?</string>
-    <string name="load_latest_from_database">Letzten stand Laden</string>
+    <string name="load_latest_from_database">Letzten Stand laden</string>
     <string name="no_history">Kein Verlauf</string>
-    <string name="permission_needed">Erlaubniss erforderlich</string>
-    <string name="permission_needed_text">Erlaubnics erforderlöich um eine Datei in die App zu laden</string>
+    <string name="permission_needed">Erlaubnis erforderlich</string>
+    <string name="permission_needed_text">Erlaubnis erforderlich, um eine Datei in die App zu laden</string>
     <string name="permission_denied">Erlaubnis abgelehnt, wird aber für die Verwendung der App benötigt</string>
     <string name="filter_coin_list">Filter Liste</string>
     <string name="sort_by">sortieren nach:</string>
@@ -66,8 +66,8 @@
     <string name="sort_amount_asset">Anzahl Coins</string>
     <string name="sort_percent">Prozent</string>
     <string name="sort_transactions">Transaktionen</string>
-    <string name="sort_asc">Auf</string>
-    <string name="sort_desc">Ab</string>
+    <string name="sort_asc">Aufsteigend</string>
+    <string name="sort_desc">Absteigend</string>
     <string name="transaction_s">transaktion(en)</string>
     <string name="amounttransactions_placeholder">amountTransactions</string>
     <string name="in">in</string>
