@@ -5,6 +5,9 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.Filter
+import android.widget.Filter.FilterResults
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -65,8 +68,8 @@ class WalletViewFragment : Fragment() {
 
         val spinnerValue: MaterialAutoCompleteTextView = view.findViewById(R.id.sorting_value)
         val spinnerType: MaterialAutoCompleteTextView = view.findViewById(R.id.sorting_type)
-        spinnerValue.setSimpleItems(values.toTypedArray())
-        spinnerType.setSimpleItems(directions.toTypedArray())
+        spinnerValue.setAdapter(unfilteredAdapter(values))
+        spinnerType.setAdapter(unfilteredAdapter(directions))
         spinnerValue.setText(values.first(), false)
         spinnerType.setText(directions.first(), false)
         spinnerValue.setOnItemClickListener { _, _, _, _ -> applySort(spinnerValue, spinnerType) }
@@ -87,6 +90,36 @@ class WalletViewFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.allRows.collect { rows ->
                     updateChart(view, chart, rows)
+                }
+            }
+        }
+    }
+
+    /**
+     * Pick-one dropdowns must never filter their items: the stock
+     * [ArrayAdapter] filter is prefix-based and, after a focus round-trip
+     * (e.g. entering a wallet and coming back), opens with only the currently
+     * shown item left ("stuck" sort dropdown, bug report 2026-10-04).
+     */
+    private fun unfilteredAdapter(items: List<String>): ArrayAdapter<String> {
+        val all = items.toList()
+        return object : ArrayAdapter<String>(
+            requireContext(), android.R.layout.simple_spinner_dropdown_item, all
+        ) {
+            override fun getFilter(): Filter = object : Filter() {
+                override fun performFiltering(constraint: CharSequence?): FilterResults {
+                    val r = FilterResults()
+                    r.values = all.toTypedArray()
+                    r.count = all.size
+                    return r
+                }
+
+                override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                    clear()
+                    when (val values = results?.values) {
+                        is Array<*> -> addAll(values.map { it.toString() })
+                        is List<*> -> addAll(values.map { it.toString() })
+                    }
                 }
             }
         }
