@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.compose
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -87,7 +88,12 @@ fun MainScreen(
                 Text(stringResource(R.string.upload_file))
             }
 
-            if (newestHistoryFile != null) {
+            AnimatedVisibility(
+                visible = newestHistoryFile != null,
+                enter = Motion.sectionEnter(),
+                exit = Motion.sectionExit(),
+            ) {
+                val historyFile = newestHistoryFile.orEmpty()
                 Spacer(Modifier.height(16.dp))
                 Text(
                     text = stringResource(R.string.history_text),
@@ -99,11 +105,15 @@ fun MainScreen(
                     onClick = onHistoryClick,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(newestHistoryFile)
+                    Text(historyFile)
                 }
             }
 
-            if (isSignedIn) {
+            AnimatedVisibility(
+                visible = isSignedIn,
+                enter = Motion.sectionEnter(),
+                exit = Motion.sectionExit(),
+            ) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = onLoadFromDbClick,

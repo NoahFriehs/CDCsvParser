@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.compose
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -100,7 +101,12 @@ fun ParseScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp),
         ) {
-            if (isParsing) {
+            // MOD 2.6: the bar fades out when the parse settles.
+            AnimatedVisibility(
+                visible = isParsing,
+                enter = Motion.sectionEnter(),
+                exit = Motion.sectionExit(),
+            ) {
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary,
@@ -171,7 +177,12 @@ fun ParseScreen(
                 Text(stringResource(R.string.all_transactions))
             }
 
-            if (dailySeries.isNotEmpty()) {
+            // MOD 2.6: the panel reveals after the data posts.
+            AnimatedVisibility(
+                visible = dailySeries.isNotEmpty(),
+                enter = Motion.sectionEnter(),
+                exit = Motion.sectionExit(),
+            ) {
                 Spacer(Modifier.height(16.dp))
                 ChartPanel(
                     dailySeries = dailySeries,

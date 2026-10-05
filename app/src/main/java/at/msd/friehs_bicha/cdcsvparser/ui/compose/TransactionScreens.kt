@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -84,15 +84,19 @@ fun TransactionList(
     modifier: Modifier = Modifier,
 ) {
     val items = remember(rows) { groupTransactionItems(rows) }
+    // MOD 2.6: rows stagger in during the initial settle only.
+    val settleStartedAt = rememberListSettleStart()
     LazyColumn(
         modifier = modifier,
         state = rememberLazyListState(),
     ) {
-        items(items) { item ->
-            when (item) {
-                is TransactionListItem.MonthHeader -> MonthHeaderRow(item.month)
-                is TransactionListItem.RowItem ->
-                    TransactionRowView(item.row) { onRowClick(item.row.id) }
+        itemsIndexed(items) { index, item ->
+            StaggeredListAppear(index, settleStartedAt) {
+                when (item) {
+                    is TransactionListItem.MonthHeader -> MonthHeaderRow(item.month)
+                    is TransactionListItem.RowItem ->
+                        TransactionRowView(item.row) { onRowClick(item.row.id) }
+                }
             }
         }
     }

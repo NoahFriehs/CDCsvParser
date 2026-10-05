@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -85,53 +85,57 @@ fun HistoryDialogContent(
         )
     }
 
+    // MOD 2.6: rows stagger in during the initial settle only.
+    val settleStartedAt = rememberListSettleStart()
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-        items(files) { file ->
+        itemsIndexed(files) { index, file ->
             val state = rememberSwipeToDismissBoxState(
                 initialValue = SwipeToDismissBoxValue.Settled,
                 confirmValueChange = { it != SwipeToDismissBoxValue.Settled },
             )
-            SwipeToDismissBox(
-                state = state,
-                enableDismissFromStartToEnd = true,
-                enableDismissFromEndToStart = true,
-                backgroundContent = {
-                    BoxCenter(
-                        background = MaterialTheme.colorScheme.errorContainer,
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .clickable { onSelect(file) }
-                        .padding(vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+            StaggeredListAppear(index, settleStartedAt) {
+                SwipeToDismissBox(
+                    state = state,
+                    enableDismissFromStartToEnd = true,
+                    enableDismissFromEndToStart = true,
+                    backgroundContent = {
+                        BoxCenter(
+                            background = MaterialTheme.colorScheme.errorContainer,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 16.dp),
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable { onSelect(file) }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = displayFor(file.name, sdf, display),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            text = "${file.name} (${formatSize(file.length())})",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    IconButton(onClick = { fileToConfirmDelete = file }) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = stringResource(R.string.delete),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 16.dp),
+                        ) {
+                            Text(
+                                text = displayFor(file.name, sdf, display),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                text = "${file.name} (${formatSize(file.length())})",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(onClick = { fileToConfirmDelete = file }) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.delete),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
                 }
             }
