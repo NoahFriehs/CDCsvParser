@@ -227,9 +227,9 @@ jobs:
           # to CPU rendering; the tests are text-based and do not care.
           disable-animations: true
           emulator-options: -no-snapshot -no-window -noaudio -gpu off
-          script: |
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon ||
-              (adb -s emulator-5554 logcat -d -v time -t 4000 > adb_logcat_tail.txt || true)
+          # ONE line: the runner action truncated the previous multi-line
+          # "|| ( … )" continuation, and sh died on the dangling operator.
+          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon || (adb -s emulator-5554 logcat -d -v time -t 4000 > adb_logcat_tail.txt || true)
 
       # The step log above shows no per-test exceptions - on the last red run
       # the UI never composited ("Failed to find ColorBuffer" loop) and the
