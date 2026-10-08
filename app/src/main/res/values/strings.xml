@@ -33,7 +33,7 @@
     <string name="type_debit">Withdrawal</string>
     <string name="type_other">Other</string>
     <string name="delete">Delete</string>
-    <string name="coinGeckoAttribution">All prices provided by \n<a href="https://min-api.cryptocompare.com/">CryptoCompare API</a></string>
+    <string name="priceAttribution">Prices provided by \n<a href="https://www.bitstamp.net/">Bitstamp</a>, <a href="https://min-api.cryptocompare.com/">CryptoCompare API</a>, <a href="https://www.kraken.com/">Kraken</a> &amp; <a href="https://www.coingecko.com/">CoinGecko</a></string>
     <string name="settings">Settings</string>
     <string name="use_strict_wallet_type">Use strict wallet type(Only for card)</string>
     <string name="email">Email:</string>

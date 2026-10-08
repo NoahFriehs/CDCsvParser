@@ -467,9 +467,12 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
          * Uppercase tickers whose CoinGecko search match is known to be wrong
          * (ambiguous tickers / non-crypto assets; cf. the comments in the
          * tester's StaticPrices.h). They get a 0.0 price instead of a value
-         * from the wrong coin.
+         * from the wrong coin. The DEEP history chain must skip exactly this
+         * list, too (its plain-ticker lookups would hit same-named different
+         * coins — see the 2026-10-08 BOOST incident: 471 M tokens priced at
+         * the wrong BOOST, a 764 k€ phantom position).
          */
-        private val NO_LIVE_PRICE_SYMBOLS = setOf("XAU", "NFT", "XVVS", "BOOST", "CAT")
+        internal val NO_LIVE_PRICE_SYMBOLS = setOf("XAU", "NFT", "XVVS", "BOOST", "CAT")
         private val KEY_MAPPINGS = mapOf(
             "BTC" to "bitcoin", "ETH" to "ethereum", "DOGE" to "dogecoin",
             "CRO" to "crypto-com-chain", "EUR" to "eur", "ETHW" to "ethereum-pow-iou",

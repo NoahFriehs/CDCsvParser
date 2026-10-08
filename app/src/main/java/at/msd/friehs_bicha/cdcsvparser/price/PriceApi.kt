@@ -4,6 +4,7 @@ import at.msd.friehs_bicha.cdcsvparser.BuildConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Call
@@ -33,6 +34,8 @@ import java.util.concurrent.TimeUnit
 object PriceApi {
     private const val CC_BASE = "https://min-api.cryptocompare.com/data/"
     private const val CG_BASE = "https://api.coingecko.com/api/v3/"
+    private const val BS_BASE = "https://www.bitstamp.net/"
+    private const val KR_BASE = "https://api.kraken.com/"
 
     private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -69,6 +72,10 @@ object PriceApi {
 
     val cryptoCompare: CryptoCompareApi = ccRetrofit.create(CryptoCompareApi::class.java)
     val coinGecko: CoinGeckoApi = cgRetrofit.create(CoinGeckoApi::class.java)
+    val cryptoCompareDeep: CryptoCompareDeepApi =
+        ccRetrofit.create(CryptoCompareDeepApi::class.java)
+    val bitstamp: BitstampApi = retrofitOf(BS_BASE).create(BitstampApi::class.java)
+    val kraken: KrakenApi = retrofitOf(KR_BASE).create(KrakenApi::class.java)
 
     // ------------------------------------------------------------------
     // Endpoint interfaces + stable DTOs
@@ -142,9 +149,65 @@ object PriceApi {
     data class MarketChartResponse(
         val prices: List<List<Double>> = emptyList(),
     )
+
+    // ------------------------------------------------------------------
+    // Deep-history endpoints (2026-10-08: all return raw JsonElement)
+    // ------------------------------------------------------------------
+
+    /**
+     * CryptoCompare **deep** daily history, KEYED (the demo key ships with a
+     * 100-calls/month budget): `v2/histoday?fsym=..&tsym=EUR&limit<=2000&toTs=ms`
+     * → `{"Response":"Success","Data":{"Data":[{time(open/close/…), …}]}}`,
+     * ascending from the listing day. 401 without a valid `api_key`.
+     */
+    interface CryptoCompareDeepApi {
+        @GET("v2/histoday")
+        fun histoday(
+            @Query("fsym") fsym: String,
+            @Query("tsym") tsym: String,
+            @Query("limit") limit: Int,
+            @Query("toTs") toTs: Long?,
+            @Query("api_key") apiKey: String,
+        ): Call<JsonElement>
+    }
+
+    /**
+     * Bitstamp daily OHLC, keyless: `api/v2/ohlc/{pair}/?step=86400&limit`
+     * (limit ≥1, **max 1000**) with optional `end` (unix seconds) as the upper
+     * cursor → `{"data":{"pair":"BTC/EUR","ohlc":[{"timestamp":"17..",
+     * "close":"76..", …}]}}` ascending, timestamps at midnight UTC. Unknown
+     * pairs: HTTP 404.
+     */
+    interface BitstampApi {
+        @GET("api/v2/ohlc/{pair}/")
+        fun ohlc(
+            @Path("pair") pair: String,
+            @Query("step") step: Int,
+            @Query("limit") limit: Int,
+            @Query("end") end: Long?,
+        ): Call<JsonElement>
+    }
+
+    /**
+     * Kraken daily OHLC, keyless: `0/public/OHLC?pair=XXBTZEUR&interval=1440`
+     * with optional `since` (unix **ms**, returns from that point forward,
+     * ascending) → `{"error":[],"result":{"<pair>":[[ts_s, o, h, l, c,
+     * vwap, vol, count], …],"last":…}}`, max 720 candles per call.
+     */
+    interface KrakenApi {
+        @GET("0/public/OHLC")
+        fun ohlc(
+            @Query("pair") pair: String,
+            @Query("interval") interval: Int,
+            @Query("since") since: Long?,
+        ): Call<JsonElement>
+    }
 }
 
 /** Convenience re-exports so call sites read `PriceApi.coinGecko.simplePrice(...)`. */
+typealias BitstampApi = PriceApi.BitstampApi
+typealias CryptoCompareDeepApi = PriceApi.CryptoCompareDeepApi
+typealias KrakenApi = PriceApi.KrakenApi
 typealias CcPriceResponse = PriceApi.CcPriceResponse
 typealias CoinGeckoSearchCoin = PriceApi.CoinGeckoSearchCoin
 typealias CoinGeckoSearchResponse = PriceApi.CoinGeckoSearchResponse

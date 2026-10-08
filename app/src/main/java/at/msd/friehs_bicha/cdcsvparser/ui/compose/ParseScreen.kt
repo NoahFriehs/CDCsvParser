@@ -269,21 +269,22 @@ private fun toArgbInt(c: Color): Int {
 }
 
 /**
- * Builds the API-attribution text ("… CryptoCompare API") from the string
- * resource, turning its single <a href=...> link into a real Compose URL
- * annotation. The string shape is under our control (values/strings.xml).
+ * Builds the API-attribution text from the string resource, turning every
+ * `<a href=...>` link into a real Compose URL annotation. The string shape
+ * is under our control (values/strings.xml).
  */
 private fun attributionAnnotatedString(context: android.content.Context): AnnotatedString {
-    val raw = context.getString(R.string.coinGeckoAttribution)
-    val m = Regex("<a href=\"([^\"]+)\">([^<]*)</a>").find(raw)
-        ?: return AnnotatedString(raw)
-    val before = raw.substring(0, m.range.first)
-    val linkText = m.groupValues[2]
-    val after = raw.substring(m.range.last + 1)
+    val raw = context.getString(R.string.priceAttribution)
+    val matches = Regex("<a href=\"([^\"]+)\">([^<]*)</a>").findAll(raw).toList()
+    if (matches.isEmpty()) return AnnotatedString(raw)
     return buildAnnotatedString {
-        append(before)
-        withLink(LinkAnnotation.Url(m.groupValues[1])) { append(linkText) }
-        append(after)
+        var pos = 0
+        for (m in matches) {
+            append(raw.substring(pos, m.range.first))
+            withLink(LinkAnnotation.Url(m.groupValues[1])) { append(m.groupValues[2]) }
+            pos = m.range.last + 1
+        }
+        append(raw.substring(pos))
     }
 }
 

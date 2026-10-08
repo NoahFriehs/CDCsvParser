@@ -6,17 +6,19 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose'
 }
 
-// Optional CoinGecko demo key for LOCAL TESTING ONLY: a
-// `coingecko_api_key=` line in the gitignored root local.properties lands in
-// the DEBUG build (faster rate limits while developing); release builds stay
-// keyless and the key value never enters the repository.
-def cgApiKey = ""
+// Optional API keys for LOCAL TESTING ONLY: lines in the gitignored root
+// local.properties land in the DEBUG build and never in release:
+//   coingecko_api_key=    faster CG rate limits while developing
+//   cryptocompare_api_key= deep-history fallback (budget: 100 calls/month!
+//      the CC deep source only spends it on first-time deep backfills)
+def localProps = new Properties()
 def cgKeyFile = new File(rootDir, 'local.properties')
 if (cgKeyFile.exists()) {
-    def p = new Properties()
-    cgKeyFile.withInputStream { p.load(it) }
-    cgApiKey = (p.getProperty('coingecko_api_key', '') ?: '').trim()
+    cgKeyFile.withInputStream { localProps.load(it) }
 }
+def cgApiKey = (localProps.getProperty('coingecko_api_key', '') ?: '').trim()
+def ccApiKey = (localProps.getProperty('cryptocompare_api_key', '') ?: '').trim()
+
 
 android {
     namespace 'at.msd.friehs_bicha.cdcsvparser'
@@ -45,12 +47,14 @@ android {
         release {
             // Always keyless (the debug key must never ship).
             buildConfigField "String", "CG_API_KEY", "\"\""
+            buildConfigField "String", "CC_API_KEY", "\"\""
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             buildConfigField "String", "CG_API_KEY", "\"$cgApiKey\""
+            buildConfigField "String", "CC_API_KEY", "\"$ccApiKey\""
             jniDebuggable true
             debuggable true
             minifyEnabled false
