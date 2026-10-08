@@ -130,11 +130,17 @@ class PriceHistoryProvider(private val prices: CryptoPricesCryptoCompare) {
 
     /**
      * Makes sure [symbols] have a usable cached history covering the last
-     * [days] days. Only what is missing is fetched (one request per
-     * symbol); the loop stops early while the shared CoinGecko cooldown /
-     * blackout is active (the remainder is picked up on the next call).
+     * [days] days. Two-phase: every FRESH cached entry (fetched today or
+     * yesterday — zero network) is published FIRST via [onSymbol], so a
+     * relaunch re-values the chart from disk within milliseconds; only
+     * afterwards does the network phase fetch/tail-refresh what is not
+     * fresh, publishing each symbol as soon as it lands. The loop stops
+     * early while the shared CoinGecko cooldown / blackout is active (the
+     * remainder is picked up on the next call).
      *
      * @param onProgress invoked with (done, total) after each symbol.
+     * @param onSymbol invoked per entry as soon as it is available — the
+     *        chart should re-value incrementally, never wait for the pass.
      * @return symbol -> history for everything available (may be empty when
      *         every request was rate limited).
      */
@@ -142,6 +148,7 @@ class PriceHistoryProvider(private val prices: CryptoPricesCryptoCompare) {
         symbols: List<String>,
         days: Int,
         onProgress: ((Int, Int) -> Unit)? = null,
+        onSymbol: ((String, DailyPrices) -> Unit)? = null,
     ): Map<String, DailyPrices> = withContext(Dispatchers.IO) {
         loadCache()
         val range = days.coerceAtMost(MAX_PUBLIC_HISTORY_DAYS)
@@ -150,53 +157,60 @@ class PriceHistoryProvider(private val prices: CryptoPricesCryptoCompare) {
         val result = LinkedHashMap<String, DailyPrices>()
         var throttleLogged = false
         var done = 0
-        for (symbol in symbols) {
-            onProgress?.invoke(done, symbols.size)
-            val entry = memo[symbol]
-            when {
-                // Fetched today or yesterday: every completed day is final on
-                // disk and the still-open day is pinned to the live prices by
-                // the chart code — no network at all (app relaunch case).
-                entry != null && (today - entry.fetchedDay) in 0..CACHE_TTL_DAYS ->
-                    result[symbol] = entry
 
+        fun publish(symbol: String, entry: DailyPrices) {
+            result[symbol] = entry
+            onSymbol?.invoke(symbol, entry)
+            done++
+            onProgress?.invoke(done, symbols.size)
+        }
+
+        // Phase 1 (no network): fresh disk cache entries, published at once.
+        for (symbol in symbols) {
+            val entry = memo[symbol]
+            if (entry != null && (today - entry.fetchedDay) in 0..CACHE_TTL_DAYS) {
+                publish(symbol, entry)
+            }
+        }
+
+        // Phase 2 (network): stale entries and uncached symbols only.
+        for (symbol in symbols) {
+            if (result.containsKey(symbol)) continue
+            val entry = memo[symbol]
+            if (entry != null) {
                 // Stale, but it holds the immutable past: keep everything
                 // before its fetch day from disk and refetch ONLY the
                 // still-moving tail (fetched day .. today — or further back
                 // when this call needs an older window than the cache keeps).
-                entry != null -> {
-                    val refreshed = if (prices.isCoinGeckoInCooldown()) {
-                        if (!throttleLogged) {
-                            FileLog.i(TAG, "CoinGecko throttled; keeping the stale cache (tail refresh on the next visit).")
-                            throttleLogged = true
-                        }
-                        null
-                    } else {
-                        refreshTail(symbol, entry, windowStart, today)
+                val refreshed = if (prices.isCoinGeckoInCooldown()) {
+                    if (!throttleLogged) {
+                        FileLog.i(TAG, "CoinGecko throttled; keeping the stale cache (tail refresh on the next visit).")
+                        throttleLogged = true
                     }
-                    result[symbol] = refreshed ?: entry
+                    null
+                } else {
+                    refreshTail(symbol, entry, windowStart, today)
                 }
-
-                // No cache for this symbol yet.
-                else -> {
-                    if (prices.isCoinGeckoInCooldown()) {
-                        FileLog.i(TAG, "CoinGecko throttled; stopping the history pass at $done/${symbols.size} (retry on the next visit).")
-                        break
-                    }
-                    val fetched = prices.getHistory(symbol, range)
-                    if (fetched == null || fetched.isEmpty()) {
-                        // Unknown symbol (no CoinGecko id) or a failed call: the
-                        // symbol simply contributes no history for now.
-                        FileLog.d(TAG, "No history for $symbol (days=$range).")
-                    } else {
-                        val fresh = DailyPrices(today, fetched)
-                        memo[symbol] = fresh
-                        saveCache()
-                        result[symbol] = fresh
-                    }
-                }
+                publish(symbol, refreshed ?: entry)
+                continue
             }
-            done++
+            if (prices.isCoinGeckoInCooldown()) {
+                FileLog.i(TAG, "CoinGecko throttled; stopping the history pass at $done/${symbols.size} (retry on the next visit).")
+                break
+            }
+            val fetched = prices.getHistory(symbol, range)
+            if (fetched == null || fetched.isEmpty()) {
+                // Unknown symbol (no CoinGecko id) or a failed call: the
+                // symbol simply contributes no history for now.
+                FileLog.d(TAG, "No history for $symbol (days=$range).")
+                done++
+                onProgress?.invoke(done, symbols.size)
+            } else {
+                val fresh = DailyPrices(today, fetched)
+                memo[symbol] = fresh
+                saveCache()
+                publish(symbol, fresh)
+            }
         }
         onProgress?.invoke(done, symbols.size)
         result

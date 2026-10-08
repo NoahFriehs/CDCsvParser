@@ -176,8 +176,10 @@ class ParseFragment : Fragment() {
      * G36: make sure the chart has the daily EUR price history for every
      * currency that holds assets (cached on disk; only what is missing hits
      * CoinGecko, one request per symbol, stopping early while the shared
-     * CoinGecko cooldown/blackout is active). The pass runs in the
-     * background; the chart re-values as soon as each symbol lands.
+     * CoinGecko cooldown/blackout is active). Cached symbols are published
+     * to `_history` immediately (zero network, so a relaunch shows the
+     * historical shape at once instead of a long flatline); the remaining
+     * fetches land and re-value the chart incrementally in the background.
      */
     private fun launchHistoryPass() {
         val walletRows = _walletSeries.value
@@ -194,9 +196,12 @@ class ParseFragment : Fragment() {
             .filterValues { it != null }
             .mapValues { it.value!! }
         viewLifecycleOwner.lifecycleScope.launch {
-            val fetched = historyProvider.ensureAll(currencies, rangeDays) { done, total ->
-                _historyProgress.value = done to total
-            }
+            val fetched = historyProvider.ensureAll(
+                symbols = currencies,
+                days = rangeDays,
+                onProgress = { done, total -> _historyProgress.value = done to total },
+                onSymbol = { symbol, entry -> _history.value = _history.value + (symbol to entry) },
+            )
             _history.value = _history.value + fetched
             FileLog.i(
                 TAG,
