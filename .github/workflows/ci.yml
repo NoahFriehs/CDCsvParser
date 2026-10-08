@@ -189,15 +189,23 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Grant KVM access
+      - name: Prepare the runner (KVM access + /dev/shm size)
         # The runner HAS /dev/kvm but the CI user is in no group, so
         # android-emulator-runner fell back to -accel off (pure TCG): the
         # API 35 image took ~11 min to boot and the whole lane ran
-        # 15-30x too slow. chmod is what takes effect for this run (group
-        # changes need a re-login, hence usermod as best effort).
+        # 15-30x too slow. chmod takes effect for this run (group changes
+        # need a re-login, hence usermod as best effort).
+        # /dev/shm: GitHub runners ship a shrunken tmpfs; the emulator's GL
+        # backends (swiftshader as well as the lavapipe fallback of
+        # `-gpu off`) allocate their color buffers there and the run
+        # degraded into a "Failed to find ColorBuffer" retry loop, so the
+        # UI never composited. Remount it with the usual 8G ceiling (tmpfs
+        # only charges the used amount).
         run: |
           sudo chmod 666 /dev/kvm
           sudo usermod -a -G kvm "${USER:-runner}" || true
+          sudo mount -o remount,size=8G /dev/shm
+          df -h /dev/shm
 
       - name: Run UI tests on the emulator
         uses: reactivecircus/android-emulator-runner@v2
@@ -219,4 +227,21 @@ jobs:
           # to CPU rendering; the tests are text-based and do not care.
           disable-animations: true
           emulator-options: -no-snapshot -no-window -noaudio -gpu off
-          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon
+          script: |
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon ||
+              (adb -s emulator-5554 logcat -d -v time -t 4000 > adb_logcat_tail.txt || true)
+
+      # The step log above shows no per-test exceptions - on the last red run
+      # the UI never composited ("Failed to find ColorBuffer" loop) and the
+      # failures were only visible in the HTML report. Upload the evidence so
+      # the next red run is diagnosable from the log.
+      - name: Upload test report + logcat (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-evidence
+          path: |
+            app/build/reports/androidTests/connected/
+            adb_logcat_tail.txt
+          if-no-files-found: warn
+          retention-days: 7
