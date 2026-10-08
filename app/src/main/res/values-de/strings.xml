@@ -27,6 +27,7 @@
     <string name="timeframe_year">Jahr</string>
     <string name="chart_no_data">Keine Daten für diese Auswahl.</string>
     <string name="chart_history_loading">Preisverlauf: %1$d von %2$d …</string>
+    <string name="chart_history_estimated_note">Gestrichelter Abschnitt: geschätzt – die kostenlose Preisgeschichte reicht nur ~1 Jahr zurück.</string>
     <string name="type_purchase">Kauf</string>
     <string name="type_income">Einnahme</string>
     <string name="type_debit">Auszahlung</string>

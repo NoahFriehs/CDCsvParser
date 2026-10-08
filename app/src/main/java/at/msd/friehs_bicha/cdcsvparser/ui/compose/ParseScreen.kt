@@ -44,6 +44,7 @@ import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.utils.ColorTemplate
 import com.github.mikephil.charting.formatter.ValueFormatter
 import androidx.compose.ui.text.LinkAnnotation
 import at.msd.friehs_bicha.cdcsvparser.R
@@ -326,9 +327,9 @@ private fun ChartPanel(
             bucketize(seriesData[selectedSeries].orEmpty(), timeFrame, isFlow = true)
         } else {
             when (selectedSeries) {
-                ChartSeries.VALUE -> historical.first
-                ChartSeries.PL -> historical.second
-                ChartSeries.BONUS -> historical.third
+                ChartSeries.VALUE -> historical.value
+                ChartSeries.PL -> historical.pl
+                ChartSeries.BONUS -> historical.bonus
 
                 else -> emptyList()
             }
@@ -401,7 +402,18 @@ private fun ChartPanel(
                     .padding(vertical = 48.dp),
             )
 
-            else -> ChartLine(points = points, timeFrame = timeFrame)
+            else -> {
+                val estimated = if (selectedSeries.isFlow) 0 else historical.estimatedCount
+                ChartLine(points = points, timeFrame = timeFrame, estimatedCount = estimated)
+                if (estimated > 0) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.chart_history_estimated_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }
@@ -423,9 +435,12 @@ private val TimeFrame.labelRes: Int
         TimeFrame.YEAR -> R.string.timeframe_year
     }
 
-/** MPAndroidChart line chart for one bucketed series. */
+/** MPAndroidChart line chart for one bucketed series. The first
+ *  [estimatedCount] points (leading, chronological) are priced by
+ *  first-price back-fill rather than real history and are drawn dashed in a
+ *  faded shade, the rest solid. */
 @Composable
-private fun ChartLine(points: List<ChartPoint>, timeFrame: TimeFrame) {
+private fun ChartLine(points: List<ChartPoint>, timeFrame: TimeFrame, estimatedCount: Int = 0) {
     val color = MaterialTheme.colorScheme.primary
 
     AndroidView(
@@ -448,19 +463,27 @@ private fun ChartLine(points: List<ChartPoint>, timeFrame: TimeFrame) {
         },
         update = { chart ->
             val argb = toArgbInt(color)
-            val entries = ArrayList<Entry>(points.size).apply {
-                points.forEachIndexed { index, point ->
-                    add(Entry(index.toFloat(), point.value.toFloat()))
-                }
+            val estimated = points.take(estimatedCount)
+            val real = points.drop(estimatedCount)
+            val sets = ArrayList<LineDataSet>(2)
+            if (estimated.isNotEmpty()) {
+                sets.add(LineDataSet(entriesOf(estimated, offset = 0), "").apply {
+                    enableDashedLine(6f, 4f, 0f)
+                    lineWidth = 1.5f
+                    setDrawValues(false)
+                    this.color = ColorTemplate.colorWithAlpha(90, argb)
+                })
             }
-            val dataset = LineDataSet(entries, "").apply {
-                setDrawValues(false)
-                lineWidth = 2f
-                circleRadius = 3f
-                setCircleColor(argb)
-                this.color = argb
+            if (real.isNotEmpty()) {
+                sets.add(LineDataSet(entriesOf(real, offset = estimated.size), "").apply {
+                    setDrawValues(false)
+                    lineWidth = 2f
+                    circleRadius = 3f
+                    setCircleColor(argb)
+                    this.color = argb
+                })
             }
-            chart.data = LineData(dataset)
+            chart.data = LineData(*sets.toTypedArray())
             chart.setTouchEnabled(true)
             chart.invalidate()
         },
@@ -469,3 +492,12 @@ private fun ChartLine(points: List<ChartPoint>, timeFrame: TimeFrame) {
             .height(180.dp),
     )
 }
+
+/** Entries with GLOBAL x positions (index-in-[points] + [offset]) so the
+ *  dashed/solid split keeps the x-axis and the label formatter aligned. */
+private fun entriesOf(points: List<ChartPoint>, offset: Int): ArrayList<Entry> =
+    ArrayList<Entry>(points.size).apply {
+        points.forEachIndexed { index, point ->
+            add(Entry((index + offset).toFloat(), point.value.toFloat()))
+        }
+    }

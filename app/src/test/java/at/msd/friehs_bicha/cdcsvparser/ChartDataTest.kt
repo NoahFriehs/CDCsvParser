@@ -258,6 +258,33 @@ class ChartDataTest {
     }
 
     @Test
+    fun `buckets before the real-history start are counted as estimated`() {
+        // Wallet active since January, price history only from June: the
+        // Jan..May buckets ride the first-price back-fill (estimate); the
+        // open last bucket is pinned to live prices and stays real.
+        val wallet =
+            mapOf("BTC" to (1..7).map { WalletDay(day(2023, it, 2), 1.0, 0.0) })
+        val prices =
+            mapOf("BTC" to PriceSeries(listOf(ed(2023, 6, 1) to 20000.0, ed(2023, 7, 1) to 25000.0)))
+        val (value, _, _, estimatedCount) = historicalStockSeries(
+            wallet, prices, emptyList(), TimeFrame.MONTH, day(2023, 7, 15),
+            currentPrices = mapOf("BTC" to 25000.0),
+        )
+        assertEquals(7, value.size)
+        assertEquals(5, estimatedCount)   // Jan, Feb, Mar, Apr, May
+    }
+
+    @Test
+    fun `no history at all - only the pinned bucket is real`() {
+        val wallet =
+            mapOf("BTC" to listOf(WalletDay(day(2023, 1, 2), 1.0, 0.0)))
+        val (_, _, _, estimatedCount) = historicalStockSeries(
+            wallet, emptyMap(), emptyList(), TimeFrame.MONTH, day(2023, 1, 20),
+        )
+        assertEquals(0, estimatedCount)   // single bucket IS the pinned one
+    }
+
+    @Test
     fun `empty wallet series yields empty stock series`() {
         val (value, pl, bonus) = historicalStockSeries(
             emptyMap(), emptyMap(), emptyList(), TimeFrame.MONTH, day(2023, 1, 15),

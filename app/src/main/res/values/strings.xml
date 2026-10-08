@@ -27,6 +27,7 @@
     <string name="timeframe_year">Year</string>
     <string name="chart_no_data">No data for this selection.</string>
     <string name="chart_history_loading">Price history: %1$d of %2$d …</string>
+    <string name="chart_history_estimated_note">Dashed section: estimated — the free price history only goes back ~1 year.</string>
     <string name="type_purchase">Purchase</string>
     <string name="type_income">Income</string>
     <string name="type_debit">Withdrawal</string>

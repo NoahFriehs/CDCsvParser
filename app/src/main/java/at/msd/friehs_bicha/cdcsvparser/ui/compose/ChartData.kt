@@ -43,6 +43,19 @@ data class DailyPoint(val date: LocalDate, val value: Double)
 data class ChartPoint(val key: String, val value: Double)
 
 /**
+ * The three stock-series bucket lists + the count of leading ESTIMATED
+ * points (first-price back-fill before real history, see
+ * [historicalStockSeries]); the bonus series never has an estimated count
+ * (it rides the same pricing, so the count applies to value and P/L only).
+ */
+data class HistoricalSeries(
+    val value: List<ChartPoint>,
+    val pl: List<ChartPoint>,
+    val bonus: List<ChartPoint>,
+    val estimatedCount: Int,
+)
+
+/**
  * Parses the raw core lines into per-series daily points, in the order the
  * core produced them (one ascending daily block per series). Malformed lines
  * are skipped, not fatal.
@@ -172,7 +185,13 @@ class PriceSeries(val points: List<Pair<Long, Double>>) {
  *        daily series)
  * @param frame the bucket frame
  * @param today the device's current day (pins the last bucket)
- * @return value, P/L and bonus bucket points, chronological
+ * @return the bucket points (value, P/L, bonus, chronological) plus
+ *         [HistoricalSeries.estimatedCount] — the number of LEADING points
+ *         priced by first-price back-fill (an estimate) rather than real
+ *         history: a bucket is estimated when it ends before the earliest
+ *         day all priced symbols have data (or when there is no history at
+ *         all, except the live-price-pinned last bucket). The chart draws
+ *         that region dashed.
  */
 fun historicalStockSeries(
     walletSeries: Map<String, List<WalletDay>>,
@@ -181,12 +200,12 @@ fun historicalStockSeries(
     frame: TimeFrame,
     today: LocalDate,
     currentPrices: Map<String, Double> = emptyMap(),
-): Triple<List<ChartPoint>, List<ChartPoint>, List<ChartPoint>> {
+): HistoricalSeries {
     val valuePoints = mutableListOf<ChartPoint>()
     val plPoints = mutableListOf<ChartPoint>()
     val bonusPoints = mutableListOf<ChartPoint>()
     val allDates = walletSeries.values.flatten().map { it.date } + spentPoints.map { it.date }
-    if (allDates.isEmpty()) return Triple(valuePoints, plPoints, bonusPoints)
+    if (allDates.isEmpty()) return HistoricalSeries(valuePoints, plPoints, bonusPoints, 0)
     val firstDate = allDates.min()
     // The domain always spans first activity .. today: the bucket that
     // contains today is pinned to the LIVE prices (see below), which keeps
@@ -227,9 +246,18 @@ fun historicalStockSeries(
         spentPerBucket[key] = (spentPerBucket[key] ?: 0.0) + point.value
     }
 
+    // Earliest day on which EVERY priced symbol has real history: the max
+    // of each series' first point day. Buckets ending before it ride the
+    // first-price back-fill (an estimate); with no history at all every
+    // non-pined bucket is estimated.
+    val realStartEpoch = prices.values
+        .mapNotNull { s -> s.points.firstOrNull()?.first }
+        .maxOrNull()
+
     // Per currency: one cursor into its ascending running-balance list.
     val cursor = HashMap<String, Int>().apply { walletSeries.keys.forEach { put(it, 0) } }
     var spentSoFar = 0.0
+    var estimatedCount = 0
     for (end in ends) {
         val at = minOf(end, pinDay)   // the still-open bucket ends at today
         val key = bucketKey(at, frame)
@@ -252,11 +280,14 @@ fun historicalStockSeries(
             bonus += last.bonus * price
         }
         spentSoFar += spentPerBucket[key] ?: 0.0
+        // The live-price-pinned bucket is never estimated (it carries the
+        // card prices); everything else before real history is an estimate.
+        if (at != pinDay && (realStartEpoch == null || at.toEpochDay() < realStartEpoch)) estimatedCount++
         valuePoints.add(ChartPoint(key, value))
         plPoints.add(ChartPoint(key, value - spentSoFar))
         bonusPoints.add(ChartPoint(key, bonus))
     }
-    return Triple(valuePoints, plPoints, bonusPoints)
+    return HistoricalSeries(valuePoints, plPoints, bonusPoints, estimatedCount)
 }
 
 /**
