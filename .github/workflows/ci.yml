@@ -37,12 +37,47 @@ jobs:
           SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
           # Licenses may already be accepted on the image; ignore failures.
           yes | "$SDKM" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
-          # Note: the API 37 package ID carries a minor suffix (android-37.0);
-          # older repository snapshots may only know "android-37" - try both.
-          "$SDKM" --sdk_root="$ANDROID_HOME" \
-            "ndk;27.0.12077973" "cmake;3.22.1" "platforms;android-37.0" \
-          || "$SDKM" --sdk_root="$ANDROID_HOME" \
-            "ndk;27.0.12077973" "cmake;3.22.1" "platforms;android-37"
+
+          # The NDK download is flaky on the runners (truncated zip ->
+          # "Error on ZipFile unknown archive"). The old "A || B" fallback
+          # made that fatal: it retried the SAME broken download together
+          # with a platform ID the repo no longer knows ("Failed to find
+          # package 'platforms;android-37'" - it is android-37.0 now), so
+          # the step always exited 1. Install each package separately with
+          # retries, wiping the partial state before each retry, and ask
+          # the repo which API-37 ID it actually carries.
+          install() {
+            local pkg="$1" a
+            for a in 1 2 3 4; do
+              "$SDKM" --sdk_root="$ANDROID_HOME" "$pkg" && return 0
+              echo "::warning::sdkmanager $pkg failed (attempt $a/4); cleaning partial state, retry"
+              case "$pkg" in
+                "ndk;27.0.12077973") rm -rf "$ANDROID_HOME/ndk/27.0.12077973" ;;
+                "cmake;3.22.1")      rm -rf "$ANDROID_HOME/cmake/3.22.1" ;;
+                "platforms;"*)       rm -rf "$ANDROID_HOME/platforms/android-37" \
+                                     "$ANDROID_HOME/platforms/android-37.0" ;;
+              esac
+              # sdkmanager parks partial failed downloads in .temp and
+              # reuses them; force a genuinely fresh download next attempt.
+              rm -rf "$ANDROID_HOME/.temp"
+              sleep 15
+            done
+            echo "::error::sdkmanager gave up on $pkg"
+            return 1
+          }
+
+          install "cmake;3.22.1"
+          install "ndk;27.0.12077973"
+          # API 37's package ID moved (android-37 -> android-37.0);
+          # detect it instead of guessing.
+          LIST="$("$SDKM" --sdk_root="$ANDROID_HOME" --list 2>&1)"
+          case "$LIST" in
+            *"platforms;android-37.0"*) PLATFORM="platforms;android-37.0" ;;
+            *"platforms;android-37"*)   PLATFORM="platforms;android-37" ;;
+            *) echo "::error::no platforms;android-37* package in the SDK repo"
+               exit 1 ;;
+          esac
+          install "$PLATFORM"
 
       - name: Cache installed NDK/CMake/platform
         uses: actions/cache/save@v4
@@ -115,14 +150,41 @@ jobs:
           key: android-sdk-${{ runner.os }}-ndk-27.0.12077973-cmake-3.22.1-p37
           fail-on-cache-miss: false
 
-      - name: Install missing Android SDK packages
+      - name: Install missing Android SDK packages (reuses the build job's cache)
         run: |
           SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
           yes | "$SDKM" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
-          "$SDKM" --sdk_root="$ANDROID_HOME" \
-            "ndk;27.0.12077973" "cmake;3.22.1" "platforms;android-37.0" \
-          || "$SDKM" --sdk_root="$ANDROID_HOME" \
-            "ndk;27.0.12077973" "cmake;3.22.1" "platforms;android-37"
+          # Same retry + detection logic as the build job: the cache hit
+          # makes sdkmanager no-op, a cache miss must survive a corrupt
+          # NDK download the same way.
+          install() {
+            local pkg="$1" a
+            for a in 1 2 3 4; do
+              "$SDKM" --sdk_root="$ANDROID_HOME" "$pkg" && return 0
+              echo "::warning::sdkmanager $pkg failed (attempt $a/4); cleaning partial state, retry"
+              case "$pkg" in
+                "ndk;27.0.12077973") rm -rf "$ANDROID_HOME/ndk/27.0.12077973" ;;
+                "cmake;3.22.1")      rm -rf "$ANDROID_HOME/cmake/3.22.1" ;;
+                "platforms;"*)       rm -rf "$ANDROID_HOME/platforms/android-37" \
+                                     "$ANDROID_HOME/platforms/android-37.0" ;;
+              esac
+              rm -rf "$ANDROID_HOME/.temp"
+              sleep 15
+            done
+            echo "::error::sdkmanager gave up on $pkg"
+            return 1
+          }
+
+          install "cmake;3.22.1"
+          install "ndk;27.0.12077973"
+          LIST="$("$SDKM" --sdk_root="$ANDROID_HOME" --list 2>&1)"
+          case "$LIST" in
+            *"platforms;android-37.0"*) PLATFORM="platforms;android-37.0" ;;
+            *"platforms;android-37"*)   PLATFORM="platforms;android-37" ;;
+            *) echo "::error::no platforms;android-37* package in the SDK repo"
+               exit 1 ;;
+          esac
+          install "$PLATFORM"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
