@@ -52,22 +52,29 @@ class StartingActivity : ComponentActivity() {
     private fun determineNextActivity(): Intent = Intent(this, MainActivity::class.java)
 
     private fun fastStart() {
-        // Fast start (skip Login when a local model exists) is intentionally
-        // disabled - the old DEV_ZONE hard-coded "&& false" hid that. The
-        // preference flags are kept for re-enabling.
-        val isLocal = false
+        // Fast start (plan 003): with "Store data local" + "Enable fast
+        // start" on and a local model present, the last parse is shown
+        // directly. The C++ core mode loads its own persisted state (the
+        // core saves it after every parse since the save fix); the Room
+        // local model (built here) is the data for Kotlin core mode and
+        // the fallback source when the C++ save state is missing.
+        val isLocal = PreferenceHelper.getFastStartEnabled(applicationContext) &&
+            PreferenceHelper.getIsDataLocal(applicationContext) &&
+            PreferenceHelper.getIsAppModelSavedLocal(applicationContext)
         if (isLocal) {
             Benchmarker.start()
             AppModelManager.setInstance(AppModel())
             CoreService.appModel = AppModelManager.getInstance()
-            CoreService.startService(false)
+            // No core-mode persist: fast start must not flip the user's
+            // "Core Mode" setting (the old startService(false) did).
+            CoreService.startServiceFromLocal()
         }
 
         val intent = Intent(this, MainActivity::class.java)
 
         if (isLocal) intent.putExtra("fastStart", true)
 
-        FileLog.d("StartingActivity", "Quick start, fast enabled: $isLocal")
+        FileLog.d("StartingActivity", "Quick start, local model: $isLocal")
 
         lifecycleScope.launch {
             delay(1000)

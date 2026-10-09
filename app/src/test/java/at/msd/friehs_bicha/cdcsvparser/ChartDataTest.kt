@@ -6,8 +6,12 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.DailyPoint
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.TimeFrame
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.PriceSeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.WalletDay
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.ChartRange
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketStartDate
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketKey
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketize
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.historicalStockSeries
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.limitRange
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseDailySeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletSeries
 import java.time.LocalDate
@@ -290,5 +294,106 @@ class ChartDataTest {
             emptyMap(), emptyMap(), emptyList(), TimeFrame.MONTH, day(2023, 1, 15),
         )
         assertTrue(value.isEmpty() && pl.isEmpty() && bonus.isEmpty())
+    }
+
+    // ----------------------------------------------------------------
+    // Plan 006: bucketStartDate (inverse of bucketKey) + limitRange
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `bucketStartDate inverts month quarter year keys`() {
+        assertEquals(day(2025, 3, 1), bucketStartDate("2025-03", TimeFrame.MONTH))
+        assertEquals(day(2025, 4, 1), bucketStartDate("2025-Q2", TimeFrame.QUARTER))
+        assertEquals(day(2025, 10, 1), bucketStartDate("2025-Q4", TimeFrame.QUARTER))
+        assertEquals(day(2025, 1, 1), bucketStartDate("2025", TimeFrame.YEAR))
+        assertNull(bucketStartDate("garbage", TimeFrame.MONTH))
+        assertNull(bucketStartDate("2025-13", TimeFrame.MONTH))
+    }
+
+    @Test
+    fun `bucketStartDate inverts week keys incl the ISO edge cases`() {
+        // The week is owned by its Thursday: every day of an ISO week must
+        // map to the Monday of that week.
+        for (offset in 0..6) {
+            val anyDay = LocalDate.parse("2025-03-03").plusDays(offset.toLong()) // Mon 2025-03-03 .. Sun
+            val key = bucketKey(anyDay, TimeFrame.WEEK)
+            assertEquals(anyDay.minusDays((anyDay.dayOfWeek.value - 1).toLong()), bucketStartDate(key, TimeFrame.WEEK))
+        }
+        // 2020-W53: the only 53-week year of the 2015-2070 range. Its last
+        // week is Mon 2020-12-28 .. Sun 2021-01-03; the key uses the ISO
+        // year (2020) even though the Sunday is in January 2021.
+        assertEquals("2020-W53", bucketKey(day(2020, 12, 30), TimeFrame.WEEK))
+        val w53Monday = bucketStartDate("2020-W53", TimeFrame.WEEK)
+        assertEquals(day(2020, 12, 28), w53Monday)
+        assertEquals(day(2021, 1, 3), w53Monday?.plusDays(6))
+        // Week 1 of a year that starts on a Thursday (2021): Mon 2021-01-04.
+        assertEquals("2021-W01", bucketKey(day(2021, 1, 5), TimeFrame.WEEK))
+        assertEquals(day(2021, 1, 4), bucketStartDate("2021-W01", TimeFrame.WEEK))
+        // A Wednesday that belongs to the PREVIOUS ISO year's week: Sun
+        // 2021-01-03 is owned by the Thursday 2020-12-31 -> 2020-W53, and
+        // Jan 1/2 2021 (Fri/Sat) too.
+        assertEquals("2020-W53", bucketKey(day(2021, 1, 2), TimeFrame.WEEK))
+        assertEquals(day(2020, 12, 28), bucketStartDate(bucketKey(day(2021, 1, 2), TimeFrame.WEEK), TimeFrame.WEEK))
+    }
+
+    @Test
+    fun `bucketStartDate round-trips for every daily bucket over a year span`() {
+        for (offset in 0 until 400) {
+            val date = day(2024, 1, 1).plusDays(offset.toLong())
+            for (frame in TimeFrame.entries) {
+                val key = bucketKey(date, frame)
+                val start = bucketStartDate(key, frame) ?: continue
+                assertTrue("$date $frame: start after date", !start.isAfter(date))
+                // The bucket's start must re-key to the same bucket.
+                assertEquals("$date $frame", key, bucketKey(start, frame))
+            }
+        }
+    }
+
+    @Test
+    fun `limitRange keeps buckets starting inside the window`() {
+        val points = (0 until 8).map { ChartPoint("2025-%02d".format(it + 1), it.toDouble()) } // Jan..Aug 2025
+        // No window = identity (same instance pair values).
+        val (all, allEst) = limitRange(points, 0, TimeFrame.MONTH, null, null)
+        assertEquals(points, all)
+        assertEquals(0, allEst)
+
+        // Start-only: from April keeps Apr..Aug.
+        val (from, _) = limitRange(points, 0, TimeFrame.MONTH, day(2025, 4, 1), null)
+        assertEquals(listOf("2025-04", "2025-05", "2025-06", "2025-07", "2025-08"), from.map { it.key })
+
+        // Both bounds: Mar..May.
+        val (win, _) = limitRange(points, 0, TimeFrame.MONTH, day(2025, 3, 1), day(2025, 5, 31))
+        assertEquals(listOf("2025-03", "2025-04", "2025-05"), win.map { it.key })
+
+        // A window before the data ends up empty (the "no data" text shows).
+        val (none, _) = limitRange(points, 0, TimeFrame.MONTH, day(2020, 1, 1), day(2020, 12, 31))
+        assertTrue(none.isEmpty())
+    }
+
+    @Test
+    fun `limitRange adjusts the leading estimated count`() {
+        val points = (0 until 6).map { ChartPoint("2025-%02d".format(it + 1), it.toDouble()) }
+        // The first 3 buckets are estimated.
+        val (kept, keptEst) = limitRange(points, 3, TimeFrame.MONTH, day(2025, 3, 1), null)
+        assertEquals(listOf("2025-03", "2025-04", "2025-05", "2025-06"), kept.map { it.key })
+        // March (index 2) was the last estimated bucket that survived.
+        assertEquals(1, keptEst)
+
+        // Cutting OFF all estimated buckets -> 0.
+        val (kept2, keptEst2) = limitRange(points, 3, TimeFrame.MONTH, day(2025, 4, 1), null)
+        assertEquals(0, keptEst2)
+        assertTrue(kept2.isNotEmpty())
+    }
+
+    @Test
+    fun `preset ranges are start-only limits relative to today`() {
+        val today = day(2025, 6, 15)
+        assertNull(ChartRange.ALL.startDate(today))
+        assertEquals(day(2025, 3, 15), ChartRange.THREE_MONTHS.startDate(today))
+        assertEquals(day(2024, 12, 15), ChartRange.SIX_MONTHS.startDate(today))
+        assertEquals(day(2024, 6, 15), ChartRange.ONE_YEAR.startDate(today))
+        assertEquals(day(2023, 6, 15), ChartRange.TWO_YEARS.startDate(today))
+        assertEquals(day(2020, 6, 15), ChartRange.FIVE_YEARS.startDate(today))
     }
 }

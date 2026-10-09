@@ -38,6 +38,11 @@ class PriceCache : Serializable {
         return cache.containsKey(symbol) && !cache[symbol]!!.isOlderThanFiveMinutes
     }
 
+    /** Plan 004: drops every entry (the Settings "delete cache" feature). */
+    fun clear() {
+        cache.clear()
+    }
+
     /**
      * Adds a price to the cache
      *

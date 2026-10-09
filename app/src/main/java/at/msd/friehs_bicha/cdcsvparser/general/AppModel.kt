@@ -105,7 +105,12 @@ class AppModel : BaseAppModel, Serializable {
 
 
     constructor() : super(PreferenceHelper.getSelectedType(applicationContext)) {
-        if (PreferenceHelper.getIsDataLocal(applicationContext) && PreferenceHelper.getIsAppModelSavedLocal(applicationContext)) loadAppModelLocal()
+        if (PreferenceHelper.getIsDataLocal(applicationContext) && PreferenceHelper.getIsAppModelSavedLocal(applicationContext)) {
+            // The Room load runs on a background scope; until it finished
+            // (isFullyLoaded) the model is half-empty and the fast start must
+            // not post it (plan 003).
+            loadAppModelLocal()
+        }
         else PreferenceHelper.setIsAppModelSavedLocal(applicationContext,false)
         isRunning = true
     }
@@ -372,7 +377,9 @@ class AppModel : BaseAppModel, Serializable {
 
     private fun loadAppModelLocal()
     {
+        isFullyLoaded = false
         appModelScope.launch {
+            try {
             val useStrictType = PreferenceHelper.getUseStrictType(applicationContext)
             val ws = InstanceVars.db.walletDao().getAllWallets()
             val txs = InstanceVars.db.transactionDao().getAllTransactions()
@@ -441,6 +448,11 @@ class AppModel : BaseAppModel, Serializable {
             }
 
             isRunning = true
+            } finally {
+                // Every exit path (including "no data found in db") marks the
+                // model final so the fast-start wait can resolve.
+                isFullyLoaded = true
+            }
         }
     }
 

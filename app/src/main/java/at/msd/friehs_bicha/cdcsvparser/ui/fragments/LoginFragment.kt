@@ -59,6 +59,9 @@ class LoginFragment : Fragment() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    // Plan 002: sign-in consumed the first-start screen -
+                    // same side effect as "use without login".
+                    PreferenceHelper.setIsFirstStart(requireContext(), false)
                     goToMain()
                 } else {
                     _errorMessage.value = getString(R.string.error_login_failed)

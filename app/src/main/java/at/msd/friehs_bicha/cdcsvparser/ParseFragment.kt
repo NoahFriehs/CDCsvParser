@@ -84,6 +84,7 @@ class ParseFragment : Fragment() {
                         noInternet = _noInternet.value,
                         onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },
                         onAllTransactionsClick = { findNavController().navigate(R.id.transactionsFragment) },
+                        onSettingsClick = { findNavController().navigate(R.id.settingsFragment) },
                     )
                 }
             }

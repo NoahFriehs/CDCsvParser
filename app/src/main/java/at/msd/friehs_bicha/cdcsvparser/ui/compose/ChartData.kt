@@ -36,6 +36,30 @@ enum class ChartSeries(
 /** User-selectable time frames for the overview charts. */
 enum class TimeFrame { WEEK, MONTH, QUARTER, YEAR }
 
+/**
+ * Preset display ranges for the overview chart (plan 006): each preset is
+ * a start-only limit relative to today; a custom (user-picked) range is
+ * applied separately via [limitRange] with both bounds set.
+ */
+enum class ChartRange {
+    ALL,
+    THREE_MONTHS,
+    SIX_MONTHS,
+    ONE_YEAR,
+    TWO_YEARS,
+    FIVE_YEARS;
+
+    /** The oldest date still shown, relative to [today]; null = unlimited. */
+    fun startDate(today: LocalDate): LocalDate? = when (this) {
+        ALL -> null
+        THREE_MONTHS -> today.minusMonths(3)
+        SIX_MONTHS -> today.minusMonths(6)
+        ONE_YEAR -> today.minusYears(1)
+        TWO_YEARS -> today.minusYears(2)
+        FIVE_YEARS -> today.minusYears(5)
+    }
+}
+
 /** One daily point of a series (already EUR-valued where applicable). */
 data class DailyPoint(val date: LocalDate, val value: Double)
 
@@ -288,6 +312,66 @@ fun historicalStockSeries(
         bonusPoints.add(ChartPoint(key, bonus))
     }
     return HistoricalSeries(valuePoints, plPoints, bonusPoints, estimatedCount)
+}
+
+/**
+ * The first day of the [timeFrame] bucket with the given [key] - the
+ * inverse of [bucketKey] (both use the hand-rolled ISO-week logic: the
+ * week is owned by its Thursday). Null when the key is malformed.
+ */
+fun bucketStartDate(key: String, timeFrame: TimeFrame): LocalDate? = when (timeFrame) {
+    TimeFrame.WEEK -> {
+        val m = """(\d{4})-W(\d{2})""".toRegex().find(key) ?: return null
+        val year = m.groupValues[1].toInt()
+        val week = m.groupValues[2].toInt()
+        // ISO week 1 always contains Jan 4; its owning Thursday has a day
+        // number in 1..7, hence week number (day-1)/7+1 == 1. The weekly
+        // Thursdays of one ISO year therefore form a 7-day chain starting
+        // at week 1's Thursday.
+        val jan4 = LocalDate.of(year, 1, 4)
+        val week1Thursday = jan4.plusDays((4 - jan4.dayOfWeek.value).toLong())
+        week1Thursday
+            .minusDays(week1Thursday.dayOfWeek.value - 1L) // Monday of week 1
+            .plusWeeks((week - 1).toLong())
+    }
+
+    TimeFrame.MONTH -> runCatching { YearMonth.parse(key).atDay(1) }.getOrNull()
+
+    TimeFrame.QUARTER -> {
+        val m = """(\d{4})-Q(\d)""".toRegex().find(key) ?: return null
+        val year = m.groupValues[1].toInt()
+        val month = (m.groupValues[2].toInt() - 1) * 3 + 1
+        runCatching { LocalDate.of(year, month, 1) }.getOrNull()
+    }
+
+    TimeFrame.YEAR -> runCatching { LocalDate.of(key.toInt(), 1, 1) }.getOrNull()
+}
+
+/**
+ * Keeps the buckets STARTING on/after [start] and on/before [end] (either
+ * side nullable; null + null returns the input unchanged, as the pair is
+ * the identity). Returns the kept points plus the adjusted estimated count
+ * (how many of the LEADING estimated points survived the filter - see
+ * [historicalStockSeries]).
+ */
+fun limitRange(
+    points: List<ChartPoint>,
+    estimatedCount: Int,
+    timeFrame: TimeFrame,
+    start: LocalDate?,
+    end: LocalDate? = null,
+): Pair<List<ChartPoint>, Int> {
+    if (start == null && end == null) return points to estimatedCount
+    val keptIndexes = ArrayList<Int>(points.size)
+    points.forEachIndexed { index, point ->
+        val startOfBucket = bucketStartDate(point.key, timeFrame) ?: return@forEachIndexed
+        val keep = (start == null || startOfBucket >= start) &&
+            (end == null || startOfBucket <= end)
+        if (keep) keptIndexes.add(index)
+    }
+    val kept = keptIndexes.map { points[it] }
+    val keptEstimated = keptIndexes.count { it < estimatedCount }
+    return kept to keptEstimated
 }
 
 /**

@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
 import at.msd.friehs_bicha.cdcsvparser.BuildConfig
+import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -43,11 +44,17 @@ object PriceApi {
         .readTimeout(15, TimeUnit.SECONDS)
         .callTimeout(30, TimeUnit.SECONDS)
         .addInterceptor { chain ->
-            // Optional CoinGecko DEMO key: set in the DEBUG build from the
-            // gitignored root local.properties (faster limits while
-            // developing). Release builds carry "" and stay keyless.
+            // Plan 004: runtime user key (Settings) > build-time debug key
+            // (gitignored root local.properties; release always "") >
+            // keyless. Read per request so a changed key applies without a
+            // restart; the header is only ever set for *.coingecko.com.
             val request = chain.request()
-            val key = BuildConfig.CG_API_KEY
+            val appContext = runCatching { InstanceVars.applicationContext }.getOrNull()
+            val key = if (appContext != null) {
+                PriceApiKey.coinGeckoKey(appContext)
+            } else {
+                BuildConfig.CG_API_KEY // pre-init fallback (never logged)
+            }
             if (key.isNotEmpty() && request.url.host.endsWith("coingecko.com")) {
                 chain.proceed(
                     request.newBuilder().header("x-cg-demo-api-key", key).build()

@@ -54,6 +54,16 @@ class AssetValue private constructor() : Serializable {
                         ?: AssetValue().also { instance = it }
                 }
         }
+
+        /**
+         * Plan 004: drops the in-memory 5-minute price cache for the
+         * Settings "delete cache" feature. The on-disk JSON caches live in
+         * the price package and are deleted by the caller.
+         */
+        @JvmStatic
+        fun clearPriceCache() {
+            getInstance().cache.clear()
+        }
     }
 
     /**

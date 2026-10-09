@@ -13,7 +13,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupActionBarWithNavController
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.Motion
 import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
-import com.google.firebase.auth.FirebaseAuth
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 
 /**
  * Single-activity shell: hosts every screen as a navigation destination
@@ -34,9 +34,17 @@ class MainActivity : AppCompatActivity() {
         EdgeToEdge.enable(this, findViewById(android.R.id.content))
         installDestinationMotion()
 
-        // Not signed in: show the login screen as the effective root.
-        if (savedInstanceState == null && FirebaseAuth.getInstance().currentUser == null) {
-            navController.navigate(R.id.loginFragment)
+        // Plan 002: the sign-in screen shows only on the very FIRST start
+        // on this device (DataStore flag, default = true -> true on a
+        // fresh install). Every later cold start goes straight to the main
+        // screen; a signed-out user simply runs local-only. The flag is
+        // cleared by both "use without login" and a successful
+        // sign-in/sign-up (LoginFragment). The destination check keeps a
+        // restore from double-navigating.
+        if (savedInstanceState == null && PreferenceHelper.getIsFirstStart(applicationContext)) {
+            if (navController.currentDestination?.id != R.id.loginFragment) {
+                navController.navigate(R.id.loginFragment)
+            }
         }
     }
 

@@ -51,6 +51,9 @@ object PreferenceHelper {
     const val MAX_LOG_LEVEL = "MAX_LOG_LEVEL"
     const val IS_FIRST_START = "IS_FIRST_START"
     const val USE_CPP = "USE_CPP"
+    // Plan 004: user-supplied price API keys (Settings -> API keys).
+    const val CG_API_KEY = "cg_api_key"
+    const val CC_API_KEY = "cc_api_key"
 
     private const val LOAD_TIMEOUT_MS = 500L
     private const val DATASTORE_FILE = "settings.preferences_pb"
@@ -391,6 +394,38 @@ object PreferenceHelper {
     fun getUseCpp(context: Context): Boolean {
         awaitLoaded()
         return cachedBoolean(USE_CPP) ?: true
+    }
+
+    /**
+     * sets the user-supplied CoinGecko API key (plan 004; blank = unset,
+     * the provider falls back to the build-time key / keyless).
+     */
+    fun setCoinGeckoApiKey(context: Context, apiKey: String) {
+        awaitLoaded()
+        put(CG_API_KEY, apiKey)
+        persist(CG_API_KEY, apiKey)
+    }
+
+    /** Returns the user-supplied CoinGecko API key ("" = unset). */
+    fun getCoinGeckoApiKey(context: Context): String {
+        awaitLoaded()
+        return cachedString(CG_API_KEY).orEmpty()
+    }
+
+    /**
+     * sets the user-supplied CryptoCompare API key (plan 004; blank =
+     * unset, the deep source is then disabled).
+     */
+    fun setCryptoCompareApiKey(context: Context, apiKey: String) {
+        awaitLoaded()
+        put(CC_API_KEY, apiKey)
+        persist(CC_API_KEY, apiKey)
+    }
+
+    /** Returns the user-supplied CryptoCompare API key ("" = unset). */
+    fun getCryptoCompareApiKey(context: Context): String {
+        awaitLoaded()
+        return cachedString(CC_API_KEY).orEmpty()
     }
 
     private const val TAG = "PreferenceHelper"

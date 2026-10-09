@@ -63,6 +63,15 @@ private val CHART_COLOR_RES = listOf(
     R.color.on_surface_variant,
 )
 
+/** Compose Color -> ARGB int for the legacy (non-Compose) chart API. */
+private fun toArgbInt(c: Color): Int {
+    fun channel(v: Float) = (v * 255f + 0.5f).toInt() and 0xFF
+    return (-1 shl 24) or
+        (channel(c.red) shl 16) or
+        (channel(c.green) shl 8) or
+        channel(c.blue)
+}
+
 /**
  * The allocation donut. Empty state is plain text, not the chart library
  * default (as before).
@@ -91,6 +100,9 @@ fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
         .map { PieEntry(it.assetValue.toFloat(), it.name) }
     val colors = CHART_COLOR_RES.map { ContextCompat.getColor(context, it) }
 
+    // Plan 006 C: MPAndroidChart legend text defaults to a light-mode
+    // color; theme it from the Compose scheme (same as the line chart).
+    val legendColor = toArgbInt(MaterialTheme.colorScheme.onSurfaceVariant)
     AndroidView(
         factory = { ctx ->
             PieChart(ctx).apply {
@@ -98,7 +110,10 @@ fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
                 setUsePercentValues(true)
                 setDrawHoleEnabled(true)
                 holeRadius = 62f
-                transparentCircleRadius = 68f
+                // The library's default transparent-circle color is a white
+                // halo - invisible/ugly on the dark surface.
+                setTransparentCircleRadius(68f)
+                setTransparentCircleColor(android.graphics.Color.TRANSPARENT)
                 legend.verticalAlignment =
                     com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
                 legend.horizontalAlignment =
@@ -106,6 +121,7 @@ fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
                 legend.orientation =
                     com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
                 legend.setForm(com.github.mikephil.charting.components.Legend.LegendForm.CIRCLE)
+                legend.textColor = legendColor
                 setRotationEnabled(false)
                 setHighlightPerTapEnabled(false)
                 setNoDataText("")

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,6 +23,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import at.msd.friehs_bicha.cdcsvparser.R
 
@@ -56,6 +60,11 @@ fun SettingsScreen(
     fastStartEnabled: Boolean,
     onFastStartChange: (Boolean) -> Unit,
     isSignedIn: Boolean,
+    coingeckoKey: String,
+    onCoinGeckoKeyChange: (String) -> Unit,
+    cryptocompareKey: String,
+    onCryptoCompareKeyChange: (String) -> Unit,
+    onDeletePriceCaches: () -> Unit,
     onAbout: () -> Unit,
     onLogin: () -> Unit,
     onLogout: () -> Unit,
@@ -64,6 +73,7 @@ fun SettingsScreen(
 ) {
     var appTypeExpanded by remember { mutableStateOf(false) }
     var coreModeExpanded by remember { mutableStateOf(false) }
+    var showDeleteCachesDialog by remember { mutableStateOf(false) }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(
@@ -158,6 +168,43 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // Plan 004: runtime price API keys + the cache delete feature.
+            Text(
+                text = stringResource(R.string.api_keys_section),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.api_keys_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            ApiKeyField(
+                label = stringResource(R.string.cg_key_label),
+                value = coingeckoKey,
+                onValueChange = onCoinGeckoKeyChange,
+                onClear = { onCoinGeckoKeyChange("") },
+            )
+            Spacer(Modifier.height(8.dp))
+            ApiKeyField(
+                label = stringResource(R.string.cc_key_label),
+                value = cryptocompareKey,
+                onValueChange = onCryptoCompareKeyChange,
+                onClear = { onCryptoCompareKeyChange("") },
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = { showDeleteCachesDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.delete_price_caches))
+            }
+
+            Spacer(Modifier.height(24.dp))
+
             FilledTonalButton(
                 onClick = onAbout,
                 modifier = Modifier.fillMaxWidth(),
@@ -187,6 +234,63 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.login)) }
             }
+        }
+    }
+
+    if (showDeleteCachesDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteCachesDialog = false },
+            title = { Text(stringResource(R.string.delete_price_caches)) },
+            text = { Text(stringResource(R.string.delete_price_caches_question)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteCachesDialog = false
+                        onDeletePriceCaches()
+                    },
+                ) { Text(stringResource(R.string.yes)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteCachesDialog = false }) {
+                    Text(stringResource(R.string.no))
+                }
+            },
+        )
+    }
+}
+
+/**
+ * Plan 004: a masked API-key field with a show/hide toggle and a clear
+ * action. Persistence happens at every change (the value is a short
+ * local settings string, not user data).
+ */
+@Composable
+private fun ApiKeyField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    var visible by remember { mutableStateOf(false) }
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation =
+            if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+        trailingIcon = {
+            // Text toggle (the icons-core set of the current BOM carries no
+            // visibility glyph; the word is clearer in any locale).
+            TextButton(onClick = { visible = !visible }) {
+                Text(stringResource(if (visible) R.string.hide_key else R.string.show_key))
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+    if (value.isNotEmpty()) {
+        TextButton(onClick = onClear) {
+            Text(stringResource(R.string.clear_key))
         }
     }
 }

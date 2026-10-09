@@ -247,6 +247,13 @@ class CoreService : Service() {
                     return
                 }
                 checkAndSetModes()
+                // Persist the parsed C++ state for the next fast start
+                // (plan 003) - this runs on the core thread (serviceScope is
+                // the cpp-core dispatcher). A failed save only degrades
+                // future fast starts; the parse itself succeeded.
+                if (!save(savePath)) {
+                    FileLog.w(TAG, "Saving the C++ state for fast start failed; the next fast start will fall back to the local model.")
+                }
             }
 
             false -> {
@@ -304,9 +311,9 @@ class CoreService : Service() {
      * Provides the data to the activity
      */
     @OptIn(DelicateCoroutinesApi::class)
-    private fun provideDataToActivity() {
+    private fun provideDataToActivity(forceKotlin: Boolean = false) {
 
-        when (isCoreInitialized && useCpp) {
+        when (!forceKotlin && isCoreInitialized && useCpp) {
             true -> {
                 provideDataToActivityFromCppCore()
             }
@@ -337,13 +344,16 @@ class CoreService : Service() {
                         }
                         try {
                             withTimeout(60_000) {
-                                while (appModel?.txApp == null && appModel?.cardApp == null) {
-                                    FileLog.e(TAG, "appModel txApp is null")
-                                    delay(500)
+                                // Wait for the WHOLE model, not just the first
+                                // half of it: the Room load fills cardApp and
+                                // txApp in two steps, and any earlier exit
+                                // would post half-empty cards (plan 003).
+                                while (appModel?.isFullyLoaded != true) {
+                                    delay(200)
                                 }
                             }
                         } catch (e: TimeoutCancellationException) {
-                            FileLog.e(TAG, "Timed out waiting for txApp/cardApp.")
+                            FileLog.e(TAG, "Timed out waiting for the local model load.")
                             errorCounter.postValue((errorCounter.value ?: 0) + 1)
                             return@launch
                         }
@@ -408,7 +418,20 @@ class CoreService : Service() {
                             assetMaps_.add(AssetData(it.walletId, getAssetMap(it.walletId)))
                         }
                         assetMaps.postValue(assetMaps_)
-                        saveToRoomsDB()
+                        // Same data the LiveData posts above (explicit: the
+                        // `.value` of a postValue is not visible here yet).
+                        val stdWallets_ = appModel?.txApp?.wallets
+                        // Card wallets are CroCardWallets (a Wallet subclass);
+                        // the static field type is the base class.
+                        val cardWallets_ = (if (appModel?.txApp is CardTxApp) {
+                            stdWallets_
+                        } else {
+                            appModel?.cardApp?.wallets
+                        }) as? List<CroCardWallet>
+                        saveToRoomsDB(
+                            stdWallets_, validTransactions,
+                            cardWallets_, cardTransactions_.filterNotNull()
+                        )
                     } catch (e: InterruptedException) {
                         FileLog.e(TAG, " : $e")
                         throw RuntimeException(e)
@@ -562,7 +585,12 @@ class CoreService : Service() {
         }
         assetMaps.postValue(assetMaps_)
 
-        saveToRoomsDB()
+        // Same data the LiveData posts above (explicit: the `.value` of a
+        // postValue is not visible on the core thread yet).
+        saveToRoomsDB(
+            wallets_, transactions_,
+            cardWallets_ as ArrayList<CroCardWallet>, cardTransactions_
+        )
     }
 
     private fun getCardAssetMap(walletId: Int): Map<String, String?> {
@@ -601,10 +629,34 @@ class CoreService : Service() {
         return app.getAssetMap(wallet)
     }
 
-    private fun saveToRoomsDB() {
+    /**
+     * Persists the just-posted model data to Room.
+     *
+     * The collections are passed explicitly (the same ones the caller
+     * [postValue]'d): reading the LiveData `.value` back on the core thread
+     * would race the main-thread delivery of `postValue` and could observe
+     * a null/stale state (plan 003 - that is what made the empty-state guard
+     * below misfire and skipped real saves).
+     */
+    private fun saveToRoomsDB(
+        wallets: List<Wallet>?,
+        transactions: List<Transaction>?,
+        cardWallets: List<CroCardWallet>?,
+        cardTransactions: List<CroCardTransaction>?,
+    ) {
         // A constraint conflict here must never kill the app: the in-memory
         // (C++ core + LiveData) state stays the source of truth and the next
         // parse retries the save.
+        // Plan 003: never wipe a stored model with an empty re-import. A
+        // fast-start C++ state holds only the wallet balances (no
+        // transactions), and an empty parse result would not carry any
+        // either - in both cases the delete-before-insert would destroy the
+        // previously parsed rows (the fast-start local fallback reads
+        // exactly from Room), so the old model is kept.
+        if ((transactions ?: emptyList()).isEmpty() && (cardTransactions ?: emptyList()).isEmpty()) {
+            FileLog.w(TAG, "saveToRoomsDB: no transactions in the current state; keeping the stored model.")
+            return
+        }
         try {
             val walletDao = InstanceVars.db.walletDao()
             val txDao = InstanceVars.db.transactionDao()
@@ -618,16 +670,16 @@ class CoreService : Service() {
             cardTransactionDao.deleteAll()
             cardWalletDao.deleteAll()
 
-            walletsLiveData.value?.let {
+            wallets?.let {
                 walletDao.insertAll(it)
             }
-            transactionsLiveData.value?.let {
+            transactions?.let {
                 txDao.insertAll(it)
             }
-            cardWalletsLiveData.value?.let {
-                cardWalletDao.insertAll(it as ArrayList<CroCardWallet>)
+            cardWallets?.let {
+                cardWalletDao.insertAll(it)
             }
-            cardTransactionsLiveData.value?.let {
+            cardTransactions?.let {
                 cardTransactionDao.insertAll(it)
             }
             PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
@@ -679,9 +731,35 @@ class CoreService : Service() {
         when (isCoreInitialized && useCpp) {
             true -> {
                 if (init(logFilePath, savePath)) {
+                    // Fast start (C++ mode, plan 003): init() loaded the
+                    // persisted C++ state. The save format holds the wallet
+                    // balances but NOT the transactions, so the daily series
+                    // are still empty here. Show the complete saved values
+                    // from the local (Room) model first, then re-parse the
+                    // last imported CSV in the background and re-post from
+                    // the C++ core: the daily series and the chart appear
+                    // when the rebuild finishes (a few seconds for normal
+                    // exports). Both posts queue on the single cpp-core
+                    // thread, so the order is guaranteed.
                     FileLog.d(TAG, "Initialization successful.")
                     isRunning = true
-                    provideDataToActivity()
+                    val csvFile = latestImportedCsv()
+                    if (csvFile == null) {
+                        FileLog.w(TAG, "Fast start (C++): no imported CSV to rebuild from; showing the saved local values only.")
+                        waitLocalModelAndProvide()
+                    } else {
+                        waitLocalModelAndProvide()
+                        rebuildCppStateFrom(csvFile)
+                    }
+                } else if (AppModelManager.isInitialized()) {
+                    // Fast-start fallback: no usable saved C++ state (first
+                    // fast start after the save fix, or the last parse ran
+                    // in Kotlin mode). Show the saved Room values via the
+                    // Kotlin pricing path instead of erroring.
+                    FileLog.w(TAG, "No saved C++ state; fast start falls back to the saved local model.")
+                    isInitialized = true
+                    isRunning = true
+                    waitLocalModelAndProvide()
                 } else {
                     FileLog.w(TAG, "Initialization failed.")
                     errorCounter.postValue((errorCounter.value ?: 0) + 1)
@@ -698,7 +776,7 @@ class CoreService : Service() {
                     if (PreferenceHelper.getIsAppModelSavedLocal(applicationContext)) {
                         AppModelManager.setInstance(AppModel())
                         isInitialized = true
-                        provideDataToActivity()
+                        waitLocalModelAndProvide()
                     } else {
                         FileLog.e(TAG, "AppModel not initialized. No data available.")
                     }
@@ -706,6 +784,89 @@ class CoreService : Service() {
             }
         }
     }
+
+    /**
+     * Fast start with a locally loaded model (`AppModel()` from Room, plan
+     * 003): the model is populated by the asynchronous
+     * `loadAppModelLocal()`, so wait (bounded) until its wallets exist
+     * before the Kotlin path posts the overview - otherwise the cards
+     * would be posted while the model is still empty (zeros).
+     */
+    /**
+     * Plan 003: the newest CSV in private storage (the last uploaded /
+     * imported file - the history dialog lists exactly these). The fast-
+     * start C++ rebuild reparses it, because the persisted C++ state
+     * contains only the wallet balances, not the transactions.
+     */
+    private fun latestImportedCsv(): File? =
+        filesDir.listFiles { f -> f.isFile && f.name.endsWith(".csv") }
+            ?.filterNot { it.length() == 0L }
+            ?.maxByOrNull { it.lastModified() }
+
+    /**
+     * Plan 003: reparses [csvFile] into the C++ core (background rebuild
+     * behind the fast start), persists the resulting state and re-posts
+     * the overview from the C++ core. Any failure keeps the previously
+     * posted local values in place - the user never sees zeros.
+     */
+    private fun rebuildCppStateFrom(csvFile: File) {
+        serviceScope.launch {
+            val data = try {
+                FileUtil.getFileContent(csvFile)
+            } catch (e: IOException) {
+                FileLog.e(TAG, "Fast-start rebuild: reading ${csvFile.name} failed: $e")
+                return@launch
+            }
+            val appType = AppTypeIdentifier.getAppType(data.firstOrNull())
+            if (appType == null) {
+                FileLog.w(TAG, "Fast-start rebuild: header unknown, keeping the posted local values.")
+                return@launch
+            }
+            val coreMode = CoreModeMapper.toCoreMode(appType)
+            if (coreMode == null) {
+                FileLog.w(TAG, "Fast-start rebuild: $appType unsupported by the C++ core, keeping the local values.")
+                return@launch
+            }
+            val dataArray = Array<String>(data.size) { i -> data[i] }
+            if (initWithData(dataArray, data.size, coreMode, logFilePath, PARSE_BUDGET_MS)) {
+                checkAndSetModes()
+                if (!save(savePath)) {
+                    FileLog.w(TAG, "Saving the rebuilt C++ state failed.")
+                }
+                FileLog.d(TAG, "Fast start (C++): background rebuild finished; re-posting from the C++ core.")
+                provideDataToActivity()
+            } else {
+                FileLog.w(TAG, "Fast start (C++): background rebuild failed, keeping the posted local values.")
+            }
+        }
+    }
+
+    private fun waitLocalModelAndProvide() {
+        serviceScope.launch {
+            try {
+                withTimeout(15_000) {
+                    while (appModel?.isFullyLoaded != true) {
+                        delay(200)
+                    }
+                }
+            } catch (e: TimeoutCancellationException) {
+                FileLog.w(TAG, "Local model did not finish loading within 15 s.")
+            }
+            // Only post when the local model actually holds data: on an empty
+            // Room an immediate empty post would race the C++ rebuild queued
+            // behind it.
+            if (localModelWalletsEmpty()) {
+                FileLog.w(TAG, "Local model empty; skipping the local post (the next post wins).")
+            } else {
+                provideDataToActivity(forceKotlin = true)
+            }
+        }
+    }
+
+    /** True while the (Room-loaded) local model has no wallets yet. */
+    private fun localModelWalletsEmpty(): Boolean =
+        appModel?.txApp?.wallets.isNullOrEmpty() &&
+            (appModel?.cardApp?.wallets?.isNullOrEmpty() ?: true)
 
     /**
      * Loads the data from Firebase.
@@ -886,7 +1047,10 @@ class CoreService : Service() {
                 when (isCoreInitialized && useCpp) {
                     true -> {
 
-                        init(logFilePath, savePath)
+                        // "" on purpose: a live Firebase import must start
+                        // from an empty core, never from the fast-start
+                        // save state (plan 003).
+                        init(logFilePath, "")
 
                         dbCardWallets?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
                             setCardWalletData(
@@ -944,7 +1108,7 @@ class CoreService : Service() {
         parseBudgetMs: Long
     ): Boolean
 
-    private external fun save(savePath: String) //TODO: does not work in and
+    private external fun save(savePath: String): Boolean
     private external fun load(savePath: String)
 
     private external fun getModes(): Int
@@ -1132,8 +1296,13 @@ class CoreService : Service() {
 
         val path: String
             get() = applicationContext.filesDir.absolutePath
+        /**
+         * Directory of the persisted C++ state (plan 003, fast start).
+         * Trailing slash required: the core writes `<dirPath> +
+         * "wallets" | "cardWallets" | "state"`.
+         */
         val savePath: String
-            get() = ""//"$path/save/"
+            get() = "$path/save/"
         val logFilePath: String
             get() = "$path/log/core.log"
 
@@ -1159,6 +1328,18 @@ class CoreService : Service() {
             val intent = Intent(applicationContext, CoreService::class.java)
             intent.action = ACTION_START_SERVICE
             PreferenceHelper.setUseCpp(applicationContext, useCpp)
+            applicationContext.startService(intent)
+        }
+
+        /**
+         * Starts the CoreService for the fast-start path (plan 003):
+         * `ACTION_START_SERVICE` without persisting a core-mode choice -
+         * `useCpp` already mirrors the user's setting from
+         * `onStartCommand`, and fast start must not flip it.
+         */
+        fun startServiceFromLocal() {
+            val intent = Intent(applicationContext, CoreService::class.java)
+            intent.action = ACTION_START_SERVICE
             applicationContext.startService(intent)
         }
 

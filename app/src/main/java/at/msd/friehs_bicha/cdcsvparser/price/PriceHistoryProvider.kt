@@ -39,7 +39,12 @@ class PriceHistoryProvider(
         listOf(
             BitstampHistorySource(),
             KrakenHistorySource(),
-            CryptoCompareHistorySource(),
+            // Plan 004: runtime user key (Settings) > build-time key >
+            // keyless. The provider is re-created on every screen visit,
+            // so a changed key takes effect on the next one.
+            CryptoCompareHistorySource(
+                apiKey = PriceApiKey.cryptoCompareKey(InstanceVars.applicationContext),
+            ),
         ),
     ),
 ) {

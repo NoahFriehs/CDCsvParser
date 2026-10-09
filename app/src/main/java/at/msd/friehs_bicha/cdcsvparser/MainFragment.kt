@@ -97,8 +97,15 @@ class MainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // The launcher activity can pass "fastStart" to go straight to parsing.
-        if (requireActivity().intent.hasExtra("fastStart")) {
+        // The launcher activity passes "fastStart" to go straight to the
+        // overview (plan 003). The extra is consumed ONCE: a recreated view
+        // (pop-back delivers a fresh view with savedInstanceState == null,
+        // and process restore / rotation re-deliver the same intent) must
+        // never fire the navigation a second time - that is what made the
+        // overview screen impossible to leave after a fast start.
+        val intent = requireActivity().intent
+        if (savedInstanceState == null && intent.hasExtra("fastStart")) {
+            intent.removeExtra("fastStart")
             fastStart()
         }
     }

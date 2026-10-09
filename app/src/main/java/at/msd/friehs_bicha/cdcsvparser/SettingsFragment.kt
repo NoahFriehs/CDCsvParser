@@ -11,13 +11,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.SettingsScreen
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.android.material.snackbar.Snackbar
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.ktx.firestore
@@ -40,6 +46,12 @@ class SettingsFragment : Fragment() {
     private val _dataLocal = mutableStateOf(false)
     private val _fastStart = mutableStateOf(false)
     private val _signedIn = mutableStateOf(auth.currentUser != null)
+    // Plan 004: runtime price API keys ("" = unset / keyless).
+    private val _cgKey = mutableStateOf("")
+    private val _ccKey = mutableStateOf("")
+
+    /** The on-disk price cache files (plan 004). */
+    private val PRICE_CACHE_FILES = arrayOf("history_prices.json", "symbol_id_cache.json")
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -81,6 +93,17 @@ class SettingsFragment : Fragment() {
                             PreferenceHelper.setFastStartEnabled(requireContext(), it)
                         },
                         isSignedIn = _signedIn.value,
+                        coingeckoKey = _cgKey.value,
+                        onCoinGeckoKeyChange = { key ->
+                            _cgKey.value = key
+                            PreferenceHelper.setCoinGeckoApiKey(requireContext(), key)
+                        },
+                        cryptocompareKey = _ccKey.value,
+                        onCryptoCompareKeyChange = { key ->
+                            _ccKey.value = key
+                            PreferenceHelper.setCryptoCompareApiKey(requireContext(), key)
+                        },
+                        onDeletePriceCaches = { deletePriceCaches() },
                         onAbout = { findNavController().navigate(R.id.aboutUsFragment) },
                         onLogin = { findNavController().navigate(R.id.loginFragment) },
                         onLogout = { confirmLogout() },
@@ -98,6 +121,36 @@ class SettingsFragment : Fragment() {
         _useStrictType.value = PreferenceHelper.getUseStrictType(requireContext())
         _dataLocal.value = PreferenceHelper.getIsDataLocal(requireContext())
         _fastStart.value = PreferenceHelper.getFastStartEnabled(requireContext())
+        _cgKey.value = PreferenceHelper.getCoinGeckoApiKey(requireContext())
+        _ccKey.value = PreferenceHelper.getCryptoCompareApiKey(requireContext())
+    }
+
+    /**
+     * Plan 004: removes the app's price caches - the two on-disk JSON
+     * files (deep history + symbol->id map) and the in-memory 5-minute
+     * price cache. The CSV imports (user data) and the Room DB are NOT
+     * touched. The next parse re-fetches the history; until then the
+     * charts fall back to the live prices only.
+     */
+    private fun deletePriceCaches() {
+        val context = requireContext().applicationContext
+        lifecycleScope.launch(Dispatchers.IO) {
+            var deleted = 0
+            for (name in PRICE_CACHE_FILES) {
+                val file = File(context.filesDir, name)
+                if (file.exists() && file.delete()) deleted++
+            }
+            // The in-memory cache is process-local; no file, no error.
+            AssetValue.clearPriceCache()
+            withContext(Dispatchers.Main) {
+                if (!isAdded) return@withContext
+                snackbarHostState.showSnackbar(
+                    getString(
+                        if (deleted > 0) R.string.caches_deleted else R.string.caches_already_empty,
+                    ),
+                )
+            }
+        }
     }
 
     override fun onStart() {
