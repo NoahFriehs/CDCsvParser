@@ -35,8 +35,20 @@ enum class ChartSeries(
 }
 
 /** User-selectable time frames for the overview charts. */
-// Order = chip order in the UI row (plan 009a: short labels W/M/Q/J + T/D).
-enum class TimeFrame { WEEK, MONTH, QUARTER, YEAR, DAY }
+// Order = chip order in the UI row (plan 009a: W/M/Q/J + T; plan 009b:
+// + 6 h / 15 m, the window-limited intraday frames).
+enum class TimeFrame { WEEK, MONTH, QUARTER, YEAR, DAY, HOURS_6, MINUTES_15 }
+
+/** An intraday frame's data window (plan 009b scope decisions). */
+data class IntradayFrame(val windowSeconds: Int, val windowDays: Int)
+
+/** The intraday data window of an intraday frame; null for the daily ones. */
+val TimeFrame.intradayFrame: IntradayFrame?
+    get() = when (this) {
+        TimeFrame.HOURS_6 -> IntradayFrame(6 * 3600, 30)
+        TimeFrame.MINUTES_15 -> IntradayFrame(15 * 60, 7)
+        else -> null
+    }
 
 /**
  * Preset display ranges for the overview chart (plan 006): each preset is
@@ -121,7 +133,11 @@ fun bucketize(
 /** Fixed-format bucket key (see [bucketLabel] for the display form). */
 fun bucketKey(date: LocalDate, timeFrame: TimeFrame): String = when (timeFrame) {
     // Plan 009a: one bucket per calendar day (the core's native resolution).
-    TimeFrame.DAY -> date.toString()
+    TimeFrame.DAY,
+    // Plan 009b: intraday points already carry the core's window keys -
+    // this arm only keeps the compiler happy (never bucketed).
+    TimeFrame.HOURS_6,
+    TimeFrame.MINUTES_15 -> date.toString()
 
     TimeFrame.WEEK -> {
         // java.time.YearWeek is not on Android: ISO-8601 week derived by
@@ -261,6 +277,10 @@ fun historicalStockSeries(
 
         // Plan 009a: a day bucket ends on the day itself.
         TimeFrame.DAY -> { d -> d }
+
+        // The intraday frames (009b) never reach this daily mapper (they
+        // use [historicalWindowState]); identity keeps the when exhaustive.
+        TimeFrame.HOURS_6, TimeFrame.MINUTES_15 -> { d -> d }
     }
 
     // One entry per calendar bucket, first active bucket .. pinDay's bucket.
@@ -331,6 +351,10 @@ fun bucketStartDate(key: String, timeFrame: TimeFrame): LocalDate? = when (timeF
     // Plan 009a: the key IS the ISO date (inverse of [bucketKey]).
     TimeFrame.DAY -> runCatching { LocalDate.parse(key) }.getOrNull()
 
+    // Plan 009b: the window start is embedded in the ISO date prefix.
+    TimeFrame.HOURS_6, TimeFrame.MINUTES_15 ->
+        runCatching { LocalDate.parse(key.substring(0, 10)) }.getOrNull()
+
     TimeFrame.WEEK -> {
         val m = """(\d{4})-W(\d{2})""".toRegex().find(key) ?: return null
         val year = m.groupValues[1].toInt()
@@ -398,6 +422,18 @@ fun bucketLabel(key: String, timeFrame: TimeFrame): String = when (timeFrame) {
         )
     }.getOrDefault(key)
 
+    // Plan 009b intraday keys are the core's window starts ("YYYY-MM-DD
+    // HH:MM"): the 6h frame shows the date + hour, the 15m frame the hour
+    // (the dates sit far apart on that axis, the label count is low).
+    TimeFrame.HOURS_6 -> runCatching {
+        val (day, hour) = key.split(" ")
+        "${day.takeLast(5)} $hour"
+    }.getOrDefault(key)
+
+    TimeFrame.MINUTES_15 -> runCatching {
+        key.substringAfterLast(' ').substring(0, 5)
+    }.getOrDefault(key)
+
     TimeFrame.WEEK -> {
         val m = """(\d{4})-W(\d{2})""".toRegex().find(key) ?: return key
         "W${m.groupValues[2]} ${m.groupValues[1].substring(2)}"
@@ -415,3 +451,247 @@ fun bucketLabel(key: String, timeFrame: TimeFrame): String = when (timeFrame) {
 
     TimeFrame.YEAR -> key
 }
+
+// ------------------------------------------------------------------------
+// Plan 009b: the intraday (sub-daily) series.
+
+/** One core sub-daily wallet line: the RUNNING unpriced token/bonus
+ *  position at the start of one fixed [window]. */
+data class WalletWindow(val key: String, val balance: Double, val bonus: Double)
+
+/**
+ * Parses the core's `getSubDailyWalletSeries` lines ("CUR;YYYY-MM-DD
+ * HH:MM;balance;bonus", oldest first per currency) into per-currency
+ * window points. Malformed lines are skipped.
+ */
+fun parseWalletWindows(rows: List<String>): Map<String, List<WalletWindow>> {
+    val out = LinkedHashMap<String, MutableList<WalletWindow>>()
+    for (row in rows) {
+        val parts = row.split(';', limit = 4)
+        if (parts.size != 4) continue
+        if (toEpochSecond(parts[1]) < 0) continue
+        val balance = parts[2].toDoubleOrNull() ?: continue
+        val bonus = parts[3].toDoubleOrNull() ?: continue
+        if (!balance.isFinite() || !bonus.isFinite()) continue
+        out.getOrPut(parts[0]) { mutableListOf() }.add(WalletWindow(parts[1], balance, bonus))
+    }
+    return out
+}
+
+/** Parses the core's `getSubDailySpentSeries` lines ("YYYY-MM-DD HH:MM;
+ *  flow") into per-window spent points. */
+fun parseSubDailySpent(rows: List<String>): List<ChartPoint> {
+    val out = mutableListOf<ChartPoint>()
+    for (row in rows) {
+        val parts = row.split(';', limit = 2)
+        if (parts.size != 2) continue
+        if (toEpochSecond(parts[0]) < 0) continue
+        val value = parts[1].toDoubleOrNull() ?: continue
+        if (!value.isFinite()) continue
+        out.add(ChartPoint(parts[0], value))
+    }
+    return out
+}
+
+/** The UTC epoch second of a sub-daily window start key ("YYYY-MM-DD
+ *  HH:MM"), or -1 when malformed. */
+fun toEpochSecond(key: String): Long {
+    val m = """(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})""".toRegex().find(key) ?: return -1L
+    val date = runCatching {
+        LocalDate.of(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt())
+    }.getOrNull() ?: return -1L
+    if (m.groupValues[4].toInt() > 23 || m.groupValues[5].toInt() > 59) return -1L
+    return date.toEpochDay() * 86_400L + m.groupValues[4].toLong() * 3600L + m.groupValues[5].toLong() * 60L
+}
+
+/**
+ * One symbol's intraday pricing on a frame's window grid (plan 009b):
+ * (windowStartTsSec, price) pairs covering the whole frame window.
+ * [firstRealIndex] is the first pair backed by a REAL intraday price
+ * (not the daily-held-flat / live fallback) - the leading pairs form the
+ * dashed estimated region, exactly like [historicalStockSeries].estimat
+ * edCount does for the daily frames.
+ */
+data class IntradayPricing(
+    val points: List<Pair<Long, Double>>,
+    val firstRealIndex: Int,
+)
+
+/**
+ * Flattens one symbol's data onto the frame's window grid: every window
+ * takes the last refined price valid AT THE WINDOW (on or before its end);
+ * windows the refinement does not reach fall back to the daily close of
+ * the window's calendar day (held flat intraday), and windows on or after
+ * today pin the LIVE price (the same pin that keeps the daily frames at
+ * card parity).
+ *
+ * @param refined sub-daily (tsSec, price) ascending - may be empty.
+ * @param daily daily closes (utcEpochDay, close) ascending - may be empty.
+ * @param livePrice the current live price - may be null (keyless/static
+ *        symbol with no cached history).
+ * @param nowTsSec the current UTC epoch second (defines the grid).
+ * @return the grid pricing, or null when the symbol has NO price source
+ *        at all (it then cannot be valued in any frame).
+ */
+fun flattenIntraday(
+    refined: List<Pair<Long, Double>>,
+    daily: List<Pair<Long, Double>>,
+    livePrice: Double?,
+    nowTsSec: Long,
+    frame: IntradayFrame,
+): IntradayPricing? {
+    val lastDaily = daily.lastOrNull()
+    if (refined.isEmpty() && lastDaily == null && livePrice == null) return null
+    val ws = frame.windowSeconds.toLong()
+    val windowStart = nowTsSec - frame.windowDays * 86_400L
+    val firstStart = windowStart - (windowStart % ws) // grid aligned to the epoch
+    val today = nowTsSec / 86_400L
+
+    val points = ArrayList<Pair<Long, Double>>()
+    var firstRealIndex = Int.MAX_VALUE
+    var r = 0
+    var d = 0
+    for (start in firstStart until nowTsSec step ws) {
+        val end = start + ws - 1L
+        while (r + 1 < refined.size && refined[r + 1].first <= end) r++
+        val real = refined.isNotEmpty() && refined[r].first <= end
+        while (d + 1 < daily.size && daily[d + 1].first <= end / 86_400L) d++
+        val price = when {
+            real -> refined[r].second
+            lastDaily != null && (end / 86_400L) <= lastDaily.first ->
+                if ((end / 86_400L) == today) livePrice ?: lastDaily.second else daily[d].second
+            else -> livePrice ?: lastDaily?.second ?: return null
+        }
+        if (real && firstRealIndex == Int.MAX_VALUE) firstRealIndex = points.size
+        points.add(start to price)
+    }
+    return IntradayPricing(points, if (firstRealIndex == Int.MAX_VALUE) points.size else firstRealIndex)
+}
+
+/**
+ * The intraday counterpart of [historicalStockSeries]: values the core's
+ * sub-daily wallet + spent series per window. One x point per window key
+ * present in the data (oldest first; the ISO keys sort chronologically),
+ * the running unpriced positions valued with the prices valid at the
+ * window ([pricing] uses the SAME window grid as the core keys), pl
+ * against the cumulative spent flow so far.
+ *
+ * A leading window is "estimated" while ANY valued currency is still in
+ * its fallback region (before its [IntradayPricing.firstRealIndex] ts).
+ * Currencies with no [pricing] entry at all cannot be valued and are
+ * excluded (the panel only draws what has prices, as on the daily frames).
+ */
+fun historicalWindowState(
+    spent: List<ChartPoint>,
+    wallet: Map<String, List<WalletWindow>>,
+    pricing: Map<String, IntradayPricing>,
+): HistoricalSeries {
+    val keys = LinkedHashSet<String>()
+    for (p in spent) keys.add(p.key)
+    wallet.values.forEach { list -> list.forEach { w -> keys.add(w.key) } }
+    if (keys.isEmpty()) return HistoricalSeries(emptyList(), emptyList(), emptyList(), 0)
+    val sorted = keys.sorted()
+
+    val spentByWindow = HashMap<String, Double>(spent.size)
+    spent.forEach { spentByWindow[it.key] = it.value }
+    val posIdx = HashMap<String, Int>()
+    val priceIdx = HashMap<String, Int>()
+    val balances = HashMap<String, Double>()
+    val bonuses = HashMap<String, Double>()
+    val valuePoints = mutableListOf<ChartPoint>()
+    val plPoints = mutableListOf<ChartPoint>()
+    val bonusPoints = mutableListOf<ChartPoint>()
+    // First ts at which each currency's pricing is REAL (estimated before).
+    val realFrom = HashMap<String, Long>()
+    for ((cur, p) in pricing) {
+        realFrom[cur] = if (p.firstRealIndex < p.points.size) {
+            p.points[p.firstRealIndex].first
+        } else {
+            Long.MAX_VALUE
+        }
+    }
+    var spentSoFar = 0.0
+    for (key in sorted) {
+        val slotTs = toEpochSecond(key)
+        for ((cur, list) in wallet) {
+            var idx = posIdx[cur] ?: 0
+            while (idx < list.size && toEpochSecond(list[idx].key) <= slotTs) {
+                balances[cur] = list[idx].balance
+                bonuses[cur] = list[idx].bonus
+                idx++
+            }
+            posIdx[cur] = idx
+        }
+        spentSoFar += spentByWindow[key] ?: 0.0
+
+        var value = 0.0
+        var bonusValue = 0.0
+        for ((cur, p) in pricing) {
+            val balance = balances[cur] ?: continue
+            val bonus = bonuses[cur] ?: 0.0
+            if (balance == 0.0 && bonus == 0.0) continue
+            // The core keys and the pricing grid share the window
+            // alignment (epoch multiples of the frame) - advance the
+            // pointer instead of scanning (both lists are ascending).
+            var idx = priceIdx[cur] ?: 0
+            while (idx + 1 < p.points.size && p.points[idx + 1].first <= slotTs) idx++
+            priceIdx[cur] = idx
+            if (p.points[idx].first > slotTs) continue // grid drift (not expected)
+            val price = p.points[idx].second
+            value += balance * price
+            bonusValue += bonus * price
+        }
+        valuePoints.add(ChartPoint(key, value))
+        plPoints.add(ChartPoint(key, value - spentSoFar))
+        bonusPoints.add(ChartPoint(key, bonusValue))
+    }
+    // Estimated = the leading windows in which any valued currency is
+    // before its "real" region; refined regions end at now by
+    // construction, so the region is a single prefix.
+    var estimatedCount = 0
+    for (point in valuePoints) {
+        val slotTs = toEpochSecond(point.key)
+        val anyEstimated = wallet.keys.any { cur ->
+            cur in realFrom && (balances[cur] ?: 0.0) != 0.0 && slotTs < (realFrom[cur] ?: 0L)
+        }
+        if (!anyEstimated) break
+        estimatedCount++
+    }
+    return HistoricalSeries(valuePoints, plPoints, bonusPoints, estimatedCount)
+}
+
+/**
+ * The STOCK series (value/pl/bonus) of one intraday frame (plan 009b) from
+ * the raw core rows: the per-currency symbols of the wallet rows are priced
+ * with [flattenIntraday] (refinement first, then daily-close-held-flat,
+ * then the live pin), then [historicalWindowState] values the running
+ * positions per window. The spent (flow) series needs none of the pricing
+ * and comes straight from [parseSubDailySpent].
+ *
+ * @param intraday refined sub-daily points per symbol (may be empty).
+ * @param daily daily closes per symbol (the flatten fallback source).
+ * @param livePrices the live prices (the same map the cards use).
+ */
+fun intradaySeries(
+    subSpentRows: List<String>,
+    subWalletRows: List<String>,
+    intraday: Map<String, List<Pair<Long, Double>>>,
+    daily: Map<String, List<Pair<Long, Double>>>,
+    livePrices: Map<String, Double>,
+    nowTsSec: Long,
+    frame: IntradayFrame,
+): HistoricalSeries {
+    val wallet = parseWalletWindows(subWalletRows)
+    val pricing = HashMap<String, IntradayPricing>()
+    for (cur in wallet.keys) {
+        flattenIntraday(
+            intraday[cur].orEmpty(),
+            daily[cur].orEmpty(),
+            livePrices[cur],
+            nowTsSec,
+            frame,
+        )?.let { pricing[cur] = it }
+    }
+    return historicalWindowState(parseSubDailySpent(subSpentRows), wallet, pricing)
+}
+

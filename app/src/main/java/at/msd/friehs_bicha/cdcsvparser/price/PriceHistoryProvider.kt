@@ -211,8 +211,12 @@ class PriceHistoryProvider(
     suspend fun ensureAll(
         symbols: List<String>,
         days: Int,
+        /** The export's last transaction day - the intraday frames' anchor
+         *  (plan 009b); null = no intraday refinement this pass. */
+        anchorDay: java.time.LocalDate?,
         onProgress: ((Int, Int) -> Unit)? = null,
         onSymbol: ((String, DailyPrices) -> Unit)? = null,
+        onIntraday: ((String, IntradayHistory.IntradayData) -> Unit)? = null,
     ): Map<String, DailyPrices> = withContext(Dispatchers.IO) {
         loadCache()
         deepChain.beginPass()
@@ -271,6 +275,22 @@ class PriceHistoryProvider(
                 FileLog.d(TAG, "No history for $symbol (every chain source declined it this pass).")
                 done++
                 onProgress?.invoke(done, symbols.size)
+            }
+        }
+        // Phase 3 (plan 009b): the intraday REFINEMENT for the 15-min /
+        // 6-hour chart frames (15m/7 d + 6h/30 d candles, disk-cached per
+        // symbol, at most one refetch per UTC day). Runs after the daily
+        // phase so the sanity check sees the settled daily closes; it never
+        // changes the daily result - a failure just leaves the symbol to
+        // the flatten fallback (daily close held flat + live pin). NOTE: no
+        // "History for ..." log line here (the per-symbol pass test counts
+        // those) - the intraday fetch logs its own "Intraday for ..." line.
+        if (onIntraday != null && anchorDay != null) {
+            val intraday = IntradayHistory(prices)
+            for (symbol in symbols) {
+                coroutineContext.ensureActive()
+                intraday.ensure(symbol, result[symbol]?.points.orEmpty(), anchorDay)
+                    ?.let { onIntraday(symbol, it) }
             }
         }
         onProgress?.invoke(done, symbols.size)

@@ -1205,6 +1205,44 @@ class CoreService : Service() {
         private external fun getDailyWalletSeries(): Array<String>
 
         /**
+         * Money spent bucketed into fixed [windowSeconds] slots from the
+         * epoch (UTC): "YYYY-MM-DD HH:MM;value" lines (flow), oldest first.
+         * [fromEpoch] (0 = no limit) suppresses slots starting before it. The
+         * 15-min and 6-hour chart frames (plan 009b) run this with a
+         * fromEpoch of "now - the frame's data window", so the JNI transfer
+         * stays bounded for long exports. Runs on the cpp-core thread.
+         */
+        suspend fun subDailySpentSeries(windowSeconds: Int, fromEpoch: Long): List<String> =
+            withContext(coreDispatcher) {
+                if (!isRunning) return@withContext emptyList()
+                getSubDailySpentSeries(windowSeconds, fromEpoch)?.toList() ?: emptyList()
+            }
+
+        private external fun getSubDailySpentSeries(
+            windowSeconds: Int,
+            fromEpoch: Long,
+        ): Array<String>
+
+        /**
+         * Per-wallet UNPRICED token series in fixed [windowSeconds] slots:
+         * "CURRENCY;YYYY-MM-DD HH:MM;runningBalance;runningBonus" (the
+         * windowed sibling of [dailyWalletSeries]). Same scope, running state
+         * carries across gaps and across the [fromEpoch] cut. The chart code
+         * prices each point with the price valid at the slot. Runs on the
+         * cpp-core thread.
+         */
+        suspend fun subDailyWalletSeries(windowSeconds: Int, fromEpoch: Long): List<String> =
+            withContext(coreDispatcher) {
+                if (!isRunning) return@withContext emptyList()
+                getSubDailyWalletSeries(windowSeconds, fromEpoch)?.toList() ?: emptyList()
+            }
+
+        private external fun getSubDailyWalletSeries(
+            windowSeconds: Int,
+            fromEpoch: Long,
+        ): Array<String>
+
+        /**
          * All core work - and in particular every JNI call into the C++
          * core - runs on this single "cpp-core" thread. The C++
          * TransactionManager is not thread-safe, so the whole JNI surface

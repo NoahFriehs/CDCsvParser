@@ -10,6 +10,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryProvider.DailyPrices
+import java.time.LocalDate
 
 /**
  * The single process-wide price-history pass (plan 008). Screen visits are
@@ -37,12 +38,20 @@ object PriceHistoryPass {
     /** Per-symbol history published so far (grows in; shared with screens). */
     val history: MutableState<Map<String, DailyPrices>> = mutableStateOf(emptyMap())
 
+    /**
+     * Per-symbol intraday refinement (plan 009b) published by the pass's
+     * phase 3; the intraday chart frames flatten it (missing entry = the
+     * symbol only has the daily-held-flat fallback).
+     */
+    val intraday: MutableState<Map<String, IntradayHistory.IntradayData>> = mutableStateOf(emptyMap())
+
     /** (done, total) of the current pass; null = no pass started yet. */
     val progress: MutableState<Pair<Int, Int>?> = mutableStateOf(null)
 
     private var job: Job? = null
     private var passSymbols: List<String> = emptyList()
     private var passDays: Int = 0
+    private var passAnchorDay: Long = Long.MIN_VALUE
     private var passCompletedDay: Long = -1L
 
     /**
@@ -50,11 +59,16 @@ object PriceHistoryPass {
      * days, either by attaching to the current pass (see the class
      * doc) or by superseding it and starting a new one, which then
      * publishes progress into [history] / [progress] in the background.
+     * [anchorDay] (the export's last transaction day) anchors the
+     * intraday frames (plan 009b); a pass anchored elsewhere does not
+     * cover the request.
      */
-    fun ensureAll(symbols: List<String>, days: Int) {
+    fun ensureAll(symbols: List<String>, days: Int, anchorDay: LocalDate?) {
         if (symbols.isEmpty()) return
         val live = job?.isActive == true
-        val covers = passSymbols.toHashSet().containsAll(symbols) && passDays >= days
+        val covers = passSymbols.toHashSet().containsAll(symbols) &&
+            passDays >= days &&
+            (anchorDay == null || passAnchorDay == anchorDay.toEpochDay())
         if (covers && (live || passCompletedDay >= PriceHistoryProvider.todayUtcDay())) {
             FileLog.d(
                 TAG,
@@ -74,8 +88,9 @@ object PriceHistoryPass {
             job?.cancel()
         }
         if (passSymbols != symbols) {
-            // Different export: the old map no longer describes this one.
+            // Different export: the old maps no longer describe this one.
             history.value = emptyMap()
+            intraday.value = emptyMap()
         }
         val prices = AssetValue.getInstance().priceProvider as? CryptoPricesCryptoCompare
         if (prices == null) {
@@ -84,14 +99,17 @@ object PriceHistoryPass {
         }
         passSymbols = symbols
         passDays = days
+        passAnchorDay = anchorDay?.toEpochDay() ?: Long.MIN_VALUE
         progress.value = 0 to symbols.size
         job = scope.launch {
             try {
                 PriceHistoryProvider(prices).ensureAll(
                     symbols = symbols,
                     days = days,
+                    anchorDay = anchorDay,
                     onProgress = { done, total -> progress.value = done to total },
                     onSymbol = { symbol, entry -> addSymbol(symbol, entry) },
+                    onIntraday = { symbol, entry -> addIntraday(symbol, entry) },
                 )
             } catch (e: CancellationException) {
                 // Superseded by a newer request: the replacement owns the
@@ -115,5 +133,10 @@ object PriceHistoryPass {
     @Synchronized
     private fun addSymbol(symbol: String, entry: DailyPrices) {
         history.value = history.value + (symbol to entry)
+    }
+
+    @Synchronized
+    private fun addIntraday(symbol: String, entry: IntradayHistory.IntradayData) {
+        intraday.value = intraday.value + (symbol to entry)
     }
 }

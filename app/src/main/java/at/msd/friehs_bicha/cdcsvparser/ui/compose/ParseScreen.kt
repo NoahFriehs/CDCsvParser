@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +63,8 @@ import com.github.mikephil.charting.utils.ColorTemplate
 import com.github.mikephil.charting.formatter.ValueFormatter
 import androidx.compose.ui.text.LinkAnnotation
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.price.IntradayHistory
 import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryProvider
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import java.time.Instant
@@ -95,6 +98,9 @@ fun ParseScreen(
     walletSeries: List<String>,
     /** Fetched daily EUR price history per currency (may arrive in parts). */
     history: Map<String, PriceHistoryProvider.DailyPrices>,
+    /** Plan 009b: refined intraday EUR points per currency (pass phase 3;
+     *  empty until a pass has fetched them). */
+    intraday: Map<String, IntradayHistory.IntradayData>,
     /** (done, total) of the history fetch pass, or null before it starts. */
     historyProgress: Pair<Int, Int>?,
     /** Live prices (the ones the cards use) - pin the bucket that contains
@@ -230,6 +236,7 @@ fun ParseScreen(
                     dailySeries = dailySeries,
                     walletSeries = walletSeries,
                     history = history,
+                    intraday = intraday,
                     historyProgress = historyProgress,
                     currentPrices = currentPrices,
                     noInternet = noInternet,
@@ -345,6 +352,8 @@ private fun ChartPanel(
     dailySeries: List<String>,
     walletSeries: List<String>,
     history: Map<String, PriceHistoryProvider.DailyPrices>,
+    /** Plan 009b: refined intraday points per symbol (pass phase 3). */
+    intraday: Map<String, IntradayHistory.IntradayData>,
     historyProgress: Pair<Int, Int>?,
     currentPrices: Map<String, Double>,
     noInternet: Boolean,
@@ -398,7 +407,7 @@ private fun ChartPanel(
         rangeStart = range.startDate(today)
         rangeEnd = null
     }
-    val (points, estimatedCount) = remember(
+    val dailyPoints: Pair<List<ChartPoint>, Int> = remember(
         fullPoints, timeFrame, rangeStart, rangeEnd, selectedSeries,
     ) {
         limitRange(
@@ -408,6 +417,58 @@ private fun ChartPanel(
             rangeStart,
             rangeEnd,
         )
+    }
+
+    // Plan 009b: the INTRADAY frames (6 h / 15 m). Their data is windowed:
+    // the core emits only slots of the frame's window (fromEpoch) and the
+    // range presets don't apply to it (the note below explains the
+    // window). The core sub-daily rows are fetched lazily here - the core
+    // replay is in-memory and fast - keyed on the frame and a re-parse.
+    // Plan 009b: the frames anchor to the export's last transaction day,
+    // not "now" (an export older than the frame window would otherwise
+    // chart empty air) - the day after it is the grid's exclusive end.
+    val anchorTs = remember(walletData) {
+        walletData.values.flatten().maxOfOrNull { it.date }?.let { (it.toEpochDay() + 1) * 86_400L }
+    }
+    var subDaily by remember { mutableStateOf<Pair<List<String>, List<String>>?>(null) }
+    LaunchedEffect(timeFrame, dailySeries, walletSeries) {
+        val frame = timeFrame.intradayFrame ?: return@LaunchedEffect
+        val anchor = anchorTs ?: return@LaunchedEffect
+        val fromEpoch = anchor - frame.windowDays * 86_400L
+        subDaily = CoreService.subDailySpentSeries(frame.windowSeconds, fromEpoch) to
+            CoreService.subDailyWalletSeries(frame.windowSeconds, fromEpoch)
+    }
+    val intradayResult: HistoricalSeries? = remember(
+        subDaily, selectedSeries, timeFrame, history, intraday, currentPrices, anchorTs,
+    ) {
+        val frame = timeFrame.intradayFrame ?: return@remember null
+        val sub = subDaily ?: return@remember null
+        val anchor = anchorTs ?: return@remember null
+        if (selectedSeries.isFlow) return@remember null // flow needs no pricing
+        intradaySeries(
+            subSpentRows = sub.first,
+            subWalletRows = sub.second,
+            intraday = intraday.mapValues { it.value.points },
+            daily = history.mapValues { it.value.points },
+            livePrices = currentPrices,
+            nowTsSec = anchor,
+            frame = frame,
+        )
+    }
+    val (points, estimatedCount) = when {
+        timeFrame.intradayFrame != null && subDaily != null -> {
+            val sub = subDaily!! // guarded by the condition above
+            when (selectedSeries) {
+                ChartSeries.SPENT -> parseSubDailySpent(sub.first) to 0
+                ChartSeries.VALUE -> intradayResult?.value.orEmpty() to (intradayResult?.estimatedCount ?: 0)
+                ChartSeries.PL -> intradayResult?.pl.orEmpty() to (intradayResult?.estimatedCount ?: 0)
+                ChartSeries.BONUS -> intradayResult?.bonus.orEmpty() to (intradayResult?.estimatedCount ?: 0)
+            }
+        }
+
+        // Intraday frame, the core rows not fetched yet: empty for a moment.
+        timeFrame.intradayFrame != null -> emptyList<ChartPoint>() to 0
+        else -> dailyPoints
     }
     val historyIncomplete = !selectedSeries.isFlow &&
         historyProgress != null &&
@@ -504,6 +565,16 @@ private fun ChartPanel(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        // Plan 009b: the intraday frames only ever show their data window
+        // (the range presets don't restrict them further).
+        timeFrame.intradayFrame?.let { frame ->
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.chart_intraday_note, frame.windowDays),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Spacer(Modifier.height(12.dp))
         when {
             // Offline, and no price history to value the stock series from:
@@ -595,6 +666,8 @@ private val TimeFrame.labelRes: Int
         TimeFrame.QUARTER -> R.string.timeframe_quarter
         TimeFrame.YEAR -> R.string.timeframe_year
         TimeFrame.DAY -> R.string.timeframe_day
+        TimeFrame.HOURS_6 -> R.string.timeframe_6h
+        TimeFrame.MINUTES_15 -> R.string.timeframe_15m
     }
 
 private val ChartRange.labelRes: Int
@@ -699,9 +772,14 @@ private fun LineChart.applyChartState(
     setNoDataTextColor(labelColor)
     xAxis.setDrawGridLines(false)
     xAxis.granularity = 1f
-    // Plan 009a: day-frame labels are full short dates ("20.01.26") - at 8
-    // per axis they run into each other, so the day frame asks for fewer.
-    xAxis.labelCount = if (timeFrame == TimeFrame.DAY) 4 else 8
+    // Plan 009a/009b: the day/intraday labels are long enough ("20.01.26",
+    // "26.10 06:00", "14:00") that 8 per axis run into each other.
+    xAxis.labelCount = when (timeFrame) {
+        TimeFrame.DAY -> 4
+        TimeFrame.HOURS_6 -> 3
+        TimeFrame.MINUTES_15 -> 4
+        else -> 8
+    }
     xAxis.axisLineColor = gridColor
     xAxis.textColor = labelColor
     axisLeft.axisLineColor = gridColor

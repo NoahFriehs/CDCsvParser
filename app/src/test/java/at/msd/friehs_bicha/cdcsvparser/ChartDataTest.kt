@@ -13,8 +13,16 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketKey
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketize
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.historicalStockSeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.limitRange
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.IntradayFrame
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.IntradayPricing
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.WalletWindow
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.flattenIntraday
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.historicalWindowState
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseDailySeries
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseSubDailySpent
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletSeries
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletWindows
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.toEpochSecond
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -467,5 +475,121 @@ class ChartDataTest {
         assertEquals(day(2024, 6, 15), ChartRange.ONE_YEAR.startDate(today))
         assertEquals(day(2023, 6, 15), ChartRange.TWO_YEARS.startDate(today))
         assertEquals(day(2020, 6, 15), ChartRange.FIVE_YEARS.startDate(today))
+    }
+
+    // ------------------------------------------------------------------
+    // Plan 009b: the sub-daily (intraday) pure functions.
+
+    @Test
+    fun subDailyWindowKeyParsesToEpochSecond() {
+        assertEquals(86_400L + 6 * 3600L, toEpochSecond("1970-01-02 06:00"))
+        assertEquals(86_400L + 2 * 60L, toEpochSecond("1970-01-02 00:02"))
+        assertEquals(-1L, toEpochSecond("1970-01-02 25:00"))
+        assertEquals(-1L, toEpochSecond("16:00;3.5"))
+        assertEquals(-1L, toEpochSecond("1970-02-30 06:00")) // invalid calendar day
+    }
+
+    @Test
+    fun subDailyRowParsersSkipMalformedLines() {
+        val wallet = parseWalletWindows(
+            listOf(
+                "EUR;1970-01-02 06:00;2.5;-0.25",
+                "BTC;1970-01-02 06:00;0.01;0",
+                "BTC;1970-01-02 12:00;0.02;0.5",
+                "BTC;garbled",
+                "EUR;garbled;1;2",
+            ),
+        )
+        assertEquals(setOf("EUR", "BTC"), wallet.keys)
+        assertEquals(1, wallet["EUR"]!!.size)
+        assertEquals(2, wallet["BTC"]!!.size)
+        assertEquals(0.02, wallet["BTC"]!![1].balance, 1e-9)
+        assertEquals(0.5, wallet["BTC"]!![1].bonus, 1e-9)
+
+        val spent = parseSubDailySpent(
+            listOf("1970-01-02 06:00;-10.5", "1970-01-02 12:00;3", "garbled", "1970-01-02 18:00;NaN"),
+        )
+        assertEquals(2, spent.size)
+        assertEquals(-10.5, spent[0].value, 1e-9)
+        assertEquals("1970-01-02 12:00", spent[1].key)
+    }
+
+    @Test
+    fun flattenIntradayHoldsLastRefinedPricePerWindow() {
+        // 1 h grid over the 1-day window (24 points), now on a grid edge.
+        val now = 3_600_000L
+        val firstStart = now - 86_400
+        val frame = IntradayFrame(3600, 1)
+        val refined = listOf(
+            3_516_000L to 10.0, // window 0
+            3_523_200L to 11.0, // window 2
+            3_527_200L to 12.0, // window 3, then held flat
+        )
+
+        val out = flattenIntraday(refined, emptyList(), null, now, frame)
+            ?: error("flatten failed")
+
+        assertEquals(24, out.points.size)
+        assertEquals(firstStart, out.points.first().first)
+        assertEquals(10.0, out.points[0].second, 1e-9)
+        assertEquals(10.0, out.points[1].second, 1e-9) // same price, next window
+        assertEquals(11.0, out.points[2].second, 1e-9)
+        assertEquals(12.0, out.points[3].second, 1e-9)
+        assertEquals(12.0, out.points[23].second, 1e-9) // held to the latest window
+        assertEquals(0, out.firstRealIndex)
+    }
+
+    @Test
+    fun flattenIntradayFallsBackToDailyThenLivePin() {
+        val now = 3_600_000L // day 41 of the epoch
+        val frame = IntradayFrame(3600, 1)
+        // Day 40 closes at 5.0; the (partial) day-41 cache says 6.0, live is 7.5.
+        val daily = listOf(40L to 5.0, 41L to 6.0)
+
+        val out = flattenIntraday(emptyList(), daily, 7.5, now, frame)
+            ?: error("flatten failed")
+
+        assertEquals(5.0, out.points[0].second, 1e-9) // day 40 -> daily close
+        // window 8 is the first window of day 41 -> the LIVE pin
+        assertEquals(7.5, out.points[8].second, 1e-9)
+        assertEquals(7.5, out.points[23].second, 1e-9)
+        assertEquals(out.points.size, out.firstRealIndex) // nothing real -> all estimated
+    }
+
+    @Test
+    fun flattenIntradayReturnsNullWithoutAnyPriceSource() {
+        assertNull(flattenIntraday(emptyList(), emptyList(), null, 3_600_000L, IntradayFrame(3600, 1)))
+    }
+
+    @Test
+    fun historicalWindowStateValuesRunningPositionsPerWindow() {
+        val k0 = "1970-01-02 06:00"
+        val k1 = "1970-01-02 12:00"
+        val wallet = mapOf(
+            "EUR" to listOf(
+                WalletWindow(k0, 2.0, 0.5),
+            ),
+        )
+        val pricing = mapOf(
+            "EUR" to IntradayPricing(
+                points = listOf(
+                    108_000L to 10.0, // 1970-01-02 06:00
+                    129_600L to 12.0, // 1970-01-02 12:00
+                ),
+                firstRealIndex = 1, // only window 1 is "real"
+            ),
+        )
+        val spent = listOf(ChartPoint(k0, 5.0), ChartPoint(k1, 3.0))
+
+        val series = historicalWindowState(spent, wallet, pricing)
+
+        assertEquals(listOf(k0, k1), series.value.map { it.key })
+        assertEquals(20.0, series.value[0].value, 1e-9) // 2.0 * 10
+        assertEquals(24.0, series.value[1].value, 1e-9) // 2.0 * 12
+        assertEquals(15.0, series.pl[0].value, 1e-9)   // 20 - 5
+        assertEquals(16.0, series.pl[1].value, 1e-9)   // 24 - (5+3)
+        assertEquals(5.0, series.bonus[0].value, 1e-9)  // 0.5 * 10
+        assertEquals(6.0, series.bonus[1].value, 1e-9)  // 0.5 * 12
+        assertEquals(1, series.estimatedCount)           // only window 0 estimated
     }
 }

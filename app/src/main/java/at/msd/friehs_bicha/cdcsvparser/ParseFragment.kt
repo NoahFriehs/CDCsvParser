@@ -78,6 +78,7 @@ class ParseFragment : Fragment() {
                         // so a return re-joins the live counter (no second
                         // pass, no jumping counts).
                         history = PriceHistoryPass.history.value,
+                        intraday = PriceHistoryPass.intraday.value,
                         historyProgress = PriceHistoryPass.progress.value,
                         currentPrices = _currentPrices.value,
                         noInternet = _noInternet.value,
@@ -186,14 +187,20 @@ class ParseFragment : Fragment() {
         val walletData = parseWalletSeries(_walletSeries.value)
         val currencies = walletData.keys.toList()
         if (currencies.isEmpty()) return
-        val startDay = walletData.values.flatten().minOf { it.date.toEpochDay() }
+        val points = walletData.values.flatten()
+        val startDay = points.minOf { it.date.toEpochDay() }
+        // Plan 009b: the intraday frames anchor to the export's last
+        // transaction day (not "now") - every export older than the
+        // frame's window would otherwise chart empty air (smoke test found
+        // this with the Oct-2025 BlockPit export).
+        val anchorDay = points.maxOf { it.date }
         val rangeDays = ((LocalDate.now().toEpochDay() - startDay).coerceAtLeast(0) + 1).toInt()
         // The live prices the cards were valued with (pin for today's bucket).
         val assets = AssetValue.getInstance()
         _currentPrices.value = currencies.associateWith { assets.cachedPrice(it) }
             .filterValues { it != null }
             .mapValues { it.value!! }
-        PriceHistoryPass.ensureAll(currencies, rangeDays)
+        PriceHistoryPass.ensureAll(currencies, rangeDays, anchorDay)
     }
 
     companion object {

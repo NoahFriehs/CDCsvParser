@@ -138,6 +138,19 @@ object PriceApi {
             @Query("vs_currency") vsCurrency: String,
             @Query("days") days: Int,
         ): Call<MarketChartResponse>
+
+        /**
+         * Plan 009b: the same endpoint with an ABSOLUTE window (unix
+         * seconds) so the intraday refinement can be anchored to the
+         * export's last transaction day instead of "now".
+         */
+        @GET("coins/{id}/market_chart")
+        fun marketChartRange(
+            @Path("id") id: String,
+            @Query("vs_currency") vsCurrency: String,
+            @Query("from") fromSec: Long,
+            @Query("to") toSec: Long,
+        ): Call<MarketChartResponse>
     }
 
     @Serializable

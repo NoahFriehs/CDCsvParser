@@ -364,6 +364,61 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     }
 
     /**
+     * CoinGecko EUR price history of [symbol] over the last [days] days at
+     * RAW resolution (no daily reduction): for days in the public tier's
+     * 2..90 range that is HOURLY points. Same id resolution and 429
+     * handling as [getHistory]; (utcEpochSecond, price) ascending.
+     */
+    /**
+     * Plan 009b catch-all source: one CoinGecko `market_chart` call over
+     * an ABSOLUTE window [fromDay]..[toDay] (epoch days, inclusive) - the
+     * public tier answers with minute points for short windows and hourly
+     * points up to 90 d. [symbol] must resolve to a CoinGecko id; the
+     * window is clamped so the span stays inside the API's 90-day limit.
+     */
+    fun getHistoryRawHours(symbol: String, fromDay: Long, toDay: Long): List<Pair<Long, Double>>? {
+        if (fromDay >= toDay) return null
+        if (coinGeckoSkipMs() > 0) {
+            FileLog.d(TAG_CG, "CoinGecko cooldown/blackout active; skipping raw history for $symbol.")
+            return null
+        }
+        val clampedFrom = maxOf(fromDay, toDay - 90)
+        return try {
+            val coinId = resolveCoinGeckoId(symbol) ?: return null
+            spacing()
+            executeClosed(cgApi.marketChartRange(coinId, "eur", clampedFrom * 86_400L, (toDay - 1) * 86_400L + 86_399L)) { response ->
+                when {
+                    response.code() == 429 -> {
+                        noteCoinGecko429()
+                        null
+                    }
+
+                    response.isSuccessful -> {
+                        noteCoinGeckoSuccess()
+                        val out = ArrayList<Pair<Long, Double>>()
+                        for (entry in response.body()?.prices.orEmpty()) {
+                            if (entry.size != 2) continue
+                            val ts = entry[0]
+                            val price = entry[1]
+                            if (!ts.isFinite() || !price.isFinite() || price <= 0.0) continue
+                            out.add((ts / 1000L).toLong() to price)
+                        }
+                        out
+                    }
+
+                    else -> {
+                        FileLog.w(TAG_CG, "CoinGecko market_chart (range) failed for $symbol (HTTP ${response.code()}).")
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            FileLog.d(TAG_CG, "Failed to get raw history for $symbol: $e")
+            null
+        }
+    }
+
+    /**
      * One CoinGecko `simple/price` call for a batch of symbols.
      *
      * @return a map from symbol to price with entries only for symbols whose
