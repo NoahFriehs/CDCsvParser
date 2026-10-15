@@ -672,6 +672,68 @@ fun historicalWindowState(
  * @param daily daily closes per symbol (the flatten fallback source).
  * @param livePrices the live prices (the same map the cards use).
  */
+// ------------------------------------------------------------------------
+// Plan 009c: the all-series overlay.
+
+/** One single-series point list as overlay input: [points] on its own
+ *  bucket keys, [estimated] = the leading (dashed) prefix, [series] the
+ *  series it came from. */
+data class OverlaySeries(val series: ChartSeries, val points: List<ChartPoint>, val estimated: Int)
+
+/** One overlay series projected onto the COMMON grid (see [alignOverlay]):
+ *  [values] per grid slot plus the leading estimated prefix on that grid. */
+data class AlignedSeries(val series: ChartSeries, val values: List<Double>, val estimated: Int)
+
+/**
+ * Projects the single-series point lists of one frame onto their UNION of
+ * bucket keys (the overlay grid; the ISO keys sort chronologically in
+ * every frame). The single-series charts each use their own point
+ * indices, which only coincide when every series has points in every
+ * bucket - an export with long quiet months in one series and not in
+ * another would otherwise DRIFT the overlay. A missing slot takes the
+ * carried-forward value (0 before the series' first point) - the same
+ * "the line connects the dots" reading the single-series charts use, for
+ * flows and stocks alike. Estimated = the leading common slots before the
+ * series' own first real key (its [OverlaySeries.estimated]-th point).
+ *
+ * @return (grid keys oldest first, the aligned series in input order).
+ */
+fun alignOverlay(series: List<OverlaySeries>): Pair<List<String>, List<AlignedSeries>> {
+    if (series.isEmpty()) return emptyList<String>() to emptyList()
+    val keys = LinkedHashSet<String>()
+    for (s in series) for (p in s.points) keys.add(p.key)
+    if (keys.isEmpty()) return emptyList<String>() to series.map { AlignedSeries(it.series, emptyList(), 0) }
+    val grid = keys.sorted()
+    val aligned: List<AlignedSeries> = series.map { s ->
+        if (s.points.isEmpty()) {
+            AlignedSeries(s.series, List(grid.size) { 0.0 }, 0)
+        } else {
+            val values = ArrayList<Double>(grid.size)
+            // A slot is estimated only when the value it shows came from an
+            // ESTIMATED own point (carried or direct) - the leading slots
+            // before the series' first point are plain zeros, not estimates.
+            var carry = 0.0
+            var carryEstimated = false
+            var i = 0
+            val slotEstimated = ArrayList<Boolean>(grid.size)
+            for (k in grid) {
+                while (i < s.points.size && s.points[i].key < k) {
+                    carry = s.points[i].value
+                    carryEstimated = i < s.estimated
+                    i++
+                }
+                val own = i < s.points.size && s.points[i].key == k
+                values.add(if (own) s.points[i].value else carry)
+                slotEstimated.add(if (own) i < s.estimated else carryEstimated)
+            }
+            var estimated = 0
+            while (estimated < grid.size && slotEstimated[estimated]) estimated++
+            AlignedSeries(s.series, values, estimated)
+        }
+    }
+    return grid to aligned
+}
+
 fun intradaySeries(
     subSpentRows: List<String>,
     subWalletRows: List<String>,

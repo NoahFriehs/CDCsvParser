@@ -15,7 +15,9 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.historicalStockSeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.limitRange
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.IntradayFrame
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.IntradayPricing
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.OverlaySeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.WalletWindow
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.alignOverlay
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.flattenIntraday
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.historicalWindowState
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseDailySeries
@@ -591,5 +593,51 @@ class ChartDataTest {
         assertEquals(5.0, series.bonus[0].value, 1e-9)  // 0.5 * 10
         assertEquals(6.0, series.bonus[1].value, 1e-9)  // 0.5 * 12
         assertEquals(1, series.estimatedCount)           // only window 0 estimated
+    }
+
+    @Test
+    fun alignOverlayProjectsSeriesOntoTheirUnionGrid() {
+        // The overlay must not drift: two series with different active
+        // buckets live on the union grid (flows fill 0, stocks carry).
+        val spent = OverlaySeries(
+            ChartSeries.SPENT,
+            listOf(ChartPoint("2026-01-05", 10.0), ChartPoint("2026-01-19", 5.0)),
+            estimated = 0,
+        )
+        val value = OverlaySeries(
+            ChartSeries.VALUE,
+            listOf(ChartPoint("2026-01-01", 100.0), ChartPoint("2026-01-12", 200.0)),
+            estimated = 1, // 2026-01-01 is estimated, 2026-01-12 is real
+        )
+
+        val (grid, aligned) = alignOverlay(listOf(spent, value))
+
+        assertEquals(
+            listOf("2026-01-01", "2026-01-05", "2026-01-12", "2026-01-19"),
+            grid,
+        )
+        val spentAligned = aligned.first { it.series == ChartSeries.SPENT }
+        val valueAligned = aligned.first { it.series == ChartSeries.VALUE }
+        // carried forward (the single-series charts connect the dots too),
+        // 0 before the first point:
+        assertEquals(listOf(0.0, 10.0, 10.0, 5.0), spentAligned.values)
+        assertEquals(listOf(100.0, 100.0, 200.0, 200.0), valueAligned.values) // stock carry
+        assertEquals(0, spentAligned.estimated)
+        // everything before the first REAL key (01-12) is estimated:
+        assertEquals(2, valueAligned.estimated)
+    }
+
+    @Test
+    fun alignOverlayKeepsFullyEstimatedPrefixDashed() {
+        val allReal = OverlaySeries(
+            ChartSeries.VALUE,
+            listOf(ChartPoint("a", 1.0), ChartPoint("b", 2.0)),
+            estimated = 2, // both points estimated
+        )
+        val (_, aligned) = alignOverlay(listOf(allReal))
+        assertEquals(2, aligned.first().estimated)
+
+        val none = alignOverlay(emptyList())
+        assertTrue(none.first.isEmpty())
     }
 }

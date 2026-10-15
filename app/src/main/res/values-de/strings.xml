@@ -30,6 +30,7 @@
     <string name="timeframe_day">T</string>
     <string name="timeframe_6h">6 h</string>
     <string name="timeframe_15m">15 m</string>
+    <string name="series_all">Alle</string>
     <string name="chart_intraday_note">Es werden nur die letzten %1$d Tage des Exports angezeigt (Intraday-Daten).</string>
     <string name="chart_no_data">Keine Daten für diese Auswahl.</string>
     <string name="chart_history_loading">Preisverlauf: %1$d von %2$d …</string>

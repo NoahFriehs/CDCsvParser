@@ -57,6 +57,8 @@ import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.components.LegendEntry
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.utils.ColorTemplate
@@ -361,11 +363,17 @@ private fun ChartPanel(
     val seriesData = remember(dailySeries) { parseDailySeries(dailySeries) }
     val walletData = remember(walletSeries) { parseWalletSeries(walletSeries) }
     var selectedSeries by remember { mutableStateOf(ChartSeries.SPENT) }
+    // Plan 009c: "All" draws the series overlaid; in that mode the four
+    // single-series chips become visibility toggles (allVisible).
+    var isAll by remember { mutableStateOf(false) }
+    var allVisible by remember { mutableStateOf<Set<ChartSeries>>(ChartSeries.entries.toHashSet()) }
     var timeFrame by remember { mutableStateOf(TimeFrame.MONTH) }
     var range by remember { mutableStateOf(ChartRange.ALL) }
     var customRange by remember { mutableStateOf<Pair<LocalDate, LocalDate>?>(null) }
     /** The touched bucket (plan 006 tooltip); null = nothing selected. */
     var selectedPoint by remember { mutableStateOf<ChartPoint?>(null) }
+    /** The touched bucket in "All" mode (which series + which bucket). */
+    var overlaySelection by remember { mutableStateOf<Pair<ChartSeries, ChartPoint>?>(null) }
     var showRangeDialog by remember { mutableStateOf(false) }
     val today = remember { LocalDate.now() }
     val priceSeriesMap = remember(history) {
@@ -381,19 +389,6 @@ private fun ChartPanel(
             currentPrices = currentPrices,
         )
     }
-    val fullPoints = remember(seriesData, historical, selectedSeries, timeFrame) {
-        if (selectedSeries.isFlow) {
-            bucketize(seriesData[selectedSeries].orEmpty(), timeFrame, isFlow = true)
-        } else {
-            when (selectedSeries) {
-                ChartSeries.VALUE -> historical.value
-                ChartSeries.PL -> historical.pl
-                ChartSeries.BONUS -> historical.bonus
-
-                else -> emptyList()
-            }
-        }
-    }
     // Plan 006 B: the visible span. The custom range (when active) wins
     // over the preset row; presets are start-only limits.
     val rangeStart: LocalDate?
@@ -407,18 +402,6 @@ private fun ChartPanel(
         rangeStart = range.startDate(today)
         rangeEnd = null
     }
-    val dailyPoints: Pair<List<ChartPoint>, Int> = remember(
-        fullPoints, timeFrame, rangeStart, rangeEnd, selectedSeries,
-    ) {
-        limitRange(
-            fullPoints,
-            if (selectedSeries.isFlow) 0 else historical.estimatedCount,
-            timeFrame,
-            rangeStart,
-            rangeEnd,
-        )
-    }
-
     // Plan 009b: the INTRADAY frames (6 h / 15 m). Their data is windowed:
     // the core emits only slots of the frame's window (fromEpoch) and the
     // range presets don't apply to it (the note below explains the
@@ -438,13 +421,14 @@ private fun ChartPanel(
         subDaily = CoreService.subDailySpentSeries(frame.windowSeconds, fromEpoch) to
             CoreService.subDailyWalletSeries(frame.windowSeconds, fromEpoch)
     }
-    val intradayResult: HistoricalSeries? = remember(
-        subDaily, selectedSeries, timeFrame, history, intraday, currentPrices, anchorTs,
+    // Plan 009c: the STOCK series of an intraday frame, computed for ALL
+    // series at once (independent of the single-series selection).
+    val intradayStock: HistoricalSeries? = remember(
+        subDaily, timeFrame, history, intraday, currentPrices, anchorTs,
     ) {
         val frame = timeFrame.intradayFrame ?: return@remember null
         val sub = subDaily ?: return@remember null
         val anchor = anchorTs ?: return@remember null
-        if (selectedSeries.isFlow) return@remember null // flow needs no pricing
         intradaySeries(
             subSpentRows = sub.first,
             subWalletRows = sub.second,
@@ -455,22 +439,53 @@ private fun ChartPanel(
             frame = frame,
         )
     }
-    val (points, estimatedCount) = when {
-        timeFrame.intradayFrame != null && subDaily != null -> {
-            val sub = subDaily!! // guarded by the condition above
-            when (selectedSeries) {
-                ChartSeries.SPENT -> parseSubDailySpent(sub.first) to 0
-                ChartSeries.VALUE -> intradayResult?.value.orEmpty() to (intradayResult?.estimatedCount ?: 0)
-                ChartSeries.PL -> intradayResult?.pl.orEmpty() to (intradayResult?.estimatedCount ?: 0)
-                ChartSeries.BONUS -> intradayResult?.bonus.orEmpty() to (intradayResult?.estimatedCount ?: 0)
+    // ALL FOUR series of the current frame as (points, estimated prefix)
+    // (plan 009c: single mode just picks its own entry; "All" aligns and
+    // overlays the visible ones). The spent flow comes from the daily
+    // core rows on the daily frames (bucketed + ranged) and from the
+    // windowed sub-daily rows on the intraday frames.
+    val frameSeries: Map<ChartSeries, Pair<List<ChartPoint>, Int>> = remember(
+        seriesData, historical, intradayStock, subDaily, timeFrame, rangeStart, rangeEnd,
+    ) {
+        val m = LinkedHashMap<ChartSeries, Pair<List<ChartPoint>, Int>>()
+        if (timeFrame.intradayFrame != null) {
+            val sub = subDaily ?: return@remember m // core rows not in yet
+            m[ChartSeries.SPENT] = parseSubDailySpent(sub.first) to 0
+            val rs = intradayStock
+            if (rs != null) {
+                m[ChartSeries.VALUE] = rs.value to rs.estimatedCount
+                m[ChartSeries.PL] = rs.pl to rs.estimatedCount
+                m[ChartSeries.BONUS] = rs.bonus to rs.estimatedCount
             }
+        } else {
+            val est = historical.estimatedCount
+            m[ChartSeries.SPENT] = limitRange(
+                bucketize(seriesData[ChartSeries.SPENT].orEmpty(), timeFrame, isFlow = true),
+                0,
+                timeFrame,
+                rangeStart,
+                rangeEnd,
+            )
+            m[ChartSeries.VALUE] = limitRange(historical.value, est, timeFrame, rangeStart, rangeEnd)
+            m[ChartSeries.PL] = limitRange(historical.pl, est, timeFrame, rangeStart, rangeEnd)
+            m[ChartSeries.BONUS] = limitRange(historical.bonus, est, timeFrame, rangeStart, rangeEnd)
         }
-
-        // Intraday frame, the core rows not fetched yet: empty for a moment.
-        timeFrame.intradayFrame != null -> emptyList<ChartPoint>() to 0
-        else -> dailyPoints
+        m
     }
-    val historyIncomplete = !selectedSeries.isFlow &&
+    // Plan 009c: "All" mode - the overlay grid + the visible series
+    // projected onto it (null outside All mode).
+    val overlay: Pair<List<String>, List<AlignedSeries>>? = remember(frameSeries, allVisible, isAll) {
+        if (!isAll) return@remember null
+        alignOverlay(
+            allVisible.map { s ->
+                val (pts, est) = frameSeries[s] ?: (emptyList<ChartPoint>() to 0)
+                OverlaySeries(s, pts, est)
+            },
+        )
+    }
+    val (points, estimatedCount) = frameSeries[selectedSeries] ?: (emptyList<ChartPoint>() to 0)
+    val visibleStock = if (isAll) allVisible.any { !it.isFlow } else !selectedSeries.isFlow
+    val historyIncomplete = visibleStock &&
         historyProgress != null &&
         historyProgress.first < historyProgress.second
 
@@ -480,6 +495,14 @@ private fun ChartPanel(
     val lineColor = toArgbInt(MaterialTheme.colorScheme.primary)
     val labelColor = toArgbInt(MaterialTheme.colorScheme.onSurfaceVariant)
     val gridColor = toArgbInt(MaterialTheme.colorScheme.surfaceVariant)
+    // Plan 009c: one clearly distinct color per series for the overlay
+    // (brand primary/secondary/tertiary + a green for P/L).
+    val seriesColors: Map<ChartSeries, Int> = linkedMapOf(
+        ChartSeries.VALUE to toArgbInt(MaterialTheme.colorScheme.primary),
+        ChartSeries.SPENT to toArgbInt(MaterialTheme.colorScheme.secondary),
+        ChartSeries.PL to toArgbInt(Color(0xFF16A34A)),
+        ChartSeries.BONUS to toArgbInt(MaterialTheme.colorScheme.tertiary),
+    )
 
     // The custom range never goes before the first activity day.
     val firstActivity = remember(seriesData, walletData) {
@@ -494,14 +517,39 @@ private fun ChartPanel(
         )
         Spacer(Modifier.height(8.dp))
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            // Plan 009c: the "All" segment + the four series; in All mode
+            // the four act as visibility toggles (the last visible one can
+            // not be turned off), tapping "All" again exits.
+            val total = ChartSeries.entries.size + 1
+            SegmentedButton(
+                selected = isAll,
+                onClick = {
+                    isAll = !isAll
+                    allVisible = ChartSeries.entries.toHashSet()
+                    selectedPoint = null
+                    overlaySelection = null
+                },
+                shape = SegmentedButtonDefaults.itemShape(0, total),
+            ) {
+                Text(stringResource(R.string.series_all))
+            }
             ChartSeries.entries.forEachIndexed { index, series ->
                 SegmentedButton(
-                    selected = selectedSeries == series,
+                    selected = if (isAll) series in allVisible else selectedSeries == series,
                     onClick = {
-                        selectedSeries = series
+                        if (isAll) {
+                            if (series in allVisible) {
+                                if (allVisible.size > 1) allVisible = allVisible - series
+                            } else {
+                                allVisible = allVisible + series
+                            }
+                        } else {
+                            selectedSeries = series
+                        }
                         selectedPoint = null
+                        overlaySelection = null
                     },
-                    shape = SegmentedButtonDefaults.itemShape(index, ChartSeries.entries.size),
+                    shape = SegmentedButtonDefaults.itemShape(index + 1, total),
                 ) {
                     Text(stringResource(series.labelRes))
                 }
@@ -515,6 +563,7 @@ private fun ChartPanel(
                     onClick = {
                         timeFrame = frame
                         selectedPoint = null
+                        overlaySelection = null
                     },
                     shape = SegmentedButtonDefaults.itemShape(index, TimeFrame.entries.size),
                 ) {
@@ -531,6 +580,7 @@ private fun ChartPanel(
                         range = r
                         customRange = null
                         selectedPoint = null
+                        overlaySelection = null
                     },
                     shape = SegmentedButtonDefaults.itemShape(index, ChartRange.entries.size),
                 ) {
@@ -579,7 +629,7 @@ private fun ChartPanel(
         when {
             // Offline, and no price history to value the stock series from:
             // nothing to show (a cached history is still drawable offline).
-            noInternet && !selectedSeries.isFlow && history.isEmpty() -> Text(
+            noInternet && visibleStock && history.isEmpty() -> Text(
                 text = stringResource(R.string.no_internet_connection),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -589,7 +639,7 @@ private fun ChartPanel(
                     .padding(vertical = 48.dp),
             )
 
-            points.isEmpty() -> Text(
+            (if (isAll) overlay?.first.isNullOrEmpty() else points.isEmpty()) -> Text(
                 text = stringResource(R.string.chart_no_data),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -600,34 +650,77 @@ private fun ChartPanel(
             )
 
             else -> {
+                val (overlayGrid, overlayAligned) =
+                    overlay ?: (emptyList<String>() to emptyList<AlignedSeries>())
                 // Plan 006 A: the tooltip is a caption row ABOVE the chart
                 // (fixed height, so the chart never jumps while it shows).
                 Box(modifier = Modifier.fillMaxWidth().height(20.dp)) {
-                    selectedPoint?.let { point ->
-                        Text(
-                            text = "${bucketLabel(point.key, timeFrame)}  ·  ${formatAmountToString(point.value)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.align(Alignment.CenterStart),
-                        )
+                    if (isAll) {
+                        // Plan 009c: the overlay says WHICH series was hit.
+                        overlaySelection?.let { (series, point) ->
+                            Text(
+                                text = "${stringResource(series.labelRes)}  ·  " +
+                                    "${bucketLabel(point.key, timeFrame)}  ·  " +
+                                    formatAmountToString(point.value),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.align(Alignment.CenterStart),
+                            )
+                        }
+                    } else {
+                        selectedPoint?.let { point ->
+                            Text(
+                                text = "${bucketLabel(point.key, timeFrame)}  ·  ${formatAmountToString(point.value)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.align(Alignment.CenterStart),
+                            )
+                        }
                     }
                 }
-                ChartLine(
-                    points = points,
-                    timeFrame = timeFrame,
-                    estimatedCount = estimatedCount,
-                    lineColor = lineColor,
-                    labelColor = labelColor,
-                    gridColor = gridColor,
-                    onPointSelected = { selectedPoint = it },
-                )
-                if (estimatedCount > 0) {
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(R.string.chart_history_estimated_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (isAll) {
+                    // label strings need the composable context: a plain
+                    // loop, not a map{} lambda.
+                    val overlayLabels = ArrayList<String>(overlayAligned.size)
+                    overlayAligned.forEach { s ->
+                        overlayLabels.add(stringResource(s.series.labelRes))
+                    }
+                    ChartMultiLine(
+                        grid = overlayGrid,
+                        series = overlayAligned,
+                        colors = overlayAligned.map { seriesColors.getValue(it.series) },
+                        labels = overlayLabels,
+                        timeFrame = timeFrame,
+                        labelColor = labelColor,
+                        gridColor = gridColor,
+                        onPointSelected = { overlaySelection = it },
                     )
+                    if (overlayAligned.any { it.estimated > 0 }) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(R.string.chart_history_estimated_note),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    ChartLine(
+                        points = points,
+                        timeFrame = timeFrame,
+                        estimatedCount = estimatedCount,
+                        lineColor = lineColor,
+                        labelColor = labelColor,
+                        gridColor = gridColor,
+                        onPointSelected = { selectedPoint = it },
+                    )
+                    if (estimatedCount > 0) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(R.string.chart_history_estimated_note),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
@@ -743,6 +836,160 @@ private fun ChartLine(
             .fillMaxWidth()
             .height(180.dp),
     )
+}
+
+/**
+ * MPAndroidChart line chart for the ALL-SERIES overlay (plan 009c): one
+ * [LineDataSet] per visible series (plus its dashed estimated prefix, same
+ * convention as [ChartLine]) on the COMMON [grid] - the values are already
+ * projected onto it (see `alignOverlay`). Values stay raw euros on the
+ * single axis, a custom legend shows exactly the visible series (in order),
+ * and the selection callback reports WHICH series was hit.
+ *
+ * Same factory/update tag-guard pattern as [ChartLine] (plans 001/007).
+ */
+@Composable
+private fun ChartMultiLine(
+    grid: List<String>,
+    series: List<AlignedSeries>,
+    colors: List<Int>,
+    labels: List<String>,
+    timeFrame: TimeFrame,
+    labelColor: Int,
+    gridColor: Int,
+    onPointSelected: (Pair<ChartSeries, ChartPoint>?) -> Unit,
+) {
+    val dataSignature = System.identityHashCode(grid).toString() +
+        "|" + System.identityHashCode(series).toString() +
+        "|" + timeFrame + "|" + labelColor + "|" + gridColor
+    AndroidView(
+        factory = { context ->
+            LineChart(context).apply {
+                applyMultiState(grid, series, colors, labels, timeFrame, labelColor, gridColor, onPointSelected)
+                setTag(dataSignature)
+            }
+        },
+        update = { chart ->
+            if (chart.getTag() != dataSignature) {
+                chart.applyMultiState(grid, series, colors, labels, timeFrame, labelColor, gridColor, onPointSelected)
+                chart.setTag(dataSignature)
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp),
+    )
+}
+
+private fun LineChart.applyMultiState(
+    grid: List<String>,
+    series: List<AlignedSeries>,
+    colors: List<Int>,
+    labels: List<String>,
+    timeFrame: TimeFrame,
+    labelColor: Int,
+    gridColor: Int,
+    onPointSelected: (Pair<ChartSeries, ChartPoint>?) -> Unit,
+) {
+    description.isEnabled = false
+    axisRight.isEnabled = false
+    setNoDataTextColor(labelColor)
+    xAxis.setDrawGridLines(false)
+    xAxis.granularity = 1f
+    xAxis.labelCount = when (timeFrame) {
+        TimeFrame.DAY -> 4
+        TimeFrame.HOURS_6 -> 3
+        TimeFrame.MINUTES_15 -> 4
+        else -> 8
+    }
+    xAxis.axisLineColor = gridColor
+    xAxis.textColor = labelColor
+    axisLeft.axisLineColor = gridColor
+    axisLeft.gridColor = gridColor
+    axisLeft.textColor = labelColor
+    xAxis.valueFormatter = object : ValueFormatter() {
+        override fun getFormattedValue(value: Float): String {
+            val key = grid.getOrNull(value.toInt()) ?: return ""
+            return bucketLabel(key, timeFrame)
+        }
+    }
+
+    val sets = ArrayList<LineDataSet>()
+    // Dataset -> index into [series] (the splits keep their parent).
+    val setSource = ArrayList<Int>()
+    series.forEachIndexed { index, s ->
+        val color = colors[index]
+        val estimated = s.values.take(s.estimated)
+        val real = s.values.drop(s.estimated)
+        val entriesOfValues: (List<Double>, Int) -> ArrayList<Entry> = { pts, offset ->
+            ArrayList<Entry>(pts.size).apply {
+                pts.forEachIndexed { i, v -> add(Entry((i + offset).toFloat(), v.toFloat())) }
+            }
+        }
+        // The same dashed-estimated / solid split as the single-series
+        // chart (plan 006 B's estimated region), per series.
+        if (estimated.isNotEmpty()) {
+            sets.add(LineDataSet(entriesOfValues(estimated, 0), "").apply {
+                enableDashedLine(6f, 4f, 0f)
+                lineWidth = 1.5f
+                setDrawValues(false)
+                setDrawCircles(false)
+                this.color = ColorTemplate.colorWithAlpha(140, color)
+            })
+            setSource.add(index)
+        }
+        if (real.isNotEmpty()) {
+            sets.add(LineDataSet(entriesOfValues(real, s.estimated), "").apply {
+                setDrawValues(false)
+                lineWidth = 2f
+                if (grid.size <= MAX_CIRCLE_BUCKETS) {
+                    circleRadius = 3f
+                    setCircleColor(color)
+                    setDrawCircles(true)
+                } else {
+                    setDrawCircles(false)
+                }
+                this.color = color
+            })
+            setSource.add(index)
+        }
+    }
+    // Plan 007 A1: same stale-highlight reset as the single-series chart.
+    highlightValues(null)
+    data = LineData(*sets.toTypedArray())
+
+    // Custom legend: exactly the visible series, in order (the dashed
+    // estimated splits must not add legend entries).
+    legend.isEnabled = true
+    legend.textColor = labelColor
+    legend.textSize = 11f
+    legend.formLineWidth = 2f
+    legend.setCustom(
+        series.mapIndexed { index, s ->
+            LegendEntry(labels[index], Legend.LegendForm.LINE, 0f, 2f, null, colors[index])
+        },
+    )
+
+    // Selection: the highlight knows the DATASET index - map it back to
+    // the series it belongs to. The entry's x is the GLOBAL grid index
+    // (the splits carry a matching offset), so key + value resolve
+    // directly (the caption names the series, plan 009c).
+    setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
+        override fun onValueSelected(entry: Entry, highlight: Highlight) {
+            val srcIndex = setSource.getOrNull(highlight.getDataSetIndex()) ?: return
+            val s = series.getOrNull(srcIndex) ?: return
+            val i = entry.x.toInt()
+            val key = grid.getOrNull(i) ?: return
+            if (i >= s.values.size) return
+            onPointSelected(s.series to ChartPoint(key, s.values[i]))
+        }
+
+        override fun onNothingSelected() {
+            onPointSelected(null)
+        }
+    })
+    setTouchEnabled(true)
+    invalidate()
 }
 
 /**
