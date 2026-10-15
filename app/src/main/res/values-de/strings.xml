@@ -21,10 +21,13 @@
     <string name="series_spent">Ausgaben</string>
     <string name="series_portfolio_value">Vermögen</string>
     <string name="series_bonus">Belohnungen</string>
-    <string name="timeframe_week">Woche</string>
-    <string name="timeframe_month">Monat</string>
-    <string name="timeframe_quarter">Quartal</string>
-    <string name="timeframe_year">Jahr</string>
+    <!-- Plan 009a: short labels (T = Tag) so the row keeps fitting when
+         6 h / 15 m (009b) join it. -->
+    <string name="timeframe_week">W</string>
+    <string name="timeframe_month">M</string>
+    <string name="timeframe_quarter">Q</string>
+    <string name="timeframe_year">J</string>
+    <string name="timeframe_day">T</string>
     <string name="chart_no_data">Keine Daten für diese Auswahl.</string>
     <string name="chart_history_loading">Preisverlauf: %1$d von %2$d …</string>
     <string name="chart_history_estimated_note">Gestrichelter Abschnitt: geschätzt – die kostenlose Preisgeschichte reicht nur ~1 Jahr zurück.</string>

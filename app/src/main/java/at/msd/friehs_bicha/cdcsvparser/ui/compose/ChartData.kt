@@ -3,6 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser.ui.compose
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 
 /**
@@ -34,7 +35,8 @@ enum class ChartSeries(
 }
 
 /** User-selectable time frames for the overview charts. */
-enum class TimeFrame { WEEK, MONTH, QUARTER, YEAR }
+// Order = chip order in the UI row (plan 009a: short labels W/M/Q/J + T/D).
+enum class TimeFrame { WEEK, MONTH, QUARTER, YEAR, DAY }
 
 /**
  * Preset display ranges for the overview chart (plan 006): each preset is
@@ -118,6 +120,9 @@ fun bucketize(
 
 /** Fixed-format bucket key (see [bucketLabel] for the display form). */
 fun bucketKey(date: LocalDate, timeFrame: TimeFrame): String = when (timeFrame) {
+    // Plan 009a: one bucket per calendar day (the core's native resolution).
+    TimeFrame.DAY -> date.toString()
+
     TimeFrame.WEEK -> {
         // java.time.YearWeek is not on Android: ISO-8601 week derived by
         // hand - the week is owned by its Thursday, whose ordinal day in
@@ -253,6 +258,9 @@ fun historicalStockSeries(
         }
 
         TimeFrame.YEAR -> { d -> LocalDate.of(d.year, 12, 31) }
+
+        // Plan 009a: a day bucket ends on the day itself.
+        TimeFrame.DAY -> { d -> d }
     }
 
     // One entry per calendar bucket, first active bucket .. pinDay's bucket.
@@ -320,6 +328,9 @@ fun historicalStockSeries(
  * week is owned by its Thursday). Null when the key is malformed.
  */
 fun bucketStartDate(key: String, timeFrame: TimeFrame): LocalDate? = when (timeFrame) {
+    // Plan 009a: the key IS the ISO date (inverse of [bucketKey]).
+    TimeFrame.DAY -> runCatching { LocalDate.parse(key) }.getOrNull()
+
     TimeFrame.WEEK -> {
         val m = """(\d{4})-W(\d{2})""".toRegex().find(key) ?: return null
         val year = m.groupValues[1].toInt()
@@ -379,6 +390,14 @@ fun limitRange(
  * follows the device locale like the old monthly chart did).
  */
 fun bucketLabel(key: String, timeFrame: TimeFrame): String = when (timeFrame) {
+    // Plan 009a: the device-locale short date ("15.1.26" in de).
+    TimeFrame.DAY -> runCatching {
+        LocalDate.parse(key).format(
+            // Android's java.time has no 2-arg ofLocalizedDate(style, locale).
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(Locale.getDefault()),
+        )
+    }.getOrDefault(key)
+
     TimeFrame.WEEK -> {
         val m = """(\d{4})-W(\d{2})""".toRegex().find(key) ?: return key
         "W${m.groupValues[2]} ${m.groupValues[1].substring(2)}"

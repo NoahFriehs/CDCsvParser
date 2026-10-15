@@ -21,10 +21,13 @@
     <string name="series_spent">Spent</string>
     <string name="series_portfolio_value">Portfolio value</string>
     <string name="series_bonus">Rewards</string>
-    <string name="timeframe_week">Week</string>
-    <string name="timeframe_month">Month</string>
-    <string name="timeframe_quarter">Quarter</string>
-    <string name="timeframe_year">Year</string>
+    <!-- Plan 009a: short labels so the row keeps fitting when 6 h / 15 m
+         (009b) join it. D = day (English); the German resource says T. -->
+    <string name="timeframe_week">W</string>
+    <string name="timeframe_month">M</string>
+    <string name="timeframe_quarter">Q</string>
+    <string name="timeframe_year">J</string>
+    <string name="timeframe_day">D</string>
     <string name="chart_no_data">No data for this selection.</string>
     <string name="chart_history_loading">Price history: %1$d of %2$d …</string>
     <string name="chart_history_estimated_note">Dashed section: estimated — the free price history only goes back ~1 year.</string>

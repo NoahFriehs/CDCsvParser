@@ -586,12 +586,15 @@ private val ChartSeries.labelRes: Int
         ChartSeries.BONUS -> R.string.series_bonus
     }
 
+// Plan 009a: the frame row uses SHORT labels (W/M/Q/J + T/D) so the
+// upcoming 6 h / 15 m frames (009b) fit the same one row.
 private val TimeFrame.labelRes: Int
     get() = when (this) {
         TimeFrame.WEEK -> R.string.timeframe_week
         TimeFrame.MONTH -> R.string.timeframe_month
         TimeFrame.QUARTER -> R.string.timeframe_quarter
         TimeFrame.YEAR -> R.string.timeframe_year
+        TimeFrame.DAY -> R.string.timeframe_day
     }
 
 private val ChartRange.labelRes: Int
@@ -696,7 +699,9 @@ private fun LineChart.applyChartState(
     setNoDataTextColor(labelColor)
     xAxis.setDrawGridLines(false)
     xAxis.granularity = 1f
-    xAxis.labelCount = 8
+    // Plan 009a: day-frame labels are full short dates ("20.01.26") - at 8
+    // per axis they run into each other, so the day frame asks for fewer.
+    xAxis.labelCount = if (timeFrame == TimeFrame.DAY) 4 else 8
     xAxis.axisLineColor = gridColor
     xAxis.textColor = labelColor
     axisLeft.axisLineColor = gridColor

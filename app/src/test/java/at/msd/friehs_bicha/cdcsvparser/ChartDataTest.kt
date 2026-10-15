@@ -7,6 +7,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.TimeFrame
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.PriceSeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.WalletDay
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.ChartRange
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketLabel
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketStartDate
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketKey
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketize
@@ -22,6 +23,7 @@ import org.junit.Test
 
 /** Pure-logic tests for the overview chart panel data (G35). */
 class ChartDataTest {
+
 
     private fun d(day: Int) = LocalDate.parse("2025-03-%02d".format(day))
 
@@ -51,6 +53,76 @@ class ChartDataTest {
     fun `empty input gives empty maps`() {
         assertTrue(parseDailySeries(emptyList()).isEmpty())
         assertTrue(bucketize(emptyList(), TimeFrame.MONTH, true).isEmpty())
+    }
+
+    // Plan 009a: the 1-day frame - one bucket per calendar day (the core's
+    // native resolution), full history, no windowing.
+    @Test
+    fun dayFrameBucketizesOneBucketPerCalendarDay() {
+        val points = listOf(
+            DailyPoint(day(2026, 1, 15), 1.0),
+            DailyPoint(day(2026, 1, 16), 2.0),
+            DailyPoint(day(2026, 1, 16), 3.0), // same day, second entry
+            DailyPoint(day(2026, 2, 1), 4.0),
+        )
+        // Flow: same-day entries SUM within the day bucket.
+        val flow = bucketize(points, TimeFrame.DAY, isFlow = true)
+        assertEquals(
+            listOf(
+                ChartPoint("2026-01-15", 1.0),
+                ChartPoint("2026-01-16", 5.0),
+                ChartPoint("2026-02-01", 4.0),
+            ),
+            flow,
+        )
+        // Stock: the LAST value of the day wins.
+        val stock = bucketize(points, TimeFrame.DAY, isFlow = false)
+        assertEquals(
+            listOf(
+                ChartPoint("2026-01-15", 1.0),
+                ChartPoint("2026-01-16", 3.0),
+                ChartPoint("2026-02-01", 4.0),
+            ),
+            stock,
+        )
+    }
+
+    @Test
+    fun dayFrameKeyStartLabelRoundTrip() {
+        assertEquals("2026-02-10", bucketKey(day(2026, 2, 10), TimeFrame.DAY))
+        assertEquals(day(2026, 2, 10), bucketStartDate("2026-02-10", TimeFrame.DAY))
+        assertNull(bucketStartDate("garbage", TimeFrame.DAY))
+        // The label is the device-locale SHORT date - locale-neutral in
+        // digits, so assert the day/month/year parts are all present.
+        val label = bucketLabel("2026-02-10", TimeFrame.DAY)
+        assertTrue("label should contain 10: $label", label.contains("10"))
+        assertTrue("label should contain 2: $label", label.contains("2"))
+        assertTrue("label should contain 26: $label", label.contains("26"))
+    }
+
+    @Test
+    fun dayFrameHistoricalSeriesRunsPerCalendarDay() {
+        // One wallet, one symbol, history covering 2026-01-15..17, live price
+        // for the pin day.
+        val wallet = mapOf(
+            "BTC" to listOf(
+                WalletDay(day(2026, 1, 15), 2.0, 0.0),
+                WalletDay(day(2026, 1, 16), 2.5, 0.0),
+                WalletDay(day(2026, 1, 17), 3.0, 5.0),
+            ),
+        )
+        val prices = mapOf(
+            "BTC" to PriceSeries(
+                listOf(ed(2026, 1, 15) to 100.0, ed(2026, 1, 16) to 102.0, ed(2026, 1, 17) to 104.0),
+            ),
+        )
+        val series = historicalStockSeries(
+            wallet, prices, emptyList(), TimeFrame.DAY, day(2026, 1, 17),
+            mapOf("BTC" to 104.0),
+        )
+        // One point per day (15, 16, 17 = pin day, pinned live).
+        assertEquals(listOf("2026-01-15", "2026-01-16", "2026-01-17"), series.value.map { it.key })
+        assertEquals(listOf(200.0, 255.0, 312.0), series.value.map { it.value })
     }
 
     @Test
