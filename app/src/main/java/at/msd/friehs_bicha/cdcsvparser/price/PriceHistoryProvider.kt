@@ -3,6 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser.price
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -118,6 +119,9 @@ class PriceHistoryProvider(
         /** Below this many shared days no source can yet be proven wrong. */
         private const val MIN_OVERLAP_DAYS = 30
 
+        /** Current UTC day (epoch days) - pass bookkeeping (plan 008). */
+        fun todayUtcDay(): Long = System.currentTimeMillis() / DAY_MS
+
         /**
          * Merges an old cached series with a freshly fetched tail (days
          * >= [cutDay]). From [cutDay] on the fetched [tail] wins (the
@@ -138,9 +142,6 @@ class PriceHistoryProvider(
             return byDay.entries.sortedBy { it.key }.map { it.key to it.value }
         }
     }
-
-    fun todayUtcDay(): Long = System.currentTimeMillis() / DAY_MS
-
 
 
     private fun loadCache() {
@@ -242,9 +243,14 @@ class PriceHistoryProvider(
 
         // Phase 2 (network): every symbol not published above — stale
         // caches (tail refresh OR deep backfill when the wanted window is
-        // older than the cache) and uncached symbols.
+        // older than the cache) and uncached symbols. The per-symbol
+        // cancellation check makes a SUPERSEDED pass (plan 008, a newer
+        // request cancelled the job) stop after the symbol in flight —
+        // without it, this fully blocking loop would run to completion
+        // regardless of the cancellation.
         for (symbol in symbols) {
             if (result.containsKey(symbol)) continue
+            coroutineContext.ensureActive()
             val entry = memo[symbol]
             // Refetch from here: the window start when the cache does not
             // reach it yet, else only the still-moving tail (fetched day ..
@@ -295,9 +301,10 @@ class PriceHistoryProvider(
 
                 else -> DailyPrices(today, merge(entry?.points ?: emptyList(), series, fromDay))
                     .also {
-                        if (entry == null) {
-                            FileLog.i(TAG, "Deep history for $symbol from $sourceName: ${series.size} days (${fromDay}..$today).")
-                        }
+                        // One line per fetched symbol (deep or tail): the
+                        // history-pass test counts these to prove no
+                        // symbol is fetched twice for one request.
+                        FileLog.i(TAG, "History for $symbol: ${it.points.size} days (via $sourceName).")
                     }
             }
         }
@@ -319,6 +326,7 @@ class PriceHistoryProvider(
         val result = DailyPrices(today, merge(entry?.points ?: emptyList(), tail, maxOf(cgFrom, fromDay)))
         memo[symbol] = result
         saveCache()
+        FileLog.i(TAG, "History for $symbol: ${result.points.size} days (via CoinGecko tail).")
         return result
     }
 }

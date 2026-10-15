@@ -19,6 +19,8 @@ import org.junit.Test
 import java.io.File
 import java.util.regex.Pattern
 
+private const val HISTORY_PASS_COMPLETE_MARKER = "History pass complete"
+
 /**
  * UI smoke tests (3.5) for the Compose screen tree. Deliberately
  * network-light: a tiny deterministic BlockPit CSV drives the parse flow and
@@ -65,6 +67,31 @@ class ComposeUiTest {
                 "20.01.2026 11:00:00;UI Test Wallet;Deposit;;;ETH;0.1;;;" +
                 "UI test deposit;ui-tx-2;Manual;CITest\n",
         )
+        // Plan 008: a second upload with 8 coins (deliberately NO BTC/ETH,
+        // so a still-running pass of another test cannot pollute this
+        // test's per-symbol fetch counts).
+        File(target.filesDir, "2026-02-10-09-00-00.csv").writeText(
+            "Date (UTC);Integration Name;Label;Outgoing Asset;Outgoing Amount;" +
+                "Incoming Asset;Incoming Amount;Fee Asset (optional);" +
+                "Fee Amount (optional);Comment (optional);Trx. ID (optional);" +
+                "Source Type;Source Name\n" +
+                "15.01.2026 10:00:00;UI Pass Wallet;Deposit;;;SOL;2.5;;;" +
+                "pass-1;ui-pass-1;Manual;CITest\n" +
+                "15.01.2026 10:05:00;UI Pass Wallet;Deposit;;;XRP;10;;;" +
+                "pass-2;ui-pass-2;Manual;CITest\n" +
+                "15.01.2026 10:10:00;UI Pass Wallet;Deposit;;;ADA;20;;;" +
+                "pass-3;ui-pass-3;Manual;CITest\n" +
+                "15.01.2026 10:15:00;UI Pass Wallet;Deposit;;;DOGE;50;;;" +
+                "pass-4;ui-pass-4;Manual;CITest\n" +
+                "15.01.2026 10:20:00;UI Pass Wallet;Deposit;;;LTC;0.3;;;" +
+                "pass-5;ui-pass-5;Manual;CITest\n" +
+                "15.01.2026 10:25:00;UI Pass Wallet;Deposit;;;AVAX;0.8;;;" +
+                "pass-6;ui-pass-6;Manual;CITest\n" +
+                "15.01.2026 10:30:00;UI Pass Wallet;Deposit;;;LINK;1.2;;;" +
+                "pass-7;ui-pass-7;Manual;CITest\n" +
+                "15.01.2026 10:35:00;UI Pass Wallet;Deposit;;;MATIC;40;;;" +
+                "pass-8;ui-pass-8;Manual;CITest\n",
+        )
         // Belt and braces: the core also detects BlockPit from the file
         // header, but set the intended type anyway.
         PreferenceHelper.setSelectedType(target, AppType.BlockPit)
@@ -108,6 +135,31 @@ class ComposeUiTest {
 
     private fun waitText(text: String, timeout: Long = TIMEOUT_MS): UiObject2 =
         waitFor(By.text(text), "expected text '$text'", timeout)
+
+    /**
+     * Waits for [by], scrolling the screen up in between polls: the parse
+     * overview is a scrollable column and its lower parts (the chart,
+     * the attribution) sit below the fold since plan 006 grew the chart
+     * panel - a plain wait can never see them.
+     */
+    private fun waitForScrolling(by: BySelector, message: String, timeout: Long = 60_000): UiObject2 {
+        val deadline = System.currentTimeMillis() + timeout
+        while (System.currentTimeMillis() < deadline) {
+            val obj = device.findObject(by)
+            if (obj != null) return obj
+            scrollUpOnce()
+            sleep(400)
+        }
+        throw AssertionError("$message - screen had: ${visibleTexts()}")
+    }
+
+    /** One long upward swipe in the card/chip area (well above the chart). */
+    private fun scrollUpOnce() {
+        // UiAutomator 2.3: no UiDevice.screenResolution anymore.
+        val w = device.getDisplayWidth()
+        val h = device.getDisplayHeight()
+        device.swipe(w / 2, (h * 0.55).toInt(), w / 2, (h * 0.22).toInt(), 12)
+    }
 
     /** Waits (polling) until [text] is no longer on screen. */
     private fun waitTextGone(text: String, deadlineMs: Long) {
@@ -182,11 +234,11 @@ class ComposeUiTest {
         parseTestUpload()
         // Posted overview structure (independent of live prices):
         waitText(str(R.string.money_spent_label))
-        // Crypto was detected in the file -> the provider attribution shows.
-        waitFor(
+        // Crypto was detected in the file -> the provider attribution
+        // shows — at the very bottom of the column, so scroll for it.
+        waitForScrolling(
             By.textContains("CryptoCompare API"),
             "price attribution not posted",
-            30_000,
         )
         waitText(str(R.string.overview_charts))
         // The G35 chart panel: the default series selection is visible.
@@ -224,6 +276,81 @@ class ComposeUiTest {
         }
         waitText(str(R.string.login))
         waitText(str(R.string.signup))
+    }
+
+    @Test
+    fun revisitingTheParseScreenAttachesToTheSameHistoryPass() {
+        val logFile = File(target.filesDir, "log/CDCsvParser.log")
+
+        ensureOnMain()
+        // Parse the 8-coin upload (its later stamp is the history button's).
+        tap(waitFor(By.text(HISTORY_STAMP_PATTERN), "history button not visible"))
+        tap(
+            waitFor(
+                By.textContains("2026-02-10-09-00-00.csv"),
+                "second history row not found",
+            ),
+        )
+        waitFor(By.text(str(R.string.overview_charts)), "parse overview not posted", 180_000)
+
+        // Let the history pass start and run a bit, then LEAVE the screen
+        // (the pass keeps running in its process scope) and return: the
+        // returning visit must ATTACH to the live pass, not start a second
+        // one (plan 008: the old view-scoped launches both kept running —
+        // the provider pass has no suspension points — and both wrote the
+        // same counter, which is what the markers below would expose).
+        sleep(2_000)
+        // Log offset AFTER this pass is guaranteed to have started — any
+        // other test's pass line lands before it (its symbols never match
+        // this file's, so a still-live one was superseded, not completed,
+        // by this pass start).
+        val logStart = logFile.length()
+        tap(waitText(str(R.string.all_transactions)))
+        waitText("UI Pass Wallet")   // transactions screen is up
+        sleep(3_000)
+        device.pressBack()
+        waitText(str(R.string.overview_charts))
+
+        // The app log is the ground truth for the pass bookkeeping; the
+        // writer thread is slightly lagging, so poll (429-cooldown budget).
+        val deadline = System.currentTimeMillis() + 180_000
+        var lines: List<String> = emptyList()
+        while (System.currentTimeMillis() < deadline) {
+            lines = readLogTail(logFile, logStart)
+            if (lines.any { it.contains(HISTORY_PASS_COMPLETE_MARKER) }) break
+            sleep(2_000)
+        }
+        assertTrue(
+            "history pass never completed; log tail: ${lines.takeLast(15)}",
+            lines.any { it.contains(HISTORY_PASS_COMPLETE_MARKER) },
+        )
+        assertEquals(
+            "expected exactly ONE pass for the whole exercise (the return " +
+                "visit must attach, not start a second pass)",
+            1,
+            lines.count { it.contains(HISTORY_PASS_COMPLETE_MARKER) },
+        )
+        // No symbol was fetched twice: a second (duplicate) pass would add
+        // a second "History for X:" line per symbol it re-fetched.
+        lines.filter { it.contains("History for ") }
+            .groupBy { it.substringAfter("History for ").substringBefore(':') }
+            .forEach { (symbol, perSymbol) ->
+                assertTrue(
+                    "symbol $symbol fetched ${perSymbol.size} times: $perSymbol",
+                    perSymbol.size <= 1,
+                )
+            }
+    }
+
+    /** Lines of [logFile] from byte [fromByte] on (ASCII markers only). */
+    private fun readLogTail(logFile: File, fromByte: Long): List<String> {
+        if (!logFile.exists() || logFile.length() <= fromByte) return emptyList()
+        val bytes = logFile.readBytes()
+        val from = fromByte.toInt().coerceIn(0, bytes.size)
+        return bytes.copyOfRange(from, bytes.size).decodeToString()
+            .lineSequence()
+            .filter { it.isNotBlank() }
+            .toList()
     }
 
     private companion object {

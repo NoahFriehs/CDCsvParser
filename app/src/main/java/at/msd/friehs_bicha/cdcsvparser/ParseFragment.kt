@@ -19,8 +19,7 @@ import androidx.core.content.ContextCompat
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
-import at.msd.friehs_bicha.cdcsvparser.price.CryptoPricesCryptoCompare
-import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryProvider
+import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryPass
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 import java.time.LocalDate
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
@@ -55,10 +54,6 @@ class ParseFragment : Fragment() {
     private val _dailySeries = mutableStateOf<List<String>>(emptyList())
     /** "CUR;YYYY-MM-DD;balance;bonus" wallet lines (G36 historical pricing). */
     private val _walletSeries = mutableStateOf<List<String>>(emptyList())
-    /** Fetched daily EUR price history per currency (grows in). */
-    private val _history = mutableStateOf<Map<String, PriceHistoryProvider.DailyPrices>>(emptyMap())
-    /** (done, total) of the history fetch pass; null before it starts. */
-    private val _historyProgress = mutableStateOf<Pair<Int, Int>?>(null)
     private val _currentPrices = mutableStateOf<Map<String, Double>>(emptyMap())
     private val _noInternet = mutableStateOf(false)
     private val _attributionVisible = mutableStateOf(true)
@@ -78,8 +73,12 @@ class ParseFragment : Fragment() {
                         attributionVisible = _attributionVisible.value,
                         dailySeries = _dailySeries.value,
                         walletSeries = _walletSeries.value,
-                        history = _history.value,
-                        historyProgress = _historyProgress.value,
+                        // Plan 008: the single process-wide pass publishes these
+                        // shared states; every visit observes the same objects,
+                        // so a return re-joins the live counter (no second
+                        // pass, no jumping counts).
+                        history = PriceHistoryPass.history.value,
+                        historyProgress = PriceHistoryPass.progress.value,
                         currentPrices = _currentPrices.value,
                         noInternet = _noInternet.value,
                         onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },
@@ -169,26 +168,24 @@ class ParseFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             _dailySeries.value = CoreService.dailySeries()
             _walletSeries.value = CoreService.dailyWalletSeries()
-            launchHistoryPass()
+            attachHistoryPass()
         }
     }
 
     /**
-     * G36: make sure the chart has the daily EUR price history for every
-     * currency that holds assets (cached on disk; only what is missing hits
-     * CoinGecko, one request per symbol, stopping early while the shared
-     * CoinGecko cooldown/blackout is active). Cached symbols are published
-     * to `_history` immediately (zero network, so a relaunch shows the
-     * historical shape at once instead of a long flatline); the remaining
-     * fetches land and re-value the chart incrementally in the background.
+     * G36 + plan 008: make sure the chart has the daily EUR price history
+     * for every currency that holds assets — by ATTACHING to the single
+     * process-wide pass ([PriceHistoryPass]): already running (or completed
+     * today) with the same request = zero new work, the screen just reads
+     * the shared states; otherwise the pass (re)starts in the background,
+     * cached symbols are published immediately (zero network, so a
+     * relaunch shows the historical shape at once instead of a long
+     * flatline) and the remaining fetches land incrementally.
      */
-    private fun launchHistoryPass() {
-        val walletRows = _walletSeries.value
-        val walletData = parseWalletSeries(walletRows)
+    private fun attachHistoryPass() {
+        val walletData = parseWalletSeries(_walletSeries.value)
         val currencies = walletData.keys.toList()
         if (currencies.isEmpty()) return
-        val provider = (AssetValue.getInstance().priceProvider as? CryptoPricesCryptoCompare) ?: return
-        val historyProvider = PriceHistoryProvider(provider)
         val startDay = walletData.values.flatten().minOf { it.date.toEpochDay() }
         val rangeDays = ((LocalDate.now().toEpochDay() - startDay).coerceAtLeast(0) + 1).toInt()
         // The live prices the cards were valued with (pin for today's bucket).
@@ -196,20 +193,7 @@ class ParseFragment : Fragment() {
         _currentPrices.value = currencies.associateWith { assets.cachedPrice(it) }
             .filterValues { it != null }
             .mapValues { it.value!! }
-        viewLifecycleOwner.lifecycleScope.launch {
-            val fetched = historyProvider.ensureAll(
-                symbols = currencies,
-                days = rangeDays,
-                onProgress = { done, total -> _historyProgress.value = done to total },
-                onSymbol = { symbol, entry -> _history.value = _history.value + (symbol to entry) },
-            )
-            _history.value = _history.value + fetched
-            FileLog.i(
-                TAG,
-                "Price history: ${fetched.size} symbol(s) this pass " +
-                        "(${_history.value.size}/${currencies.size} cached total, range ${rangeDays} d)."
-            )
-        }
+        PriceHistoryPass.ensureAll(currencies, rangeDays)
     }
 
     companion object {
