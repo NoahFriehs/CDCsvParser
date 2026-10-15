@@ -152,4 +152,19 @@
     <string name="app_type_label">App type</string>
     <string name="core_mode_label">Calculator</string>
     <string name="file_history_placeholder">No files yet</string>
+    <string name="log_section">Log</string>
+    <string name="log_help">The app\u0027s own logs (Kotlin app log + C++ core log): filter, read and copy them here — no adb needed.</string>
+    <string name="log_file_app">App</string>
+    <string name="log_file_core">Core</string>
+    <string name="log_filter_all">All</string>
+    <string name="log_filter_warning">Warning +</string>
+    <string name="log_filter_error">Error</string>
+    <string name="log_show">Show log</string>
+    <string name="log_hide">Hide log</string>
+    <string name="log_copy">Copy</string>
+    <string name="log_copied">Log copied to clipboard</string>
+    <string name="log_clear">Clear</string>
+    <string name="log_cleared">Log cleared</string>
+    <string name="log_clear_question">Delete the contents of the selected log file?</string>
+    <string name="log_empty">(no matching lines)</string>
 </resources>

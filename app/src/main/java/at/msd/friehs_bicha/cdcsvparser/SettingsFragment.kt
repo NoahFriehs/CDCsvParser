@@ -13,8 +13,13 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.logging.LogFilter
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.SettingsScreen
@@ -49,6 +54,16 @@ class SettingsFragment : Fragment() {
     // Plan 004: runtime price API keys ("" = unset / keyless).
     private val _cgKey = mutableStateOf("")
     private val _ccKey = mutableStateOf("")
+    // Plan 010: the log viewer (file 0 = Kotlin app log, 1 = C++ core log;
+    // filter 0 = All, 1 = Warning+, 2 = Error). The lines are read +
+    // filtered in [refreshLog] on the IO dispatcher.
+    private val _logVisible = mutableStateOf(false)
+    private val _logFileIndex = mutableStateOf(0)
+    private val _logFilterIndex = mutableStateOf(0)
+    private val _logLines = mutableStateOf<List<String>>(emptyList())
+
+    /** The longest tail the viewer reads into memory (2000 lines ≈ 200 KB). */
+    private val LOG_TAIL_LINES = 2000
 
     /** The on-disk price cache files (plan 004). */
     private val PRICE_CACHE_FILES = arrayOf("history_prices.json", "symbol_id_cache.json")
@@ -104,6 +119,33 @@ class SettingsFragment : Fragment() {
                             PreferenceHelper.setCryptoCompareApiKey(requireContext(), key)
                         },
                         onDeletePriceCaches = { deletePriceCaches() },
+                        logVisible = _logVisible.value,
+                        onLogVisibleChange = { visible ->
+                            _logVisible.value = visible
+                            refreshLog()
+                        },
+                        logFileLabels = listOf(
+                            getString(R.string.log_file_app),
+                            getString(R.string.log_file_core),
+                        ),
+                        logFileSelected = _logFileIndex.value,
+                        onLogFileSelected = { index ->
+                            _logFileIndex.value = index
+                            refreshLog()
+                        },
+                        logFilterLabels = listOf(
+                            getString(R.string.log_filter_all),
+                            getString(R.string.log_filter_warning),
+                            getString(R.string.log_filter_error),
+                        ),
+                        logFilterSelected = _logFilterIndex.value,
+                        onLogFilterSelected = { index ->
+                            _logFilterIndex.value = index
+                            refreshLog()
+                        },
+                        logLines = _logLines.value,
+                        onCopyLog = { copyLogLines() },
+                        onClearLog = { confirmClearLog() },
                         onAbout = { findNavController().navigate(R.id.aboutUsFragment) },
                         onLogin = { findNavController().navigate(R.id.loginFragment) },
                         onLogout = { confirmLogout() },
@@ -160,6 +202,66 @@ class SettingsFragment : Fragment() {
         // navigate away), so a one-off read is correct and avoids a
         // listener that would outlive the fragment.
         _signedIn.value = auth.currentUser != null
+    }
+
+    private fun logFile(fileIndex: Int): File =
+        if (fileIndex == 0) FileLog.getLogFiles() else File(CoreService.logFilePath)
+
+    /**
+     * Plan 010: (re)read the chosen log tail on the IO dispatcher and
+     * publish the filtered lines. Cheap to call on every toggle.
+     */
+    private fun refreshLog() {
+        if (!_logVisible.value) return
+        val fileIndex = _logFileIndex.value
+        val mode = LogFilter.Mode.values()[_logFilterIndex.value]
+        viewLifecycleOwner.lifecycleScope.launch {
+            val lines = withContext(Dispatchers.IO) {
+                val file = logFile(fileIndex)
+                if (!file.exists() || !file.canRead()) emptyList()
+                else file.readLines().takeLast(LOG_TAIL_LINES)
+            }
+            if (isAdded) _logLines.value = LogFilter.filter(lines, mode)
+        }
+    }
+
+    private fun copyLogLines() {
+        val lines = _logLines.value
+        if (lines.isEmpty() || view == null) return
+        val clipboard =
+            requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("CDCsvParser log", lines.joinToString("\n")))
+        viewLifecycleOwner.lifecycleScope.launch {
+            snackbarHostState.showSnackbar(getString(R.string.log_copied))
+        }
+    }
+
+    private fun confirmClearLog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.log_clear))
+            .setMessage(getString(R.string.log_clear_question))
+            .setPositiveButton(getString(R.string.yes)) { _, _ -> clearLogFile() }
+            .setNegativeButton(getString(R.string.no), null)
+            .create()
+            .show()
+    }
+
+    private fun clearLogFile() {
+        val fileIndex = _logFileIndex.value
+        viewLifecycleOwner.lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                if (fileIndex == 0) {
+                    FileLog.clearLog()
+                } else {
+                    val file = logFile(1)
+                    if (file.exists()) file.writeText("")
+                }
+            }
+            if (isAdded) {
+                _logLines.value = emptyList()
+                snackbarHostState.showSnackbar(getString(R.string.log_cleared))
+            }
+        }
     }
 
     private fun confirmLogout() {

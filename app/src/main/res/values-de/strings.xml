@@ -145,4 +145,19 @@
     <string name="app_type_label">App-Typ</string>
     <string name="core_mode_label">Berechnung</string>
     <string name="file_history_placeholder">Noch keine Dateien</string>
+    <string name="log_section">Protokoll</string>
+    <string name="log_help">Die eigenen Protokolle der App (Kotlin-App-Log + C++-Kern-Log): hier filtern, ansehen und kopieren — ohne adb.</string>
+    <string name="log_file_app">App</string>
+    <string name="log_file_core">Kern</string>
+    <string name="log_filter_all">Alle</string>
+    <string name="log_filter_warning">Warnung +</string>
+    <string name="log_filter_error">Fehler</string>
+    <string name="log_show">Protokoll anzeigen</string>
+    <string name="log_hide">Protokoll ausblenden</string>
+    <string name="log_copy">Kopieren</string>
+    <string name="log_copied">Protokoll in die Zwischenablage kopiert</string>
+    <string name="log_clear">Leeren</string>
+    <string name="log_cleared">Protokoll geleert</string>
+    <string name="log_clear_question">Inhalte der gewählten Protokolldatei löschen?</string>
+    <string name="log_empty">(keine passenden Zeilen)</string>
 </resources>
