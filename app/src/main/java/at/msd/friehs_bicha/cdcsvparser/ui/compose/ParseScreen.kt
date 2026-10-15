@@ -736,6 +736,16 @@ private fun LineChart.applyChartState(
             this.color = lineColor
         })
     }
+    // Plan 007 A1: drop the chart's internal highlight on every (re)apply.
+    // The apply happens exactly when the data/theme changes (the tag guard
+    // in ChartLine) - a selection change alone never re-applies - so this
+    // clears the stale highlight (the orange line that survived a
+    // series/time-frame/range switch) AND makes sure no highlight index
+    // from the old data is carried across `data =` (the crash-shape state
+    // the phone crash was suspected in; the Compose tooltip, nulled by the
+    // chip clicks, stays the single source of selection truth).
+    // `highlightValues(null)` is the 3.1.0 idiom: stores null, no NPE.
+    highlightValues(null)
     data = LineData(*sets.toTypedArray())
 
     // Selection -> the Compose tooltip above the chart (plan 006 A). The

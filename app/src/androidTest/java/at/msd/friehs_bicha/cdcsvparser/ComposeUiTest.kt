@@ -342,6 +342,63 @@ class ComposeUiTest {
             }
     }
 
+    /**
+     * Plan 007 A3: hammer the three chip rows of the posted chart panel in
+     * a fast, alternating order (the reported phone-crash interaction) and
+     * assert the app is still alive with the chart panel intact. Will not
+     * reproduce the data/OS-specific phone crash itself, but catches any
+     * regression of the same SHAPE — an exception thrown during a
+     * series/time-frame/range state swap (stale highlight carried across a
+     * `data =` swap etc.) — in CI.
+     */
+    @Test
+    fun rapidChartChipSwitchingKeepsTheAppAlive() {
+        ensureOnMain()
+        parseTestUpload()
+        val series = listOf(
+            str(R.string.series_spent),
+            str(R.string.series_portfolio_value),
+            str(R.string.profit_loss),
+            str(R.string.series_bonus),
+        )
+        val frames = listOf(
+            str(R.string.timeframe_week),
+            str(R.string.timeframe_month),
+            str(R.string.timeframe_quarter),
+            str(R.string.timeframe_year),
+        )
+        val ranges = listOf(
+            str(R.string.range_three_months),
+            str(R.string.range_six_months),
+            str(R.string.range_one_year),
+            str(R.string.range_all),
+        )
+        var clicks = 0
+        // 36 iterations: three rows in round-robin, cycling all four chips
+        // of the active row -> every chip hit at least 3 times, and the
+        // row changes every tap (the data swaps on most of them).
+        // A stale UiObject2 (chip recreated by a recomposition) just
+        // misses that one click - the next iteration replaces it.
+        for (i in 0 until 36) {
+            val row = when (i % 3) {
+                0 -> series
+                1 -> frames
+                else -> ranges
+            }
+            val chip = device.findObject(By.text(row[i % row.size]))
+            if (chip != null) {
+                chip.click()
+                clicks++
+            }
+        }
+        assertTrue("too few taps landed ($clicks) - chips not found", clicks >= 12)
+        // The app survived: the activity is resumable and the chart panel
+        // (title + all three chip rows) is still there.
+        waitText(str(R.string.overview_charts))
+        val allChips = (series + frames + ranges).count { device.findObject(By.text(it)) != null }
+        assertEquals("chip rows no longer complete after rapid switching", (series + frames + ranges).size, allChips)
+    }
+
     /** Lines of [logFile] from byte [fromByte] on (ASCII markers only). */
     private fun readLogTail(logFile: File, fromByte: Long): List<String> {
         if (!logFile.exists() || logFile.length() <= fromByte) return emptyList()
