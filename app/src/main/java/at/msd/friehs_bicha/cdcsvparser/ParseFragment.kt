@@ -189,18 +189,29 @@ class ParseFragment : Fragment() {
         if (currencies.isEmpty()) return
         val points = walletData.values.flatten()
         val startDay = points.minOf { it.date.toEpochDay() }
-        // Plan 009b: the intraday frames anchor to the export's last
-        // transaction day (not "now") - every export older than the
-        // frame's window would otherwise chart empty air (smoke test found
-        // this with the Oct-2025 BlockPit export).
-        val anchorDay = points.maxOf { it.date }
+        // The intraday frames end at NOW (today) for EVERY export - fresh
+        // or stale: a held position older than the frame window must still
+        // ride REAL intraday candles. The core's opening line carries the
+        // position into the window, the chart re-prices it per slot, and
+        // refinement fetches real intraday candles ending at today - so a
+        // stale export charts exactly like a fresh one.
+        val anchorDay = LocalDate.now()
         val rangeDays = ((LocalDate.now().toEpochDay() - startDay).coerceAtLeast(0) + 1).toInt()
+        // The intraday REFINEMENT runs only for symbols the ledger still
+        // holds (non-zero balance OR bonus at the last row - the current
+        // position): a zero position contributes nothing to any frame, so
+        // refining it is pure network cost. The daily phase
+        // keeps its existing symbol set (its tail is cheap and cached).
+        val heldSymbols = walletData
+            .filter { entry -> entry.value.last().balance != 0.0 || entry.value.last().bonus != 0.0 }
+            .keys
+            .toList()
         // The live prices the cards were valued with (pin for today's bucket).
         val assets = AssetValue.getInstance()
         _currentPrices.value = currencies.associateWith { assets.cachedPrice(it) }
             .filterValues { it != null }
             .mapValues { it.value!! }
-        PriceHistoryPass.ensureAll(currencies, rangeDays, anchorDay)
+        PriceHistoryPass.ensureAll(currencies, rangeDays, anchorDay, intradaySymbols = heldSymbols)
     }
 
     companion object {

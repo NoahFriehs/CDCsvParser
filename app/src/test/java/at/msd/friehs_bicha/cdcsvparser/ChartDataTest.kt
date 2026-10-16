@@ -16,6 +16,8 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.limitRange
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.IntradayFrame
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.IntradayPricing
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.OverlaySeries
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.intradayFrame
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.intradayGridStart
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.WalletWindow
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.alignOverlay
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.flattenIntraday
@@ -639,5 +641,128 @@ class ChartDataTest {
 
         val none = alignOverlay(emptyList())
         assertTrue(none.first.isEmpty())
+    }
+
+    // --------------------------------------------------------------------
+    // The intraday frames end at NOW - the full window grid.
+
+    @Test
+    fun intradayGridStartFloorsToTheFrameGrid() {
+        val now = 1_700_000_401L
+        // 6h frame (21600 s slots, 30 d window):
+        val s6 = intradayGridStart(now, TimeFrame.HOURS_6.intradayFrame!!)
+        assertEquals(1_697_392_800L, s6) // 30 d back, floored to the 6h grid
+        assertEquals(0L, s6 % 21_600L)
+        // 15m frame (900 s slots, 7 d window):
+        val s15 = intradayGridStart(now, TimeFrame.MINUTES_15.intradayFrame!!)
+        assertEquals(1_699_395_300L, s15)
+        assertEquals(0L, s15 % 900L)
+        // an already-aligned "now": the window start stays on the grid
+        assertEquals(21_600L, intradayGridStart(21_600L + 30L * 86_400L, TimeFrame.HOURS_6.intradayFrame!!))
+    }
+
+    /** 24 one-hour slots of 1970-01-02 (the shared test grid).
+     *  (86_400 = the epoch second of 1970-01-02 00:00 UTC.) */
+    private fun grid(i: Int) = 86_400L + i * 3_600L
+
+    private fun gridKeys(n: Int) = (0 until n).map {
+        "1970-01-02 " + String.format("%02d:00", it)
+    }
+
+    @Test
+    fun historicalWindowStateStaleOpeningLineOnlyRidesTheFullGrid() {
+        // Stale export: the core emits ONLY the opening line (the position
+        // held at the window start), no in-window change. With refinement
+        // (real candles across the whole window):
+        val wallet = mapOf("BTC" to listOf(WalletWindow("1970-01-02 00:00", 2.0, 0.0)))
+        val refined = (0 until 24).map { grid(it) to (10.0 + it * 0.5) }
+        val pricing = mapOf("BTC" to IntradayPricing(refined, 0))
+
+        val series = historicalWindowState(emptyList(), wallet, pricing)
+
+        assertEquals(gridKeys(24), series.value.map { it.key })
+        assertEquals(20.0, series.value[0].value, 1e-9)   // 2.0 x 10.0
+        assertEquals(2 * (10.0 + 11 * 0.5), series.value[11].value, 1e-9)
+        assertEquals(2 * (10.0 + 23 * 0.5), series.value[23].value, 1e-9) // last slot = live-pin value
+        assertEquals(0, series.estimatedCount) // refined across the whole window
+        assertEquals(0.0, series.bonus.last().value, 1e-9)
+    }
+
+    @Test
+    fun historicalWindowStateStaleWithoutRefinementIsFullyEstimated() {
+        // Same stale export, refinement unavailable (429 wall / offline):
+        // daily-held-flat pricing -> the whole line is the estimated style.
+        val wallet = mapOf("BTC" to listOf(WalletWindow("1970-01-02 00:00", 2.0, 0.0)))
+        val flat = (0 until 24).map { grid(it) to 10.0 }
+        val pricing = mapOf("BTC" to IntradayPricing(flat, 24)) // nothing "real"
+
+        val series = historicalWindowState(emptyList(), wallet, pricing)
+
+        assertEquals(gridKeys(24), series.value.map { it.key })
+        assertEquals(24, series.value.size.toLong())
+        assertTrue(series.value.all { it.value == 20.0 })
+        assertEquals(24, series.estimatedCount) // degraded mode, one pass
+    }
+
+    @Test
+    fun historicalWindowStateCarriesPositionOverQuietSlots() {
+        // Partial overlap: opening line (2.0) + one in-window change at
+        // slot 5 (-0.5 -> 1.5); spent flow lands on the FULL grid at its
+        // own slot and stays cumulative.
+        val wallet = mapOf(
+            "BTC" to listOf(
+                WalletWindow("1970-01-02 00:00", 2.0, 0.0),
+                WalletWindow("1970-01-02 05:00", 1.5, 0.0),
+            ),
+        )
+        val flat = (0 until 24).map { grid(it) to 10.0 }
+        val pricing = mapOf("BTC" to IntradayPricing(flat, 0))
+        val spent = listOf(ChartPoint("1970-01-02 05:00", 10.0))
+
+        val series = historicalWindowState(spent, wallet, pricing)
+
+        assertEquals(gridKeys(24), series.value.map { it.key })
+        assertEquals(20.0, series.value[4].value, 1e-9) // carried: 2.0 x 10 before slot 5
+        assertEquals(15.0, series.value[5].value, 1e-9) // changed at slot 5
+        assertEquals(15.0, series.value[23].value, 1e-9) // carried again after
+        assertEquals(20.0, series.pl[4].value, 1e-9) // spent lands at its slot
+        assertEquals(5.0, series.pl[5].value, 1e-9) // 15 - 10
+        assertEquals(5.0, series.pl[23].value, 1e-9) // cumulative flow stays deducted
+    }
+
+    @Test
+    fun historicalWindowStateFreshExportCreatesAndClosesMidWindow() {
+        // Fresh export: nothing held at the window start (NO opening line),
+        // one purchase at slot 3, one sale at slot 10 - regression-equivalent
+        // to the old union-grid values, now on the full window grid.
+        val wallet = mapOf(
+            "BTC" to listOf(
+                WalletWindow("1970-01-02 03:00", 1.0, 0.2),
+                WalletWindow("1970-01-02 10:00", 0.0, 0.0),
+            ),
+        )
+        val flat = (0 until 24).map { grid(it) to 10.0 }
+        val pricing = mapOf("BTC" to IntradayPricing(flat, 0))
+
+        val series = historicalWindowState(emptyList(), wallet, pricing)
+
+        assertEquals(gridKeys(24), series.value.map { it.key })
+        assertEquals(0.0, series.value[0].value, 1e-9) // no rows before creation
+        assertEquals(0.0, series.value[2].value, 1e-9)
+        assertEquals(10.0, series.value[3].value, 1e-9) // 1.0 x 10 from slot 3
+        assertEquals(2.0, series.bonus[3].value, 1e-9) // 0.2 x 10
+        assertEquals(10.0, series.value[9].value, 1e-9)
+        assertEquals(0.0, series.value[10].value, 1e-9) // closed: carry holds 0
+        assertEquals(0.0, series.value[23].value, 1e-9)
+        assertEquals(0.0, series.bonus[10].value, 1e-9)
+    }
+
+    @Test
+    fun historicalWindowStateWithoutPricingIsEmpty() {
+        val wallet = mapOf("BTC" to listOf(WalletWindow("1970-01-02 00:00", 2.0, 0.0)))
+        val series = historicalWindowState(emptyList(), wallet, emptyMap())
+        assertTrue(series.value.isEmpty())
+        assertTrue(series.pl.isEmpty())
+        assertTrue(series.bonus.isEmpty())
     }
 }

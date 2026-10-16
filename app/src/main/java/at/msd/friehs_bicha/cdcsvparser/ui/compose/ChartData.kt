@@ -1,7 +1,9 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.compose
 
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
@@ -49,6 +51,20 @@ val TimeFrame.intradayFrame: IntradayFrame?
         TimeFrame.MINUTES_15 -> IntradayFrame(15 * 60, 7)
         else -> null
     }
+
+/**
+ * The grid start (UTC epoch second) of an intraday frame at [nowTsSec]:
+ * "now − the frame window" floored to the frame's slot boundary (a
+ * multiple of [IntradayFrame.windowSeconds]). The single source of the
+ * window alignment: the chart grid ([flattenIntraday]) and the core's
+ * grid-aligned `fromEpoch` contract both derive from it - the frames end
+ * at NOW for every export, fresh or stale.
+ */
+fun intradayGridStart(nowTsSec: Long, frame: IntradayFrame): Long {
+    val ws = frame.windowSeconds.toLong()
+    val start = nowTsSec - frame.windowDays * 86_400L
+    return start - (start % ws)
+}
 
 /**
  * Preset display ranges for the overview chart (plan 006): each preset is
@@ -504,6 +520,14 @@ fun toEpochSecond(key: String): Long {
     return date.toEpochDay() * 86_400L + m.groupValues[4].toLong() * 3600L + m.groupValues[5].toLong() * 60L
 }
 
+/** UTC "YYYY-MM-DD HH:MM" (Locale.ROOT: the core's keys are locale-free),
+ *  the exact inverse of [toEpochSecond]. */
+private val windowKeyFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT)
+
+internal fun windowKeyOf(tsSec: Long): String =
+    Instant.ofEpochSecond(tsSec).atOffset(ZoneOffset.UTC).format(windowKeyFormatter)
+
 /**
  * One symbol's intraday pricing on a frame's window grid (plan 009b):
  * (windowStartTsSec, price) pairs covering the whole frame window.
@@ -543,8 +567,7 @@ fun flattenIntraday(
     val lastDaily = daily.lastOrNull()
     if (refined.isEmpty() && lastDaily == null && livePrice == null) return null
     val ws = frame.windowSeconds.toLong()
-    val windowStart = nowTsSec - frame.windowDays * 86_400L
-    val firstStart = windowStart - (windowStart % ws) // grid aligned to the epoch
+    val firstStart = intradayGridStart(nowTsSec, frame)
     val today = nowTsSec / 86_400L
 
     val points = ArrayList<Pair<Long, Double>>()
@@ -570,32 +593,39 @@ fun flattenIntraday(
 
 /**
  * The intraday counterpart of [historicalStockSeries]: values the core's
- * sub-daily wallet + spent series per window. One x point per window key
- * present in the data (oldest first; the ISO keys sort chronologically),
- * the running unpriced positions valued with the prices valid at the
- * window ([pricing] uses the SAME window grid as the core keys), pl
+ * sub-daily wallet + spent series per window. The x-grid is the frame's
+ * FULL window [gridStart .. nowTsSec) stepped by the frame - taken
+ * from [pricing] (every entry shares the SAME grid by construction, see
+ * [flattenIntraday]) - NOT the keys present in the data: a stale export
+ * carries only the core's opening line (plus flat gaps), and the carried
+ * position must ride the whole window re-priced per slot.
+ *
+ * The running unpriced positions are carried flat where the ledger is
+ * quiet ("last core row at or before the slot" - the opening line always
+ * precedes every grid slot), valued with the prices valid at the slot, pl
  * against the cumulative spent flow so far.
  *
- * A leading window is "estimated" while ANY valued currency is still in
- * its fallback region (before its [IntradayPricing.firstRealIndex] ts).
+ * A leading slot is "estimated" while ANY valued currency is still in its
+ * fallback region (before its [IntradayPricing.firstRealIndex] ts).
  * Currencies with no [pricing] entry at all cannot be valued and are
- * excluded (the panel only draws what has prices, as on the daily frames).
+ * excluded (the panel only draws what has prices, as on the daily frames);
+ * NO priced currency at all yields empty series.
  */
 fun historicalWindowState(
     spent: List<ChartPoint>,
     wallet: Map<String, List<WalletWindow>>,
     pricing: Map<String, IntradayPricing>,
 ): HistoricalSeries {
-    val keys = LinkedHashSet<String>()
-    for (p in spent) keys.add(p.key)
-    wallet.values.forEach { list -> list.forEach { w -> keys.add(w.key) } }
-    if (keys.isEmpty()) return HistoricalSeries(emptyList(), emptyList(), emptyList(), 0)
-    val sorted = keys.sorted()
+    val grid = pricing.values.firstOrNull()?.points
+        ?: return HistoricalSeries(emptyList(), emptyList(), emptyList(), 0)
+    val gridTs = grid.map { it.first }
 
-    val spentByWindow = HashMap<String, Double>(spent.size)
-    spent.forEach { spentByWindow[it.key] = it.value }
+    val spentByTs = HashMap<Long, Double>(spent.size)
+    for (p in spent) {
+        val ts = toEpochSecond(p.key)
+        if (ts >= 0L) spentByTs[ts] = p.value
+    }
     val posIdx = HashMap<String, Int>()
-    val priceIdx = HashMap<String, Int>()
     val balances = HashMap<String, Double>()
     val bonuses = HashMap<String, Double>()
     val valuePoints = mutableListOf<ChartPoint>()
@@ -611,8 +641,8 @@ fun historicalWindowState(
         }
     }
     var spentSoFar = 0.0
-    for (key in sorted) {
-        val slotTs = toEpochSecond(key)
+    for (i in gridTs.indices) {
+        val slotTs = gridTs[i]
         for ((cur, list) in wallet) {
             var idx = posIdx[cur] ?: 0
             while (idx < list.size && toEpochSecond(list[idx].key) <= slotTs) {
@@ -622,7 +652,7 @@ fun historicalWindowState(
             }
             posIdx[cur] = idx
         }
-        spentSoFar += spentByWindow[key] ?: 0.0
+        spentSoFar += spentByTs[slotTs] ?: 0.0
 
         var value = 0.0
         var bonusValue = 0.0
@@ -630,22 +660,19 @@ fun historicalWindowState(
             val balance = balances[cur] ?: continue
             val bonus = bonuses[cur] ?: 0.0
             if (balance == 0.0 && bonus == 0.0) continue
-            // The core keys and the pricing grid share the window
-            // alignment (epoch multiples of the frame) - advance the
-            // pointer instead of scanning (both lists are ascending).
-            var idx = priceIdx[cur] ?: 0
-            while (idx + 1 < p.points.size && p.points[idx + 1].first <= slotTs) idx++
-            priceIdx[cur] = idx
-            if (p.points[idx].first > slotTs) continue // grid drift (not expected)
-            val price = p.points[idx].second
+            // Every pricing entry shares the slot grid (same frame +
+            // nowTsSec, [flattenIntraday]): the slot index IS the price
+            // index for every currency, no pointer walking needed.
+            val price = p.points[i].second
             value += balance * price
             bonusValue += bonus * price
         }
+        val key = windowKeyOf(slotTs)
         valuePoints.add(ChartPoint(key, value))
         plPoints.add(ChartPoint(key, value - spentSoFar))
         bonusPoints.add(ChartPoint(key, bonusValue))
     }
-    // Estimated = the leading windows in which any valued currency is
+    // Estimated = the leading slots in which any valued currency is
     // before its "real" region; refined regions end at now by
     // construction, so the region is a single prefix.
     var estimatedCount = 0

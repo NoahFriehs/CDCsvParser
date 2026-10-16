@@ -201,6 +201,10 @@ class PriceHistoryProvider(
      * built for a smaller window (or a shorter export) is deep-backed in
      * phase 2 instead.
      *
+     * @param intradaySymbols the symbol set of the phase-3 intraday
+     *        REFINEMENT (the caller filters it to the positions the ledger
+     *        still holds - zero symbols add no chart data); null = the full
+     *        [symbols] set. The daily phase always covers [symbols] itself.
      * @param onProgress invoked with (done, total) after each symbol.
      * @param onSymbol invoked per entry as soon as it is available — the
      *        chart should re-value incrementally, never wait for the pass.
@@ -211,9 +215,11 @@ class PriceHistoryProvider(
     suspend fun ensureAll(
         symbols: List<String>,
         days: Int,
-        /** The export's last transaction day - the intraday frames' anchor
-         *  (plan 009b); null = no intraday refinement this pass. */
+        /** Today - the intraday frames' end day (refinement runs for every
+         *  non-zero symbol, no activity gate); null = no intraday
+         *  refinement this pass. */
         anchorDay: java.time.LocalDate?,
+        intradaySymbols: List<String>? = null,
         onProgress: ((Int, Int) -> Unit)? = null,
         onSymbol: ((String, DailyPrices) -> Unit)? = null,
         onIntraday: ((String, IntradayHistory.IntradayData) -> Unit)? = null,
@@ -277,17 +283,21 @@ class PriceHistoryProvider(
                 onProgress?.invoke(done, symbols.size)
             }
         }
-        // Phase 3 (plan 009b): the intraday REFINEMENT for the 15-min /
-        // 6-hour chart frames (15m/7 d + 6h/30 d candles, disk-cached per
-        // symbol, at most one refetch per UTC day). Runs after the daily
-        // phase so the sanity check sees the settled daily closes; it never
-        // changes the daily result - a failure just leaves the symbol to
-        // the flatten fallback (daily close held flat + live pin). NOTE: no
-        // "History for ..." log line here (the per-symbol pass test counts
-        // those) - the intraday fetch logs its own "Intraday for ..." line.
+        // Phase 3: the intraday REFINEMENT for the 15-min / 6-hour chart
+        // frames (15m/7 d + 6h/30 d candles ENDING AT TODAY, disk-cached per
+        // symbol, at most one refetch per UTC day). Runs for every symbol in
+        // [intradaySymbols] (the caller keeps the set to non-zero positions)
+        // with NO activity gating - the price axis is independent of ledger
+        // activity. Runs after the
+        // daily phase so the sanity check sees the last daily close (today);
+        // it never changes the daily result - a failure just leaves the
+        // symbol to the flatten fallback (daily close held flat + live
+        // pin). NOTE: no "History for ..." log line here (the per-symbol
+        // pass test counts those) - the intraday fetch logs its own
+        // "Intraday for ..." line.
         if (onIntraday != null && anchorDay != null) {
             val intraday = IntradayHistory(prices)
-            for (symbol in symbols) {
+            for (symbol in intradaySymbols ?: symbols) {
                 coroutineContext.ensureActive()
                 intraday.ensure(symbol, result[symbol]?.points.orEmpty(), anchorDay)
                     ?.let { onIntraday(symbol, it) }

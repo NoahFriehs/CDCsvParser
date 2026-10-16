@@ -57,8 +57,6 @@ import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.components.LegendEntry
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.utils.ColorTemplate
@@ -379,6 +377,9 @@ private fun ChartPanel(
     val priceSeriesMap = remember(history) {
         history.mapValues { PriceSeries(it.value.points) }
     }
+    // The last ledger transaction date - label-only now (the intraday
+    // frames no longer anchor to it; see the note's "data until").
+    val lastTxDate = walletData.values.flatten().maxOfOrNull { it.date }
     val historical = remember(walletData, priceSeriesMap, seriesData, timeFrame, currentPrices) {
         historicalStockSeries(
             walletSeries = walletData,
@@ -402,40 +403,44 @@ private fun ChartPanel(
         rangeStart = range.startDate(today)
         rangeEnd = null
     }
-    // Plan 009b: the INTRADAY frames (6 h / 15 m). Their data is windowed:
-    // the core emits only slots of the frame's window (fromEpoch) and the
-    // range presets don't apply to it (the note below explains the
-    // window). The core sub-daily rows are fetched lazily here - the core
-    // replay is in-memory and fast - keyed on the frame and a re-parse.
-    // Plan 009b: the frames anchor to the export's last transaction day,
-    // not "now" (an export older than the frame window would otherwise
-    // chart empty air) - the day after it is the grid's exclusive end.
-    val anchorTs = remember(walletData) {
-        walletData.values.flatten().maxOfOrNull { it.date }?.let { (it.toEpochDay() + 1) * 86_400L }
+    // The INTRADAY frames (6 h / 15 m) are a TIME SPAN that ends at NOW
+    // for every export - fresh or stale. An export can be older than the
+    // frame window: the core's opening line for the carried position +
+    // the flat-carry re-pricing cover that gap - the price axis is
+    // independent of ledger activity. The range presets don't apply (the
+    // note below explains the window). The core sub-daily rows are fetched
+    // lazily here - the core replay is in-memory and fast - keyed on the
+    // frame and a re-parse.
+    // [nowTsSec] is re-keyed on the data flowing into the chart (a
+    // re-parse, the price pass publishing), not on a clock tick: day
+    // rollover resolves on the next such recomposition (the same day-keyed
+    // semantics as the price pass's cache).
+    val nowTsSec = remember(walletData, history, intraday) {
+        System.currentTimeMillis() / 1000L
     }
+    val intradayFrame = timeFrame.intradayFrame
+    val fromEpoch = intradayFrame?.let { intradayGridStart(nowTsSec, it) }
     var subDaily by remember { mutableStateOf<Pair<List<String>, List<String>>?>(null) }
-    LaunchedEffect(timeFrame, dailySeries, walletSeries) {
-        val frame = timeFrame.intradayFrame ?: return@LaunchedEffect
-        val anchor = anchorTs ?: return@LaunchedEffect
-        val fromEpoch = anchor - frame.windowDays * 86_400L
-        subDaily = CoreService.subDailySpentSeries(frame.windowSeconds, fromEpoch) to
-            CoreService.subDailyWalletSeries(frame.windowSeconds, fromEpoch)
+    LaunchedEffect(intradayFrame, walletSeries, fromEpoch) {
+        val frame = intradayFrame ?: return@LaunchedEffect
+        val cut = fromEpoch ?: return@LaunchedEffect
+        subDaily = CoreService.subDailySpentSeries(frame.windowSeconds, cut) to
+            CoreService.subDailyWalletSeries(frame.windowSeconds, cut)
     }
     // Plan 009c: the STOCK series of an intraday frame, computed for ALL
     // series at once (independent of the single-series selection).
     val intradayStock: HistoricalSeries? = remember(
-        subDaily, timeFrame, history, intraday, currentPrices, anchorTs,
+        subDaily, timeFrame, history, intraday, currentPrices, nowTsSec,
     ) {
         val frame = timeFrame.intradayFrame ?: return@remember null
         val sub = subDaily ?: return@remember null
-        val anchor = anchorTs ?: return@remember null
         intradaySeries(
             subSpentRows = sub.first,
             subWalletRows = sub.second,
             intraday = intraday.mapValues { it.value.points },
             daily = history.mapValues { it.value.points },
             livePrices = currentPrices,
-            nowTsSec = anchor,
+            nowTsSec = nowTsSec,
             frame = frame,
         )
     }
@@ -615,15 +620,20 @@ private fun ChartPanel(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        // Plan 009b: the intraday frames only ever show their data window
-        // (the range presets don't restrict them further).
-        timeFrame.intradayFrame?.let { frame ->
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = stringResource(R.string.chart_intraday_note, frame.windowDays),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        // The intraday frames only ever show their data window (the range
+        // presets don't restrict them further). The note names
+        // where the LEDGER data ends (last tx); the price half is live by
+        // construction. No ledger at all -> no note (the empty chart state
+        // below explains itself).
+        intradayFrame?.let { frame ->
+            lastTxDate?.let { date ->
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.chart_intraday_note, frame.windowDays, shortDate(date)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         Spacer(Modifier.height(12.dp))
         when {
@@ -679,17 +689,10 @@ private fun ChartPanel(
                     }
                 }
                 if (isAll) {
-                    // label strings need the composable context: a plain
-                    // loop, not a map{} lambda.
-                    val overlayLabels = ArrayList<String>(overlayAligned.size)
-                    overlayAligned.forEach { s ->
-                        overlayLabels.add(stringResource(s.series.labelRes))
-                    }
                     ChartMultiLine(
                         grid = overlayGrid,
                         series = overlayAligned,
                         colors = overlayAligned.map { seriesColors.getValue(it.series) },
-                        labels = overlayLabels,
                         timeFrame = timeFrame,
                         labelColor = labelColor,
                         gridColor = gridColor,
@@ -843,8 +846,11 @@ private fun ChartLine(
  * [LineDataSet] per visible series (plus its dashed estimated prefix, same
  * convention as [ChartLine]) on the COMMON [grid] - the values are already
  * projected onto it (see `alignOverlay`). Values stay raw euros on the
- * single axis, a custom legend shows exactly the visible series (in order),
- * and the selection callback reports WHICH series was hit.
+ * single axis; the selection callback reports WHICH series was hit.
+ * Crash #43: deliberately NO built-in legend - the dynamic legend.setCustom
+ * (entry count flips with the All-mode toggles) triggered the
+ * MPAndroidChart 3.1.0 LegendRenderer.renderLegend size-cache crash; the
+ * segment row + the tap caption identify the series instead.
  *
  * Same factory/update tag-guard pattern as [ChartLine] (plans 001/007).
  */
@@ -853,7 +859,6 @@ private fun ChartMultiLine(
     grid: List<String>,
     series: List<AlignedSeries>,
     colors: List<Int>,
-    labels: List<String>,
     timeFrame: TimeFrame,
     labelColor: Int,
     gridColor: Int,
@@ -865,13 +870,13 @@ private fun ChartMultiLine(
     AndroidView(
         factory = { context ->
             LineChart(context).apply {
-                applyMultiState(grid, series, colors, labels, timeFrame, labelColor, gridColor, onPointSelected)
+                applyMultiState(grid, series, colors, timeFrame, labelColor, gridColor, onPointSelected)
                 setTag(dataSignature)
             }
         },
         update = { chart ->
             if (chart.getTag() != dataSignature) {
-                chart.applyMultiState(grid, series, colors, labels, timeFrame, labelColor, gridColor, onPointSelected)
+                chart.applyMultiState(grid, series, colors, timeFrame, labelColor, gridColor, onPointSelected)
                 chart.setTag(dataSignature)
             }
         },
@@ -885,7 +890,6 @@ private fun LineChart.applyMultiState(
     grid: List<String>,
     series: List<AlignedSeries>,
     colors: List<Int>,
-    labels: List<String>,
     timeFrame: TimeFrame,
     labelColor: Int,
     gridColor: Int,
@@ -958,17 +962,12 @@ private fun LineChart.applyMultiState(
     highlightValues(null)
     data = LineData(*sets.toTypedArray())
 
-    // Custom legend: exactly the visible series, in order (the dashed
-    // estimated splits must not add legend entries).
-    legend.isEnabled = true
-    legend.textColor = labelColor
-    legend.textSize = 11f
-    legend.formLineWidth = 2f
-    legend.setCustom(
-        series.mapIndexed { index, s ->
-            LegendEntry(labels[index], Legend.LegendForm.LINE, 0f, 2f, null, colors[index])
-        },
-    )
+    // Crash #43 fix: NO built-in legend - the dynamic legend.setCustom
+    // (entry count flips with the All-mode series toggles) hit the
+    // MPAndroidChart 3.1.0 LegendRenderer.renderLegend size-cache bug
+    // (IndexOutOfBoundsException). The segment row above already identifies
+    // the visible series, and the tap caption names the hit series.
+    legend.isEnabled = false
 
     // Selection: the highlight knows the DATASET index - map it back to
     // the series it belongs to. The entry's x is the GLOBAL grid index
@@ -989,6 +988,11 @@ private fun LineChart.applyMultiState(
         }
     })
     setTouchEnabled(true)
+    // Re-fit the viewport to the whole dataset: the AndroidView is RETAINED
+    // across frame switches (the update path), so a zoomed viewport of the
+    // previous frame would hide most of the new grid - including the last
+    // (live-pinned) slot on the intraday frames.
+    fitScreen()
     invalidate()
 }
 
@@ -1092,6 +1096,8 @@ private fun LineChart.applyChartState(
         }
     })
     setTouchEnabled(true)
+    // Re-fit as above (the retained viewport of the previous frame).
+    fitScreen()
     invalidate()
 }
 

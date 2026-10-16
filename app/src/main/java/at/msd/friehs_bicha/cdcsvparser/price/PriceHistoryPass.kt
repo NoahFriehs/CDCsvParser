@@ -59,11 +59,20 @@ object PriceHistoryPass {
      * days, either by attaching to the current pass (see the class
      * doc) or by superseding it and starting a new one, which then
      * publishes progress into [history] / [progress] in the background.
-     * [anchorDay] (the export's last transaction day) anchors the
-     * intraday frames (plan 009b); a pass anchored elsewhere does not
-     * cover the request.
+     * [anchorDay] (today - the frames' end day) anchors the intraday
+     * refinement (it runs for ALL non-zero symbols, no activity gate);
+     * a pass anchored elsewhere does not cover the request.
+     * [intradaySymbols] (default = [symbols]) is the refinement's symbol
+     * set: the caller filters it to the positions the ledger still holds -
+     * zero symbols contribute nothing to any frame; the daily phase
+     * always covers [symbols].
      */
-    fun ensureAll(symbols: List<String>, days: Int, anchorDay: LocalDate?) {
+    fun ensureAll(
+        symbols: List<String>,
+        days: Int,
+        anchorDay: LocalDate?,
+        intradaySymbols: List<String>? = null,
+    ) {
         if (symbols.isEmpty()) return
         val live = job?.isActive == true
         val covers = passSymbols.toHashSet().containsAll(symbols) &&
@@ -107,6 +116,7 @@ object PriceHistoryPass {
                     symbols = symbols,
                     days = days,
                     anchorDay = anchorDay,
+                    intradaySymbols = intradaySymbols,
                     onProgress = { done, total -> progress.value = done to total },
                     onSymbol = { symbol, entry -> addSymbol(symbol, entry) },
                     onIntraday = { symbol, entry -> addIntraday(symbol, entry) },

@@ -1209,8 +1209,10 @@ class CoreService : Service() {
          * epoch (UTC): "YYYY-MM-DD HH:MM;value" lines (flow), oldest first.
          * [fromEpoch] (0 = no limit) suppresses slots starting before it. The
          * 15-min and 6-hour chart frames (plan 009b) run this with a
-         * fromEpoch of "now - the frame's data window", so the JNI transfer
-         * stays bounded for long exports. Runs on the cpp-core thread.
+         * GRID-ALIGNED fromEpoch of "now - the frame's data window" (a
+         * multiple of windowSeconds, via ChartData.intradayGridStart), so
+         * the JNI transfer stays bounded for long exports. Runs on the
+         * cpp-core thread.
          */
         suspend fun subDailySpentSeries(windowSeconds: Int, fromEpoch: Long): List<String> =
             withContext(coreDispatcher) {
@@ -1228,8 +1230,18 @@ class CoreService : Service() {
          * "CURRENCY;YYYY-MM-DD HH:MM;runningBalance;runningBonus" (the
          * windowed sibling of [dailyWalletSeries]). Same scope, running state
          * carries across gaps and across the [fromEpoch] cut. The chart code
-         * prices each point with the price valid at the slot. Runs on the
-         * cpp-core thread.
+         * prices each point with the price valid at the slot.
+         *
+         * A LIMITED window (grid-aligned [fromEpoch] > 0, a
+         * multiple of windowSeconds) additionally OPENS with one line per
+         * currency whose running position is non-zero at the window start
+         * (the pre-cut state at the fromEpoch slot key, before that slot's
+         * own deltas) - without it, a position held before the window would
+         * be unrecoverable (the rows carry running values, not deltas). A
+         * fully stale export yields only those opening lines; [fromEpoch] =
+         * 0 emits no opening line.
+         *
+         * Runs on the cpp-core thread.
          */
         suspend fun subDailyWalletSeries(windowSeconds: Int, fromEpoch: Long): List<String> =
             withContext(coreDispatcher) {
