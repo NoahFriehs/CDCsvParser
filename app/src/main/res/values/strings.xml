@@ -20,6 +20,9 @@
     <string name="series_spent">Spent</string>
     <string name="series_portfolio_value">Portfolio value</string>
     <string name="series_bonus">Rewards</string>
+    <!-- Accessibility label of the Σ (running-total spent) chip; the
+         visible glyph is language-neutral. -->
+    <string name="chart_cumulative_spent_cd">Cumulative spent</string>
     <!-- Plan 009a: short labels so the row keeps fitting when 6 h / 15 m
          (009b) join it. D = day (English); the German resource says T. -->
     <string name="timeframe_week">W</string>

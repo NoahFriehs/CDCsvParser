@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +49,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withLink
@@ -361,6 +364,11 @@ private fun ChartPanel(
     val seriesData = remember(dailySeries) { parseDailySeries(dailySeries) }
     val walletData = remember(walletSeries) { parseWalletSeries(walletSeries) }
     var selectedSeries by remember { mutableStateOf(ChartSeries.SPENT) }
+    // The Σ toggle (series row): the SPENT series as the running total
+    // from the export's start, instead of the per-bucket flow. Local UI
+    // state like the selection (resets on rotation); it only ever affects
+    // how the spent series is computed.
+    var spentCumulative by remember { mutableStateOf(false) }
     // Plan 009c: "All" draws the series overlaid; in that mode the four
     // single-series chips become visibility toggles (allVisible).
     var isAll by remember { mutableStateOf(false) }
@@ -421,10 +429,15 @@ private fun ChartPanel(
     val intradayFrame = timeFrame.intradayFrame
     val fromEpoch = intradayFrame?.let { intradayGridStart(nowTsSec, it) }
     var subDaily by remember { mutableStateOf<Pair<List<String>, List<String>>?>(null) }
-    LaunchedEffect(intradayFrame, walletSeries, fromEpoch) {
+    LaunchedEffect(intradayFrame, walletSeries, fromEpoch, spentCumulative) {
         val frame = intradayFrame ?: return@LaunchedEffect
         val cut = fromEpoch ?: return@LaunchedEffect
-        subDaily = CoreService.subDailySpentSeries(frame.windowSeconds, cut) to
+        // The cumulative view needs the FULL-LEDGER flow (`fromEpoch = 0`):
+        // the pre-window slots carry into the window's first slot. The
+        // stock rows stay windowed (the frame window ends at now by
+        // design).
+        val spentCut = if (spentCumulative) 0L else cut
+        subDaily = CoreService.subDailySpentSeries(frame.windowSeconds, spentCut) to
             CoreService.subDailyWalletSeries(frame.windowSeconds, cut)
     }
     // Plan 009c: the STOCK series of an intraday frame, computed for ALL
@@ -451,11 +464,19 @@ private fun ChartPanel(
     // windowed sub-daily rows on the intraday frames.
     val frameSeries: Map<ChartSeries, Pair<List<ChartPoint>, Int>> = remember(
         seriesData, historical, intradayStock, subDaily, timeFrame, rangeStart, rangeEnd,
+        spentCumulative,
     ) {
         val m = LinkedHashMap<ChartSeries, Pair<List<ChartPoint>, Int>>()
-        if (timeFrame.intradayFrame != null) {
+        val frame = intradayFrame
+        if (frame != null) {
             val sub = subDaily ?: return@remember m // core rows not in yet
-            m[ChartSeries.SPENT] = parseSubDailySpent(sub.first) to 0
+            // Σ ON: re-shape the spent flow into the running total on the
+            // frame grid (sub.first is the full ledger in that mode).
+            m[ChartSeries.SPENT] = if (spentCumulative) {
+                intradaySpentCumulative(parseSubDailySpent(sub.first), nowTsSec, frame) to 0
+            } else {
+                parseSubDailySpent(sub.first) to 0
+            }
             val rs = intradayStock
             if (rs != null) {
                 m[ChartSeries.VALUE] = rs.value to rs.estimatedCount
@@ -464,8 +485,17 @@ private fun ChartPanel(
             }
         } else {
             val est = historical.estimatedCount
+            // Σ ON: prefix sum over the FULL-HISTORY buckets first, limit
+            // afterwards - the first visible bucket carries all pre-window
+            // spend (inception reference).
             m[ChartSeries.SPENT] = limitRange(
-                bucketize(seriesData[ChartSeries.SPENT].orEmpty(), timeFrame, isFlow = true),
+                if (spentCumulative) {
+                    cumulative(
+                        bucketize(seriesData[ChartSeries.SPENT].orEmpty(), timeFrame, isFlow = true),
+                    )
+                } else {
+                    bucketize(seriesData[ChartSeries.SPENT].orEmpty(), timeFrame, isFlow = true)
+                },
                 0,
                 timeFrame,
                 rangeStart,
@@ -521,11 +551,16 @@ private fun ChartPanel(
             style = MaterialTheme.typography.titleMedium,
         )
         Spacer(Modifier.height(8.dp))
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        ) {
             // Plan 009c: the "All" segment + the four series; in All mode
             // the four act as visibility toggles (the last visible one can
-            // not be turned off), tapping "All" again exits.
-            val total = ChartSeries.entries.size + 1
+            // not be turned off), tapping "All" again exits. The Σ toggle
+            // (spent as the running total) rides the same row - disabled
+            // whenever the SPENT series is not visible; the scroll keeps
+            // six segments fitting on narrow screens.
+            val total = ChartSeries.entries.size + 2
             SegmentedButton(
                 selected = isAll,
                 onClick = {
@@ -558,6 +593,29 @@ private fun ChartPanel(
                 ) {
                     Text(stringResource(series.labelRes))
                 }
+            }
+            val spentVisible = if (isAll) ChartSeries.SPENT in allVisible
+                else selectedSeries == ChartSeries.SPENT
+            // Resolved here - the semantics modifier is no @Composable context.
+            val cumulativeLabel = stringResource(R.string.chart_cumulative_spent_cd)
+            SegmentedButton(
+                selected = spentCumulative,
+                enabled = spentVisible,
+                onClick = {
+                    spentCumulative = !spentCumulative
+                    selectedPoint = null
+                    overlaySelection = null
+                },
+                shape = SegmentedButtonDefaults.itemShape(ChartSeries.entries.size + 1, total),
+            ) {
+                // The glyph is language-neutral; the localised name is the
+                // accessibility label.
+                Text(
+                    text = "Σ",
+                    modifier = Modifier.semantics {
+                        contentDescription = cumulativeLabel
+                    },
+                )
             }
         }
         Spacer(Modifier.height(8.dp))

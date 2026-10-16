@@ -11,6 +11,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketLabel
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketStartDate
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketKey
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.bucketize
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.cumulative
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.historicalStockSeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.limitRange
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.IntradayFrame
@@ -18,6 +19,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.IntradayPricing
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.OverlaySeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.intradayFrame
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.intradayGridStart
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.intradaySpentCumulative
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.WalletWindow
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.alignOverlay
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.flattenIntraday
@@ -764,5 +766,108 @@ class ChartDataTest {
         assertTrue(series.value.isEmpty())
         assertTrue(series.pl.isEmpty())
         assertTrue(series.bonus.isEmpty())
+    }
+
+    // --------------------------------------------------------------------
+    // The cumulative "Ausgaben" view (running total from the export's start).
+
+    @Test
+    fun cumulativePrefixSumsKeepTheKeys() {
+        val flow = listOf(
+            ChartPoint("2026-01", 10.0),
+            ChartPoint("2026-02", -5.0),
+            ChartPoint("2026-03", 7.0),
+        )
+        val cum = cumulative(flow)
+        assertEquals(listOf("2026-01", "2026-02", "2026-03"), cum.map { it.key })
+        assertEquals(10.0, cum[0].value, 1e-9)
+        assertEquals(5.0, cum[1].value, 1e-9)   // 10 - 5
+        assertEquals(12.0, cum[2].value, 1e-9)   // 10 - 5 + 7
+    }
+
+    @Test
+    fun cumulativeSinglePointAndEmpty() {
+        assertEquals(
+            listOf(ChartPoint("k", 3.0)),
+            cumulative(listOf(ChartPoint("k", 3.0))),
+        )
+        assertTrue(cumulative(emptyList()).isEmpty())
+    }
+
+    @Test
+    fun cumulativeOverDailyBucketsTelescopesToTheTotalSpent() {
+        val daily = listOf(
+            DailyPoint(day(2026, 1, 5), 100.0),
+            DailyPoint(day(2026, 1, 6), 50.0),
+            DailyPoint(day(2026, 2, 3), 25.0),
+            DailyPoint(day(2026, 2, 4), 25.0),
+        )
+        val cum = cumulative(bucketize(daily, TimeFrame.MONTH, isFlow = true))
+        assertEquals(listOf("2026-01", "2026-02"), cum.map { it.key })
+        assertEquals(150.0, cum[0].value, 1e-9)
+        assertEquals(200.0, cum[1].value, 1e-9)   // == the fixture total
+        assertEquals(200.0, daily.sumOf { it.value }, 1e-9)
+    }
+
+    @Test
+    fun cumulativeDailyWindowStillCarriesPreWindowSpend() {
+        // Reference = the export's start, NOT the visible window: the first
+        // visible bucket keeps all pre-window spend.
+        val daily = listOf(
+            DailyPoint(day(2025, 11, 3), 60.0),
+            DailyPoint(day(2025, 12, 1), 40.0),
+            DailyPoint(day(2026, 1, 10), 10.0),
+            DailyPoint(day(2026, 1, 20), 5.0),
+            DailyPoint(day(2026, 2, 15), 1.0),
+        )
+        val cum = cumulative(bucketize(daily, TimeFrame.MONTH, isFlow = true))
+        val (visible, _) = limitRange(cum, 0, TimeFrame.MONTH, day(2026, 1, 1), null)
+        assertEquals(listOf("2026-01", "2026-02"), visible.map { it.key })
+        assertEquals(115.0, visible[0].value, 1e-9)  // pre-window 100 carried
+        assertEquals(116.0, visible[1].value, 1e-9)
+    }
+
+    @Test
+    fun intradaySpentCumulativeCarriesPreWindowSpendOntoTheGrid() {
+        // Full-LEDGER rows (fromEpoch = 0): two pre-window slots, then the
+        // window. The dense grid carries 30 from the window start.
+        val frame = IntradayFrame(3600, 1)   // 1-h slots, 1-d window
+        val now = 172_800L                   // grid = 1970-01-02 00:00..23:00
+        val rows = listOf(
+            ChartPoint("1970-01-01 20:00", 20.0),  // pre-window
+            ChartPoint("1970-01-01 22:00", 10.0),  // pre-window
+            ChartPoint("1970-01-02 02:00", 5.0),   // grid(2)
+            ChartPoint("1970-01-02 05:00", 1.0),   // grid(5)
+        )
+        val cum = intradaySpentCumulative(rows, now, frame)
+        assertEquals(gridKeys(24), cum.map { it.key })
+        assertEquals(30.0, cum[0].value, 1e-9)      // pre-window carry
+        assertEquals(30.0, cum[1].value, 1e-9)      // quiet slot carries
+        assertEquals(35.0, cum[2].value, 1e-9)      // +5 at slot 2
+        assertEquals(35.0, cum[4].value, 1e-9)      // carried across the gap
+        assertEquals(36.0, cum[5].value, 1e-9)      // +1 at slot 5
+        assertEquals(36.0, cum[23].value, 1e-9)     // carried to the end
+        assertEquals(36.0, rows.sumOf { it.value }, 1e-9)  // last == total
+    }
+
+    @Test
+    fun intradaySpentCumulativeAllPreWindowIsAFlatLine() {
+        // Nothing spent inside the window: the accumulated level, flat.
+        val frame = IntradayFrame(3600, 1)
+        val now = 172_800L
+        val cum = intradaySpentCumulative(
+            listOf(ChartPoint("1970-01-01 12:00", 42.0)),
+            now,
+            frame,
+        )
+        assertEquals(gridKeys(24), cum.map { it.key })
+        assertTrue(cum.all { it.value == 42.0 })
+    }
+
+    @Test
+    fun intradaySpentCumulativeEmptyRowsIsEmpty() {
+        val frame = IntradayFrame(3600, 1)
+        val now = 172_800L
+        assertTrue(intradaySpentCumulative(emptyList(), now, frame).isEmpty())
     }
 }

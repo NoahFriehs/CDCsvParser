@@ -426,6 +426,24 @@ fun limitRange(
 }
 
 /**
+ * The cumulative view of a FLOW series (the chart's running-total "Ausgaben"
+ * option): points in input order (the bucket mappers emit them
+ * chronologically) become the ascending prefix sum - each bucket's value is
+ * "everything spent up to and including this bucket". The keys are unchanged,
+ * so the overlay/tooltip/estimated-split logic sees the identical x-set. The
+ * reference is the SERIES' START (inception), not whatever window a caller
+ * limits afterwards: limit this output with [limitRange] and the first visible
+ * bucket still carries all pre-window spend. Empty input gives an empty list.
+ */
+fun cumulative(points: List<ChartPoint>): List<ChartPoint> {
+    var sum = 0.0
+    return points.map { point ->
+        sum += point.value
+        point.copy(value = sum)
+    }
+}
+
+/**
  * Compact, mostly locale-neutral display label for a bucket key ("MMM yy"
  * follows the device locale like the old monthly chart did).
  */
@@ -589,6 +607,49 @@ fun flattenIntraday(
         points.add(start to price)
     }
     return IntradayPricing(points, if (firstRealIndex == Int.MAX_VALUE) points.size else firstRealIndex)
+}
+
+/**
+ * The cumulative view of the sub-daily SPENT flow on the frame's window grid
+ * (the running-total "Ausgaben" option of the intraday frames): the core's
+ * rows are the FULL-LEDGER per-slot flow (fetched with `fromEpoch = 0`,
+ * oldest first), and every window slot carries the running total from the
+ * export's start - the same inception-relative reference the daily frames'
+ * [cumulative] view and the stock series use. The line of any zoom still
+ * contains everything spent before the window.
+ *
+ * Like [historicalWindowState] the output is DENSE on the frame grid
+ * (`[intradayGridStart until nowTsSec)` stepped by the frame): a slot without
+ * a spend row carries the previous total (the line connects across quiet
+ * windows instead of ending at the last spend slot). Empty input gives an
+ * empty list (the panel's "no data" state), but spent rows that ALL fall
+ * before the window yield the flat non-zero line of the accumulated total.
+ */
+fun intradaySpentCumulative(
+    spent: List<ChartPoint>,
+    nowTsSec: Long,
+    frame: IntradayFrame,
+): List<ChartPoint> {
+    if (spent.isEmpty()) return emptyList()
+    val ws = frame.windowSeconds.toLong()
+    val gridStart = intradayGridStart(nowTsSec, frame)
+    val byTs = spent
+        .mapNotNull { point ->
+            val ts = toEpochSecond(point.key)
+            if (ts >= 0L) ts to point.value else null
+        }
+        .sortedBy { it.first }
+    val out = ArrayList<ChartPoint>(byTs.size + 1)
+    var i = 0
+    var total = 0.0
+    for (slot in gridStart until nowTsSec step ws) {
+        while (i < byTs.size && byTs[i].first <= slot) {
+            total += byTs[i].second
+            i++
+        }
+        out.add(ChartPoint(windowKeyOf(slot), total))
+    }
+    return out
 }
 
 /**

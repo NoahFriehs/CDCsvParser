@@ -21,6 +21,7 @@
     <string name="series_spent">Ausgaben</string>
     <string name="series_portfolio_value">Vermögen</string>
     <string name="series_bonus">Belohnungen</string>
+    <string name="chart_cumulative_spent_cd">Kumulative Ausgaben</string>
     <!-- Plan 009a: short labels (T = Tag) so the row keeps fitting when
          6 h / 15 m (009b) join it. -->
     <string name="timeframe_week">W</string>
