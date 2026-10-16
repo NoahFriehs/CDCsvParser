@@ -3,6 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser.price
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -149,9 +150,11 @@ class KrakenHistorySource(
          * — the pair key is the only non-"last" member.
          */
         internal fun parsePage(json: JsonElement): List<Pair<Long, Double>>? {
-            val result = json.jsonObject["result"]?.jsonObject ?: return null
+            val result = json.jsonObject["result"] as? JsonObject ?: return null
             val key = result.keys.firstOrNull { it != "last" } ?: return null
-            val candles = result[key]?.jsonArray ?: return null
+            // as? (not ?.jsonArray): a JSON null pair value is a non-null
+            // JsonElement and must still hand off, not throw.
+            val candles = result[key] as? JsonArray ?: return null
             val out = ArrayList<Pair<Long, Double>>(candles.size)
             for (candle in candles) {
                 val arr = candle.jsonArray
