@@ -186,11 +186,11 @@ class IntradayHistory(private val prices: CryptoPricesCryptoCompare) {
      * the wanted window. Kraken asks for ~1.5 s between calls: the shared
      * spacer keeps the pass a good guest (two calls per symbol at worst).
      */
-    private fun krakenCandles(pair: String, intervalMs: Long, sinceMs: Long): List<Pair<Long, Double>>? {
+    private fun krakenCandles(pair: String, intervalMs: Long, sinceSec: Long): List<Pair<Long, Double>>? {
         space()
         return try {
             val intervalMinutes = (intervalMs / 60_000L).toInt()
-            val response = PriceApi.kraken.ohlc(pair, intervalMinutes, sinceMs).execute()
+            val response = PriceApi.kraken.ohlc(pair, intervalMinutes, sinceSec).execute()
             try {
                 val body = if (response.isSuccessful) response.body() else null
                 if (body == null) {

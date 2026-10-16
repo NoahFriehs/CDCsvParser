@@ -210,8 +210,9 @@ object PriceApi {
 
     /**
      * Kraken daily OHLC, keyless: `0/public/OHLC?pair=XXBTZEUR&interval=1440`
-     * with optional `since` (unix **ms**, returns from that point forward,
-     * ascending) → `{"error":[],"result":{"<pair>":[[ts_s, o, h, l, c,
+     * with optional `since` (UNIX **SECONDS** — a ms value is a far-future
+     * date and Kraken silently answers with its default newest-720 page;
+     * from that instant forward, ascending) → `{"error":[],"result":{"<pair>":[[ts_s, o, h, l, c,
      * vwap, vol, count], …],"last":…}}`, max 720 candles per call.
      */
     interface KrakenApi {

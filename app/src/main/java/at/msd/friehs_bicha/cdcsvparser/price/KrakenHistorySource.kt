@@ -12,9 +12,14 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * Kraken deep history — free, keyless, but only its **14 EUR counter
  * pairs** (verified 2026-10-08 via `0/public/AssetPairs`). Endpoint:
- * `0/public/OHLC?pair=<KEY>&interval=1440[&since=<unix ms>]` — daily
+ * `0/public/OHLC?pair=<KEY>&interval=1440[&since=<unix s>]` — daily
  * candles, ascending, **max 720 per call**; `since` makes the call start at
  * that instant, so pagination walks FORWARDS from the window start.
+ *
+ * UNITS (bug shipped since the deep chain landed, found 2026-10-16):
+ * `since` is UNIX **SECONDS**. Sending milliseconds is a far-future date —
+ * Kraken then falls back to its default (NEWEST 720 candles) and silently
+ * truncates the history to ~2 years for every listed pair.
  *
  * Candle shape: `[ts_s, open, high, low, close, vwap, volume, count]` —
  * index 4 is the day's close.
@@ -31,7 +36,7 @@ class KrakenHistorySource(
     override fun dailyEur(symbol: String, fromDay: Long, toDay: Long): List<Pair<Long, Double>>? {
         val pair = EUR_PAIRS[symbol.uppercase()] ?: return null   // not listed on Kraken: hand-off
         val byDay = HashMap<Long, Double>()
-        var since = fromDay * DAY_SECONDS * 1000L
+        var since = fromDay * DAY_SECONDS
         repeat(MAX_PAGES) {
             space()
             val candles = fetchPage(pair, since) ?: return null
@@ -45,7 +50,7 @@ class KrakenHistorySource(
             if (newest >= toDay) return trim(fromDay, toDay, byDay)
             if (candles.size < PAGE_SIZE) return trim(fromDay, toDay, byDay)   // no more data
             if (newest < fromDay) return trim(fromDay, toDay, byDay)          // whole page before the window (shouldn't happen with since)
-            since = (newest * DAY_SECONDS + 1) * 1000L
+            since = newest * DAY_SECONDS + 1
         }
         FileLog.d(TAG, "Kraken $pair: $MAX_PAGES pages not enough for the window; taking what we have.")
         return trim(fromDay, toDay, byDay)
