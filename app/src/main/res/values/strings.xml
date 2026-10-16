@@ -5,7 +5,6 @@
     <string name="history_text">Or select one of your old uploads:</string>
     <string name="history">History</string>
     <string name="assets_value_label">Value of assets:</string>
-    <string name="euro_sign" translatable="false">€</string>
     <string name="money_spent_label">Money spent</string>
     <string name="profit_loss">Profit/Loss</string>
     <string name="rewards_earned">Rewards earned</string>
@@ -87,7 +86,6 @@
     <string name="allow_permissions_for_storage">Allow Permissions for Storage</string>
     <string name="title_activity_transaction">TransactionActivity</string>
     <string name="transaction_type">Type</string>
-    <string name="default_date" translatable="false">01.01.1970</string>
     <string name="amount">Amount:</string>
     <string name="to_amount">to Amount:</string>
     <string name="transaction_hash">Transaction Hash:</string>
