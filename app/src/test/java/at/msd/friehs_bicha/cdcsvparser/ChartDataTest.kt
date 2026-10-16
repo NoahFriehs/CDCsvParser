@@ -29,6 +29,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseSubDailySpent
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletSeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletWindows
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.toEpochSecond
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.windowedSpentFlow
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -766,6 +767,64 @@ class ChartDataTest {
         assertTrue(series.value.isEmpty())
         assertTrue(series.pl.isEmpty())
         assertTrue(series.bonus.isEmpty())
+    }
+
+    @Test
+    fun historicalWindowStatePlStartsFromPreWindowSpend() {
+        // The input is the FULL-LEDGER flow (the frame's fetch runs with
+        // fromEpoch = 0): the 7.0 spent on 1970-01-01 precedes the grid
+        // and must open the P/L reference - the line differs from the
+        // value line by the ALL-TIME total, not just the in-window one.
+        val flat = (0 until 24).map { grid(it) to 10.0 }
+        val wallet = mapOf("BTC" to listOf(WalletWindow("1970-01-02 00:00", 2.0, 0.0)))
+        val pricing = mapOf("BTC" to IntradayPricing(flat, 0))
+        val spent = listOf(
+            ChartPoint("1970-01-01 12:00", 7.0),  // pre-window
+            ChartPoint("1970-01-02 05:00", 10.0), // in-window, slot 5
+        )
+
+        val series = historicalWindowState(spent, wallet, pricing)
+
+        assertEquals(20.0, series.value[0].value, 1e-9)
+        assertEquals(13.0, series.pl[0].value, 1e-9)      // 20 - 7 (pre-window opens it)
+        assertEquals(13.0, series.pl[4].value, 1e-9)
+        assertEquals(3.0, series.pl[5].value, 1e-9)        // 20 - (7 + 10)
+        assertEquals(20.0 - 17.0, series.pl[23].value, 1e-9) // last slot = value - all-time
+    }
+
+    @Test
+    fun historicalWindowStateNoPreWindowSpendMatchesTheWindowedTotal() {
+        // Regression guard: with no flow before the grid, the inception
+        // total equals the old windowed total (the pre-fix output).
+        val flat = (0 until 24).map { grid(it) to 10.0 }
+        val wallet = mapOf("BTC" to listOf(WalletWindow("1970-01-02 00:00", 2.0, 0.0)))
+        val pricing = mapOf("BTC" to IntradayPricing(flat, 0))
+        val spent = listOf(ChartPoint("1970-01-02 05:00", 10.0))
+
+        val series = historicalWindowState(spent, wallet, pricing)
+
+        assertEquals(20.0, series.pl[4].value, 1e-9) // no flow before slot 5
+        assertEquals(10.0, series.pl[5].value, 1e-9) // 20 - 10
+        assertEquals(10.0, series.pl[23].value, 1e-9) // cumulative stays deducted
+    }
+
+    @Test
+    fun windowedSpentFlowKeepsOnlyTheFrameWindow() {
+        val gridStart = 86_400L // 1970-01-02 00:00
+        val spent = listOf(
+            ChartPoint("1970-01-01 12:00", 7.0),  // pre-window -> dropped
+            ChartPoint("1970-01-02 00:00", 4.0),  // boundary slot -> kept
+            ChartPoint("1970-01-02 18:00", 6.0),
+        )
+
+        val windowed = windowedSpentFlow(spent, gridStart)
+
+        assertEquals(
+            listOf("1970-01-02 00:00", "1970-01-02 18:00"),
+            windowed.map { it.key },
+        )
+        assertTrue(windowedSpentFlow(listOf(ChartPoint("1970-01-01 12:00", 7.0)), gridStart).isEmpty())
+        assertTrue(windowedSpentFlow(emptyList(), gridStart).isEmpty())
     }
 
     // --------------------------------------------------------------------

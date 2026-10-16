@@ -1216,12 +1216,13 @@ class CoreService : Service() {
         /**
          * Money spent bucketed into fixed [windowSeconds] slots from the
          * epoch (UTC): "YYYY-MM-DD HH:MM;value" lines (flow), oldest first.
-         * [fromEpoch] (0 = no limit) suppresses slots starting before it. The
-         * 15-min and 6-hour chart frames (plan 009b) run this with a
-         * GRID-ALIGNED fromEpoch of "now - the frame's data window" (a
-         * multiple of windowSeconds, via ChartData.intradayGridStart), so
-         * the JNI transfer stays bounded for long exports. Runs on the
-         * cpp-core thread.
+         * [fromEpoch] (0 = no limit) suppresses slots starting before it.
+         * The 15-min and 6-hour chart frames (plan 009b) run this with
+         * fromEpoch = 0 - the P/L inception reference and the Σ view need
+         * the pre-window slots; the JVM windows the visible flow line with
+         * ChartData.windowedSpentFlow. Only non-zero-flow slots are
+         * emitted, so the transfer stays sparse for long exports. Runs on
+         * the cpp-core thread.
          */
         suspend fun subDailySpentSeries(windowSeconds: Int, fromEpoch: Long): List<String> =
             withContext(coreDispatcher) {

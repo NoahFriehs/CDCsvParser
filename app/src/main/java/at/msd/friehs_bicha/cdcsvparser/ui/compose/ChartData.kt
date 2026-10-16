@@ -653,6 +653,21 @@ fun intradaySpentCumulative(
 }
 
 /**
+ * The frame window of a FULL-LEDGER sub-daily SPENT flow: keeps the rows
+ * at or after [gridStart] (the frame window). Rows before it are pre-
+ * window spend - they belong to the P/L / Σ inception reference, not to
+ * the visible flow line, which keeps showing only the frame's span.
+ */
+fun windowedSpentFlow(spent: List<ChartPoint>, gridStart: Long): List<ChartPoint> {
+    val out = mutableListOf<ChartPoint>()
+    for (p in spent) {
+        val ts = toEpochSecond(p.key)
+        if (ts >= gridStart) out.add(p)
+    }
+    return out
+}
+
+/**
  * The intraday counterpart of [historicalStockSeries]: values the core's
  * sub-daily wallet + spent series per window. The x-grid is the frame's
  * FULL window [gridStart .. nowTsSec) stepped by the frame - taken
@@ -663,8 +678,12 @@ fun intradaySpentCumulative(
  *
  * The running unpriced positions are carried flat where the ledger is
  * quiet ("last core row at or before the slot" - the opening line always
- * precedes every grid slot), valued with the prices valid at the slot, pl
- * against the cumulative spent flow so far.
+ * precedes every grid slot), valued with the prices valid at the slot.
+ * [spent] is the FULL-LEDGER flow: P/L is inception-referenced in every
+ * frame (the display frame picks the view, never the calculation), so the
+ * pre-window flows sum into the window-open total - the last P/L point
+ * telescopes to the G/V card (value - all-time spent), like the daily
+ * frames.
  *
  * A leading slot is "estimated" while ANY valued currency is still in its
  * fallback region (before its [IntradayPricing.firstRealIndex] ts).
@@ -686,6 +705,15 @@ fun historicalWindowState(
         val ts = toEpochSecond(p.key)
         if (ts >= 0L) spentByTs[ts] = p.value
     }
+    // Inception reference (see the KDoc): the input is the full-ledger
+    // flow, so the running total at the window open is the sum of every
+    // flow before the first grid slot.
+    val firstSlotTs = gridTs.first()
+    var spentSoFar = 0.0
+    for (p in spent) {
+        val ts = toEpochSecond(p.key)
+        if (ts in 0L until firstSlotTs) spentSoFar += p.value
+    }
     val posIdx = HashMap<String, Int>()
     val balances = HashMap<String, Double>()
     val bonuses = HashMap<String, Double>()
@@ -701,7 +729,6 @@ fun historicalWindowState(
             Long.MAX_VALUE
         }
     }
-    var spentSoFar = 0.0
     for (i in gridTs.indices) {
         val slotTs = gridTs[i]
         for ((cur, list) in wallet) {

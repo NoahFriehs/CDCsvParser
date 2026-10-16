@@ -429,15 +429,18 @@ private fun ChartPanel(
     val intradayFrame = timeFrame.intradayFrame
     val fromEpoch = intradayFrame?.let { intradayGridStart(nowTsSec, it) }
     var subDaily by remember { mutableStateOf<Pair<List<String>, List<String>>?>(null) }
-    LaunchedEffect(intradayFrame, walletSeries, fromEpoch, spentCumulative) {
+    LaunchedEffect(intradayFrame, walletSeries, fromEpoch) {
         val frame = intradayFrame ?: return@LaunchedEffect
         val cut = fromEpoch ?: return@LaunchedEffect
-        // The cumulative view needs the FULL-LEDGER flow (`fromEpoch = 0`):
-        // the pre-window slots carry into the window's first slot. The
+        // The spent flow is fetched for the FULL LEDGER (`fromEpoch = 0` -
+        // the core emits only non-zero-flow slots, so the transfer stays
+        // sparse): the P/L series must be inception-referenced in every
+        // frame (one statistic, any view), and the Σ view carries the
+        // pre-window total into the window's first slot. The visible
+        // SPENT flow line is windowed in Kotlin ([windowedSpentFlow]). The
         // stock rows stay windowed (the frame window ends at now by
         // design).
-        val spentCut = if (spentCumulative) 0L else cut
-        subDaily = CoreService.subDailySpentSeries(frame.windowSeconds, spentCut) to
+        subDaily = CoreService.subDailySpentSeries(frame.windowSeconds, 0L) to
             CoreService.subDailyWalletSeries(frame.windowSeconds, cut)
     }
     // Plan 009c: the STOCK series of an intraday frame, computed for ALL
@@ -470,12 +473,15 @@ private fun ChartPanel(
         val frame = intradayFrame
         if (frame != null) {
             val sub = subDaily ?: return@remember m // core rows not in yet
-            // Σ ON: re-shape the spent flow into the running total on the
-            // frame grid (sub.first is the full ledger in that mode).
+            val cut = fromEpoch ?: 0L
+            // sub.first is the FULL-LEDGER flow (see the fetch above): Σ
+            // ON re-shapes it into the running total on the frame grid
+            // (the pre-window slots carry in); Σ OFF windows it to the
+            // frame span so the flow line keeps showing only the window.
             m[ChartSeries.SPENT] = if (spentCumulative) {
                 intradaySpentCumulative(parseSubDailySpent(sub.first), nowTsSec, frame) to 0
             } else {
-                parseSubDailySpent(sub.first) to 0
+                windowedSpentFlow(parseSubDailySpent(sub.first), cut) to 0
             }
             val rs = intradayStock
             if (rs != null) {
