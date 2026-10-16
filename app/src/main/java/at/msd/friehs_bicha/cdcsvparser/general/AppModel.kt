@@ -26,6 +26,14 @@ import java.util.*
 
 /**
  * The parser control for the Parser
+ *
+ * Arm convention for the appType when() in the summary getters below:
+ * the card family (CroCard/CurveCard) gets the card arm, and everything
+ * else - the whole C++-core family (Default, Custom, Kraken, BlockPit; all
+ * StandardTxApp-style data) - gets the CDC/standard arm via else. A new
+ * core type therefore works out of the box instead of hitting a missing
+ * arm that throws (2026-10-16 device incident: a saved BlockPit model
+ * threw in every one of these getters).
  */
 class AppModel : BaseAppModel, Serializable {
 
@@ -125,12 +133,7 @@ class AppModel : BaseAppModel, Serializable {
         get() {
             var totalPrice = BigDecimal(0)
             when (appType) {
-                AppType.CdCsvParser -> for (wallet in txApp?.wallets ?: emptyList()) {
-                    if (wallet.currencyType == "EUR") continue
-                    totalPrice = totalPrice.add(wallet.moneySpent)
-                }
-
-                AppType.CroCard -> {
+                AppType.CroCard, AppType.CurveCard -> {
                     val app = txApp ?: cardApp
                     val wallets = app!!.wallets.clone() as ArrayList<Wallet>
                     for (wallet in wallets) {
@@ -138,9 +141,9 @@ class AppModel : BaseAppModel, Serializable {
                     }
                 }
 
-                else  ->{
-                    FileLog.e("AppModel", "CroCard: Usage not found, AppType: $appType")
-                    throw RuntimeException("Usage not found")
+                else -> for (wallet in txApp?.wallets ?: emptyList()) {
+                    if (wallet.currencyType == "EUR") continue
+                    totalPrice = totalPrice.add(wallet.moneySpent)
                 }
             }
             return totalPrice
@@ -240,7 +243,17 @@ class AppModel : BaseAppModel, Serializable {
         }
 
         when (appType) {
-            AppType.CdCsvParser -> {
+            AppType.CroCard, AppType.CurveCard -> {
+                map[R.id.money_spent_value.toString()] = total
+                map[R.id.assets_value.toString()] = null
+                map[R.id.rewards_value.toString()] = null
+                map[R.id.profit_loss_value.toString()] = null
+                map[R.id.assets_value_label.toString()] = null
+                map[R.id.rewards_label.toString()] = null
+                map[R.id.profit_loss_label.toString()] = null
+            }
+
+            else -> {
                 val amountOfAsset = getValueOfAssets(wallet)
                 val rewardValue = getTotalBonus(wallet)
                 if (AssetValue.getInstance().isRunning) {
@@ -258,18 +271,6 @@ class AppModel : BaseAppModel, Serializable {
                     map[R.id.money_spent_value.toString()] = total
                 }
             }
-
-            AppType.CroCard -> {
-                map[R.id.money_spent_value.toString()] = total
-                map[R.id.assets_value.toString()] = null
-                map[R.id.rewards_value.toString()] = null
-                map[R.id.profit_loss_value.toString()] = null
-                map[R.id.assets_value_label.toString()] = null
-                map[R.id.rewards_label.toString()] = null
-                map[R.id.profit_loss_label.toString()] = null
-            }
-
-            else -> throw RuntimeException("Usage not found")
         }
         return map
     }
@@ -292,7 +293,18 @@ class AppModel : BaseAppModel, Serializable {
                     appType = txApp!!.appType
                 }
                 when (appType) {
-                    AppType.CdCsvParser -> if (AssetValue.getInstance().isRunning) {
+                    AppType.CroCard, AppType.CurveCard -> {
+                        map[R.id.money_spent_value.toString()] = totalMoneySpent
+                        map[R.id.assets_valueP.toString()] = null
+                        map[R.id.rewards_value.toString()] = null
+                        map[R.id.profit_loss_value.toString()] = null
+                        map[R.id.assets_value_label.toString()] = null
+                        map[R.id.rewards_label.toString()] = null
+                        map[R.id.profit_loss_label.toString()] = null
+                        map[R.id.coinGeckoApiLabel.toString()] = null
+                    }
+
+                    else -> if (AssetValue.getInstance().isRunning) {
                         val amountOfAsset = valueOfAssets
                         val rewardValue = totalBonus
                         map[R.id.assets_valueP.toString()] =
@@ -307,22 +319,6 @@ class AppModel : BaseAppModel, Serializable {
                         map[R.id.rewards_value.toString()] = "no internet connection"
                         map[R.id.profit_loss_value.toString()] = "no internet connection"
                         map[R.id.money_spent_value.toString()] = totalMoneySpent
-                    }
-
-                    AppType.CroCard -> {
-                        map[R.id.money_spent_value.toString()] = totalMoneySpent
-                        map[R.id.assets_valueP.toString()] = null
-                        map[R.id.rewards_value.toString()] = null
-                        map[R.id.profit_loss_value.toString()] = null
-                        map[R.id.assets_value_label.toString()] = null
-                        map[R.id.rewards_label.toString()] = null
-                        map[R.id.profit_loss_label.toString()] = null
-                        map[R.id.coinGeckoApiLabel.toString()] = null
-                    }
-
-                    else ->{
-                        FileLog.e("AppModel", "ParseMap: AppType not found, AppType: $appType" )
-                        throw RuntimeException("Usage not found")
                     }
                 }
                 map
@@ -460,7 +456,25 @@ class AppModel : BaseAppModel, Serializable {
     fun toHashMap(overrideAppType: AppType = appType): HashMap<String, Any> {
         val appHashMap: HashMap<String, Any>
         when (overrideAppType) {
-            AppType.CdCsvParser -> {
+            AppType.CroCard, AppType.CurveCard -> {
+                val dbWallets = ArrayList<CCDBWallet>()
+                val dbTransactions = ArrayList<CCDBTransaction>()
+                txApp!!.wallets.forEach {
+                    dbWallets.add(CCDBWallet(it))
+                }
+                txApp!!.transactions.forEach {
+                    dbTransactions.add(CCDBTransaction(it))
+                }
+
+                appHashMap = hashMapOf<String, Any>(
+                    "wallets" to dbWallets,
+                    "transactions" to dbTransactions,
+                    "amountTxFailed" to txApp!!.amountTxFailed,
+                    "appType" to appType
+                )
+            }
+
+            else -> {
                 val dbWallets = ArrayList<DBWallet>()
                 val dboutsideWallets = ArrayList<DBWallet>()
                 val dbTransactions = ArrayList<DBTransaction>()
@@ -481,29 +495,6 @@ class AppModel : BaseAppModel, Serializable {
                     "amountTxFailed" to txApp!!.amountTxFailed,
                     "appType" to appType
                 )
-            }
-
-            AppType.CroCard -> {
-                val dbWallets = ArrayList<CCDBWallet>()
-                val dbTransactions = ArrayList<CCDBTransaction>()
-                txApp!!.wallets.forEach {
-                    dbWallets.add(CCDBWallet(it))
-                }
-                txApp!!.transactions.forEach {
-                    dbTransactions.add(CCDBTransaction(it))
-                }
-
-                appHashMap = hashMapOf<String, Any>(
-                    "wallets" to dbWallets,
-                    "transactions" to dbTransactions,
-                    "amountTxFailed" to txApp!!.amountTxFailed,
-                    "appType" to appType
-                )
-            }
-
-            else -> {
-                FileLog.e("AppModel", "toHashMap: Usage not found, AppType: $appType")
-                throw RuntimeException("Usage not found")
             }
         }
                 return appHashMap

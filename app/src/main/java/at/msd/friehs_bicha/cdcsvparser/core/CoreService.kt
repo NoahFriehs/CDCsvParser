@@ -381,7 +381,11 @@ class CoreService : Service() {
 
                         var data = appModel?.parseMap
                         try {
-                            withTimeout(60_000) {
+                            // The isFullyLoaded wait above already resolved: a null
+                            // here is a code bug, not a loading state, so only a
+                            // short bounded retry (the old 60 s loop spammed the
+                            // log and delayed the error signal by a full minute).
+                            withTimeout(10_000) {
                                 while (data == null) {
                                     FileLog.e(TAG, "data from appModel parseMap is null")
                                     //pause and try again
@@ -390,7 +394,12 @@ class CoreService : Service() {
                                 }
                             }
                         } catch (e: TimeoutCancellationException) {
-                            FileLog.e(TAG, "Timed out waiting for parseMap.")
+                            FileLog.e(
+                                TAG,
+                                "Timed out waiting for parseMap. " +
+                                    "appType=${appModel?.appType}, " +
+                                    "isFullyLoaded=${appModel?.isFullyLoaded}"
+                            )
                             errorCounter.postValue((errorCounter.value ?: 0) + 1)
                             return@launch
                         }
