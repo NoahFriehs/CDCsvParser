@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- #47: the settings action lives in the activity action bar (single
+     header bar). Inflated by the view-scoped menu providers of
+     MainFragment and ParseFragment. -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_settings_24"
+        android:title="@string/settings"
+        app:showAsAction="always" />
+</menu>

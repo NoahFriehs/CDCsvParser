@@ -110,6 +110,52 @@ class ComposeUiTest {
         return obj
     }
 
+    /** [x1, y1, x2, y2] of the a11y root window (the first dump node). */
+    private fun screenBounds(): IntArray? {
+        val out = java.io.ByteArrayOutputStream()
+        device.dumpWindowHierarchy(out)
+        val root = Regex("bounds=\"\\[(-?\\d+),(-?\\d+)\\]\\[(-?\\d+),(-?\\d+)\\]\"")
+            .find(out.toString(Charsets.UTF_8)) ?: return null
+        return IntArray(4) { root.groupValues[it + 1].toInt() }
+    }
+
+    /** [x1, y1, x2, y2] of the first a11y node with exactly [text], or null. */
+    private fun a11yBoundsOf(text: String): IntArray? {
+        val out = java.io.ByteArrayOutputStream()
+        device.dumpWindowHierarchy(out)
+        val node = Regex(
+            "<node [^>]*?text=\"" + Regex.escape(text) +
+                "\"[^>]*?bounds=\"\\[(-?\\d+),(-?\\d+)\\]\\[(-?\\d+),(-?\\d+)\\]\""
+        ).find(out.toString(Charsets.UTF_8)) ?: return null
+        return IntArray(4) { node.groupValues[it + 1].toInt() }
+    }
+
+    /**
+     * The series chip row is the only chart row that scrolls horizontally
+     * (021); the chips beyond the viewport are absent from the a11y
+     * window hierarchy. Locate the row's band through the first chip (which
+     * is at rest right after the taps) and swipe left until the last chip
+     * is revealed - a no-op when everything already fits. Each swipe is
+     * followed by a settle wait: a raw swipe ends as a fling, and the next
+     * input (or a11y snapshot) must not race its momentum.
+     */
+    private fun swipeSeriesRowToLeft() {
+        // The chip node only is the 'Alle' text view - the row itself spans
+        // the full screen width, so swipe across the whole screen on the
+        // row's band (a chip-width "swipe" would not clear the touch slop).
+        val chip = a11yBoundsOf(str(R.string.series_all)) ?: return
+        val screen = screenBounds() ?: return
+        val cy = (chip[1] + chip[3]) / 2
+        // The final chip is the Σ toggle - always present, and its a11y
+        // label is the localised content-description, not the glyph.
+        val lastVisible = By.desc(str(R.string.chart_cumulative_spent_cd))
+        repeat(3) {
+            if (device.findObject(lastVisible) != null) return
+            device.swipe(screen[2] - 100, cy, 100, cy, 60)
+            sleep(500)
+        }
+    }
+
     /** Visible texts for failure diagnostics (whole on-screen a11y tree). */
     private fun visibleTexts(max: Int = 25): String {
         val out = java.io.ByteArrayOutputStream()
@@ -395,8 +441,47 @@ class ComposeUiTest {
         // The app survived: the activity is resumable and the chart panel
         // (title + all three chip rows) is still there.
         waitText(str(R.string.overview_charts))
-        val allChips = (series + frames + ranges).count { device.findObject(By.text(it)) != null }
-        assertEquals("chip rows no longer complete after rapid switching", (series + frames + ranges).size, allChips)
+        // Settle: the very last tap of the routine just swapped the chart
+        // state - counting from a mid-recomposition snapshot is a race.
+        sleep(500)
+        // The parse screen is one vertical ScrollView and the fragment -
+        // hence its scroll offset - survives across the tests of one
+        // session: an earlier test's scroll-down (the attribution check)
+        // can leave the chart panel's rows partly above the screen, where
+        // a swipe on their band is a no-op. Drag back to the top first
+        // (harmless no-op when already at the top).
+        val screen = screenBounds() ?: return
+        repeat(2) {
+            // Fixed band (all CI/local AVDs are 1080x2400-class): a long
+            // vertical drag well inside the screen.
+            device.swipe(screen[2] / 2, 400, screen[2] / 2, 2000, 40)
+            sleep(300)
+        }
+        // The frame and range rows are full-width and never scroll: every
+        // label must be in the a11y tree.
+        val fixedChips = (frames + ranges).count { device.findObject(By.text(it)) != null }
+        assertEquals(
+            "frame/range rows incomplete after rapid switching",
+            frames.size + ranges.size,
+            fixedChips,
+        )
+        // The series row is a horizontal scroll (021): on narrow screens the
+        // later chips sit beyond the viewport, where Compose keeps them out
+        // of the a11y window hierarchy. Count them over the UNION of the row
+        // at rest and the row scrolled to the end, incl. the Σ chip (matched
+        // via its content-description, not its glyph).
+        val seriesSelectors: List<BySelector> =
+            series.map { By.text(it) as BySelector } +
+                (By.desc(str(R.string.chart_cumulative_spent_cd)) as BySelector)
+        val atRest = seriesSelectors.map { device.findObject(it) != null }
+        swipeSeriesRowToLeft()
+        val scrolled = seriesSelectors.map { device.findObject(it) != null }
+        val union = atRest.zip(scrolled).count { pair -> pair.first || pair.second }
+        assertEquals(
+            "series chips missing after rapid switching",
+            seriesSelectors.size,
+            union,
+        )
     }
 
     /** Lines of [logFile] from byte [fromByte] on (ASCII markers only). */

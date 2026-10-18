@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,16 +15,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +37,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -46,10 +51,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
@@ -113,7 +121,6 @@ fun ParseScreen(
     noInternet: Boolean,
     onFilterClick: () -> Unit,
     onAllTransactionsClick: () -> Unit,
-    onSettingsClick: () -> Unit,
 ) {
     val context = LocalContext.current
     // Same key expressions the data layer (CoreService/AppModel) writes with.
@@ -122,26 +129,11 @@ fun ParseScreen(
     val keyPl = R.id.profit_loss_value.toString()
     val keyRewards = R.id.rewards_value.toString()
 
-    // 005: settings reach from the overview, same gear as the main screen.
-    Scaffold(
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Box(modifier = Modifier.weight(1f))
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_settings_24),
-                        contentDescription = stringResource(R.string.settings),
-                    )
-                }
-            }
-        },
-    ) { padding ->
+    // #47: single header bar — the activity's action bar carries the
+    // settings action (view-scoped menu provider in ParseFragment). The
+    // old Compose gear row here doubled the header and left a dead band
+    // between the bar and the cards.
+    Scaffold { padding ->
         // 001: the content is only guaranteed to fit in portrait phone
         // height - in landscape / split / small windows it must scroll
         // instead of clipping the chart + buttons away forever.
@@ -557,17 +549,29 @@ private fun ChartPanel(
             style = MaterialTheme.typography.titleMedium,
         )
         Spacer(Modifier.height(8.dp))
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        // 021: the series chips live in a plain horizontal scroll Row of
+        // natural-width [SeriesChip]s. A SingleChoiceSegmentedButtonRow was
+        // not usable here: M3's row force-weights its segments, and under
+        // the scroll container's unbounded width constraint it inflated
+        // each of the six segments to ~1/3 screen (three chips hidden
+        // behind a scroll with no affordance, off-viewport chips absent
+        // from the a11y hierarchy); a plain weighted Row instead collapses
+        // weighted children to its (zero) min size. The selectableGroup
+        // semantics and the negative border overlap mirror M3's own row.
+        Row(
+            modifier = Modifier
+                .selectableGroup()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(-SegmentedButtonDefaults.BorderWidth),
         ) {
             // Plan 009c: the "All" segment + the four series; in All mode
-            // the four act as visibility toggles (the last visible one can
-            // not be turned off), tapping "All" again exits. The Σ toggle
-            // (spent as the running total) rides the same row - disabled
-            // whenever the SPENT series is not visible; the scroll keeps
-            // six segments fitting on narrow screens.
+            // the four act as visibility toggles (the last visible one
+            // can not be turned off), tapping "All" again exits. The Σ
+            // toggle (spent as the running total) rides the same row -
+            // disabled whenever the SPENT series is not visible; the
+            // scroll keeps the six segments reachable on narrow screens.
             val total = ChartSeries.entries.size + 2
-            SegmentedButton(
+            SeriesChip(
                 selected = isAll,
                 onClick = {
                     isAll = !isAll
@@ -576,11 +580,10 @@ private fun ChartPanel(
                     overlaySelection = null
                 },
                 shape = SegmentedButtonDefaults.itemShape(0, total),
-            ) {
-                Text(stringResource(R.string.series_all))
-            }
+                label = stringResource(R.string.series_all),
+            )
             ChartSeries.entries.forEachIndexed { index, series ->
-                SegmentedButton(
+                SeriesChip(
                     selected = if (isAll) series in allVisible else selectedSeries == series,
                     onClick = {
                         if (isAll) {
@@ -596,15 +599,12 @@ private fun ChartPanel(
                         overlaySelection = null
                     },
                     shape = SegmentedButtonDefaults.itemShape(index + 1, total),
-                ) {
-                    Text(stringResource(series.labelRes))
-                }
+                    label = stringResource(series.labelRes),
+                )
             }
             val spentVisible = if (isAll) ChartSeries.SPENT in allVisible
                 else selectedSeries == ChartSeries.SPENT
-            // Resolved here - the semantics modifier is no @Composable context.
-            val cumulativeLabel = stringResource(R.string.chart_cumulative_spent_cd)
-            SegmentedButton(
+            SeriesChip(
                 selected = spentCumulative,
                 enabled = spentVisible,
                 onClick = {
@@ -613,16 +613,11 @@ private fun ChartPanel(
                     overlaySelection = null
                 },
                 shape = SegmentedButtonDefaults.itemShape(ChartSeries.entries.size + 1, total),
-            ) {
                 // The glyph is language-neutral; the localised name is the
                 // accessibility label.
-                Text(
-                    text = "Σ",
-                    modifier = Modifier.semantics {
-                        contentDescription = cumulativeLabel
-                    },
-                )
-            }
+                label = "Σ",
+                a11yLabel = stringResource(R.string.chart_cumulative_spent_cd),
+            )
         }
         Spacer(Modifier.height(8.dp))
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -1287,3 +1282,84 @@ private fun entriesOf(points: List<ChartPoint>, offset: Int): ArrayList<Entry> =
             add(Entry((index + offset).toFloat(), point.value.toFloat()))
         }
     }
+
+/**
+ * 021: the series-row segment chip - a rest-state replica of M3's
+ * [SegmentedButton] WITHOUT its built-in weight(1f): a scrollable Row
+ * distributes only its MIN size to weighted children (0 px unless the Row
+ * declares a width), which collapsed every M3 chip to a zero-width sliver,
+ * and the M3 row's own intrinsic sizing inflates them instead. The visible
+ * contract is copied from the M3 component - 18 dp icon slot + 8 dp icon
+ * gap (slot always present, so the chip width does not jump with the
+ * selection state), `labelLarge` typography (OutlinedSegmentedButtonTokens),
+ * TextButton content padding, 64x40 dp min size, and the M3 colors/border
+ * via [SegmentedButtonDefaults] - so each chip is pixel-identical to the
+ * frame/range rows' chips at rest; only the check icon's fade/slide select
+ * animation is not reproduced.
+ */
+@Composable
+private fun SeriesChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    shape: Shape,
+    enabled: Boolean = true,
+    label: String,
+    a11yLabel: String? = null,
+) {
+    // M3's SegmentedButtonColors state accessors are internal; resolve the
+    // same token values directly (M3 1.4 OutlinedSegmentedButtonTokens:
+    // selected = secondary container on secondary container, unselected =
+    // transparent on surface, borders = outline, disabled label 0.38 and
+    // disabled outline 0.12 alpha).
+    val colorScheme = MaterialTheme.colorScheme
+    val containerColor =
+        if (selected || !enabled) colorScheme.secondaryContainer else Color.Transparent
+    val contentColor = when {
+        !enabled -> colorScheme.onSurface.copy(alpha = 0.38f)
+        selected -> colorScheme.onSecondaryContainer
+        else -> colorScheme.onSurface
+    }
+    val borderColor =
+        if (enabled) colorScheme.outline else colorScheme.outline.copy(alpha = 0.12f)
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = shape,
+        color = containerColor,
+        contentColor = contentColor,
+        border = SegmentedButtonDefaults.borderStroke(borderColor),
+        modifier = Modifier
+            .defaultMinSize(
+                minWidth = ButtonDefaults.MinWidth,
+                minHeight = ButtonDefaults.MinHeight,
+            )
+            .semantics { role = Role.RadioButton },
+    ) {
+        Row(
+            modifier = Modifier.padding(SegmentedButtonDefaults.ContentPadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(SegmentedButtonDefaults.IconSize),
+                )
+            } else {
+                Spacer(Modifier.size(SegmentedButtonDefaults.IconSize))
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = if (a11yLabel != null) {
+                    // The glyph is language-neutral; expose the localised
+                    // name to accessibility instead.
+                    Modifier.semantics { contentDescription = a11yLabel }
+                } else {
+                    Modifier
+                },
+            )
+        }
+    }
+}

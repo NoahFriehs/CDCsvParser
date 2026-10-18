@@ -1,10 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,13 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -39,27 +34,12 @@ fun MainScreen(
     onUploadClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onLoadFromDbClick: () -> Unit,
-    onSettingsClick: () -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Box(modifier = Modifier.weight(1f))
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_settings_24),
-                        contentDescription = stringResource(R.string.settings),
-                    )
-                }
-            }
-        },
-    ) { padding ->
+    // #47: single header bar — the settings action lives in the
+    // activity's action bar (view-scoped menu provider in MainFragment),
+    // like on every other screen; the old Compose gear row doubled the
+    // header.
+    Scaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

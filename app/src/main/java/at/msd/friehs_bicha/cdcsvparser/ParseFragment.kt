@@ -4,6 +4,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
@@ -16,6 +19,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import androidx.core.content.ContextCompat
+import androidx.core.view.MenuProvider
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
@@ -84,7 +88,6 @@ class ParseFragment : Fragment() {
                         noInternet = _noInternet.value,
                         onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },
                         onAllTransactionsClick = { findNavController().navigate(R.id.transactionsFragment) },
-                        onSettingsClick = { findNavController().navigate(R.id.settingsFragment) },
                     )
                 }
             }
@@ -96,6 +99,32 @@ class ParseFragment : Fragment() {
         _isParsing.value = true
         timeoutHandler.postDelayed(parseTimeout, PARSE_TIMEOUT_MS)
         displayInformation(view)
+        // #47: the settings gear lives in the activity action bar (one
+        // header bar, like every other screen). View-scoped provider:
+        // it is attached for the lifetime of THIS fragment's view and
+        // removed with it, so other destinations keep a plain bar.
+        requireActivity().addMenuProvider(
+            object : MenuProvider {
+                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                    // A navigation transition can briefly hold both
+                    // views (old + new) alive at once — never add the
+                    // gear twice to the same menu.
+                    if (menu.findItem(R.id.action_settings) != null) return
+                    menuInflater.inflate(R.menu.menu_settings, menu)
+                }
+
+                override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+                    when (menuItem.itemId) {
+                        R.id.action_settings -> {
+                            findNavController().navigate(R.id.settingsFragment)
+                            true
+                        }
+
+                        else -> false
+                    }
+            },
+            viewLifecycleOwner,
+        )
     }
 
     override fun onDestroyView() {

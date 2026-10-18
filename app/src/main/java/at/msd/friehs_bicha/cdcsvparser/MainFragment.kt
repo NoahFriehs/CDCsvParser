@@ -7,10 +7,14 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.MenuProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -76,7 +80,6 @@ class MainFragment : Fragment() {
                             HistoryDialogFragment().show(childFragmentManager, "history")
                         },
                         onLoadFromDbClick = { loadFromFireBaseDB() },
-                        onSettingsClick = { findNavController().navigate(R.id.settingsFragment) },
                     )
                 }
             }
@@ -96,6 +99,32 @@ class MainFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // #47: the settings gear lives in the activity action bar (one
+        // header bar, like every other screen). View-scoped provider:
+        // it is attached for the lifetime of THIS fragment's view and
+        // removed with it, so other destinations keep a plain bar.
+        requireActivity().addMenuProvider(
+            object : MenuProvider {
+                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                    // A navigation transition can briefly hold both
+                    // views (old + new) alive at once — never add the
+                    // gear twice to the same menu.
+                    if (menu.findItem(R.id.action_settings) != null) return
+                    menuInflater.inflate(R.menu.menu_settings, menu)
+                }
+
+                override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+                    when (menuItem.itemId) {
+                        R.id.action_settings -> {
+                            findNavController().navigate(R.id.settingsFragment)
+                            true
+                        }
+
+                        else -> false
+                    }
+            },
+            viewLifecycleOwner,
+        )
 
         // The launcher activity passes "fastStart" to go straight to the
         // overview (plan 003). The extra is consumed ONCE: a recreated view
