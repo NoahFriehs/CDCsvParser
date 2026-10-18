@@ -94,8 +94,8 @@ fun ParseScreen(
     isParsing: Boolean,
     /**
      * Core map keys (the same ids as the old layout) to display values;
-     * null = hidden, the special value "no internet connection" is
-     * re-mapped to a friendly string.
+     * null = hidden, the special tokens "no internet connection" and
+     * "prices loading" are re-mapped to friendly strings.
      */
     values: Map<String, String?>,
     /** P/L value rendered in this color (already resolved for the sign). */
@@ -252,10 +252,11 @@ fun ParseScreen(
 
 private fun displayValue(context: android.content.Context, raw: String?): String? {
     if (raw == null) return null
-    return if (raw == "no internet connection") {
-        context.getString(R.string.no_internet_connection)
-    } else {
-        raw
+    return when (raw) {
+        // Raw tokens the core posts into the map; localized here.
+        "no internet connection" -> context.getString(R.string.no_internet_connection)
+        "prices loading" -> context.getString(R.string.prices_loading)
+        else -> raw
     }
 }
 

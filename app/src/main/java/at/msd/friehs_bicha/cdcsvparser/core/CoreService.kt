@@ -455,10 +455,13 @@ class CoreService : Service() {
         calculateWalletBalances()
 
         val currencies = getCurrencies().toList()
-        // One bulk price resolution (cache-aware): one CoinGecko call per batch
-        // instead of one network call per symbol.
-        val bulkPrices = priceProvider.getPricesBulk(currencies)
-        val prices = Array<Double>(currencies.size) { i -> bulkPrices[currencies[i]] ?: 0.0 }
+        // Price pass, phase 1: a pure cache read - NO network on the
+        // cpp-core thread (a cold 163-symbol cache used to block this
+        // thread 10-70 s). The whole post below then renders in
+        // milliseconds, priced from the cache (stale entries included,
+        // by design); the phase-2 fetch at the end re-posts fresh values.
+        val cachePrices = priceProvider.getPricesFromCache(currencies)
+        val prices = Array<Double>(currencies.size) { i -> cachePrices[currencies[i]] ?: 0.0 }
         setPrice(prices)
 
         // get Data from Core and set it to the LiveData
@@ -466,41 +469,67 @@ class CoreService : Service() {
         var totalMoneySpent = getTotalMoneySpent()
         val totalMoneySpentString =
             StringHelper.formatAmountToString(totalMoneySpent)
+        // Set in the offline branch below: there the 5 s retry loop owns
+        // the recovery, so the phase-2 fetch must not stack on top of it.
+        var offlinePlaceholder = false
 
         if (hasCryptoTx) {
+            // A symbol is "known" when the cache holds ANY entry for it
+            // (fresh, stale, or a 0.0 "no value" answer); EUR is pinned.
+            // Known prices mean the cards can show real numbers right now
+            // (even a previous provider failure never blanks a cached
+            // model - stale beats "no internet").
+            val allPricesKnown =
+                currencies.all { it == "EUR" || cachePrices.containsKey(it) }
 
-            if (AssetValue.getInstance().isRunning) {
-                val amountOfAsset = getValueOfAssets()
-                val rewardValue = getTotalBonus()
-                map[R.id.assets_valueP.toString()] =
-                    StringHelper.formatAmountToString(amountOfAsset)
-                map[R.id.rewards_value.toString()] =
-                    StringHelper.formatAmountToString(rewardValue)
-                map[R.id.profit_loss_value.toString()] =
-                    StringHelper.formatAmountToString(amountOfAsset - totalMoneySpent)
-                map[R.id.money_spent_value.toString()] = totalMoneySpentString
-            } else {
-                FileLog.e(TAG, "AssetValue is not running")
-                AssetValue.getInstance().check()
-                map[R.id.assets_valueP.toString()] = "no internet connection"
-                map[R.id.rewards_value.toString()] = "no internet connection"
-                map[R.id.profit_loss_value.toString()] = "no internet connection"
-                map[R.id.money_spent_value.toString()] = totalMoneySpentString
-                //check periodically if internet is back (on the cpp-core thread,
-                //because provideDataToActivityFromCppCore touches JNI)
-                serviceScope.launch {
-                    var checks = 0
-                    while (!AssetValue.getInstance().isRunning) {
-                        checks++
-                        if (checks > 36) { // ~3 minutes: give up and keep the placeholder
-                            FileLog.w(TAG, "Waiting for internet connection gave up.")
-                            return@launch
+            when {
+                allPricesKnown -> {
+                    val amountOfAsset = getValueOfAssets()
+                    val rewardValue = getTotalBonus()
+                    map[R.id.assets_valueP.toString()] =
+                        StringHelper.formatAmountToString(amountOfAsset)
+                    map[R.id.rewards_value.toString()] =
+                        StringHelper.formatAmountToString(rewardValue)
+                    map[R.id.profit_loss_value.toString()] =
+                        StringHelper.formatAmountToString(amountOfAsset - totalMoneySpent)
+                    map[R.id.money_spent_value.toString()] = totalMoneySpentString
+                }
+
+                AssetValue.getInstance().isRunning -> {
+                    // The provider is healthy but some prices are not
+                    // cached yet: transient placeholder; the phase-2
+                    // fetch re-posts the real values.
+                    FileLog.d(TAG, "Some prices are still loading; posting the placeholder.")
+                    map[R.id.assets_valueP.toString()] = "prices loading"
+                    map[R.id.rewards_value.toString()] = "prices loading"
+                    map[R.id.profit_loss_value.toString()] = "prices loading"
+                    map[R.id.money_spent_value.toString()] = totalMoneySpentString
+                }
+
+                else -> {
+                    offlinePlaceholder = true
+                    FileLog.e(TAG, "AssetValue is not running")
+                    AssetValue.getInstance().check()
+                    map[R.id.assets_valueP.toString()] = "no internet connection"
+                    map[R.id.rewards_value.toString()] = "no internet connection"
+                    map[R.id.profit_loss_value.toString()] = "no internet connection"
+                    map[R.id.money_spent_value.toString()] = totalMoneySpentString
+                    //check periodically if internet is back (on the cpp-core thread,
+                    //because provideDataToActivityFromCppCore touches JNI)
+                    serviceScope.launch {
+                        var checks = 0
+                        while (!AssetValue.getInstance().isRunning) {
+                            checks++
+                            if (checks > 36) { // ~3 minutes: give up and keep the placeholder
+                                FileLog.w(TAG, "Waiting for internet connection gave up.")
+                                return@launch
+                            }
+                            FileLog.d(TAG, "Waiting for internet connection.")
+                            delay(5000)
+                            AssetValue.getInstance().check()
                         }
-                        FileLog.d(TAG, "Waiting for internet connection.")
-                        delay(5000)
-                        AssetValue.getInstance().check()
+                        provideDataToActivityFromCppCore()
                     }
-                    provideDataToActivityFromCppCore()
                 }
             }
         } else {
@@ -600,6 +629,22 @@ class CoreService : Service() {
             wallets_, transactions_,
             cardWallets_ as ArrayList<CroCardWallet>, cardTransactions_
         )
+
+        // Price pass, phase 2: fetch what the cache is missing on the
+        // price-check thread (network never on the cpp-core thread) and
+        // re-run this function for the re-post. A warm pass fetches
+        // nothing (no callback, no re-run); the offline branch keeps its
+        // own 5 s retry loop and skips this.
+        if (hasCryptoTx && !offlinePlaceholder) {
+            priceProvider.fetchPricesBulkAsync(currencies) {
+                // The service can be destroyed while the fetch runs; the
+                // re-post is pointless without it.
+                val running = CoreService.service
+                if (running != null) {
+                    coreExecutor.submit { running.provideDataToActivityFromCppCore() }
+                }
+            }
+        }
     }
 
     private fun getCardAssetMap(walletId: Int): Map<String, String?> {

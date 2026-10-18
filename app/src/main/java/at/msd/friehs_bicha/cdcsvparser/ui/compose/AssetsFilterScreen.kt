@@ -159,10 +159,11 @@ private fun ValueBlock(label: String, value: String?, valueColor: Color? = null)
 
 private fun displayAssetValue(context: android.content.Context, raw: String?): String? {
     if (raw == null) return null
-    return if (raw == "no internet connection") {
-        context.getString(R.string.no_internet_connection)
-    } else {
-        raw
+    return when (raw) {
+        // Same raw-token mapping as the overview screen.
+        "no internet connection" -> context.getString(R.string.no_internet_connection)
+        "prices loading" -> context.getString(R.string.prices_loading)
+        else -> raw
     }
 }
 

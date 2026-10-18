@@ -50,7 +50,12 @@ class PriceCache : Serializable {
      * @param price the price to be added
      */
     fun addPrice(symbol: String, price: Double) {
-        val cacheToAdd = Cache(symbol, price)
+        addPrice(symbol, price, Instant.now())
+    }
+
+    /** Test seam: adds an entry with an explicit creation time (aging). */
+    internal fun addPrice(symbol: String, price: Double, creationTime: Instant) {
+        val cacheToAdd = Cache(symbol, price, creationTime)
         cache[symbol] = cacheToAdd
         FileLog.d("PriceCache", "added cache for ${cacheToAdd.id}")
     }
@@ -93,16 +98,11 @@ class PriceCache : Serializable {
 /**
  * Cache class to store a symbol with the price and the time of creation
  */
-class Cache(id: String?, price: Double) : Serializable {
-    val id: String?
-    val price: Double
-    private val creationTime: Instant
-
-    init {
-        this.id = id
-        this.price = price
-        creationTime = Instant.now()
-    }
+class Cache(
+    val id: String?,
+    val price: Double,
+    val creationTime: Instant = Instant.now(),
+) : Serializable {
 
     /**
      * Checks if the object is older than five minutes

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
  * The volatile flags keep success/failure state consistent across threads.
  */
 class AssetValue private constructor() : Serializable {
-    private val cache = PriceCache()
+    internal val cache = PriceCache()
 
     /**
      * The newest known (possibly stale) price for [symbol] WITHOUT any
@@ -136,42 +136,95 @@ class AssetValue private constructor() : Serializable {
     fun cacheKeys(): List<String> = cache.keys()
 
     /**
-     * Returns the prices of the given symbols on the calling thread.
+     * Returns the newest known price of the given symbols WITHOUT any
+     * network access (phase 1 of the parse price pass).
      *
-     * Fresh cache entries are served directly; everything else is resolved
-     * with one bulk provider call and cached for five minutes.
+     * "EUR" is pinned to 1.0. A symbol is priced with its fresh cache
+     * entry or - in the TTL gap between refreshes - with its stale entry
+     * (stale prices are shown by design, never a blank). A missing key
+     * means no price is known at all; a 0.0 entry counts as known (the
+     * endpoint answered "no value for this symbol").
      *
-     * @param symbols the symbols for which prices are needed ("EUR" is 1.0)
-     * @return a map from symbol to price; a missing key means no price is known
+     * @param symbols the symbols for which prices are needed
+     * @return a map from symbol to price; a missing key = no known price
      */
-    fun getPricesBulk(symbols: List<String>): Map<String, Double> {
+    fun getPricesFromCache(symbols: List<String>): Map<String, Double> {
         val prices = LinkedHashMap<String, Double>()
-        val missing = linkedSetOf<String>()
         for (symbol in symbols) {
             when {
                 symbol == "EUR" -> prices[symbol] = 1.0
                 cache.testCache(symbol) -> prices[symbol] = cache.checkCache(symbol)
-                else -> missing.add(symbol)
+                else -> cache.getStale(symbol)?.let { prices[symbol] = it }
             }
         }
-        if (missing.isEmpty()) return prices
+        return prices
+    }
+
+    /** One bulk fetch at a time; overlapping fires are no-ops. */
+    @Volatile
+    private var fetchInFlight = false
+
+    /**
+     * Fetches the prices of the symbols that have no FRESH cache entry
+     * with one bulk provider call on the background executor, then
+     * invokes [onCompleted] so the caller can re-post re-priced data.
+     *
+     * Stale entries are shown to the user by design during the TTL gap,
+     * but they count as missing here so a re-run of the price pass
+     * refreshes them. No-op WITHOUT [onCompleted] when there is nothing
+     * to fetch (nothing changed - no re-post needed), when the network
+     * flag says offline (the offline retry loop re-runs the pass), or
+     * when a fetch is already in flight (its completion re-posts).
+     *
+     * @param symbols the symbols to check ("EUR" is never fetched)
+     * @param onCompleted invoked on the price-check thread AFTER the
+     * fetch finished, success or failure
+     */
+    fun fetchPricesBulkAsync(symbols: List<String>, onCompleted: () -> Unit) {
+        val missing = symbols.filter { it != "EUR" && !cache.testCache(it) }.distinct()
+        if (missing.isEmpty()) {
+            // Everything is fresh: nothing changed, no re-post needed.
+            return
+        }
         if (!isConnected) {
             FileLog.e("AssetValue", "No internet connection")
-            isRunning = false
-            return prices
+            return
         }
-        val bulk = priceProvider.getPricesBulk(missing.toList())
-        // Cache every requested symbol: ones without a price are stored as
-        // 0.0 so per-wallet lookups afterwards are pure cache hits instead
-        // of one network call per row (see the main-thread guard in
-        // [getPrice]).
-        missing.forEach { symbol ->
-            val price = bulk[symbol] ?: 0.0
-            cache.addPrice(symbol, price)
-            prices[symbol] = price
+        if (fetchInFlight) {
+            // Set before the executor call, so overlapping fires from the
+            // parse pass and the stale-price refresh cannot double-fetch.
+            return
         }
-        isRunning = bulk.isNotEmpty()
-        return prices
+        fetchInFlight = true
+        executor.execute {
+            try {
+                val bulk = priceProvider.getPricesBulk(missing)
+                if (bulk.isEmpty()) {
+                    // Network failure: cache NOTHING. A failed fetch must
+                    // not manufacture 0.0 prices that the re-post would
+                    // turn into 0.00 card totals; the previous cache state
+                    // stays the display fallback.
+                    FileLog.e("AssetValue", "Bulk price fetch failed; keeping the previous cache state.")
+                    isRunning = false
+                } else {
+                    // Cache every requested symbol: ones without a price
+                    // are stored as 0.0 ("no value at endpoint") so the
+                    // re-post and the per-wallet lookups afterwards are
+                    // pure cache hits (see the main-thread guard in
+                    // [getPrice]).
+                    missing.forEach { symbol ->
+                        cache.addPrice(symbol, bulk[symbol] ?: 0.0)
+                    }
+                    isRunning = true
+                }
+            } catch (e: Exception) {
+                FileLog.e("AssetValue", "Bulk price fetch failed: $e")
+                isRunning = false
+            } finally {
+                fetchInFlight = false
+            }
+            onCompleted()
+        }
     }
 
     /**
