@@ -116,6 +116,17 @@ class ChartDataTest {
     }
 
     @Test
+    fun intradayFifteenMinuteLabelCarriesTheDate() {
+        // Both intraday frames show date + time ("MM-dd HH:mm"): the 15 m
+        // frame spans a week, so a dateless clock time read like one day.
+        assertEquals("10-16 06:30", bucketLabel("2026-10-16 06:30", TimeFrame.MINUTES_15))
+        // Same date shape as the 6 h frame (unchanged behavior).
+        assertEquals("10-16 06:00", bucketLabel("2026-10-16 06:00", TimeFrame.HOURS_6))
+        // A malformed key keeps the raw-key fallback.
+        assertEquals("garbage", bucketLabel("garbage", TimeFrame.MINUTES_15))
+    }
+
+    @Test
     fun dayFrameHistoricalSeriesRunsPerCalendarDay() {
         // One wallet, one symbol, history covering 2026-01-15..17, live price
         // for the pin day.

@@ -457,15 +457,17 @@ fun bucketLabel(key: String, timeFrame: TimeFrame): String = when (timeFrame) {
     }.getOrDefault(key)
 
     // Plan 009b intraday keys are the core's window starts ("YYYY-MM-DD
-    // HH:MM"): the 6h frame shows the date + hour, the 15m frame the hour
-    // (the dates sit far apart on that axis, the label count is low).
+    // HH:MM"): both frames show the date + time ("10-16 06:00",
+    // "10-16 06:30") - each frame spans a full week, so a dateless clock
+    // time makes every axis label look like one single day.
     TimeFrame.HOURS_6 -> runCatching {
         val (day, hour) = key.split(" ")
         "${day.takeLast(5)} $hour"
     }.getOrDefault(key)
 
     TimeFrame.MINUTES_15 -> runCatching {
-        key.substringAfterLast(' ').substring(0, 5)
+        val (day, time) = key.split(" ")
+        "${day.takeLast(5)} $time"
     }.getOrDefault(key)
 
     TimeFrame.WEEK -> {
