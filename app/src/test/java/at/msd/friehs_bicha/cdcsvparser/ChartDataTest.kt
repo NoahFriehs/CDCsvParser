@@ -20,6 +20,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.OverlaySeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.intradayFrame
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.intradayGridStart
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.intradaySpentCumulative
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.intradayWindow
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.WalletWindow
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.alignOverlay
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.flattenIntraday
@@ -675,6 +676,146 @@ class ChartDataTest {
         assertEquals(21_600L, intradayGridStart(21_600L + 30L * 86_400L, TimeFrame.HOURS_6.intradayFrame!!))
     }
 
+    // --------------------------------------------------------------------
+    // The visible window: the frame span narrowed by the active range.
+
+    @Test
+    fun intradayWindowWithoutRangeIsTheFrameSpan() {
+        val now = 1_700_000_401L
+        val frame = TimeFrame.HOURS_6.intradayFrame!!
+        assertEquals(
+            intradayGridStart(now, frame)..now,
+            intradayWindow(now, frame, null, null),
+        )
+    }
+
+    @Test
+    fun intradayWindowWiderThanTheFrameKeepsTheFrameSpan() {
+        val now = 1_700_000_401L
+        val frame = TimeFrame.HOURS_6.intradayFrame!! // 30 d
+        val today = LocalDate.ofEpochDay(now / 86_400L)
+        // Every preset is wider than any frame span: the intersection is
+        // a no-op (the presets keep the default window untouched).
+        assertEquals(
+            intradayGridStart(now, frame)..now,
+            intradayWindow(now, frame, today.minusYears(2), today),
+        )
+    }
+
+    @Test
+    fun intradayWindowNarrowsTheStartToTheRangeStart() {
+        val now = 1_700_000_401L
+        val frame = TimeFrame.HOURS_6.intradayFrame!!
+        val today = LocalDate.ofEpochDay(now / 86_400L)
+        val rangeStart = today.minusDays(20) // inside the 30 d span
+        assertEquals(
+            rangeStart.toEpochDay() * 86_400L..now,
+            intradayWindow(now, frame, rangeStart, today),
+        )
+    }
+
+    @Test
+    fun intradayWindowNarrowsTheEndToThePastRangeEnd() {
+        val now = 1_700_000_401L
+        val frame = TimeFrame.HOURS_6.intradayFrame!!
+        val today = LocalDate.ofEpochDay(now / 86_400L)
+        val rangeEnd = today.minusDays(3)
+        // The whole range-end day is shown: the bound is the NEXT day's
+        // start (day starts lie on the slot grid).
+        assertEquals(
+            intradayGridStart(now, frame)..rangeEnd.toEpochDay() * 86_400L + 86_400L,
+            intradayWindow(now, frame, null, rangeEnd),
+        )
+    }
+
+    @Test
+    fun intradayWindowEndTodayEndsAtNow() {
+        val now = 1_700_000_401L
+        val frame = TimeFrame.HOURS_6.intradayFrame!!
+        val today = LocalDate.ofEpochDay(now / 86_400L)
+        val rangeStart = today.minusDays(5)
+        val win = intradayWindow(now, frame, rangeStart, today)
+        assertEquals(rangeStart.toEpochDay() * 86_400L, win!!.first)
+        assertEquals(now, win.last) // today's partial day ends at now
+    }
+
+    @Test
+    fun intradayWindowEmptyWhenNoSlotSurvives() {
+        val frame = TimeFrame.HOURS_6.intradayFrame!!
+        val now = 86_400L // 1970-01-02 00:00 - right on the range day's start
+        val range = LocalDate.of(1970, 1, 2)
+        // start == end == now: no slot fits.
+        assertNull(intradayWindow(now, frame, range, range))
+        // A start after the end never yields a window (defensive; the
+        // range dialog forbids it).
+        assertNull(intradayWindow(now, frame, range.plusDays(1), range))
+    }
+
+    @Test
+    fun flattenIntradayHonorsTheVisibleWindow() {
+        // 1 h slots over 1970-01-02 (the shared grid); the visible window
+        // is the middle 12 slots. The refinement starts at slot 10, so
+        // the window opens with a 2-slot estimated prefix - window-
+        // relative, not grid-relative.
+        val now = 172_800L
+        val frame = IntradayFrame(3600, 1)
+        val refined = (10 until 24).map { grid(it) to (10.0 + it) }
+        val out = flattenIntraday(
+            refined,
+            listOf(1L to 5.0), // daily close held flat (epoch day 1)
+            null,
+            now,
+            frame,
+            windowStart = grid(8),
+            windowEnd = grid(20),
+        )
+            ?: error("flatten failed")
+
+        assertEquals(12, out.points.size)
+        assertEquals(grid(8), out.points.first().first)
+        assertEquals(grid(19), out.points.last().first)
+        assertEquals(5.0, out.points[0].second, 1e-9)  // daily held flat
+        assertEquals(5.0, out.points[1].second, 1e-9)
+        assertEquals(20.0, out.points[2].second, 1e-9) // real from slot 10 on
+        assertEquals(29.0, out.points[11].second, 1e-9)
+        assertEquals(2, out.firstRealIndex) // estimated prefix within the window
+    }
+
+    @Test
+    fun pastWindowEndsAtTheLastWindowPriceWithoutTheLivePin() {
+        // The range END lies in the past: no slot ends on today, so the
+        // daily-held-flat branch prices every window slot (the live pin
+        // never fires) and the P/L stays inception-referenced - the
+        // pre-window spend still opens the reference.
+        val frame = IntradayFrame(3600, 1)
+        val now = 172_800L // 1970-01-03 00:00 - the window covers day 2 only
+        val out = flattenIntraday(
+            emptyList(),
+            listOf(1L to 5.0, 2L to 6.0), // day-2 close exists but is never shown
+            99.0, // the live price must NOT appear
+            now,
+            frame,
+            windowStart = 86_400L, // 1970-01-02 00:00
+            windowEnd = 172_800L,  // exclusive: the whole past day
+        )
+            ?: error("flatten failed")
+        val wallet = mapOf("BTC" to listOf(WalletWindow("1970-01-02 00:00", 2.0, 0.0)))
+        val pricing = mapOf("BTC" to out)
+        val spent = listOf(
+            ChartPoint("1970-01-01 12:00", 7.0),  // pre-window (inception)
+            ChartPoint("1970-01-02 05:00", 10.0), // in-window, slot 5
+        )
+
+        val series = historicalWindowState(spent, wallet, pricing)
+
+        assertEquals(gridKeys(24), series.value.map { it.key })
+        assertTrue(series.value.all { it.value == 10.0 }) // 2.0 x 5.0, no 99.0
+        assertEquals(24, series.estimatedCount) // daily held flat: all estimated
+        assertEquals(3.0, series.pl[0].value, 1e-9) // 10 - 7 (inception opens it)
+        assertEquals(-7.0, series.pl[5].value, 1e-9) // 10 - (7 + 10)
+        assertEquals(-7.0, series.pl[23].value, 1e-9)
+    }
+
     /** 24 one-hour slots of 1970-01-02 (the shared test grid).
      *  (86_400 = the epoch second of 1970-01-02 00:00 UTC.) */
     private fun grid(i: Int) = 86_400L + i * 3_600L
@@ -918,6 +1059,29 @@ class ChartDataTest {
         assertEquals(36.0, cum[5].value, 1e-9)      // +1 at slot 5
         assertEquals(36.0, cum[23].value, 1e-9)     // carried to the end
         assertEquals(36.0, rows.sumOf { it.value }, 1e-9)  // last == total
+    }
+
+    @Test
+    fun intradaySpentCumulativeHonorsTheVisibleWindow() {
+        // Full-LEDGER rows over the 1970-01-02 grid; the visible window
+        // is slots 8..19. Pre-window spend carries into the first
+        // visible slot; a row after the window end is dropped.
+        val frame = IntradayFrame(3600, 1)
+        val now = 172_800L
+        val rows = listOf(
+            ChartPoint("1970-01-01 20:00", 20.0), // pre-window
+            ChartPoint("1970-01-02 09:00", 5.0),  // slot 9
+            ChartPoint("1970-01-02 13:00", 1.0),  // slot 13
+            ChartPoint("1970-01-02 21:00", 3.0),  // slot 21 - after the window
+        )
+        val cum = intradaySpentCumulative(rows, now, frame, windowStart = grid(8), windowEnd = grid(20))
+
+        assertEquals(12, cum.size)
+        assertEquals("1970-01-02 08:00", cum[0].key)
+        assertEquals(20.0, cum[0].value, 1e-9) // pre-window carry
+        assertEquals(25.0, cum[1].value, 1e-9) // +5 at slot 9
+        assertEquals(26.0, cum[5].value, 1e-9) // +1 at slot 13
+        assertEquals(26.0, cum[11].value, 1e-9) // the slot-21 row is after the window
     }
 
     @Test

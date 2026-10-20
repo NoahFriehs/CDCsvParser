@@ -34,6 +34,7 @@
     <string name="timeframe_15m">15 m</string>
     <string name="series_all">All</string>
     <string name="chart_intraday_note">Last %1$d days · data until %2$s</string>
+    <string name="chart_intraday_note_window">Range %1$s – %2$s · data until %3$s</string>
     <string name="chart_no_data">No data for this selection.</string>
     <string name="chart_history_loading">Price history: %1$d of %2$d …</string>
     <string name="chart_history_estimated_note">Dashed section: estimated — the free price history only goes back ~1 year.</string>

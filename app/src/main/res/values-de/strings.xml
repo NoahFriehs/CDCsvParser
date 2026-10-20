@@ -33,6 +33,7 @@
     <string name="timeframe_15m">15 m</string>
     <string name="series_all">Alle</string>
     <string name="chart_intraday_note">Letzte %1$d Tage · Daten bis %2$s</string>
+    <string name="chart_intraday_note_window">Zeitraum %1$s – %2$s · Daten bis %3$s</string>
     <string name="chart_no_data">Keine Daten für diese Auswahl.</string>
     <string name="chart_history_loading">Preisverlauf: %1$d von %2$d …</string>
     <string name="chart_history_estimated_note">Gestrichelter Abschnitt: geschätzt – die kostenlose Preisgeschichte reicht nur ~1 Jahr zurück.</string>

@@ -408,10 +408,11 @@ private fun ChartPanel(
     // for every export - fresh or stale. An export can be older than the
     // frame window: the core's opening line for the carried position +
     // the flat-carry re-pricing cover that gap - the price axis is
-    // independent of ledger activity. The range presets don't apply (the
-    // note below explains the window). The core sub-daily rows are fetched
-    // lazily here - the core replay is in-memory and fast - keyed on the
-    // frame and a re-parse.
+    // independent of ledger activity. The CUSTOM range narrows this span
+    // (never widens it: the frame span is the floor, so the presets - all
+    // wider - keep it untouched); the note below explains the window.
+    // The core sub-daily rows are fetched lazily here - the core replay is
+    // in-memory and fast - keyed on the frame and a re-parse.
     // [nowTsSec] is re-keyed on the data flowing into the chart (a
     // re-parse, the price pass publishing), not on a clock tick: day
     // rollover resolves on the next such recomposition (the same day-keyed
@@ -420,7 +421,13 @@ private fun ChartPanel(
         System.currentTimeMillis() / 1000L
     }
     val intradayFrame = timeFrame.intradayFrame
-    val fromEpoch = intradayFrame?.let { intradayGridStart(nowTsSec, it) }
+    // The visible intraday window: the frame's default span narrowed by
+    // the active range. Null on the daily frames, OR when the narrowing
+    // leaves no slot - the panel then shows the empty state and no note.
+    val window = remember(nowTsSec, intradayFrame, rangeStart, rangeEnd) {
+        intradayFrame?.let { intradayWindow(nowTsSec, it, rangeStart, rangeEnd) }
+    }
+    val fromEpoch = window?.first
     var subDaily by remember { mutableStateOf<Pair<List<String>, List<String>>?>(null) }
     LaunchedEffect(intradayFrame, walletSeries, fromEpoch) {
         val frame = intradayFrame ?: return@LaunchedEffect
@@ -443,6 +450,7 @@ private fun ChartPanel(
     ) {
         val frame = timeFrame.intradayFrame ?: return@remember null
         val sub = subDaily ?: return@remember null
+        val win = window ?: return@remember null // narrowed window empty
         intradaySeries(
             subSpentRows = sub.first,
             subWalletRows = sub.second,
@@ -451,6 +459,8 @@ private fun ChartPanel(
             livePrices = currentPrices,
             nowTsSec = nowTsSec,
             frame = frame,
+            windowStart = win.first,
+            windowEnd = win.last,
         )
     }
     // ALL FOUR series of the current frame as (points, estimated prefix)
@@ -465,16 +475,18 @@ private fun ChartPanel(
         val m = LinkedHashMap<ChartSeries, Pair<List<ChartPoint>, Int>>()
         val frame = intradayFrame
         if (frame != null) {
+            val win = window ?: return@remember m // narrowed window empty
             val sub = subDaily ?: return@remember m // core rows not in yet
-            val cut = fromEpoch ?: 0L
             // sub.first is the FULL-LEDGER flow (see the fetch above): Σ
-            // ON re-shapes it into the running total on the frame grid
+            // ON re-shapes it into the running total on the window grid
             // (the pre-window slots carry in); Σ OFF windows it to the
-            // frame span so the flow line keeps showing only the window.
+            // visible span so the flow line keeps showing only the window.
             m[ChartSeries.SPENT] = if (spentCumulative) {
-                intradaySpentCumulative(parseSubDailySpent(sub.first), nowTsSec, frame) to 0
+                intradaySpentCumulative(
+                    parseSubDailySpent(sub.first), nowTsSec, frame, win.first, win.last,
+                ) to 0
             } else {
-                windowedSpentFlow(parseSubDailySpent(sub.first), cut) to 0
+                windowedSpentFlow(parseSubDailySpent(sub.first), win.first) to 0
             }
             val rs = intradayStock
             if (rs != null) {
@@ -681,18 +693,41 @@ private fun ChartPanel(
             )
         }
         // The intraday frames only ever show their data window (the range
-        // presets don't restrict them further). The note names
+        // presets never restrict it further; the CUSTOM range narrows it,
+        // and the note then names the actual span). The note also names
         // where the LEDGER data ends (last tx); the price half is live by
-        // construction. No ledger at all -> no note (the empty chart state
-        // below explains itself).
+        // construction. No ledger at all -> no note, same when the
+        // narrowed window is empty (the empty chart state below explains
+        // itself).
         intradayFrame?.let { frame ->
-            lastTxDate?.let { date ->
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.chart_intraday_note, frame.windowDays, shortDate(date)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            val win = window
+            if (win != null) {
+                lastTxDate?.let { date ->
+                    val narrowed = win.first != intradayGridStart(nowTsSec, frame) ||
+                        win.last != nowTsSec
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = if (narrowed) {
+                            // Window dates are the first window day and the
+                            // last slot's day (the end bound is exclusive -
+                            // a day boundary or now, both day-safe).
+                            stringResource(
+                                R.string.chart_intraday_note_window,
+                                shortDate(LocalDate.ofEpochDay(win.first / 86_400L)),
+                                shortDate(LocalDate.ofEpochDay((win.last - 1) / 86_400L)),
+                                shortDate(date),
+                            )
+                        } else {
+                            stringResource(
+                                R.string.chart_intraday_note,
+                                frame.windowDays,
+                                shortDate(date),
+                            )
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         Spacer(Modifier.height(12.dp))

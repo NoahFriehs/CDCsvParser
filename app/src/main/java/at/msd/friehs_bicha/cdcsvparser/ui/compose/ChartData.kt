@@ -67,6 +67,33 @@ fun intradayGridStart(nowTsSec: Long, frame: IntradayFrame): Long {
 }
 
 /**
+ * The VISIBLE intraday window of a frame at [nowTsSec]: the frame's full
+ * default span ([intradayGridStart] until [nowTsSec]) NARROWED by the
+ * active range - never widened (the frame span is the floor), so a wider
+ * range (all presets) is a no-op and keeps the default window. The custom
+ * range bounds are UTC day keys and land exactly on the slot grid (86 400
+ * is a multiple of both frames' slots); the end is EXCLUSIVE and covers the
+ * whole end day ([rangeEnd] = today -> up to [nowTsSec], today's partial
+ * day as usual).
+ *
+ * @return the window [start, end) in UTC epoch seconds, or null when the
+ *         narrowing leaves no slot.
+ */
+fun intradayWindow(
+    nowTsSec: Long,
+    frame: IntradayFrame,
+    rangeStart: LocalDate?,
+    rangeEnd: LocalDate?,
+): LongRange? {
+    val defaultStart = intradayGridStart(nowTsSec, frame)
+    val start = rangeStart?.toEpochDay()?.times(86_400L)?.coerceAtLeast(defaultStart)
+        ?: defaultStart
+    val end = rangeEnd?.toEpochDay()?.plus(1L)?.times(86_400L)?.coerceAtMost(nowTsSec)
+        ?: nowTsSec
+    return if (start < end) start..end else null
+}
+
+/**
  * Preset display ranges for the overview chart (plan 006): each preset is
  * a start-only limit relative to today; a custom (user-picked) range is
  * applied separately via [limitRange] with both bounds set.
@@ -574,6 +601,10 @@ data class IntradayPricing(
  * @param livePrice the current live price - may be null (keyless/static
  *        symbol with no cached history).
  * @param nowTsSec the current UTC epoch second (defines the grid).
+ * @param windowStart the visible window start (default: the frame's grid
+ *        start, [intradayGridStart]).
+ * @param windowEnd the EXCLUSIVE visible window end (default: now - the
+ *        full frame span); a narrowed past window ends the line there.
  * @return the grid pricing, or null when the symbol has NO price source
  *        at all (it then cannot be valued in any frame).
  */
@@ -583,18 +614,19 @@ fun flattenIntraday(
     livePrice: Double?,
     nowTsSec: Long,
     frame: IntradayFrame,
+    windowStart: Long = intradayGridStart(nowTsSec, frame),
+    windowEnd: Long = nowTsSec,
 ): IntradayPricing? {
     val lastDaily = daily.lastOrNull()
     if (refined.isEmpty() && lastDaily == null && livePrice == null) return null
     val ws = frame.windowSeconds.toLong()
-    val firstStart = intradayGridStart(nowTsSec, frame)
     val today = nowTsSec / 86_400L
 
     val points = ArrayList<Pair<Long, Double>>()
     var firstRealIndex = Int.MAX_VALUE
     var r = 0
     var d = 0
-    for (start in firstStart until nowTsSec step ws) {
+    for (start in windowStart until windowEnd step ws) {
         val end = start + ws - 1L
         while (r + 1 < refined.size && refined[r + 1].first <= end) r++
         val real = refined.isNotEmpty() && refined[r].first <= end
@@ -620,8 +652,8 @@ fun flattenIntraday(
  * [cumulative] view and the stock series use. The line of any zoom still
  * contains everything spent before the window.
  *
- * Like [historicalWindowState] the output is DENSE on the frame grid
- * (`[intradayGridStart until nowTsSec)` stepped by the frame): a slot without
+ * Like [historicalWindowState] the output is DENSE on the visible window
+ * (`[windowStart until windowEnd)` stepped by the frame): a slot without
  * a spend row carries the previous total (the line connects across quiet
  * windows instead of ending at the last spend slot). Empty input gives an
  * empty list (the panel's "no data" state), but spent rows that ALL fall
@@ -631,10 +663,11 @@ fun intradaySpentCumulative(
     spent: List<ChartPoint>,
     nowTsSec: Long,
     frame: IntradayFrame,
+    windowStart: Long = intradayGridStart(nowTsSec, frame),
+    windowEnd: Long = nowTsSec,
 ): List<ChartPoint> {
     if (spent.isEmpty()) return emptyList()
     val ws = frame.windowSeconds.toLong()
-    val gridStart = intradayGridStart(nowTsSec, frame)
     val byTs = spent
         .mapNotNull { point ->
             val ts = toEpochSecond(point.key)
@@ -644,7 +677,7 @@ fun intradaySpentCumulative(
     val out = ArrayList<ChartPoint>(byTs.size + 1)
     var i = 0
     var total = 0.0
-    for (slot in gridStart until nowTsSec step ws) {
+    for (slot in windowStart until windowEnd step ws) {
         while (i < byTs.size && byTs[i].first <= slot) {
             total += byTs[i].second
             i++
@@ -788,6 +821,10 @@ fun historicalWindowState(
  * @param intraday refined sub-daily points per symbol (may be empty).
  * @param daily daily closes per symbol (the flatten fallback source).
  * @param livePrices the live prices (the same map the cards use).
+ * @param windowStart the visible window start (default: the frame's grid
+ *        start, [intradayGridStart]).
+ * @param windowEnd the EXCLUSIVE visible window end (default: now - the
+ *        full frame span); a narrowed past window ends the line there.
  */
 // ------------------------------------------------------------------------
 // Plan 009c: the all-series overlay.
@@ -859,6 +896,8 @@ fun intradaySeries(
     livePrices: Map<String, Double>,
     nowTsSec: Long,
     frame: IntradayFrame,
+    windowStart: Long = intradayGridStart(nowTsSec, frame),
+    windowEnd: Long = nowTsSec,
 ): HistoricalSeries {
     val wallet = parseWalletWindows(subWalletRows)
     val pricing = HashMap<String, IntradayPricing>()
@@ -869,6 +908,8 @@ fun intradaySeries(
             livePrices[cur],
             nowTsSec,
             frame,
+            windowStart,
+            windowEnd,
         )?.let { pricing[cur] = it }
     }
     return historicalWindowState(parseSubDailySpent(subSpentRows), wallet, pricing)
