@@ -66,9 +66,13 @@ fun LoginScreen(
                 .padding(top = 64.dp)
                 .size(96.dp),
         )
+        // Explicit scheme role: no Scaffold/Surface on this screen and M3's
+        // MaterialTheme does not provide LocalContentColor (platform black
+        // default would be unreadable in dark mode).
         Text(
             text = stringResource(R.string.cdcsvparser),
             style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         Spacer(Modifier.height(32.dp))

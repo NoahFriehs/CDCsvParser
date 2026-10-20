@@ -546,7 +546,7 @@ private fun ChartPanel(
     val seriesColors: Map<ChartSeries, Int> = linkedMapOf(
         ChartSeries.VALUE to toArgbInt(MaterialTheme.colorScheme.primary),
         ChartSeries.SPENT to toArgbInt(MaterialTheme.colorScheme.secondary),
-        ChartSeries.PL to toArgbInt(Color(0xFF16A34A)),
+        ChartSeries.PL to toArgbInt(chartPlColor()),
         ChartSeries.BONUS to toArgbInt(MaterialTheme.colorScheme.tertiary),
     )
 
@@ -1033,7 +1033,7 @@ private fun LineChart.applyMultiState(
                 lineWidth = 1.5f
                 setDrawValues(false)
                 setDrawCircles(false)
-                this.color = ColorTemplate.colorWithAlpha(140, color)
+                this.color = ColorTemplate.colorWithAlpha(color, 140)
             })
             setSource.add(index)
         }
@@ -1148,7 +1148,7 @@ private fun LineChart.applyChartState(
             lineWidth = 1.5f
             setDrawValues(false)
             setDrawCircles(false)
-            color = ColorTemplate.colorWithAlpha(140, lineColor)
+            color = ColorTemplate.colorWithAlpha(lineColor, 140)
         })
     }
     if (real.isNotEmpty()) {

@@ -34,12 +34,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
@@ -72,10 +74,6 @@ fun groupTransactionItems(rows: List<TransactionRow>): List<TransactionListItem>
     }
     return grouped
 }
-
-/** Static trend colors, same values as res/values/colors.xml (trend_*). */
-private val TrendPositive = Color(0xFF1B7F3B)
-private val TrendNegative = Color(0xFFBA1A1A)
 
 @Composable
 fun TransactionList(
@@ -115,6 +113,7 @@ private fun MonthHeaderRow(month: String) {
 
 @Composable
 private fun TransactionRowView(row: TransactionRow, onClick: () -> Unit) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -177,8 +176,10 @@ private fun TransactionRowView(row: TransactionRow, onClick: () -> Unit) {
                     text = row.nativeAmount,
                     style = MaterialTheme.typography.titleMedium,
                     color = when {
-                        row.nativeSigned > 0 -> TrendPositive
-                        row.nativeSigned < 0 -> TrendNegative
+                        row.nativeSigned > 0 ->
+                            Color(ContextCompat.getColor(context, R.color.trend_positive))
+                        row.nativeSigned < 0 ->
+                            Color(ContextCompat.getColor(context, R.color.trend_negative))
                         else -> MaterialTheme.colorScheme.onSurface
                     },
                 )
@@ -370,30 +371,36 @@ fun TransactionDetailScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = type, style = MaterialTheme.typography.titleLarge)
-        Text(text = date, style = MaterialTheme.typography.titleLarge)
+        // Explicit scheme roles: this screen has no Scaffold/Surface, and
+        // M3's MaterialTheme does NOT provide LocalContentColor, so bare
+        // Text defaults to the platform black (unreadable in dark mode).
+        Text(text = type, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = date, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
         if (description.isNotEmpty()) {
-            Text(text = description, style = MaterialTheme.typography.titleLarge)
+            Text(text = description, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
         }
         Spacer(Modifier.height(8.dp))
-        Text(stringResource(R.string.amount), style = MaterialTheme.typography.titleMedium)
-        Text(amount, style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.amount), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(amount, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
         if (toAmount != null) {
             Text(
                 stringResource(R.string.to_amount),
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text(toAmount, style = MaterialTheme.typography.titleLarge)
+            Text(toAmount, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
         }
         if (txHash != null) {
             Text(
                 stringResource(R.string.transaction_hash),
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
                 txHash,
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 4,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth(),

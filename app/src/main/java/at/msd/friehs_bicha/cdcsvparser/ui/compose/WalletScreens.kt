@@ -103,6 +103,8 @@ fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
     // Plan 006 C: MPAndroidChart legend text defaults to a light-mode
     // color; theme it from the Compose scheme (same as the line chart).
     val legendColor = toArgbInt(MaterialTheme.colorScheme.onSurfaceVariant)
+    // The library's hole default is WHITE - a light disc in dark mode.
+    val holeColor = toArgbInt(MaterialTheme.colorScheme.background)
     AndroidView(
         factory = { ctx ->
             PieChart(ctx).apply {
@@ -110,6 +112,7 @@ fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
                 setUsePercentValues(true)
                 setDrawHoleEnabled(true)
                 holeRadius = 62f
+                setHoleColor(holeColor)
                 // The library's default transparent-circle color is a white
                 // halo - invisible/ugly on the dark surface.
                 setTransparentCircleRadius(68f)
@@ -178,6 +181,7 @@ fun WalletList(
 
 @Composable
 private fun WalletRowView(row: WalletRow, onClick: () -> Unit) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -218,9 +222,11 @@ private fun WalletRowView(row: WalletRow, onClick: () -> Unit) {
             Text(
                 text = row.percentText,
                 color = when (row.trend) {
-                    ProfitTrend.POSITIVE -> Color(0xFF1B7F3B) // trend_positive
+                    ProfitTrend.POSITIVE ->
+                        Color(ContextCompat.getColor(context, R.color.trend_positive))
                     ProfitTrend.NEUTRAL -> MaterialTheme.colorScheme.onSurface
-                    ProfitTrend.NEGATIVE -> Color(0xFFBA1A1A) // trend_negative
+                    ProfitTrend.NEGATIVE ->
+                        Color(ContextCompat.getColor(context, R.color.trend_negative))
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )

@@ -59,9 +59,13 @@ fun AboutScreen(onMailClick: () -> Unit) {
 
 @Composable
 private fun SectionHeader(text: String) {
+    // Explicit scheme roles: this screen has no Scaffold/Surface, and M3's
+    // MaterialTheme does NOT provide LocalContentColor, so bare Text
+    // defaults to the platform black (unreadable in dark mode).
     Text(
         text = text,
         style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface,
     )
 }
 
@@ -70,6 +74,7 @@ private fun SubItem(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.padding(start = 16.dp),
     )
 }
@@ -89,5 +94,6 @@ private fun Paragraph(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurface,
     )
 }

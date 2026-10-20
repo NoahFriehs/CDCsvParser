@@ -1,9 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.util
 
 import android.app.Activity
-import android.util.TypedValue
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -21,35 +19,31 @@ import androidx.core.view.updatePadding
  * root as [root].
  */
 object EdgeToEdge {
-    private val actionBarHeight = HashMap<Activity, Int>()
-
     fun enable(activity: Activity, root: View) {
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            // With a non-overlay decor action bar in edge-to-edge mode,
+            // appcompat's ActionBarOverlayLayout already folds the action
+            // bar height into the TOP system inset it dispatches to this
+            // root (its onMeasure, API 21+ branch: status + bar height).
+            // bars.top therefore clears status bar AND action bar by
+            // itself - adding ?attr/actionBarSize on top of it doubled
+            // the bar height (the dead band under the bar on every
+            // screen). Activities without an action bar get a plain
+            // system-bar inset, which bars.top still covers.
             view.updatePadding(
                 left = bars.left,
-                top = bars.top + decorActionBarHeight(activity),
+                top = bars.top,
                 right = bars.right,
                 bottom = bars.bottom
             )
-            insets
-        }
-    }
-
-    /** Height of the decor (window) action bar, 0 when the activity has none. */
-    private fun decorActionBarHeight(activity: Activity): Int {
-        if (activity !is AppCompatActivity) return 0
-        if (activity.supportActionBar == null) return 0
-        return actionBarHeight.getOrPut(activity) {
-            // ?attr/actionBarSize from the appcompat namespace
-            val attr = TypedValue()
-            activity.supportActionBar!!.themedContext.theme.resolveAttribute(
-                androidx.appcompat.R.attr.actionBarSize, attr, true
-            )
-            attr.resourceId?.let {
-                activity.resources.getDimensionPixelSize(it)
-            } ?: 0
+            // The View-level padding above is the ONE bar clearance: zero
+            // the system insets handed to the Compose roots so each
+            // fragment's M3 Scaffold does not re-apply the status/nav bar
+            // heights on top (it would double them, since the Scaffold
+            // only excludes insets consumed elsewhere).
+            insets.replaceSystemWindowInsets(0, 0, 0, 0)
         }
     }
 }

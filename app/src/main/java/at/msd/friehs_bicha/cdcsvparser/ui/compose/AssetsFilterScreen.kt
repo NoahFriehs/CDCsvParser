@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
@@ -104,7 +105,7 @@ fun AssetsFilterScreen(
             ValueBlock(
                 stringResource(R.string.profit_loss),
                 displayAssetValue(context, values[keyPl]),
-                valueColor = plValueColor(values[keyPl]),
+                valueColor = plValueColor(context, values[keyPl]),
             )
             ValueBlock(stringResource(R.string.rewards_earned), displayAssetValue(context, values[keyRewards]))
 
@@ -168,13 +169,13 @@ private fun displayAssetValue(context: android.content.Context, raw: String?): S
 }
 
 /** P/L block is colored by the sign of its first number, like the overview. */
-private fun plValueColor(raw: String?): Color? {
+private fun plValueColor(context: android.content.Context, raw: String?): Color? {
     if (raw == null || raw == "no internet connection") return null
     val number = Regex("-?[\\d.]+").find(raw)?.value
         ?.replace(",", ".")?.toDoubleOrNull() ?: return null
     return when {
-        number > 0 -> Color(0xFF1B7F3B) // trend_positive
-        number < 0 -> Color(0xFFBA1A1A) // trend_negative
+        number > 0 -> Color(ContextCompat.getColor(context, R.color.trend_positive))
+        number < 0 -> Color(ContextCompat.getColor(context, R.color.trend_negative))
         else -> null
     }
 }

@@ -73,3 +73,12 @@ fun CdcsvTheme(
         content = content,
     )
 }
+
+/**
+ * P/L line color for the parse chart (a deliberate green outside the
+ * identity palette); the dark variant is brightened so the line stays
+ * readable on the dark surface.
+ */
+@Composable
+fun chartPlColor(): Color =
+    if (isSystemInDarkTheme()) Color(0xFF4ADE80) else Color(0xFF16A34A)
