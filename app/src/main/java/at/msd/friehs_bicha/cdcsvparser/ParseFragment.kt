@@ -140,7 +140,6 @@ class ParseFragment : Fragment() {
             Benchmarker.stop()
             fillFromMap(it)
             FileLog.d(TAG, "parsedDataLiveData changed")
-            loadDailySeries()
             _isParsing.value = false
             if (CoreService.lastFailedLines > 0) {
                 Snackbar.make(
@@ -148,6 +147,27 @@ class ParseFragment : Fragment() {
                     getString(R.string.unparsable_lines_skipped, CoreService.lastFailedLines),
                     Snackbar.LENGTH_LONG
                 ).show()
+            }
+        }
+        // The chart rows ride the card post (see CoreService): observing
+        // them here refills the panel from the replayed post on EVERY
+        // view recreation, exactly like the cards. The writes mirror the
+        // post - the rows are the truth for the current file, so a
+        // genuinely empty series hides the panel again on file switches.
+        CoreService.chartSeriesLiveData.observe(viewLifecycleOwner) { series ->
+            _dailySeries.value = series.daily
+            _walletSeries.value = series.wallet
+            FileLog.d(
+                TAG,
+                "chartSeriesLiveData changed: ${series.daily.size} daily, " +
+                    "${series.wallet.size} wallet rows"
+            )
+            // The dropped one-shot side query used to trigger this; it
+            // attaches to the process-wide price-history pass (zero new
+            // work when the same request already runs / finished), so
+            // calling it on every arrival is safe and cheap.
+            viewLifecycleOwner.lifecycleScope.launch {
+                attachHistoryPass()
             }
         }
         CoreService.errorCounter.observe(viewLifecycleOwner) { count ->
@@ -192,14 +212,6 @@ class ParseFragment : Fragment() {
     private fun popBack() {
         if (!isAdded) return
         findNavController().popBackStack()
-    }
-
-    private fun loadDailySeries() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            _dailySeries.value = CoreService.dailySeries()
-            _walletSeries.value = CoreService.dailyWalletSeries()
-            attachHistoryPass()
-        }
     }
 
     /**

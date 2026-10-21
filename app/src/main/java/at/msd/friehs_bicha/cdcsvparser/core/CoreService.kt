@@ -60,6 +60,26 @@ import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.function.Consumer
 
+/**
+ * The two unpriced chart series of the C++ core, posted next to the card
+ * map on every C++-path post. Single source of truth for the parse-screen
+ * chart panel: a recreated fragment refills its panel from the replayed
+ * post, exactly like the cards.
+ *
+ * @property daily  daily accounting series: "series;YYYY-MM-DD;value"
+ *                  lines (series = spent|value|pl|bonus), oldest first;
+ *                  value/pl/bonus are EUR at the CURRENT prices and the
+ *                  last point of each equals the matching card total.
+ * @property wallet per-wallet series (historical chart pricing):
+ *                  "CURRENCY;YYYY-MM-DD;runningBalance;runningBonus" token
+ *                  lines, unpriced - the chart code values each point at
+ *                  the prices valid at its time.
+ */
+data class ChartSeries(
+    val daily: List<String>,
+    val wallet: List<String>,
+)
+
 class CoreService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + coreDispatcher)
@@ -545,6 +565,17 @@ class CoreService : Service() {
             map[R.id.coinGeckoApiLabel.toString()] = null
         }
         parsedDataLiveData.postValue(map)
+
+        // The chart rows ride the SAME post as the cards: the parse
+        // screen observes them instead of a one-shot side query, so a
+        // recreated fragment can never miss data the cards already got.
+        // This function always runs on the cpp-core thread with the core
+        // settled (parse completion, phase-2 price re-post, stale-price
+        // refresh), so the rows are always fresh.
+        val dailyRows: List<String> = getDailySeries()?.toList() ?: emptyList()
+        val walletRows: List<String> = getDailyWalletSeries()?.toList() ?: emptyList()
+        FileLog.i(TAG, "chart series post: ${dailyRows.size} daily, ${walletRows.size} wallet rows")
+        chartSeriesLiveData.postValue(ChartSeries(dailyRows, walletRows))
 
         //get transactions from core and set it to the LiveData
         val transactions = getTransactionsAsString()
@@ -1220,41 +1251,7 @@ class CoreService : Service() {
 
         private external fun getMoneySpentSeries(): Array<String>
 
-        /**
-         * Daily accounting series of the C++ core (G35): "series;
-         * YYYY-MM-DD;value" lines (series = spent|value|pl|bonus), oldest
-         * first. Same scope as the cards (inner wallets, inner EUR
-         * excluded); value/pl/bonus are EUR at the CURRENT prices, and the
-         * last point of each equals the matching card total by
-         * construction. Runs on the cpp-core thread.
-         */
-        suspend fun dailySeries(): List<String> = withContext(coreDispatcher) {
-            if (!isRunning) return@withContext emptyList()
-            val rows = getDailySeries()?.toList() ?: emptyList()
-            // Verification aid: the last point of each series must equal the
-            // matching card total (value/pl/bonus use the current prices).
-            val last = mutableMapOf<String, String>()
-            for (row in rows) {
-                val parts = row.split(";", limit = 2)
-                if (parts.size == 2) last[parts[0]] = row
-            }
-            FileLog.i(TAG, "daily series: ${rows.size} rows; last: $last")
-            rows
-        }
-
         private external fun getDailySeries(): Array<String>
-
-        /**
-         * Per-wallet daily series of the C++ core (G36, historical chart
-         * pricing): "CURRENCY;YYYY-MM-DD;runningBalance;runningBonus" token
-         * lines, unpriced, same scope as [dailySeries]. The chart code
-         * values each point with the prices valid at its time. Runs on the
-         * cpp-core thread.
-         */
-        suspend fun dailyWalletSeries(): List<String> = withContext(coreDispatcher) {
-            if (!isRunning) return@withContext emptyList()
-            getDailyWalletSeries()?.toList() ?: emptyList()
-        }
 
         private external fun getDailyWalletSeries(): Array<String>
 
@@ -1379,6 +1376,7 @@ class CoreService : Service() {
         var firebaseDataLiveData = MutableLiveData<MutableList<FirebaseAppmodel>>()
 
         var parsedDataLiveData = MutableLiveData<Map<String, String?>>()
+        var chartSeriesLiveData = MutableLiveData<ChartSeries>()
 
         var walletsLiveData = MutableLiveData<ArrayList<Wallet>>()
         var outsideWalletsLiveData = MutableLiveData<ArrayList<Wallet>>()
