@@ -46,6 +46,11 @@ class ParseFragment : Fragment() {
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val parseTimeout = Runnable {
         if (!isResumed) return@Runnable
+        // Gate on the live state, not on time alone: both observers cancel
+        // this Runnable the moment data or the error signal arrives, so a
+        // stay-on-screen (or a slow late post) can never fire the warning
+        // after the parse actually settled (the 7-of-8 false positives, #54).
+        if (!_isParsing.value) return@Runnable
         FileLog.w(TAG, "Parsing did not finish within $PARSE_TIMEOUT_MS ms; staying on the screen with the data we have.")
         _isParsing.value = false
         view?.let { Snackbar.make(it, R.string.parsing_timeout, Snackbar.LENGTH_LONG).show() }
@@ -137,6 +142,7 @@ class ParseFragment : Fragment() {
         // one already replayed to this observer counts as an error of this run.
         val initialErrors = CoreService.errorCounter.value ?: 0
         CoreService.parsedDataLiveData.observe(viewLifecycleOwner) {
+            timeoutHandler.removeCallbacks(parseTimeout)  // data arrived: nothing left to watch
             Benchmarker.stop()
             fillFromMap(it)
             FileLog.d(TAG, "parsedDataLiveData changed")
@@ -172,6 +178,7 @@ class ParseFragment : Fragment() {
         }
         CoreService.errorCounter.observe(viewLifecycleOwner) { count ->
             if (count == null || count <= initialErrors) return@observe
+            timeoutHandler.removeCallbacks(parseTimeout)  // the error signal ended the run: nothing left to watch
             FileLog.w(TAG, "errorCounterLiveData changed: $count")
             Snackbar.make(view, R.string.error_while_parsing, Snackbar.LENGTH_LONG).show()
             _isParsing.value = false

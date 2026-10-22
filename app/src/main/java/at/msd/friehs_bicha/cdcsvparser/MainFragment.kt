@@ -58,6 +58,7 @@ class MainFragment : Fragment() {
         }
 
     companion object {
+        private const val TAG = "MainFragment"
         // Single source for the history file name pattern (write + parse).
         const val HISTORY_FILE_PATTERN = "yyyy-MM-dd-HH-mm-ss"
     }
@@ -189,12 +190,12 @@ class MainFragment : Fragment() {
         showProgressDialog()
         try {
             val selectedFile = files!!.first { it.name == fileName }
+            val mode = PreferenceHelper.getSelectedType(requireContext()).ordinal
+            // Trigger-side pairing point for the stall adjudication (#54):
+            // logcat/file then shows dispatched → start command → parsing.
+            FileLog.d(TAG, "Import dispatched: ${selectedFile.name} (${selectedFile.length()} bytes, mode $mode)")
             Benchmarker.start()
-            CoreService.startServiceWithData(
-                null,
-                PreferenceHelper.getSelectedType(requireContext()).ordinal,
-                selectedFile.name
-            )
+            CoreService.startServiceWithData(null, mode, selectedFile.name)
             callParseView()
         } catch (e: Exception) {
             hideProgressDialog()
@@ -242,12 +243,10 @@ class MainFragment : Fragment() {
             files!![0].delete()
             updateFiles()
         }
+        val mode = PreferenceHelper.getSelectedType(requireContext()).ordinal
+        FileLog.d(TAG, "Import dispatched: $filename (${File(requireContext().filesDir, filename).length()} bytes, mode $mode)")
         Benchmarker.start()
-        CoreService.startServiceWithData(
-            null,
-            PreferenceHelper.getSelectedType(requireContext()).ordinal,
-            filename
-        )
+        CoreService.startServiceWithData(null, mode, filename)
         callParseView()
     }
 

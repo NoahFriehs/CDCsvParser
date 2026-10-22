@@ -82,13 +82,26 @@ data class ChartSeries(
 
 class CoreService : Service() {
 
+    // Which incarnation of the service this is (gen 1, 2, …). Paired with
+    // the trigger-side "Import dispatched" line from the caller, the
+    // generation id adjudicates a parse stall from the log alone: intent
+    // never reached the service vs. service destroyed before the queued
+    // launch dispatched (the two suspects behind #54).
+    val generation: Int = nextServiceGeneration()
+
     private val serviceScope = CoroutineScope(SupervisorJob() + coreDispatcher)
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        FileLog.i(TAG, "Service created (gen $generation)")
+    }
+
     override fun onDestroy() {
+        FileLog.i(TAG, "Service destroyed (gen $generation)")
         CoreService.service = null
         serviceScope.cancel()
         CoreService.shutdownCoreThread()
@@ -110,6 +123,9 @@ class CoreService : Service() {
 
         useCpp = PreferenceHelper.getUseCpp(applicationContext)
 
+        // BEFORE the launch: if this line is missing while "Import
+        // dispatched" is present, the intent never reached the component.
+        FileLog.i(TAG, "Service start command: ${intent.action} (gen $generation)")
         serviceScope.launch {
             when (intent.action) {
                 ACTION_START_SERVICE -> {
@@ -197,6 +213,11 @@ class CoreService : Service() {
         // Large CSVs (e.g. BlockPit exports) do not fit into a binder parcel,
         // so the caller passes the file name (the file always exists in
         // private app storage) and we read the lines here.
+        // First statement: if "Service start command" is present but this
+        // line is not, the queued launch was cancelled before it dispatched.
+        val pendingFile = intent.getStringExtra("file")
+        val pendingLines = intent.getStringArrayListExtra("data")?.size ?: 0
+        FileLog.i(TAG, "Parsing import: ${pendingFile ?: "$pendingLines lines"}, mode $mode (gen $generation)")
         val data = when {
             intent.getStringExtra("file") != null -> {
                 val fileName = intent.getStringExtra("file")!!
@@ -1233,6 +1254,12 @@ class CoreService : Service() {
 
         private const val TAG = "CoreService"
         private const val CORE_THREAD_NAME = "cpp-core"
+
+        // Monotonic incarnation counter for the "gen n" log lines (#54
+        // stall adjudication); survives across service restarts.
+        @Volatile
+        private var serviceGeneration = 0
+        private fun nextServiceGeneration(): Int = ++serviceGeneration
 
         // Hard wall-clock budget for one full parse in the C++ core: comfortably
         // above a real parse (the 2444-line BlockPit export takes well under a
