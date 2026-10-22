@@ -31,7 +31,7 @@ Watch the parse screen: with a cold price cache the cards show a short
 the core thread). The `files/log/core.log` + `files/log/CDCsvParser.log`
 files on device hold the C++/Kotlin logs.
 
-# License
+## License
 
 Shield: [![CC BY-NC-ND 4.0][cc-by-nc-nd-shield]][cc-by-nc-nd]
 
