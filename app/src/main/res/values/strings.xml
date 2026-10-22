@@ -16,6 +16,11 @@
     <string name="history_delete_title">Delete file?</string>
     <string name="history_delete_message">The file is removed from this device and cannot be restored.</string>
     <string name="history_deleted">File deleted</string>
+    <string name="history_purge_all_old">Delete all older than 30 days</string>
+    <string name="history_purge_confirm_title">Delete old uploads?</string>
+    <string name="history_purge_confirm_message">This deletes %1$d uploads older than 30 days. They are removed from this device and cannot be restored.</string>
+    <string name="history_purged_count">%1$d files deleted</string>
+    <string name="history_updated_existing">Same file as an existing upload - entry updated</string>
     <string name="overview_charts">Charts</string>
     <string name="series_spent">Spent</string>
     <string name="series_portfolio_value">Portfolio value</string>

@@ -56,6 +56,22 @@ class ParseFragment : Fragment() {
         view?.let { Snackbar.make(it, R.string.parsing_timeout, Snackbar.LENGTH_LONG).show() }
     }
 
+    // Latched in onViewCreated from the navigation argument; only the
+    // data observer shows it (see there) - see ARG_DEDUP_NOTE.
+    private var pendingDedupNote = false
+    private val dedupNoteHandler = Handler(Looper.getMainLooper())
+
+    /**
+     * Shows the pending dedup note. Lives on its own handler (not
+     * [timeoutHandler]) because it is re-debounced on every data post;
+     * the delay outlasts the skip note's LENGTH_LONG (2700 ms) so the
+     * note lands in a free snack slot after the last post of the run.
+     */
+    private val dedupNoteRunnable = Runnable {
+        val v = view  // local: Fragment.view is open - no smart cast
+        if (isAdded && v != null) showDedupNote(v)
+    }
+
     private val _isParsing = mutableStateOf(true)
     /** Core map keys (old layout ids) -> display value; null = hidden. */
     private val _values = mutableStateMapOf<String, String?>()
@@ -104,6 +120,25 @@ class ParseFragment : Fragment() {
         _isParsing.value = true
         timeoutHandler.postDelayed(parseTimeout, PARSE_TIMEOUT_MS)
         displayInformation(view)
+        // One-shot note from the import side: this navigation was a
+        // re-upload of a content-identical file (the history entry got
+        // refreshed, not duplicated). It rides the navigation arguments
+        // - NOT a LiveData observer, whose replay/re-posts fire at
+        // unpredictable moments relative to this screen. Consumed
+        // exactly once (removed after read, like the "fastStart" extra):
+        // a recreated view must never re-show it.
+        // One-shot note from the import side: this navigation was a
+        // re-upload of a content-identical file (the history entry got
+        // refreshed, not duplicated). It rides the navigation arguments -
+        // NOT a LiveData value. Consumed exactly once (removed after read,
+        // like the "fastStart" extra): a recreated view must never
+        // re-show it. The ACTUAL showing is scheduled in the data observer
+        // (snackbars replace whatever is showing - the replay post fires
+        // its skip note on resume and would steal the slot otherwise).
+        if (arguments?.getBoolean(ARG_DEDUP_NOTE, false) == true) {
+            arguments?.remove(ARG_DEDUP_NOTE)
+            pendingDedupNote = true
+        }
         // #47: the settings gear lives in the activity action bar (one
         // header bar, like every other screen). View-scoped provider:
         // it is attached for the lifetime of THIS fragment's view and
@@ -134,7 +169,15 @@ class ParseFragment : Fragment() {
 
     override fun onDestroyView() {
         timeoutHandler.removeCallbacks(parseTimeout)
+        dedupNoteHandler.removeCallbacks(dedupNoteRunnable)
         super.onDestroyView()
+    }
+
+    /** Shows (and consumes) the pending dedup note. */
+    private fun showDedupNote(view: View) {
+        if (!pendingDedupNote) return
+        pendingDedupNote = false
+        Snackbar.make(view, R.string.history_updated_existing, Snackbar.LENGTH_SHORT).show()
     }
 
     private fun displayInformation(view: View) {
@@ -153,6 +196,15 @@ class ParseFragment : Fragment() {
                     getString(R.string.unparsable_lines_skipped, CoreService.lastFailedLines),
                     Snackbar.LENGTH_LONG
                 ).show()
+            }
+            if (pendingDedupNote) {
+                // Snackbars replace, they don't queue - and the skip note
+                // above holds the slot for LENGTH_LONG (2700 ms). The
+                // observer can re-fire (replay / re-posts), so DEBOUNCE
+                // the dedup note off the LAST firing of the run: by the
+                // time it shows, the slot is guaranteed to be free.
+                dedupNoteHandler.removeCallbacks(dedupNoteRunnable)
+                dedupNoteHandler.postDelayed(dedupNoteRunnable, DEDUP_NOTE_DELAY_MS)
             }
         }
         // The chart rows ride the card post (see CoreService): observing
@@ -264,10 +316,16 @@ class ParseFragment : Fragment() {
 
     companion object {
         private const val TAG = "ParseFragment"
+        /** Navigation argument: the import that opened this screen was a deduped re-upload. */
+        internal const val ARG_DEDUP_NOTE = "dedupNote"
         // Parsing itself takes well under a second; the budget mostly covers
         // the price fetch, which can wait out CoinGecko's first (worst case
         // 300 s) rate-limit cooldown on a throttled egress IP.
         private const val PARSE_TIMEOUT_MS = 300_000L
+
+        // Skip note (LENGTH_LONG = 2700 ms) + margin: the dedup note is
+        // scheduled this far after the last data post of a run.
+        private const val DEDUP_NOTE_DELAY_MS = 2_800L
     }
 }
 

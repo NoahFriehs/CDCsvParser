@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.MainFragment
+import at.msd.friehs_bicha.cdcsvparser.general.HistoryFileUtil
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -47,14 +48,23 @@ import java.util.Locale
 @Composable
 fun HistoryDialogContent(
     initialFiles: List<java.io.File>,
+    /** The "older than 30 days" set, computed by the dialog at creation. */
+    purgeCandidates: List<java.io.File>,
     onSelect: (java.io.File) -> Unit,
     /** Called after a confirmed deletion (file already removed from disk). */
     onDeleted: (java.io.File) -> Unit,
+    /**
+     * Confirmed purge of [purgeCandidates]: the hosting fragment runs the
+     * deletion and returns the files ACTUALLY removed, so this list
+     * updates from the truth (per-row failures drop out silently).
+     */
+    onPurge: (List<java.io.File>) -> List<java.io.File>,
     /** Called when the last file was deleted, so the shell can dismiss. */
     onEmpty: () -> Unit,
 ) {
     var files by remember { mutableStateOf(initialFiles) }
     var fileToConfirmDelete by remember { mutableStateOf<java.io.File?>(null) }
+    var purgeToConfirm by remember { mutableStateOf(false) }
 
     val sdf = remember { SimpleDateFormat(MainFragment.HISTORY_FILE_PATTERN, Locale.getDefault()) }
     val display = remember { SimpleDateFormat("d.M. HH:mm", Locale.getDefault()) }
@@ -85,9 +95,55 @@ fun HistoryDialogContent(
         )
     }
 
+    if (purgeToConfirm) {
+        AlertDialog(
+            onDismissRequest = { purgeToConfirm = false },
+            title = { Text(stringResource(R.string.history_purge_confirm_title)) },
+            // The count is the one stated up front (candidates computed by
+            // the fragment at dialog creation), not a live re-count.
+            text = {
+                Text(stringResource(R.string.history_purge_confirm_message, purgeCandidates.size))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        purgeToConfirm = false
+                        val deletedNames = onPurge(purgeCandidates).mapTo(HashSet()) { it.name }
+                        if (deletedNames.isNotEmpty()) {
+                            files = files.filterNot { it.name in deletedNames }
+                            if (files.isEmpty()) onEmpty()
+                        }
+                    },
+                ) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { purgeToConfirm = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
+
     // MOD 2.6: rows stagger in during the initial settle only.
     val settleStartedAt = rememberListSettleStart()
-    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+    // The purge action appears only strictly ABOVE the threshold (more
+    // than 100 files); evaluated against the live list, so
+    // in-dialog deletions that shrink it back to the threshold hide the
+    // button again.
+    val showPurge = files.size > HistoryFileUtil.PURGE_THRESHOLD
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (showPurge) {
+            Text(
+                text = stringResource(R.string.history_purge_all_old),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { purgeToConfirm = true }
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+            )
+        }
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
         itemsIndexed(files) { index, file ->
             val state = rememberSwipeToDismissBoxState(
                 initialValue = SwipeToDismissBoxValue.Settled,
@@ -139,6 +195,7 @@ fun HistoryDialogContent(
                     }
                 }
             }
+        }
         }
     }
 }

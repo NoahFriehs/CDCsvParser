@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.os.bundleOf
 import androidx.core.view.MenuProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +24,7 @@ import com.google.android.material.snackbar.Snackbar
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.HistoryDialogFragment
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.general.HistoryFileUtil
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.MainScreen
@@ -95,6 +97,18 @@ class MainFragment : Fragment() {
             childFragmentManager.setFragmentResultListener(
                 HistoryDialogFragment.REQUESTED_DELETE, this@MainFragment.viewLifecycleOwner
             ) { _, _ -> onHistoryDeleted() }
+            childFragmentManager.setFragmentResultListener(
+                HistoryDialogFragment.REQUESTED_PURGE, this@MainFragment.viewLifecycleOwner
+            ) { _, bundle ->
+                // The purge already happened in the dialog; sync this
+                // screen's state and report the ACTUAL deleted count.
+                val count = bundle.getInt(HistoryDialogFragment.KEY_PURGE_COUNT)
+                updateFiles()
+                _newestHistoryFile.value = newestHistoryDisplayName()
+                view?.let {
+                    Snackbar.make(it, getString(R.string.history_purged_count, count), Snackbar.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -228,34 +242,50 @@ class MainFragment : Fragment() {
         val time = dateFormat.format(now)
         val filename = "$time.csv"
         val list = FileUtil.getFileContentFromUri(requireContext(), fileUri)
-        try {
-            requireContext().openFileOutput(filename, Context.MODE_PRIVATE).use { fos ->
-                for (element in list) {
-                    fos.write(element.toByteArray())
-                    fos.write("\n".toByteArray())
+        // The EXACT bytes the write loop below produces (each line + "\n"),
+        // knowable BEFORE touching the disk: a re-upload of a
+        // content-identical file must UPDATE the existing history entry
+        // (mtime refresh, newest sort) instead of creating a duplicate row
+
+        val incomingBytes = (list.joinToString("\n") + "\n").toByteArray()
+        val duplicate = HistoryFileUtil.findIdentical(
+            files.orEmpty().filter { it.isFile && it.name.endsWith(".csv") },
+            incomingBytes
+        )
+        val importFile = if (duplicate != null) {
+            duplicate.setLastModified(System.currentTimeMillis())
+            FileLog.i(TAG, "Dedup: re-upload content-identical to ${duplicate.name}; refreshing the entry.")
+            duplicate
+        } else {
+            try {
+                requireContext().openFileOutput(filename, Context.MODE_PRIVATE).use { fos ->
+                    for (element in list) {
+                        fos.write(element.toByteArray())
+                        fos.write("\n".toByteArray())
+                    }
                 }
+            } catch (e: IOException) {
+                FileLog.e(TAG, "Error while writing to file: $e")
             }
-        } catch (e: IOException) {
-            FileLog.e("MainFragment", "Error while writing to file: $e")
+            File(requireContext().filesDir, filename)
         }
         updateFiles()
-        while (files!!.size > 7) {
-            files!![0].delete()
-            updateFiles()
-        }
         val mode = PreferenceHelper.getSelectedType(requireContext()).ordinal
-        FileLog.d(TAG, "Import dispatched: $filename (${File(requireContext().filesDir, filename).length()} bytes, mode $mode)")
+        FileLog.d(TAG, "Import dispatched: ${importFile.name} (${importFile.length()} bytes, mode $mode)")
         Benchmarker.start()
-        CoreService.startServiceWithData(null, mode, filename)
-        callParseView()
+        CoreService.startServiceWithData(null, mode, importFile.name)
+        callParseView(showDedupNote = duplicate != null)
     }
 
-    private fun callParseView(saveToDB: Boolean = true) {
+    private fun callParseView(saveToDB: Boolean = true, showDedupNote: Boolean = false) {
         if (saveToDB && FirebaseAuth.getInstance().currentUser != null) {
             CoreService.saveDataToFirebase()
         }
         hideProgressDialog()
-        findNavController().navigate(R.id.parseFragment)
+        findNavController().navigate(
+            R.id.parseFragment,
+            if (showDedupNote) bundleOf(ParseFragment.ARG_DEDUP_NOTE to true) else null
+        )
     }
 
     private fun onBtnUploadClick() {
