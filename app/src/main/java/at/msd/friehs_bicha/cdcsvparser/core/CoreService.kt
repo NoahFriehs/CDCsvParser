@@ -463,9 +463,9 @@ class CoreService : Service() {
                             FileLog.e(TAG, "transactions_ contained nulls, removed")
                         }
                         transactionsLiveData.postValue(validTransactions)
-                        val assetMaps_ = ArrayList<AssetData>()
+                        val assetMaps_ = ArrayList<AssetEntry>()
                         allWallets.forEach {
-                            assetMaps_.add(AssetData(it.walletId, getAssetMap(it.walletId)))
+                            assetMaps_.add(AssetEntry(it.walletId, getAssetMap(it.walletId)))
                         }
                         assetMaps.postValue(assetMaps_)
                         // Same data the LiveData posts above (explicit: the
@@ -666,12 +666,12 @@ class CoreService : Service() {
             walletNames_[index + indexAll] = wallet.getTypeString()
         }
         walletNames.postValue(walletNames_)
-        val assetMaps_ = ArrayList<AssetData>()
+        val assetMaps_ = ArrayList<AssetEntry>()
         wallets_.forEach {
-            assetMaps_.add(AssetData(it.walletId, getAssetMap(it.walletId)))
+            assetMaps_.add(AssetEntry(it.walletId, getAssetMap(it.walletId)))
         }
         cardWallets_.forEach {
-            assetMaps_.add(AssetData(it.walletId, getCardAssetMap(it.walletId)))
+            assetMaps_.add(AssetEntry(it.walletId, getCardAssetMap(it.walletId)))
         }
         assetMaps.postValue(assetMaps_)
 
@@ -699,40 +699,32 @@ class CoreService : Service() {
         }
     }
 
-    private fun getCardAssetMap(walletId: Int): Map<String, String?> {
-        return when (isCoreInitialized && useCpp) {
-            true -> {
-
-                val map = mutableMapOf<String, String?>()
-                val moneySpent = getMoneySpentByWID(walletId)
-                val total = StringHelper.formatAmountToString(moneySpent)
-                map[R.id.money_spent_value.toString()] = total
-                map[R.id.assets_value.toString()] = null
-                map[R.id.rewards_value.toString()] = null
-                map[R.id.profit_loss_value.toString()] = null
-                map[R.id.assets_value_label.toString()] = null
-                map[R.id.rewards_label.toString()] = null
-                map[R.id.profit_loss_label.toString()] = null
-                map
-            }
-
-            false -> walletAssetMapFromKotlinCore(walletId)
+    private fun getCardAssetMap(walletId: Int): WalletAssets {
+        return if (isCoreInitialized && useCpp) {
+            // Card buckets are fiat: the C++ path only carries "money
+            // spent"; the other three rows are hidden (null) - the same
+            // shape the old map posted (explicit nulls).
+            WalletAssets.card(StringHelper.formatAmountToString(getMoneySpentByWID(walletId)))
+        } else {
+            walletAssetMapFromKotlinCore(walletId)
         }
     }
 
     /**
      * Null-safe Kotlin-core fallback: look the wallet up without asserting
      * the model / tx app into existence (card-only data has no txApp).
+     * A missing wallet yields all-null (every row hidden - the old map's
+     * `emptyMap()` behavior).
      */
-    private fun walletAssetMapFromKotlinCore(walletId: Int): Map<String, String?> {
-        val app = appModel ?: return emptyMap()
+    private fun walletAssetMapFromKotlinCore(walletId: Int): WalletAssets {
+        val app = appModel ?: return WalletAssets()
         val wallet = app.txApp?.wallets?.find { it.walletId == walletId }
             ?: app.cardApp?.wallets?.find { it.walletId == walletId }
         if (wallet == null) {
             FileLog.w(TAG, "No wallet with id $walletId found")
-            return emptyMap()
+            return WalletAssets()
         }
-        return app.getAssetMap(wallet)
+        return app.walletAssets(wallet)
     }
 
     /**
@@ -800,33 +792,20 @@ class CoreService : Service() {
      *
      * @return the amount of the asset in the wallet
      */
-    private fun getAssetMap(walletId: Int): Map<String, String?> {
-        return when (isCoreInitialized && useCpp) {
-            true -> {
-
-                val map = mutableMapOf<String, String?>()
-                val moneySpent = getMoneySpentByWID(walletId)
-                val total = StringHelper.formatAmountToString(moneySpent)
-                val amountOfAsset = getValueOfAssetsByWID(walletId)
-                val rewardValue = getTotalBonusByWID(walletId)
-                if (AssetValue.getInstance().isRunning) {
-                    map[R.id.assets_value.toString()] =
-                        StringHelper.formatAmountToString(amountOfAsset)
-                    map[R.id.rewards_value.toString()] =
-                        StringHelper.formatAmountToString(rewardValue)
-                    map[R.id.profit_loss_value.toString()] =
-                        StringHelper.formatAmountToString(amountOfAsset - moneySpent)
-                    map[R.id.money_spent_value.toString()] = total
-                } else {
-                    map[R.id.assets_value.toString()] = "no internet connection"
-                    map[R.id.rewards_value.toString()] = "no internet connection"
-                    map[R.id.profit_loss_value.toString()] = "no internet connection"
-                    map[R.id.money_spent_value.toString()] = total
-                }
-                map
-            }
-
-            false -> walletAssetMapFromKotlinCore(walletId)
+    private fun getAssetMap(walletId: Int): WalletAssets {
+        return if (isCoreInitialized && useCpp) {
+            val moneySpent = getMoneySpentByWID(walletId)
+            WalletAssets.standard(
+                moneySpentText = StringHelper.formatAmountToString(moneySpent),
+                assetsText = StringHelper.formatAmountToString(getValueOfAssetsByWID(walletId)),
+                rewardsText = StringHelper.formatAmountToString(getTotalBonusByWID(walletId)),
+                profitLossText = StringHelper.formatAmountToString(
+                    getValueOfAssetsByWID(walletId) - moneySpent
+                ),
+                pricesRunning = AssetValue.getInstance().isRunning,
+            )
+        } else {
+            walletAssetMapFromKotlinCore(walletId)
         }
     }
 
@@ -1413,8 +1392,7 @@ class CoreService : Service() {
         val transactionsLiveData = MutableLiveData<ArrayList<Transaction>>()
         val cardTransactionsLiveData = MutableLiveData<ArrayList<CroCardTransaction>>()
 
-        var currentWallet = MutableLiveData<Map<String, String?>>()
-        val assetMaps = MutableLiveData<ArrayList<AssetData>>()
+        val assetMaps = MutableLiveData<ArrayList<AssetEntry>>()
 
         val errorCounter = MutableLiveData<Int>()
 
@@ -1525,10 +1503,13 @@ class CoreService : Service() {
 
 
         /**
-         * Returns the AssetMap of the wallet
+         * Returns the typed wallet display state of the wallet (all rows
+         * hidden when the wallet is not in the posted list yet - the old
+         * emptyMap behavior).
          */
-        fun getAssetMap(walletId: Int): Map<String, String?> {
-            return assetMaps.value?.find { it.walletId == walletId }?.data ?: emptyMap()
+        fun getAssetMap(walletId: Int): WalletAssets {
+            return assetMaps.value?.find { it.walletId == walletId }?.assets
+                ?: WalletAssets()
         }
 
 

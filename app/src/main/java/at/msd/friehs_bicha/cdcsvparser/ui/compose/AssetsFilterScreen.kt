@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.core.WalletAssets
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
 
@@ -41,17 +42,12 @@ fun AssetsFilterScreen(
     wallets: List<WalletRow>,
     selectedWallet: WalletRow?,
     onWalletSelected: (walletId: Int) -> Unit,
-    /** Core map keys -> display value; null = hidden. */
-    values: Map<String, String?>,
+    /** Typed wallet display state; a null field = hidden row. */
+    assets: WalletAssets,
     walletTransactions: List<TransactionRow>,
     onRowClick: (id: Int) -> Unit,
 ) {
     val context = LocalContext.current
-    val keyAssets = R.id.assets_value.toString()
-    val keySpent = R.id.money_spent_value.toString()
-    val keyPl = R.id.profit_loss_value.toString()
-    val keyRewards = R.id.rewards_value.toString()
-
     var expanded by remember { mutableStateOf(false) }
 
     Scaffold { padding ->
@@ -100,14 +96,14 @@ fun AssetsFilterScreen(
                 }
             }
 
-            ValueBlock(stringResource(R.string.amount_of_asset), displayAssetValue(context, values[keyAssets]))
-            ValueBlock(stringResource(R.string.money_spent_label), displayAssetValue(context, values[keySpent]))
+            ValueBlock(stringResource(R.string.amount_of_asset), displayAssetValue(context, assets.assets))
+            ValueBlock(stringResource(R.string.money_spent_label), displayAssetValue(context, assets.moneySpent))
             ValueBlock(
                 stringResource(R.string.profit_loss),
-                displayAssetValue(context, values[keyPl]),
-                valueColor = plValueColor(context, values[keyPl]),
+                displayAssetValue(context, assets.profitLoss),
+                valueColor = plValueColor(context, assets.profitLoss),
             )
-            ValueBlock(stringResource(R.string.rewards_earned), displayAssetValue(context, values[keyRewards]))
+            ValueBlock(stringResource(R.string.rewards_earned), displayAssetValue(context, assets.rewards))
 
             selectedWallet?.let { wallet ->
                 Text(

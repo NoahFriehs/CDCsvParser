@@ -16,6 +16,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.WalletAssets
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.AssetsFilterScreen
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
@@ -38,7 +39,7 @@ class AssetsFilterFragment : Fragment() {
     private val selectedWalletId = MutableStateFlow(-1)
     private val _wallets = mutableStateOf<List<WalletRow>>(emptyList())
     private val _selectedIndex = mutableStateOf(-1)
-    private val _values = mutableStateOf<Map<String, String?>>(emptyMap())
+    private val _values = mutableStateOf<WalletAssets>(WalletAssets())
     private val _walletTransactions = mutableStateOf<List<TransactionRow>>(emptyList())
 
     override fun onCreateView(
@@ -59,7 +60,7 @@ class AssetsFilterFragment : Fragment() {
                         onWalletSelected = { walletId ->
                             selectWallet(_wallets.value.first { it.walletId == walletId })
                         },
-                        values = _values.value,
+                        assets = _values.value,
                         walletTransactions = _walletTransactions.value,
                         onRowClick = { id ->
                             findNavController().navigate(

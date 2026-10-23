@@ -5,6 +5,7 @@ import android.graphics.Color
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.WalletAssets
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -227,52 +228,33 @@ class AppModel : BaseAppModel, Serializable {
      *
      * @return a map with the data to display from a wallet
      */
-    fun getAssetMap(wallet: Wallet?): Map<String, String?> {
-        val total = formatAmountToString(wallet!!.moneySpent.toDouble())
-        val map: MutableMap<String, String?> = HashMap()
+    /**
+     * Typed per-wallet display state (replacement of the old
+     * `getAssetMap` `R.id`-keyed map). Non-null [wallet] by design - the
+     * old `wallet!!` assert disappeared with the nullable parameter.
+     * Card wallets carry only "money spent" (the other three rows are
+     * hidden via null); everything else is standard layout with the
+     * no-prices token while `AssetValue` is not running.
+     */
+    fun walletAssets(wallet: Wallet): WalletAssets {
+        val total = formatAmountToString(wallet.moneySpent.toDouble())
+        if (wallet is CroCardWallet) return WalletAssets.card(total)
 
-        if (wallet is CroCardWallet) {
-            map[R.id.money_spent_value.toString()] = total
-            map[R.id.assets_value.toString()] = null
-            map[R.id.rewards_value.toString()] = null
-            map[R.id.profit_loss_value.toString()] = null
-            map[R.id.assets_value_label.toString()] = null
-            map[R.id.rewards_label.toString()] = null
-            map[R.id.profit_loss_label.toString()] = null
-            return map
+        return if (appType == AppType.CroCard || appType == AppType.CurveCard) {
+            WalletAssets.card(total)
+        } else {
+            val amountOfAsset = getValueOfAssets(wallet)
+            val rewardValue = getTotalBonus(wallet)
+            WalletAssets.standard(
+                moneySpentText = total,
+                assetsText = formatAmountToString(amountOfAsset),
+                rewardsText = formatAmountToString(rewardValue),
+                profitLossText = formatAmountToString(
+                    amountOfAsset - wallet.moneySpent.toDouble()
+                ),
+                pricesRunning = AssetValue.getInstance().isRunning,
+            )
         }
-
-        when (appType) {
-            AppType.CroCard, AppType.CurveCard -> {
-                map[R.id.money_spent_value.toString()] = total
-                map[R.id.assets_value.toString()] = null
-                map[R.id.rewards_value.toString()] = null
-                map[R.id.profit_loss_value.toString()] = null
-                map[R.id.assets_value_label.toString()] = null
-                map[R.id.rewards_label.toString()] = null
-                map[R.id.profit_loss_label.toString()] = null
-            }
-
-            else -> {
-                val amountOfAsset = getValueOfAssets(wallet)
-                val rewardValue = getTotalBonus(wallet)
-                if (AssetValue.getInstance().isRunning) {
-                    map[R.id.assets_value.toString()] =
-                        formatAmountToString(amountOfAsset)
-                    map[R.id.rewards_value.toString()] =
-                        formatAmountToString(rewardValue)
-                    map[R.id.profit_loss_value.toString()] =
-                        formatAmountToString(amountOfAsset - wallet.moneySpent.toDouble())
-                    map[R.id.money_spent_value.toString()] = total
-                } else {
-                    map[R.id.assets_value.toString()] = "no internet connection"
-                    map[R.id.rewards_value.toString()] = "no internet connection"
-                    map[R.id.profit_loss_value.toString()] = "no internet connection"
-                    map[R.id.money_spent_value.toString()] = total
-                }
-            }
-        }
-        return map
     }
 
 
