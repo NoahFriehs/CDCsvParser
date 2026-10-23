@@ -175,4 +175,14 @@
     <string name="log_cleared">Protokoll geleert</string>
     <string name="log_clear_question">Inhalte der gewählten Protokolldatei löschen?</string>
     <string name="log_empty">(keine passenden Zeilen)</string>
+
+    <!-- previously hardcoded in code -->
+    <string name="transaction_type_credit">Gutschrift</string>
+    <string name="transaction_type_debit">Belastung</string>
+    <string name="transaction_type_purchase">Einkauf</string>
+    <string name="transaction_type_generic">Transaktion</string>
+    <string name="db_nothing_saved">In der Datenbank ist nichts gespeichert.</string>
+    <string name="db_incompatible_version">Ihre Datenbank ist mit dieser Version der App nicht kompatibel. Bitte die App herunterstufen oder die Datenbank mit einem neuen Upload überschreiben.</string>
+    <string name="data_saved_successfully">Daten erfolgreich gespeichert</string>
+    <string name="error_loading_data">Fehler beim Laden der Daten</string>
 </resources>

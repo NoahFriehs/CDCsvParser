@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.compose
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -157,7 +158,7 @@ private fun TransactionRowView(row: TransactionRow, onClick: () -> Unit) {
                     .padding(start = 12.dp, end = 12.dp),
             ) {
                 Text(
-                    text = row.description.ifEmpty { row.fallbackDescription() },
+                    text = row.description.ifEmpty { row.fallbackDescription(context) },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -197,11 +198,13 @@ private fun TransactionRowView(row: TransactionRow, onClick: () -> Unit) {
     }
 }
 
-private fun TransactionRow.fallbackDescription(): String = when (icon) {
-    TransactionIcon.CREDIT -> "Credit"
-    TransactionIcon.DEBIT -> "Debit"
-    TransactionIcon.PURCHASE -> "Purchase"
-    TransactionIcon.OTHER -> "Transaction"
+// the visible fallback labels used to be hardcoded
+// English literals (a de device showed "Credit"/"Debit"/...).
+private fun TransactionRow.fallbackDescription(context: Context): String = when (icon) {
+    TransactionIcon.CREDIT -> context.getString(R.string.transaction_type_credit)
+    TransactionIcon.DEBIT -> context.getString(R.string.transaction_type_debit)
+    TransactionIcon.PURCHASE -> context.getString(R.string.transaction_type_purchase)
+    TransactionIcon.OTHER -> context.getString(R.string.transaction_type_generic)
 }
 
 // endregion

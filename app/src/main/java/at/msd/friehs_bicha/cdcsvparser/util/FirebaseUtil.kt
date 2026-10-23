@@ -9,6 +9,7 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
+import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import com.google.android.gms.tasks.Task
@@ -70,7 +71,11 @@ class FirebaseUtil(private val context: Context) {
 
             db.collection("user").document(uid).set(existing)
                 .addOnCompleteListener { task ->
-                    handleFirebaseTaskResult(task, "Data saved successfully", "Error saving data")
+                    handleFirebaseTaskResult(
+                        task,
+                        context.getString(R.string.data_saved_successfully),
+                        context.getString(R.string.error_saving_data)
+                    )
                 }
         }
         return true
@@ -92,7 +97,7 @@ class FirebaseUtil(private val context: Context) {
             if (result.isFailure) {
                 userMapError = true
                 userMapLiveData.value = null
-                val message = "Your database has nothing saved."
+                val message = context.getString(R.string.db_nothing_saved)
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 FileLog.e("FirebaseUtil", message)
                 return@getUserDataFromFirestore
@@ -104,8 +109,7 @@ class FirebaseUtil(private val context: Context) {
             val dbVersion = appSettings?.get("dbVersion")?.toString()
 
             if (dbVersion != null && StringHelper.compareVersions(dbVersion, "1.0.0")) {
-                val text =
-                    "Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload."
+                val text = context.getString(R.string.db_incompatible_version)
                 Toast.makeText(context, text, Toast.LENGTH_LONG).show()
                 return@getUserDataFromFirestore
             }
@@ -133,7 +137,7 @@ class FirebaseUtil(private val context: Context) {
             }
 
             if (!hasCard && !hasTxModule) {
-                val message = "Your database has nothing saved."
+                val message = context.getString(R.string.db_nothing_saved)
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 FileLog.e("FirebaseUtil", message)
                 return@getUserDataFromFirestore
@@ -239,7 +243,7 @@ class FirebaseUtil(private val context: Context) {
                 .addOnFailureListener { exception ->
                     Toast.makeText(
                         InstanceVars.applicationContext,
-                        "Error loading data",
+                        InstanceVars.applicationContext.getString(R.string.error_loading_data),
                         Toast.LENGTH_SHORT
                     ).show()
                     FileLog.e("FirebaseUtil", "Error getting documents: $exception")

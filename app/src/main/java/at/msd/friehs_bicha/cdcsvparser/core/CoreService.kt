@@ -1615,7 +1615,11 @@ class CoreService : Service() {
 
             db.collection("user").document(uid).set(appHashMap)
                 .addOnCompleteListener { task ->
-                    handleFirebaseTaskResult(task, "Data saved successfully", "Error saving data")
+                    handleFirebaseTaskResult(
+                        task,
+                        applicationContext.getString(R.string.data_saved_successfully),
+                        applicationContext.getString(R.string.error_saving_data)
+                    )
                 }
         }
 

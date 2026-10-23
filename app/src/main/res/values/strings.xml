@@ -182,4 +182,14 @@
     <string name="log_cleared">Log cleared</string>
     <string name="log_clear_question">Delete the contents of the selected log file?</string>
     <string name="log_empty">(no matching lines)</string>
+
+    <!-- previously hardcoded in code -->
+    <string name="transaction_type_credit">Credit</string>
+    <string name="transaction_type_debit">Debit</string>
+    <string name="transaction_type_purchase">Purchase</string>
+    <string name="transaction_type_generic">Transaction</string>
+    <string name="db_nothing_saved">Your database has nothing saved.</string>
+    <string name="db_incompatible_version">Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload.</string>
+    <string name="data_saved_successfully">Data saved successfully</string>
+    <string name="error_loading_data">Error loading data</string>
 </resources>
