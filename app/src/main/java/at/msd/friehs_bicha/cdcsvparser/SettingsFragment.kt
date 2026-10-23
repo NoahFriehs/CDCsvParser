@@ -2,9 +2,13 @@ package at.msd.friehs_bicha.cdcsvparser
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.MenuProvider
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +71,28 @@ class SettingsFragment : Fragment() {
 
     /** The on-disk price cache files (plan 004). */
     private val PRICE_CACHE_FILES = arrayOf("history_prices.json", "symbol_id_cache.json")
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // #55: the settings destination must never offer the settings
+        // action (tapping the gear while already on settings would be a
+        // self-navigation). The gear itself comes from the view-scoped
+        // MenuProviders of the other fragments; a navigation transition
+        // can briefly hold two views alive at once, so this destination
+        // removes the item on every menu build within its own view
+        // lifetime instead of relying on the leaving fragment's provider
+        // to be gone first. View-scoped: it is gone with this view.
+        requireActivity().addMenuProvider(
+            object : MenuProvider {
+                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                    menu.findItem(R.id.action_settings)?.let { menu.removeItem(it.itemId) }
+                }
+
+                override fun onMenuItemSelected(menuItem: MenuItem) = false
+            },
+            viewLifecycleOwner,
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
