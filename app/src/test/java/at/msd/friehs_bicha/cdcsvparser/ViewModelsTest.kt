@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser
 
 import at.msd.friehs_bicha.cdcsvparser.core.AssetEntry
+import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.core.WalletAssets
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -81,5 +82,43 @@ class ViewModelsTest {
         assertEquals(7, entry.walletId)
         assertEquals("1.00 €", entry.assets.moneySpent)
         assertTrue(entry.assets.assets == null)
+    }
+
+    @Test
+    fun parseDataCardLayoutOnlyMoneySpentFooterHidden() {
+        // A file without crypto (card/fiat): only "money spent" exists
+        // and the attribution footer is hidden (replaces the old explicit
+        // null under the coinGeckoApiLabel key).
+        val data = ParseData.card("-42,00 €")
+        assertEquals("-42,00 €", data.moneySpent)
+        assertNull(data.assets)
+        assertNull(data.rewards)
+        assertNull(data.profitLoss)
+        assertFalse(data.attributionVisible)
+    }
+
+    @Test
+    fun parseDataStandardLayoutAllFieldsFooterUp() {
+        val data = ParseData.standard(
+            moneySpentText = "1.000,00 €",
+            assetsText = "2.500,00 €",
+            rewardsText = "10,00 €",
+            profitLossText = "-250,00 €",
+        )
+        assertEquals("1.000,00 €", data.moneySpent)
+        assertEquals("2.500,00 €", data.assets)
+        assertEquals("10,00 €", data.rewards)
+        assertEquals("-250,00 €", data.profitLoss)
+        assertTrue(data.attributionVisible)
+    }
+
+    @Test
+    fun parseDataDefaultAllFieldsNullFooterUp() {
+        val data = ParseData()
+        assertNull(data.assets)
+        assertNull(data.moneySpent)
+        assertNull(data.rewards)
+        assertNull(data.profitLoss)
+        assertTrue(data.attributionVisible)
     }
 }

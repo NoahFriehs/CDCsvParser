@@ -21,6 +21,7 @@ import com.google.android.material.snackbar.Snackbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryPass
@@ -73,8 +74,8 @@ class ParseFragment : Fragment() {
     }
 
     private val _isParsing = mutableStateOf(true)
-    /** Core map keys (old layout ids) -> display value; null = hidden. */
-    private val _values = mutableStateMapOf<String, String?>()
+    /** Typed parse cards (null = not posted yet); a null field = hidden row. */
+    private val _parseData = mutableStateOf<ParseData?>(null)
     private val _profitLossColor = mutableStateOf(androidx.compose.ui.graphics.Color.Unspecified)
     private val _dailySeries = mutableStateOf<List<String>>(emptyList())
     /** "CUR;YYYY-MM-DD;balance;bonus" wallet lines (G36 historical pricing). */
@@ -93,7 +94,7 @@ class ParseFragment : Fragment() {
                 CdcsvTheme {
                     ParseScreen(
                         isParsing = _isParsing.value,
-                        values = _values.toMap(),
+                        data = _parseData.value,
                         profitLossColor = _profitLossColor.value,
                         attributionVisible = _attributionVisible.value,
                         dailySeries = _dailySeries.value,
@@ -187,7 +188,7 @@ class ParseFragment : Fragment() {
         CoreService.parsedDataLiveData.observe(viewLifecycleOwner) {
             timeoutHandler.removeCallbacks(parseTimeout)  // data arrived: nothing left to watch
             Benchmarker.stop()
-            fillFromMap(it)
+            fillFromData(it)
             FileLog.d(TAG, "parsedDataLiveData changed")
             _isParsing.value = false
             if (CoreService.lastFailedLines > 0) {
@@ -238,28 +239,25 @@ class ParseFragment : Fragment() {
         }
     }
 
-    private fun fillFromMap(texts: Map<String, String?>?) {
-        if (texts == null) {
-            FileLog.e(TAG, "texts is null")
+    private fun fillFromData(data: ParseData?) {
+        if (data == null) {
+            FileLog.e(TAG, "parseData is null")
             return
         }
-        _values.clear()
-        texts.forEach { (key, value) ->
-            // The core signals "hide the API attribution" with an explicit
-            // null under this key (no crypto transactions in the file).
-            if (key == R.id.coinGeckoApiLabel.toString()) {
-                _attributionVisible.value = value != null
-            }
-            if (value == null) return@forEach
-            if (key == R.id.assets_valueP.toString() && value == "no internet connection") {
-                _noInternet.value = true
-            }
-            _values[key] = value
-            if (key == R.id.profit_loss_value.toString()) {
-                _profitLossColor.value =
-                    androidx.compose.ui.graphics.Color.trendColor(firstNumber(value), this)
-            }
+        // The producer owns the attribution flag explicitly: false for
+        // files without crypto transactions (the old contract carried that
+        // as an explicit null under R.id.coinGeckoApiLabel).
+        _attributionVisible.value = data.attributionVisible
+        // Set-once, like before: a no-internet card keeps the flag for the
+        // life of this fragment (new import = new fragment = fresh state).
+        if (data.assets == "no internet connection") {
+            _noInternet.value = true
         }
+        if (data.profitLoss != null) {
+            _profitLossColor.value =
+                androidx.compose.ui.graphics.Color.trendColor(firstNumber(data.profitLoss), this)
+        }
+        _parseData.value = data
     }
 
     /** Extracts the first number of a formatted value like "-123.4 €". */

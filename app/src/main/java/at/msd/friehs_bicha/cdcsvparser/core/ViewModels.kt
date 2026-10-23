@@ -65,3 +65,51 @@ data class WalletAssets(
  * posted per wallet on [com.at.msd.friehs_bicha.cdcsvparser.core.CoreService.assetMaps].
  */
 data class AssetEntry(val walletId: Int, val assets: WalletAssets)
+
+/**
+ * Parse-screen card display state (replacement of the old
+ * `R.id`-keyed `parseMap`). A `null` field = row hidden; the derived
+ * values carry the [WalletAssets.NO_INTERNET] / `"prices loading"`
+ * transport tokens while prices are missing, mapped to localized
+ * resources by the screen (same as the wallet screen).
+ *
+ * [attributionVisible] replaces the old `R.id.coinGeckoApiLabel` key: the
+ * key only ever transported a visibility flag (explicit `null` = hide the
+ * attribution footer - files without crypto -; absent = keep it up; no
+ * label TEXT was ever sent through the map; the footer text itself is
+ * static in the screen). `true` = show the footer.
+ */
+data class ParseData(
+    val assets: String? = null,
+    val moneySpent: String? = null,
+    val rewards: String? = null,
+    val profitLoss: String? = null,
+    val attributionVisible: Boolean = true,
+) {
+    companion object {
+        /**
+         * Files without crypto transactions (card/fiat scope): only "money
+         * spent" exists and the attribution footer is hidden.
+         */
+        fun card(moneySpentText: String?): ParseData =
+            ParseData(moneySpent = moneySpentText, attributionVisible = false)
+
+        /**
+         * Standard (crypto) files: footer stays up; the three derived
+         * values follow the prices state (real values, the "prices
+         * loading" token while the provider fetches, or the no-internet
+         * token while it is not running).
+         */
+        fun standard(
+            moneySpentText: String,
+            assetsText: String,
+            rewardsText: String,
+            profitLossText: String,
+        ): ParseData = ParseData(
+            moneySpent = moneySpentText,
+            assets = assetsText,
+            rewards = rewardsText,
+            profitLoss = profitLossText,
+        )
+    }
+}

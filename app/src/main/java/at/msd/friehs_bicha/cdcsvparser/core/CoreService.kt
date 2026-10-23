@@ -420,7 +420,7 @@ class CoreService : Service() {
 
                         walletNames.postValue(walletNames_)
 
-                        var data = appModel?.parseMap
+                        var data = appModel?.parseData
                         try {
                             // The isFullyLoaded wait above already resolved: a null
                             // here is a code bug, not a loading state, so only a
@@ -428,10 +428,10 @@ class CoreService : Service() {
                             // log and delayed the error signal by a full minute).
                             withTimeout(10_000) {
                                 while (data == null) {
-                                    FileLog.e(TAG, "data from appModel parseMap is null")
+                                    FileLog.e(TAG, "data from appModel parseData is null")
                                     //pause and try again
                                     delay(500)
-                                    data = appModel?.parseMap
+                                    data = appModel?.parseData
                                 }
                             }
                         } catch (e: TimeoutCancellationException) {
@@ -505,8 +505,6 @@ class CoreService : Service() {
         val prices = Array<Double>(currencies.size) { i -> cachePrices[currencies[i]] ?: 0.0 }
         setPrice(prices)
 
-        // get Data from Core and set it to the LiveData
-        val map: MutableMap<String, String?> = java.util.HashMap()
         var totalMoneySpent = getTotalMoneySpent()
         val totalMoneySpentString =
             StringHelper.formatAmountToString(totalMoneySpent)
@@ -514,7 +512,7 @@ class CoreService : Service() {
         // the recovery, so the phase-2 fetch must not stack on top of it.
         var offlinePlaceholder = false
 
-        if (hasCryptoTx) {
+        val parseData = if (hasCryptoTx) {
             // A symbol is "known" when the cache holds ANY entry for it
             // (fresh, stale, or a 0.0 "no value" answer); EUR is pinned.
             // Known prices mean the cards can show real numbers right now
@@ -526,14 +524,14 @@ class CoreService : Service() {
             when {
                 allPricesKnown -> {
                     val amountOfAsset = getValueOfAssets()
-                    val rewardValue = getTotalBonus()
-                    map[R.id.assets_valueP.toString()] =
-                        StringHelper.formatAmountToString(amountOfAsset)
-                    map[R.id.rewards_value.toString()] =
-                        StringHelper.formatAmountToString(rewardValue)
-                    map[R.id.profit_loss_value.toString()] =
-                        StringHelper.formatAmountToString(amountOfAsset - totalMoneySpent)
-                    map[R.id.money_spent_value.toString()] = totalMoneySpentString
+                    ParseData.standard(
+                        moneySpentText = totalMoneySpentString,
+                        assetsText = StringHelper.formatAmountToString(amountOfAsset),
+                        rewardsText = StringHelper.formatAmountToString(getTotalBonus()),
+                        profitLossText = StringHelper.formatAmountToString(
+                            amountOfAsset - totalMoneySpent
+                        ),
+                    )
                 }
 
                 AssetValue.getInstance().isRunning -> {
@@ -541,20 +539,18 @@ class CoreService : Service() {
                     // cached yet: transient placeholder; the phase-2
                     // fetch re-posts the real values.
                     FileLog.d(TAG, "Some prices are still loading; posting the placeholder.")
-                    map[R.id.assets_valueP.toString()] = "prices loading"
-                    map[R.id.rewards_value.toString()] = "prices loading"
-                    map[R.id.profit_loss_value.toString()] = "prices loading"
-                    map[R.id.money_spent_value.toString()] = totalMoneySpentString
+                    ParseData.standard(
+                        moneySpentText = totalMoneySpentString,
+                        assetsText = "prices loading",
+                        rewardsText = "prices loading",
+                        profitLossText = "prices loading",
+                    )
                 }
 
                 else -> {
                     offlinePlaceholder = true
                     FileLog.e(TAG, "AssetValue is not running")
                     AssetValue.getInstance().check()
-                    map[R.id.assets_valueP.toString()] = "no internet connection"
-                    map[R.id.rewards_value.toString()] = "no internet connection"
-                    map[R.id.profit_loss_value.toString()] = "no internet connection"
-                    map[R.id.money_spent_value.toString()] = totalMoneySpentString
                     //check periodically if internet is back (on the cpp-core thread,
                     //because provideDataToActivityFromCppCore touches JNI)
                     serviceScope.launch {
@@ -571,21 +567,21 @@ class CoreService : Service() {
                         }
                         provideDataToActivityFromCppCore()
                     }
+                    ParseData.standard(
+                        moneySpentText = totalMoneySpentString,
+                        assetsText = WalletAssets.NO_INTERNET,
+                        rewardsText = WalletAssets.NO_INTERNET,
+                        profitLossText = WalletAssets.NO_INTERNET,
+                    )
                 }
             }
         } else {
+            // Files without crypto (card/fiat scope): only "money spent"
+            // exists, the attribution footer is hidden (ParseData.card).
             totalMoneySpent = getTotalMoneySpentCard()
-            map[R.id.money_spent_value.toString()] =
-                StringHelper.formatAmountToString(totalMoneySpent)
-            map[R.id.assets_valueP.toString()] = null
-            map[R.id.rewards_value.toString()] = null
-            map[R.id.profit_loss_value.toString()] = null
-            map[R.id.assets_value_label.toString()] = null
-            map[R.id.rewards_label.toString()] = null
-            map[R.id.profit_loss_label.toString()] = null
-            map[R.id.coinGeckoApiLabel.toString()] = null
+            ParseData.card(StringHelper.formatAmountToString(totalMoneySpent))
         }
-        parsedDataLiveData.postValue(map)
+        parsedDataLiveData.postValue(parseData)
 
         // The chart rows ride the SAME post as the cards: the parse
         // screen observes them instead of a one-shot side query, so a
@@ -1381,7 +1377,7 @@ class CoreService : Service() {
 
         var firebaseDataLiveData = MutableLiveData<MutableList<FirebaseAppmodel>>()
 
-        var parsedDataLiveData = MutableLiveData<Map<String, String?>>()
+        var parsedDataLiveData = MutableLiveData<ParseData>()
         var chartSeriesLiveData = MutableLiveData<ChartSeries>()
 
         var walletsLiveData = MutableLiveData<ArrayList<Wallet>>()

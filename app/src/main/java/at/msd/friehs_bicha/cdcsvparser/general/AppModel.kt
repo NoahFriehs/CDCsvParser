@@ -5,6 +5,7 @@ import android.graphics.Color
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.core.WalletAssets
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
@@ -259,51 +260,44 @@ class AppModel : BaseAppModel, Serializable {
 
 
     /**
-     * Returns a map with the data to display for the app
-     *
-     * @return a map with the data to display for the app
+     * Typed state with the data to display on the parse screen (the X2
+     * replacement of the old `parseMap` `R.id`-keyed map). `null` = the
+     * cards are not ready (the old contract's whole-map-null: the cpp-core
+     * caller retries for a bounded time).
      */
     @get:Throws(InterruptedException::class)
-    val parseMap: Map<String, String?>?
+    val parseData: ParseData?
         get() {
             return try {
                 val total = totalPrice
                 val totalMoneySpent = formatAmountToString(total.toDouble())
-                val map: MutableMap<String, String?> = HashMap()
-                if (appType != AppType.CdCsvParser && txApp != null && cardApp != null)
-                {
+                if (appType != AppType.CdCsvParser && txApp != null && cardApp != null) {
                     appType = txApp!!.appType
                 }
                 when (appType) {
-                    AppType.CroCard, AppType.CurveCard -> {
-                        map[R.id.money_spent_value.toString()] = totalMoneySpent
-                        map[R.id.assets_valueP.toString()] = null
-                        map[R.id.rewards_value.toString()] = null
-                        map[R.id.profit_loss_value.toString()] = null
-                        map[R.id.assets_value_label.toString()] = null
-                        map[R.id.rewards_label.toString()] = null
-                        map[R.id.profit_loss_label.toString()] = null
-                        map[R.id.coinGeckoApiLabel.toString()] = null
-                    }
+                    AppType.CroCard, AppType.CurveCard ->
+                        ParseData.card(totalMoneySpent)
 
                     else -> if (AssetValue.getInstance().isRunning) {
                         val amountOfAsset = valueOfAssets
                         val rewardValue = totalBonus
-                        map[R.id.assets_valueP.toString()] =
-                            formatAmountToString(amountOfAsset)
-                        map[R.id.rewards_value.toString()] =
-                            formatAmountToString(rewardValue)
-                        map[R.id.profit_loss_value.toString()] =
-                            formatAmountToString(amountOfAsset - total.toDouble())
-                        map[R.id.money_spent_value.toString()] = totalMoneySpent
+                        ParseData.standard(
+                            moneySpentText = totalMoneySpent,
+                            assetsText = formatAmountToString(amountOfAsset),
+                            rewardsText = formatAmountToString(rewardValue),
+                            profitLossText = formatAmountToString(
+                                amountOfAsset - total.toDouble()
+                            ),
+                        )
                     } else {
-                        map[R.id.assets_valueP.toString()] = "no internet connection"
-                        map[R.id.rewards_value.toString()] = "no internet connection"
-                        map[R.id.profit_loss_value.toString()] = "no internet connection"
-                        map[R.id.money_spent_value.toString()] = totalMoneySpent
+                        ParseData.standard(
+                            moneySpentText = totalMoneySpent,
+                            assetsText = WalletAssets.NO_INTERNET,
+                            rewardsText = WalletAssets.NO_INTERNET,
+                            profitLossText = WalletAssets.NO_INTERNET,
+                        )
                     }
                 }
-                map
             } catch (e: Exception) {
                 e.message?.let { FileLog.w("ParseMap", it) }
                 null

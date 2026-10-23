@@ -75,6 +75,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import androidx.compose.ui.text.LinkAnnotation
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.price.IntradayHistory
 import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryProvider
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
@@ -93,11 +94,12 @@ import java.time.ZoneOffset
 fun ParseScreen(
     isParsing: Boolean,
     /**
-     * Core map keys (the same ids as the old layout) to display values;
-     * null = hidden, the special tokens "no internet connection" and
-     * "prices loading" are re-mapped to friendly strings.
+     * Typed parse cards (null = not posted yet); a null field = row
+     * hidden. The transport tokens "no internet connection" and
+     * "prices loading" arrive in the fields and are re-mapped to friendly
+     * strings ([displayValue]).
      */
-    values: Map<String, String?>,
+    data: ParseData?,
     /** P/L value rendered in this color (already resolved for the sign). */
     profitLossColor: Color,
     /** Attribution footer stays up unless the core explicitly hid it (no crypto). */
@@ -123,12 +125,6 @@ fun ParseScreen(
     onAllTransactionsClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    // Same key expressions the data layer (CoreService/AppModel) writes with.
-    val keyAssets = R.id.assets_valueP.toString()
-    val keySpent = R.id.money_spent_value.toString()
-    val keyPl = R.id.profit_loss_value.toString()
-    val keyRewards = R.id.rewards_value.toString()
-
     // #47: single header bar — the activity's action bar carries the
     // settings action (view-scoped menu provider in ParseFragment). The
     // old Compose gear row here doubled the header and left a dead band
@@ -172,14 +168,14 @@ fun ParseScreen(
                     iconRes = R.drawable.ic_savings_24,
                     tint = MaterialTheme.colorScheme.primary,
                     label = stringResource(R.string.assets_value_label),
-                    value = displayValue(context, values[keyAssets]),
+                    value = displayValue(context, data?.assets),
                 )
                 MetricCard(
                     modifier = Modifier.weight(1f),
                     iconRes = R.drawable.ic_spending_24,
                     tint = MaterialTheme.colorScheme.secondary,
                     label = stringResource(R.string.money_spent_label),
-                    value = displayValue(context, values[keySpent]),
+                    value = displayValue(context, data?.moneySpent),
                 )
             }
             Spacer(Modifier.height(8.dp))
@@ -192,15 +188,15 @@ fun ParseScreen(
                     iconRes = R.drawable.ic_trending_24,
                     tint = MaterialTheme.colorScheme.tertiary,
                     label = stringResource(R.string.profit_loss),
-                    value = displayValue(context, values[keyPl]),
-                    valueColor = if (values[keyPl] != null) profitLossColor else null,
+                    value = displayValue(context, data?.profitLoss),
+                    valueColor = if (data?.profitLoss != null) profitLossColor else null,
                 )
                 MetricCard(
                     modifier = Modifier.weight(1f),
                     iconRes = R.drawable.ic_rewards_24,
                     tint = MaterialTheme.colorScheme.tertiary,
                     label = stringResource(R.string.rewards_earned),
-                    value = displayValue(context, values[keyRewards]),
+                    value = displayValue(context, data?.rewards),
                 )
             }
 
