@@ -1,7 +1,8 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import at.msd.friehs_bicha.cdcsvparser.BuildConfig
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -49,7 +50,7 @@ object PriceApi {
             // keyless. Read per request so a changed key applies without a
             // restart; the header is only ever set for *.coingecko.com.
             val request = chain.request()
-            val appContext = runCatching { InstanceVars.applicationContext }.getOrNull()
+            val appContext = runCatching { App.instance }.getOrNull()
             val key = if (appContext != null) {
                 PriceApiKey.coinGeckoKey(appContext)
             } else {

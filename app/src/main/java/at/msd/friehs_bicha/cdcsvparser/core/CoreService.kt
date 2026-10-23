@@ -1,12 +1,13 @@
 package at.msd.friehs_bicha.cdcsvparser.core
 
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppStatus
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
@@ -16,8 +17,6 @@ import at.msd.friehs_bicha.cdcsvparser.app.DataTypes
 import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
 import at.msd.friehs_bicha.cdcsvparser.app.TxAppFactory
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.CCDBTransaction
@@ -116,12 +115,11 @@ class CoreService : Service() {
             return super.onStartCommand(null, flags, startId)
         }
 
-        if (AppModelManager.isInitialized()) {  // get AppModel from AppModelManager if it is already initialized
-            appModel = AppModelManager.getInstance()
+        if (appModel != null) {
             FileLog.i(TAG, "AppModel already initialized.")
         }
 
-        useCpp = PreferenceHelper.getUseCpp(applicationContext)
+        useCpp = PreferenceHelper.getUseCpp(App.instance)
 
         // BEFORE the launch: if this line is missing while "Import
         // dispatched" is present, the intent never reached the component.
@@ -304,7 +302,6 @@ class CoreService : Service() {
                     isInitialized = true
                 } else {
                     appModel = AppModel(data, appType, false)
-                    AppModelManager.setInstance(appModel!!)
                 }
                 isInitialized = true
                 isRunning = true
@@ -376,12 +373,12 @@ class CoreService : Service() {
                         }
                         FileLog.d(TAG, "isRunning")
                         if (appModel == null) {
+                            // The app model lives on the companion itself now
+                            // (the old manager threw here for the same case).
                             FileLog.w(TAG, "AppModel is null")
-                            appModel = AppModelManager.getInstance()
-                            if (appModel == null) {
-                                FileLog.e(TAG, "AppModel is null")
-                                return@launch
-                            }
+                            throw IllegalStateException(
+                                "AppModel has not been initialized. Call setInstance() first."
+                            )
                         }
                         try {
                             withTimeout(60_000) {
@@ -444,7 +441,11 @@ class CoreService : Service() {
                             errorCounter.postValue((errorCounter.value ?: 0) + 1)
                             return@launch
                         }
-                        parsedDataLiveData.postValue(data!!)
+                        parsedDataLiveData.postValue(
+                            requireNotNull(data) {
+                                "parseData stayed null after the bounded retry"
+                            }
+                        )
 
                         val transactions_ = ArrayList<Transaction?>()
                         val cardTransactions_ = ArrayList<CroCardTransaction?>()
@@ -752,10 +753,10 @@ class CoreService : Service() {
             return
         }
         try {
-            val walletDao = InstanceVars.db.walletDao()
-            val txDao = InstanceVars.db.transactionDao()
-            val cardWalletDao = InstanceVars.db.cardWalletDao()
-            val cardTransactionDao = InstanceVars.db.cardTransactionDao()
+            val walletDao = App.instance.db.walletDao()
+            val txDao = App.instance.db.transactionDao()
+            val cardWalletDao = App.instance.db.cardWalletDao()
+            val cardTransactionDao = App.instance.db.cardTransactionDao()
 
             // Delete before re-insert (children first, FK constraint): rows
             // whose ids were never re-imported must not survive as stale data.
@@ -776,7 +777,7 @@ class CoreService : Service() {
             cardTransactions?.let {
                 cardTransactionDao.insertAll(it)
             }
-            PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
+            PreferenceHelper.setIsAppModelSavedLocal(App.instance, true)
             FileLog.d(TAG, "Data saved to RoomsDB")
         } catch (e: Exception) {
             FileLog.e(TAG, "Failed to save data to Room DB: $e")
@@ -832,7 +833,7 @@ class CoreService : Service() {
                         waitLocalModelAndProvide()
                         rebuildCppStateFrom(csvFile)
                     }
-                } else if (AppModelManager.isInitialized()) {
+                } else if (appModel != null) {
                     // Fast-start fallback: no usable saved C++ state (first
                     // fast start after the save fix, or the last parse ran
                     // in Kotlin mode). Show the saved Room values via the
@@ -848,14 +849,14 @@ class CoreService : Service() {
             }
 
             false -> {
-                if (AppModelManager.isInitialized()) {
+                if (appModel != null) {
                     isInitialized = true
                     isRunning = true
                     FileLog.d(TAG, "AppModel already initialized.")
                     provideDataToActivity()
                 } else {
-                    if (PreferenceHelper.getIsAppModelSavedLocal(applicationContext)) {
-                        AppModelManager.setInstance(AppModel())
+                    if (PreferenceHelper.getIsAppModelSavedLocal(App.instance)) {
+                        appModel = AppModel()
                         isInitialized = true
                         waitLocalModelAndProvide()
                     } else {
@@ -1017,7 +1018,7 @@ class CoreService : Service() {
                 it["cardTransactions"] as ArrayList<HashMap<String, *>>?
 
             PreferenceHelper.setUseStrictType(
-                InstanceVars.applicationContext,
+                App.instance,
                 appSettings.useStrictType
             )
 
@@ -1069,7 +1070,7 @@ class CoreService : Service() {
                     }
 
                     false -> {
-                        val appModel = AppModel(
+                        val newAppModel = AppModel(
                             dbWallets,
                             dbOutsideWallets,
                             dbTransactions,
@@ -1077,7 +1078,7 @@ class CoreService : Service() {
                             0,
                             appSettings.useStrictType
                         )
-                        AppModelManager.setInstance(appModel)
+                        CoreService.appModel = newAppModel
                     }
                 }
             }
@@ -1111,7 +1112,9 @@ class CoreService : Service() {
                     }
 
                     false -> {
-                        AppModelManager.getInstance()?.cardApp = TxAppFactory.createTxApp(
+                        requireNotNull(appModel) {
+                            "AppModel has not been initialized. Call setInstance() first."
+                        }.cardApp = TxAppFactory.createTxApp(
                             AppType.CroCard,
                             AppStatus.importFromFB,
                             appSettings.useStrictType,
@@ -1160,7 +1163,7 @@ class CoreService : Service() {
                     }
 
                     false -> {
-                        val appModel = AppModel(
+                        val newAppModel = AppModel(
                             dbCardWallets,
                             null,
                             dbCardTransactions,
@@ -1168,7 +1171,7 @@ class CoreService : Service() {
                             0,
                             appSettings.useStrictType
                         )
-                        AppModelManager.setInstance(appModel)
+                        CoreService.appModel = newAppModel
                     }
                 }
             }
@@ -1399,7 +1402,7 @@ class CoreService : Service() {
 
 
         val path: String
-            get() = applicationContext.filesDir.absolutePath
+            get() = App.instance.filesDir.absolutePath
         /**
          * Directory of the persisted C++ state (plan 003, fast start).
          * Trailing slash required: the core writes `<dirPath> +
@@ -1429,10 +1432,10 @@ class CoreService : Service() {
          * Starts the CoreService
          */
         fun startService(useCpp: Boolean = true) {
-            val intent = Intent(applicationContext, CoreService::class.java)
+            val intent = Intent(App.instance, CoreService::class.java)
             intent.action = ACTION_START_SERVICE
-            PreferenceHelper.setUseCpp(applicationContext, useCpp)
-            applicationContext.startService(intent)
+            PreferenceHelper.setUseCpp(App.instance, useCpp)
+            App.instance.startService(intent)
         }
 
         /**
@@ -1442,9 +1445,9 @@ class CoreService : Service() {
          * `onStartCommand`, and fast start must not flip it.
          */
         fun startServiceFromLocal() {
-            val intent = Intent(applicationContext, CoreService::class.java)
+            val intent = Intent(App.instance, CoreService::class.java)
             intent.action = ACTION_START_SERVICE
-            applicationContext.startService(intent)
+            App.instance.startService(intent)
         }
 
         /**
@@ -1458,7 +1461,7 @@ class CoreService : Service() {
             check(data != null || fileName != null) {
                 "startServiceWithData needs data or a file name"
             }
-            val intent = Intent(applicationContext, CoreService::class.java)
+            val intent = Intent(App.instance, CoreService::class.java)
             intent.action = ACTION_START_SERVICE_WITH_DATA
             val file = fileName
             when {
@@ -1466,7 +1469,7 @@ class CoreService : Service() {
                 else -> intent.putExtra("data", data!!)
             }
             intent.putExtra("mode", mode)
-            applicationContext.startService(intent)
+            App.instance.startService(intent)
         }
 
 
@@ -1515,9 +1518,9 @@ class CoreService : Service() {
         fun saveDataToFirebase() {
             if (isCoreInitialized) {
                 FileLog.i("FirebaseUtil", "Saving data to Firebase")
-                applicationContext.startService(
+                App.instance.startService(
                     Intent(
-                        applicationContext,
+                        App.instance,
                         CoreService::class.java
                     ).apply {
                         action = ACTION_SAVE_DATA_TO_FIREBASE
@@ -1530,7 +1533,7 @@ class CoreService : Service() {
                     // Fire-and-forget on the IO pool: touches only the
                     // Firebase SDK and the Kotlin model, never the C++ core.
                     CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-                        FirebaseUtil(applicationContext).saveDataToFirebase(
+                        FirebaseUtil(App.instance).saveDataToFirebase(
                             it
                         )
                     }
@@ -1546,13 +1549,13 @@ class CoreService : Service() {
             val uid = FirebaseAuth.getInstance().currentUser?.uid
             if (uid == null) {
                 FileLog.e(TAG, "saveToFireBase: user is null")
-                Toast.makeText(applicationContext, R.string.error_saving_data, Toast.LENGTH_SHORT).show()
+                Toast.makeText(App.instance, R.string.error_saving_data, Toast.LENGTH_SHORT).show()
                 return
             }
             val appSettings = AppSettings(
                 uid,
-                PreferenceHelper.getSelectedType(applicationContext),
-                PreferenceHelper.getUseStrictType(applicationContext)
+                PreferenceHelper.getSelectedType(App.instance),
+                PreferenceHelper.getUseStrictType(App.instance)
             )
             if (hasCardTx) appSettings.hasCardTx = "true"
             if (hasCryptoTx) appSettings.hasCryptoTx = "true"
@@ -1594,8 +1597,8 @@ class CoreService : Service() {
                 .addOnCompleteListener { task ->
                     handleFirebaseTaskResult(
                         task,
-                        applicationContext.getString(R.string.data_saved_successfully),
-                        applicationContext.getString(R.string.error_saving_data)
+                        App.instance.getString(R.string.data_saved_successfully),
+                        App.instance.getString(R.string.error_saving_data)
                     )
                 }
         }
@@ -1610,10 +1613,10 @@ class CoreService : Service() {
             errorMessage: String
         ) {
             if (task.isSuccessful) {
-                Toast.makeText(applicationContext, successMessage, Toast.LENGTH_SHORT).show()
+                Toast.makeText(App.instance, successMessage, Toast.LENGTH_SHORT).show()
                 FileLog.i("FirebaseUtil", successMessage)
             } else {
-                Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show()
+                Toast.makeText(App.instance, errorMessage, Toast.LENGTH_SHORT).show()
                 FileLog.e("FirebaseUtil", "Error: ${task.exception}")
             }
         }

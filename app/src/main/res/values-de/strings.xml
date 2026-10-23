@@ -22,6 +22,7 @@
     <string name="history_purge_confirm_message">Dies löscht %1$d Uploads älter als 30 Tage. Sie werden von diesem Gerät entfernt und können nicht wiederhergestellt werden.</string>
     <string name="history_purged_count">%1$d Dateien gelöscht</string>
     <string name="history_updated_existing">Gleicher Upload wie bereits vorhanden - Eintrag aktualisiert</string>
+    <string name="history_file_missing">Die Datei dieses Uploads existiert nicht mehr</string>
     <string name="overview_charts">Diagramme</string>
     <string name="series_spent">Ausgaben</string>
     <string name="series_portfolio_value">Vermögen</string>

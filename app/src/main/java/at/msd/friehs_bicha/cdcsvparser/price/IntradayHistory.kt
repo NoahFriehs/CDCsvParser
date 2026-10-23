@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.contentOrNull
@@ -54,7 +55,7 @@ class IntradayHistory(private val prices: CryptoPricesCryptoCompare) {
     data class IntradayData(val anchorDay: Long, val points: List<Pair<Long, Double>>)
 
     private val cacheFile: File
-        get() = File(InstanceVars.applicationContext.filesDir, "history_prices_intraday.json")
+        get() = File(App.instance.filesDir, "history_prices_intraday.json")
 
     private val memo = HashMap<String, IntradayData>()
     private var loaded = false

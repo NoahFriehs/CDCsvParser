@@ -212,7 +212,13 @@ class MainFragment : Fragment() {
     private fun startParseFromFile(fileName: String) {
         showProgressDialog()
         try {
-            val selectedFile = files!!.first { it.name == fileName }
+            // The entry came from this very directory; a miss means the file
+            // vanished since the list was drawn - fail with a message the
+            // user can read (the catch below turns it into a snackbar).
+            val selectedFile = files?.find { it.name == fileName }
+                ?: throw IllegalStateException(
+                    getString(R.string.history_file_missing)
+                )
             val mode = PreferenceHelper.getSelectedType(requireContext()).ordinal
             // Trigger-side pairing point for the stall adjudication (#54):
             // logcat/file then shows dispatched → start command → parsing.

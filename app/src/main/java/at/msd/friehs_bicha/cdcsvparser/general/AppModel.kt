@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.general
 
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import android.content.Intent
 import android.graphics.Color
 import at.msd.friehs_bicha.cdcsvparser.R
@@ -7,8 +9,6 @@ import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.core.WalletAssets
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
@@ -63,8 +63,8 @@ class AppModel : BaseAppModel, Serializable {
         txApp = app
         this.appType = app.appType
 
-        if (PreferenceHelper.getIsDataLocal(applicationContext)) saveAppModelLocal()
-        else PreferenceHelper.setIsAppModelSavedLocal(applicationContext, false)
+        if (PreferenceHelper.getIsDataLocal(App.instance)) saveAppModelLocal()
+        else PreferenceHelper.setIsAppModelSavedLocal(App.instance, false)
         isRunning = true
         if (appType == AppType.CroCard) {
             cardApp = app as CardTxApp
@@ -109,19 +109,19 @@ class AppModel : BaseAppModel, Serializable {
                 DataTypes.amountTxFailed to amountTxFailed
             )
         )
-        if (PreferenceHelper.getIsDataLocal(applicationContext)) saveAppModelLocal()
+        if (PreferenceHelper.getIsDataLocal(App.instance)) saveAppModelLocal()
         isRunning = true
     }
 
 
-    constructor() : super(PreferenceHelper.getSelectedType(applicationContext)) {
-        if (PreferenceHelper.getIsDataLocal(applicationContext) && PreferenceHelper.getIsAppModelSavedLocal(applicationContext)) {
+    constructor() : super(PreferenceHelper.getSelectedType(App.instance)) {
+        if (PreferenceHelper.getIsDataLocal(App.instance) && PreferenceHelper.getIsAppModelSavedLocal(App.instance)) {
             // The Room load runs on a background scope; until it finished
             // (isFullyLoaded) the model is half-empty and the fast start must
             // not post it (plan 003).
             loadAppModelLocal()
         }
-        else PreferenceHelper.setIsAppModelSavedLocal(applicationContext,false)
+        else PreferenceHelper.setIsAppModelSavedLocal(App.instance,false)
         isRunning = true
     }
 
@@ -308,10 +308,10 @@ class AppModel : BaseAppModel, Serializable {
     private fun saveAppModelLocal()
     {
         appModelScope.launch {
-            val walletDao = InstanceVars.db.walletDao()
-            val txDao = InstanceVars.db.transactionDao()
-            val cardWalletDao = InstanceVars.db.cardWalletDao()
-            val cardTransactionDao = InstanceVars.db.cardTransactionDao()
+            val walletDao = App.instance.db.walletDao()
+            val txDao = App.instance.db.transactionDao()
+            val cardWalletDao = App.instance.db.cardWalletDao()
+            val cardTransactionDao = App.instance.db.cardTransactionDao()
 
             if (txApp is StandardTxApp) {
                 walletDao.deleteAll()
@@ -320,7 +320,7 @@ class AppModel : BaseAppModel, Serializable {
                 walletDao.insertAll(txApp!!.outsideWallets)
                 txDao.insertAll(txApp!!.transactions)
             }
-            PreferenceHelper.setIsAppModelSavedLocal(applicationContext, true)
+            PreferenceHelper.setIsAppModelSavedLocal(App.instance, true)
 
             if (cardApp == null) return@launch
             cardWalletDao.deleteAll()
@@ -352,11 +352,11 @@ class AppModel : BaseAppModel, Serializable {
         isFullyLoaded = false
         appModelScope.launch {
             try {
-            val useStrictType = PreferenceHelper.getUseStrictType(applicationContext)
-            val ws = InstanceVars.db.walletDao().getAllWallets()
-            val txs = InstanceVars.db.transactionDao().getAllTransactions()
-            val cws = InstanceVars.db.cardWalletDao().getAllWallets()
-            val cts = InstanceVars.db.cardTransactionDao().getAllTransactions()
+            val useStrictType = PreferenceHelper.getUseStrictType(App.instance)
+            val ws = App.instance.db.walletDao().getAllWallets()
+            val txs = App.instance.db.transactionDao().getAllTransactions()
+            val cws = App.instance.db.cardWalletDao().getAllWallets()
+            val cts = App.instance.db.cardTransactionDao().getAllTransactions()
 
             if (ws.isEmpty() && txs.isEmpty() && cws.isEmpty() && cts.isEmpty()) {
                 FileLog.e("AppModel", "loadAppModelLocal: no data found in db")

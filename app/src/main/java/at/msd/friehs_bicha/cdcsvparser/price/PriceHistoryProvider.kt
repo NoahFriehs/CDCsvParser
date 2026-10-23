@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -44,7 +45,7 @@ class PriceHistoryProvider(
             // keyless. The provider is re-created on every screen visit,
             // so a changed key takes effect on the next one.
             CryptoCompareHistorySource(
-                apiKey = PriceApiKey.cryptoCompareKey(InstanceVars.applicationContext),
+                apiKey = PriceApiKey.cryptoCompareKey(App.instance),
             ),
         ),
     ),
@@ -57,7 +58,7 @@ class PriceHistoryProvider(
     }
 
     private val cacheFile: File by lazy {
-        File(InstanceVars.applicationContext.filesDir, "history_prices.json")
+        File(App.instance.filesDir, "history_prices.json")
     }
 
     /** In-memory copy of the cache file, loaded on demand. */

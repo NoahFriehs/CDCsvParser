@@ -1,7 +1,8 @@
 package at.msd.friehs_bicha.cdcsvparser.app
 
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import android.widget.Toast
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 
 /**
@@ -52,7 +53,7 @@ class AppSettings(var userID: String, var appType: AppType, var useStrictType: B
             //when lower than this than it does not work with the db, has to switch to older version
             val text =
                 "Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload."
-            Toast.makeText(applicationContext, text, Toast.LENGTH_LONG).show()
+            Toast.makeText(App.instance, text, Toast.LENGTH_LONG).show()
             return false
         }
         return true

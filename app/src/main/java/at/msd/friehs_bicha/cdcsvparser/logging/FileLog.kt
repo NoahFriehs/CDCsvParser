@@ -1,7 +1,8 @@
 package at.msd.friehs_bicha.cdcsvparser.logging
 
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import android.util.Log
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars.applicationContext
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import java.io.BufferedWriter
 import java.io.File
@@ -61,21 +62,21 @@ class FileLog {
             logIsEnabled = logEnabled
             if (!logIsEnabled) return isInitialized
             LOG_FILENAME = if (logFilename == null) {
-                PreferenceHelper.getLogFilename(applicationContext)
+                PreferenceHelper.getLogFilename(App.instance)
             } else {
-                PreferenceHelper.setLogFilename(applicationContext, logFilename)
+                PreferenceHelper.setLogFilename(App.instance, logFilename)
                 logFilename
             }
             if (maxLogLevel != -1 && (maxLogLevel < Log.VERBOSE || maxLogLevel > Log.ERROR)) {
                 e("FileLog", "Invalid min log level $maxLogLevel")
                 return false
             }
-            val storedLevel = PreferenceHelper.getMaxLogLevel(applicationContext)
+            val storedLevel = PreferenceHelper.getMaxLogLevel(App.instance)
 
             minLogLevel = if (maxLogLevel == -1) {
                 storedLevel
             } else {
-                PreferenceHelper.setMaxLogLevel(applicationContext, maxLogLevel)
+                PreferenceHelper.setMaxLogLevel(App.instance, maxLogLevel)
                 maxLogLevel
             }
 
@@ -102,7 +103,7 @@ class FileLog {
                             // ignore
                         }
                         buffer = BufferedWriter(
-                            FileWriter(File(applicationContext.filesDir, LOG_FILENAME), true)
+                            FileWriter(File(App.instance.filesDir, LOG_FILENAME), true)
                         )
                         openEpoch = epoch
                         sinceFlush = 0
@@ -156,7 +157,7 @@ class FileLog {
                 return
             }
             minLogLevel = maxLogLevel
-            PreferenceHelper.setMaxLogLevel(applicationContext, maxLogLevel)
+            PreferenceHelper.setMaxLogLevel(App.instance, maxLogLevel)
         }
 
         fun getMaxLogLevel(): Int {
@@ -178,12 +179,12 @@ class FileLog {
         fun setLogFilename(logFilename: String) {
             LOG_FILENAME = logFilename
             logFileEpoch++
-            PreferenceHelper.setLogFilename(applicationContext, logFilename)
+            PreferenceHelper.setLogFilename(App.instance, logFilename)
             createLogFileIfNeeded()
         }
 
         private fun createLogFileIfNeeded() {
-            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
+            val logFile = File(App.instance.filesDir, LOG_FILENAME)
             if (!logFile.exists()) {
                 logFile.parentFile?.mkdirs()
                 logFile.createNewFile()
@@ -202,24 +203,24 @@ class FileLog {
         }
 
         fun getLogSize(): Int {
-            return File(applicationContext.filesDir, LOG_FILENAME).useLines { lines -> lines.count() }
+            return File(App.instance.filesDir, LOG_FILENAME).useLines { lines -> lines.count() }
         }
 
         fun getLog(): String {
-            return File(applicationContext.filesDir, LOG_FILENAME).useLines { lines -> lines.joinToString("\n") }
+            return File(App.instance.filesDir, LOG_FILENAME).useLines { lines -> lines.joinToString("\n") }
         }
 
         fun getLogLines(): List<String> {
-            return File(applicationContext.filesDir, LOG_FILENAME).useLines { lines -> lines.toList() }
+            return File(App.instance.filesDir, LOG_FILENAME).useLines { lines -> lines.toList() }
         }
 
         fun clearLog() {
-            val logFile = File(applicationContext.filesDir, LOG_FILENAME)
+            val logFile = File(App.instance.filesDir, LOG_FILENAME)
             PrintWriter(BufferedWriter(FileWriter(logFile, false))).close()
         }
 
         fun getLogFiles(): File {
-            return File(applicationContext.filesDir, LOG_FILENAME)
+            return File(App.instance.filesDir, LOG_FILENAME)
         }
 
         /**

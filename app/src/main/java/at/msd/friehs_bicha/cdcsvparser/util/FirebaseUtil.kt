@@ -1,5 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.util
 
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
@@ -12,7 +14,6 @@ import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
@@ -124,7 +125,7 @@ class FirebaseUtil(private val context: Context) {
 
             appSettings?.get("useStrictType")?.let {
                 if (it is Boolean) {
-                    PreferenceHelper.setUseStrictType(InstanceVars.applicationContext, it)
+                    PreferenceHelper.setUseStrictType(App.instance, it)
                 } else {
                     FileLog.w("FirebaseUtil", "useStrictType missing or not a Boolean")
                 }
@@ -148,8 +149,8 @@ class FirebaseUtil(private val context: Context) {
                 return@getUserDataFromFirestore
             }
 
-            InstanceVars.applicationContext.startService(
-                Intent(InstanceVars.applicationContext, CoreService::class.java)
+            App.instance.startService(
+                Intent(App.instance, CoreService::class.java)
                     .apply { action = core.ACTION_START_SERVICE_WITH_FIREBASE_DATA })
         }
     }
@@ -247,8 +248,8 @@ class FirebaseUtil(private val context: Context) {
                 }
                 .addOnFailureListener { exception ->
                     Toast.makeText(
-                        InstanceVars.applicationContext,
-                        InstanceVars.applicationContext.getString(R.string.error_loading_data),
+                        App.instance,
+                        App.instance.getString(R.string.error_loading_data),
                         Toast.LENGTH_SHORT
                     ).show()
                     FileLog.e("FirebaseUtil", "Error getting documents: $exception")

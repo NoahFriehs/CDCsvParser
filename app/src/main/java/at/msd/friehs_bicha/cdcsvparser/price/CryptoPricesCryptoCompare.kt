@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.price
 
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -80,7 +81,7 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     /** App-private `symbol_id_cache.json`; null when no context is available yet. */
     private val idCacheFile: File? by lazy {
         try {
-            File(InstanceVars.applicationContext.filesDir, "symbol_id_cache.json")
+            File(App.instance.filesDir, "symbol_id_cache.json")
         } catch (e: Exception) {
             FileLog.d(TAG_CG, "No app context yet; the id cache stays in memory only.")
             null

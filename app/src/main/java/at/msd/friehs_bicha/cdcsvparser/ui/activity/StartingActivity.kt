@@ -1,17 +1,17 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.activity
 
+import at.msd.friehs_bicha.cdcsvparser.App
+
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import at.msd.friehs_bicha.cdcsvparser.MainActivity
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
 import at.msd.friehs_bicha.cdcsvparser.core.Core
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
-import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
@@ -32,10 +32,8 @@ class StartingActivity : ComponentActivity() {
         setContentView(R.layout.activity_starting)
         EdgeToEdge.enable(this, findViewById(android.R.id.content))
 
-        InstanceVars.init(applicationContext)
-
-        if (PreferenceHelper.getFastStartEnabled(applicationContext) ||
-            !PreferenceHelper.getIsFirstStart(applicationContext)
+        if (PreferenceHelper.getFastStartEnabled(App.instance) ||
+            !PreferenceHelper.getIsFirstStart(App.instance)
         ) {
             return fastStart()
         } else {
@@ -64,13 +62,12 @@ class StartingActivity : ComponentActivity() {
         // core saves it after every parse since the save fix); the Room
         // local model (built here) is the data for Kotlin core mode and
         // the fallback source when the C++ save state is missing.
-        val isLocal = PreferenceHelper.getFastStartEnabled(applicationContext) &&
-            PreferenceHelper.getIsDataLocal(applicationContext) &&
-            PreferenceHelper.getIsAppModelSavedLocal(applicationContext)
+        val isLocal = PreferenceHelper.getFastStartEnabled(App.instance) &&
+            PreferenceHelper.getIsDataLocal(App.instance) &&
+            PreferenceHelper.getIsAppModelSavedLocal(App.instance)
         if (isLocal) {
             Benchmarker.start()
-            AppModelManager.setInstance(AppModel())
-            CoreService.appModel = AppModelManager.getInstance()
+            CoreService.appModel = AppModel()
             // No core-mode persist: fast start must not flip the user's
             // "Core Mode" setting (the old startService(false) did).
             core.startServiceFromLocal()

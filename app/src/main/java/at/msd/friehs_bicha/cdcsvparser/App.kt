@@ -1,6 +1,8 @@
 package at.msd.friehs_bicha.cdcsvparser
 
 import android.app.Application
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.db.AppDatabase
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.work.PriceRefreshWorker
@@ -8,18 +10,43 @@ import java.io.PrintWriter
 import java.io.StringWriter
 
 /**
- * Application entry point: boots the crash hook (plan 007 A2), the
- * [PreferenceHelper] (DataStore) cache and the periodic price-refresh
- * [PriceRefreshWorker] before any activity runs. `InstanceVars` stays
- * owned by the activities/fragments that need the DB (unchanged behavior).
+ * Application entry point: boots the crash hook, then the app
+ * instances (logging + Room DB + the core library probe: this class is
+ * their single owner — the old `InstanceVars` holder is gone),
+ * the [PreferenceHelper] (DataStore) cache and the periodic
+ * price-refresh [PriceRefreshWorker] before any activity runs.
  */
 class App : Application() {
+
+    /** The Room database (owned here; single source for all DAO access). */
+    lateinit var db: AppDatabase
+        private set
+
     override fun onCreate() {
         super.onCreate()
         // First, so an early-startup failure still leaves a line behind.
         installCrashHook()
+        initAppInstances()
         PreferenceHelper.init(this)
         PriceRefreshWorker.enqueue(this)
+    }
+
+    /**
+     * The app-wide instances, in the old `InstanceVars.init` order
+     * (logging, DB, core-library probe). Runs in `onCreate`, i.e. before
+     * the first activity — strictly earlier than the old
+     * activity-driven init, which is what every consumer already
+     * assumed.
+     */
+    private fun initAppInstances() {
+        instance = this
+        FileLog.init()
+        val db = AppDatabase.getInstance(applicationContext)
+        if (db == null) {
+            throw Exception("Database not initialized")
+        }
+        this.db = db
+        CoreService.isInitialized // init core service companion to check for .so
     }
 
     /**
@@ -47,5 +74,11 @@ class App : Application() {
             }
             previous?.uncaughtException(thread, throwable)
         }
+    }
+
+    companion object {
+        /** The process-wide application instance (the `App.instance` context). */
+        lateinit var instance: App
+            private set
     }
 }
