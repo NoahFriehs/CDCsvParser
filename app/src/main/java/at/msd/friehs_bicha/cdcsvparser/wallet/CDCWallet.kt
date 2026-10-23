@@ -23,7 +23,9 @@ class CDCWallet : Wallet, Serializable {
         this.isOutsideWallet = isOutsideWallet!!
     }
 
-    constructor(DBWallet: DBWallet?) : super(DBWallet)
+    // Non-null pass-through (no callers existed for the nullable variant -
+    // pure type-safety cleanup, no behavior change).
+    constructor(DBWallet: DBWallet) : super(DBWallet)
     constructor(
         walletId: Long,
         currencyType: String,

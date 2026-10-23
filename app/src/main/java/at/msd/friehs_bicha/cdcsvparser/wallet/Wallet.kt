@@ -135,8 +135,13 @@ open class Wallet : Serializable {
         isOutsideWallet = wallet.isOutsideWallet
     }
 
-    constructor(wallet: DBWallet?) {
-        walletId = wallet!!.walletId.toInt()
+    /**
+     * Copy from the Firestore map holder. Non-null parameter (no `!!`)
+     * - had no callers as the nullable variant, so this is a pure type-
+     * safety cleanup with no behavior change.
+     */
+    constructor(wallet: DBWallet) {
+        walletId = wallet.walletId.toInt()
         currencyType = wallet.currencyType
         amount = BigDecimal(wallet.amount)
         amountBonus = BigDecimal(wallet.amountBonus)
