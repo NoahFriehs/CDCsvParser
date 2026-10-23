@@ -4,7 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.Core
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,12 +23,16 @@ sealed interface TransactionDetailState {
     data object Missing : TransactionDetailState
 }
 
-class TransactionDetailViewModel(private val transactionId: Int) : ViewModel() {
+class TransactionDetailViewModel(
+    private val transactionId: Int,
+    /** The core surface this view-model observes. */
+    private val core: CoreSource = Core,
+) : ViewModel() {
 
     val state: StateFlow<TransactionDetailState> =
         combine(
-            CoreService.transactionsLiveData.asFlow(),
-            CoreService.cardTransactionsLiveData.asFlow()
+            core.transactionsLiveData.asFlow(),
+            core.cardTransactionsLiveData.asFlow()
         ) { crypto, card ->
             val all: List<Transaction> =
                 (crypto ?: emptyList()) + (card ?: emptyList())

@@ -15,7 +15,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.Core
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.WalletViewScreen
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
@@ -28,6 +29,10 @@ import kotlinx.coroutines.launch
  * and sortable list of all wallets, backed by [WalletsViewModel].
  */
 class WalletViewFragment : Fragment() {
+
+    /** The core surface this fragment reads. */
+    internal var core: CoreSource = Core
+        private set
 
     private val viewModel: WalletsViewModel by viewModels()
     private val _rows = mutableStateOf<List<WalletRow>>(emptyList())
@@ -43,7 +48,7 @@ class WalletViewFragment : Fragment() {
         // Rows render on the main thread from the 5-minute price cache; if
         // that gap started while this screen was inactive, refresh in the
         // background (stale values keep showing until the data posts back).
-        CoreService.refreshPricesIfStale()
+        core.refreshPricesIfStale()
 
         return ComposeView(requireContext()).apply {
             setContent {

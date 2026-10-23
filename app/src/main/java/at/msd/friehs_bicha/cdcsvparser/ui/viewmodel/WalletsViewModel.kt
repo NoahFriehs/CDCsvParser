@@ -3,7 +3,8 @@ package at.msd.friehs_bicha.cdcsvparser.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.Core
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletSortKey
 import at.msd.friehs_bicha.cdcsvparser.ui.display.sortWalletRows
@@ -22,7 +23,10 @@ import kotlinx.coroutines.flow.stateIn
  * All wallets (outside wallets included when present) as pre-formatted
  * rows, with user-driven sorting and search applied on top.
  */
-class WalletsViewModel : ViewModel() {
+class WalletsViewModel(
+    /** The core surface this view-model observes. */
+    private val core: CoreSource = Core,
+) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
     private val sortKey = MutableStateFlow(WalletSortKey.AMOUNT)
@@ -30,8 +34,8 @@ class WalletsViewModel : ViewModel() {
 
     private val walletSource: Flow<List<Wallet>> =
         combine(
-            CoreService.allWalletsLiveData.asFlow(),
-            CoreService.walletsLiveData.asFlow()
+            core.allWalletsLiveData.asFlow(),
+            core.walletsLiveData.asFlow()
         ) { all, plain ->
             if (all?.isNullOrEmpty() == true) (plain ?: emptyList()) else (all ?: emptyList())
         }

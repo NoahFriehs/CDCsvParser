@@ -74,7 +74,8 @@ import com.github.mikephil.charting.utils.ColorTemplate
 import com.github.mikephil.charting.formatter.ValueFormatter
 import androidx.compose.ui.text.LinkAnnotation
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.Core
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.price.IntradayHistory
 import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryProvider
@@ -123,6 +124,8 @@ fun ParseScreen(
     noInternet: Boolean,
     onFilterClick: () -> Unit,
     onAllTransactionsClick: () -> Unit,
+    /** The core surface the chart frames read. */
+    core: CoreSource = Core,
 ) {
     val context = LocalContext.current
     // #47: single header bar — the activity's action bar carries the
@@ -231,6 +234,7 @@ fun ParseScreen(
                     historyProgress = historyProgress,
                     currentPrices = currentPrices,
                     noInternet = noInternet,
+                    core = core,
                 )
             }
 
@@ -349,6 +353,7 @@ private fun ChartPanel(
     historyProgress: Pair<Int, Int>?,
     currentPrices: Map<String, Double>,
     noInternet: Boolean,
+    core: CoreSource = Core,
 ) {
     val seriesData = remember(dailySeries) { parseDailySeries(dailySeries) }
     val walletData = remember(walletSeries) { parseWalletSeries(walletSeries) }
@@ -436,8 +441,8 @@ private fun ChartPanel(
         // SPENT flow line is windowed in Kotlin ([windowedSpentFlow]). The
         // stock rows stay windowed (the frame window ends at now by
         // design).
-        subDaily = CoreService.subDailySpentSeries(frame.windowSeconds, 0L) to
-            CoreService.subDailyWalletSeries(frame.windowSeconds, cut)
+        subDaily = core.subDailySpentSeries(frame.windowSeconds, 0L) to
+            core.subDailyWalletSeries(frame.windowSeconds, cut)
     }
     // Plan 009c: the STOCK series of an intraday frame, computed for ALL
     // series at once (independent of the single-series selection).

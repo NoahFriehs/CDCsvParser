@@ -20,7 +20,8 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.Core
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
@@ -43,6 +44,10 @@ import kotlinx.coroutines.launch
  * still updates the metric cards through the same observer.
  */
 class ParseFragment : Fragment() {
+
+    /** The core surface this fragment reads. */
+    internal var core: CoreSource = Core
+        private set
 
     private val timeoutHandler = Handler(Looper.getMainLooper())
     private val parseTimeout = Runnable {
@@ -110,6 +115,7 @@ class ParseFragment : Fragment() {
                         noInternet = _noInternet.value,
                         onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },
                         onAllTransactionsClick = { findNavController().navigate(R.id.transactionsFragment) },
+                        core = core,
                     )
                 }
             }
@@ -184,17 +190,17 @@ class ParseFragment : Fragment() {
     private fun displayInformation(view: View) {
         // The counter is cumulative across runs; only a value newer than the
         // one already replayed to this observer counts as an error of this run.
-        val initialErrors = CoreService.errorCounter.value ?: 0
-        CoreService.parsedDataLiveData.observe(viewLifecycleOwner) {
+        val initialErrors = core.errorCounter.value ?: 0
+        core.parsedDataLiveData.observe(viewLifecycleOwner) {
             timeoutHandler.removeCallbacks(parseTimeout)  // data arrived: nothing left to watch
             Benchmarker.stop()
             fillFromData(it)
             FileLog.d(TAG, "parsedDataLiveData changed")
             _isParsing.value = false
-            if (CoreService.lastFailedLines > 0) {
+            if (core.lastFailedLines > 0) {
                 Snackbar.make(
                     view,
-                    getString(R.string.unparsable_lines_skipped, CoreService.lastFailedLines),
+                    getString(R.string.unparsable_lines_skipped, core.lastFailedLines),
                     Snackbar.LENGTH_LONG
                 ).show()
             }
@@ -213,7 +219,7 @@ class ParseFragment : Fragment() {
         // view recreation, exactly like the cards. The writes mirror the
         // post - the rows are the truth for the current file, so a
         // genuinely empty series hides the panel again on file switches.
-        CoreService.chartSeriesLiveData.observe(viewLifecycleOwner) { series ->
+        core.chartSeriesLiveData.observe(viewLifecycleOwner) { series ->
             _dailySeries.value = series.daily
             _walletSeries.value = series.wallet
             FileLog.d(
@@ -229,7 +235,7 @@ class ParseFragment : Fragment() {
                 attachHistoryPass()
             }
         }
-        CoreService.errorCounter.observe(viewLifecycleOwner) { count ->
+        core.errorCounter.observe(viewLifecycleOwner) { count ->
             if (count == null || count <= initialErrors) return@observe
             timeoutHandler.removeCallbacks(parseTimeout)  // the error signal ended the run: nothing left to watch
             FileLog.w(TAG, "errorCounterLiveData changed: $count")

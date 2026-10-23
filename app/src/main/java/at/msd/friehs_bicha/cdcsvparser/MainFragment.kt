@@ -23,7 +23,9 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.HistoryDialogFragment
+import at.msd.friehs_bicha.cdcsvparser.core.Core
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.general.HistoryFileUtil
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
@@ -44,6 +46,13 @@ import java.util.Date
  * the progress dialog stay in the fragment.
  */
 class MainFragment : Fragment() {
+
+    /**
+     * The core surface this fragment reads: the process-wide
+     * implementation by default, injectable in tests.
+     */
+    internal var core: CoreSource = Core
+        private set
 
     var files: Array<File>? = null
     private var progressDialog: Dialog? = null
@@ -158,7 +167,7 @@ class MainFragment : Fragment() {
         super.onResume()
         // The parsed cards are strings from the last price pass; refresh them
         // in the background once the 5-minute cache TTL started to expire.
-        CoreService.refreshPricesIfStale()
+        core.refreshPricesIfStale()
         _isSignedIn.value = FirebaseAuth.getInstance().currentUser != null
         updateFiles()
         _newestHistoryFile.value = newestHistoryDisplayName()
@@ -209,7 +218,7 @@ class MainFragment : Fragment() {
             // logcat/file then shows dispatched → start command → parsing.
             FileLog.d(TAG, "Import dispatched: ${selectedFile.name} (${selectedFile.length()} bytes, mode $mode)")
             Benchmarker.start()
-            CoreService.startServiceWithData(null, mode, selectedFile.name)
+            core.startServiceWithData(null, mode, selectedFile.name)
             callParseView()
         } catch (e: Exception) {
             hideProgressDialog()
@@ -273,13 +282,13 @@ class MainFragment : Fragment() {
         val mode = PreferenceHelper.getSelectedType(requireContext()).ordinal
         FileLog.d(TAG, "Import dispatched: ${importFile.name} (${importFile.length()} bytes, mode $mode)")
         Benchmarker.start()
-        CoreService.startServiceWithData(null, mode, importFile.name)
+        core.startServiceWithData(null, mode, importFile.name)
         callParseView(showDedupNote = duplicate != null)
     }
 
     private fun callParseView(saveToDB: Boolean = true, showDedupNote: Boolean = false) {
         if (saveToDB && FirebaseAuth.getInstance().currentUser != null) {
-            CoreService.saveDataToFirebase()
+            core.saveDataToFirebase()
         }
         hideProgressDialog()
         findNavController().navigate(
@@ -296,7 +305,7 @@ class MainFragment : Fragment() {
     private fun loadFromFireBaseDB() {
         showProgressDialog()
         val intent = Intent(requireContext(), CoreService::class.java)
-        intent.action = CoreService.ACTION_START_SERVICE_WITH_FIREBASE_DATA
+        intent.action = core.ACTION_START_SERVICE_WITH_FIREBASE_DATA
         requireContext().startService(intent)
         callParseView(saveToDB = false)
     }

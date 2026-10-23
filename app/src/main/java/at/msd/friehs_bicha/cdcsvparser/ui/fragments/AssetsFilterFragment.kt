@@ -15,7 +15,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.R
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.Core
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.core.WalletAssets
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.AssetsFilterScreen
@@ -32,6 +33,10 @@ import kotlinx.coroutines.launch
  * + the wallet's transactions (argument: walletID, optional).
  */
 class AssetsFilterFragment : Fragment() {
+
+    /** The core surface this fragment reads. */
+    internal var core: CoreSource = Core
+        private set
 
     private val walletsViewModel: WalletsViewModel by viewModels()
     private val transactionsViewModel: TransactionsViewModel by viewModels()
@@ -98,7 +103,7 @@ class AssetsFilterFragment : Fragment() {
 
     private fun selectWallet(wallet: WalletRow) {
         selectedWalletId.value = wallet.walletId
-        _values.value = CoreService.onCoreThread { CoreService.getAssetMap(wallet.walletId) }
+        _values.value = core.onCoreThread { core.getAssetMap(wallet.walletId) }
         FileLog.d(TAG, "showing aggregates for wallet ${wallet.walletId} (${wallet.name})")
     }
 

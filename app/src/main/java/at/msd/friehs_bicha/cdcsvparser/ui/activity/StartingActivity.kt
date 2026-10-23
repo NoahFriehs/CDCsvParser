@@ -7,7 +7,9 @@ import androidx.lifecycle.lifecycleScope
 import at.msd.friehs_bicha.cdcsvparser.MainActivity
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.AppModelManager
+import at.msd.friehs_bicha.cdcsvparser.core.Core
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -21,6 +23,10 @@ import at.msd.friehs_bicha.cdcsvparser.util.EdgeToEdge
  * Activity for the starting page/ splash screen
  */
 class StartingActivity : ComponentActivity() {
+
+    /** The core surface this activity drives. */
+    private val core: CoreSource = Core
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_starting)
@@ -67,7 +73,7 @@ class StartingActivity : ComponentActivity() {
             CoreService.appModel = AppModelManager.getInstance()
             // No core-mode persist: fast start must not flip the user's
             // "Core Mode" setting (the old startService(false) did).
-            CoreService.startServiceFromLocal()
+            core.startServiceFromLocal()
         }
 
         val intent = Intent(this, MainActivity::class.java)

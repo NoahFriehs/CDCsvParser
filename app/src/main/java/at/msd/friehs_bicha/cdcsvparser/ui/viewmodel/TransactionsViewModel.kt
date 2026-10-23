@@ -3,7 +3,8 @@ package at.msd.friehs_bicha.cdcsvparser.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.Core
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
@@ -20,12 +21,15 @@ import kotlinx.coroutines.flow.stateIn
  * Flat, deduplicated, date-descending list of all (crypto + card)
  * transactions as pre-formatted rows.
  */
-class TransactionsViewModel : ViewModel() {
+class TransactionsViewModel(
+    /** The core surface this view-model observes. */
+    private val core: CoreSource = Core,
+) : ViewModel() {
 
     private val allTransactions: StateFlow<List<Transaction>> =
         combine(
-            CoreService.transactionsLiveData.asFlow(),
-            CoreService.cardTransactionsLiveData.asFlow()
+            core.transactionsLiveData.asFlow(),
+            core.cardTransactionsLiveData.asFlow()
         ) { crypto, card ->
             val all = (crypto ?: emptyList<Transaction>()) +
                 (card ?: emptyList<Transaction>())

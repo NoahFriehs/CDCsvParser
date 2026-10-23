@@ -21,7 +21,8 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.Core
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.logging.LogFilter
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
@@ -43,6 +44,10 @@ import com.google.firebase.ktx.Firebase
  * confirm dialogs + logout stay here.
  */
 class SettingsFragment : Fragment() {
+
+    /** The core surface this fragment reads. */
+    internal var core: CoreSource = Core
+        private set
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
     private val snackbarHostState = SnackbarHostState()
@@ -231,7 +236,7 @@ class SettingsFragment : Fragment() {
     }
 
     private fun logFile(fileIndex: Int): File =
-        if (fileIndex == 0) FileLog.getLogFiles() else File(CoreService.logFilePath)
+        if (fileIndex == 0) FileLog.getLogFiles() else File(core.logFilePath)
 
     /**
      * Plan 010: (re)read the chosen log tail on the IO dispatcher and

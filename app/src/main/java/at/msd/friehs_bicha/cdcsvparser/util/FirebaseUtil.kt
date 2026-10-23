@@ -7,7 +7,9 @@ import androidx.lifecycle.MutableLiveData
 import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
+import at.msd.friehs_bicha.cdcsvparser.core.Core
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.instance.InstanceVars
@@ -27,6 +29,9 @@ import com.google.firebase.ktx.Firebase
  * which blocked the calling thread and only sometimes worked.
  */
 class FirebaseUtil(private val context: Context) {
+
+    /** The core surface this utility publishes to. */
+    private val core: CoreSource = Core
 
     val userMapLiveData = MutableLiveData<HashMap<String, Any>?>()
     var userMapError = false
@@ -145,7 +150,7 @@ class FirebaseUtil(private val context: Context) {
 
             InstanceVars.applicationContext.startService(
                 Intent(InstanceVars.applicationContext, CoreService::class.java)
-                    .apply { action = CoreService.ACTION_START_SERVICE_WITH_FIREBASE_DATA })
+                    .apply { action = core.ACTION_START_SERVICE_WITH_FIREBASE_DATA })
         }
     }
 
@@ -163,7 +168,7 @@ class FirebaseUtil(private val context: Context) {
         val appType = AppType.safeFromName(txAppMap["appType"] as? String ?: "")
             ?: return
 
-        CoreService.firebaseDataLiveData.value?.add(
+        core.firebaseDataLiveData.value?.add(
             FirebaseAppmodel(
                 dbWallets,
                 dbOutsideWallets,
@@ -187,7 +192,7 @@ class FirebaseUtil(private val context: Context) {
         val appType = AppType.safeFromName(txAppMap["appType"] as? String ?: "")
             ?: return
 
-        CoreService.firebaseDataLiveData.value?.add(
+        core.firebaseDataLiveData.value?.add(
             FirebaseAppmodel(
                 dbWallets,
                 null,
