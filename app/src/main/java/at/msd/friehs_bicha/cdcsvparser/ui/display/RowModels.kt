@@ -75,6 +75,15 @@ enum class ProfitTrend { POSITIVE, NEUTRAL, NEGATIVE }
 data class WalletRow(
     val walletId: Int,
     val name: String,
+    // Raw currency type (the display [name] can differ for card wallets,
+    // e.g. "EUR -> EUR").
+    val currencyType: String,
+    // The internal fiat buffer: a plain (non-card) EUR wallet. Card wallets
+    // are all CroCardWallets, all denominated in fiat, and none of them is
+    // the buffer, so the buffer can only be a plain Wallet with currency
+    // type "EUR" - the exact exclusion the standard card/scope aggregates
+    // already apply.
+    val isFiatBuffer: Boolean,
     val amountText: String,
     val assetValueText: String,
     val percentText: String,
@@ -98,6 +107,8 @@ fun walletRow(wallet: Wallet): WalletRow {
     return WalletRow(
         walletId = wallet.walletId,
         name = wallet.getTypeString(),
+        currencyType = wallet.currencyType,
+        isFiatBuffer = wallet !is CroCardWallet && wallet.currencyType == "EUR",
         amountText = StringHelper.formatAmountToString(wallet.amount.toDouble(), 5, wallet.currencyType),
         assetValueText = StringHelper.formatAmountToString(assetValue, 5),
         percentText = StringHelper.formatAmountToString(percentProfit - 100, 2, "%", true),
@@ -119,6 +130,15 @@ fun walletValueInEur(wallet: Wallet): Double {
         0.0
     }
 }
+
+/**
+ * Rows eligible for the allocation donut: outside (bookkeeping) wallets,
+ * zero-value rows, and the internal fiat buffer are excluded - the buffer
+ * is the same exclusion the card/scope aggregates already apply.
+ * Excluded rows stay visible in the wallet list; this only feeds the donut.
+ */
+fun donutSlices(rows: List<WalletRow>): List<WalletRow> =
+    rows.filter { !it.isOutside && it.assetValue > 0 && !it.isFiatBuffer }
 
 enum class WalletSortKey { AMOUNT, ASSET_VALUE, PERCENT, TRANSACTIONS }
 

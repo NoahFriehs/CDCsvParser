@@ -39,6 +39,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.ui.display.ProfitTrend
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
+import at.msd.friehs_bicha.cdcsvparser.ui.display.donutSlices
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
@@ -79,9 +80,9 @@ private fun toArgbInt(c: Color): Int {
 @Composable
 fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    // The donut shows the allocation of held assets; outside wallets are
-    // bookkeeping balances and stay in the list below only.
-    val sliceable = rows.filter { !it.isOutside && it.assetValue > 0 }
+    // The donut follows the card scope: outside wallets and the internal
+    // fiat buffer stay out of the donut - see donutSlices().
+    val sliceable = donutSlices(rows)
     if (sliceable.isEmpty()) {
         Text(
             text = stringResource(R.string.no_allocation_data),

@@ -6,12 +6,14 @@ import at.msd.friehs_bicha.cdcsvparser.ui.display.ProfitTrend
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletSortKey
+import at.msd.friehs_bicha.cdcsvparser.ui.display.donutSlices
 import at.msd.friehs_bicha.cdcsvparser.ui.display.sortWalletRows
 import at.msd.friehs_bicha.cdcsvparser.ui.display.transactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.transactionRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.walletRow
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
+import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.math.BigDecimal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -52,6 +54,36 @@ class RowModelsTest {
     }
 
     @Test
+    fun walletRowFlagsOnlyPlainEurWalletsAsFiatBuffer() {
+        // The internal fiat buffer is a plain (non-card) EUR wallet; card
+        // wallets are fiat-denominated but never the buffer.
+        assertTrue(
+            walletRow(Wallet("EUR", BigDecimal(12453.14), BigDecimal.ZERO, BigDecimal.ZERO))
+                .isFiatBuffer)
+        assertEquals(false, walletRow(cardWallet("CASHBACK", 100.0, 1)).isFiatBuffer)
+        assertEquals(
+            false,
+            walletRow(Wallet("BTC", BigDecimal(1.0), BigDecimal.ZERO, BigDecimal.ZERO)).isFiatBuffer)
+    }
+
+    @Test
+    fun donutSlicesExcludeOutsideZeroAndFiatBuffer() {
+        fun row(name: String, value: Double, isFiatBuffer: Boolean = false, isOutside: Boolean = false) =
+            WalletRow(
+                walletId = 0, name = name, currencyType = name, isFiatBuffer = isFiatBuffer,
+                amountText = "", assetValueText = "", percentText = "",
+                trend = ProfitTrend.NEUTRAL, transactionCount = 0,
+                amountValue = 0.0, assetValue = value, percentProfit = 0.0, isOutside = isOutside)
+        val sliced = donutSlices(listOf(
+            row("EUR", 12453.14, isFiatBuffer = true),
+            row("CASHBACK", 100.0),
+            row("BTC", 0.0),
+            row("BANK", 500.0, isOutside = true),
+        ))
+        assertEquals(listOf("CASHBACK"), sliced.map { it.name })
+    }
+
+    @Test
     fun profitTrendBoundaries() {
         // Card wallet value == its amount (100 EUR); percent = 100/spent*100.
         val positive = walletRow(cardWallet("A", 100.0, 0)).let {
@@ -89,10 +121,16 @@ class RowModelsTest {
         // 1 BTC worth of EUR vs. a million SHIB worth of cents: the two sort
         // keys must disagree, in line with the UI labels "amount €" and
         // "amount Asset".
-        val btc = WalletRow(1, "BTC", "1 BTC", "100.00 €", "+10 %", ProfitTrend.POSITIVE,
-            5, amountValue = 1.0, assetValue = 100.0, percentProfit = 110.0, isOutside = false)
-        val shib = WalletRow(2, "SHIB", "1000000 SHIB", "5.10 €", "+5 %", ProfitTrend.POSITIVE,
-            5, amountValue = 1_000_000.0, assetValue = 5.1, percentProfit = 105.0, isOutside = false)
+        val btc = WalletRow(
+            walletId = 1, name = "BTC", currencyType = "BTC", isFiatBuffer = false,
+            amountText = "1 BTC", assetValueText = "100.00 €", percentText = "+10 %",
+            trend = ProfitTrend.POSITIVE, transactionCount = 5,
+            amountValue = 1.0, assetValue = 100.0, percentProfit = 110.0, isOutside = false)
+        val shib = WalletRow(
+            walletId = 2, name = "SHIB", currencyType = "SHIB", isFiatBuffer = false,
+            amountText = "1000000 SHIB", assetValueText = "5.10 €", percentText = "+5 %",
+            trend = ProfitTrend.POSITIVE, transactionCount = 5,
+            amountValue = 1_000_000.0, assetValue = 5.1, percentProfit = 105.0, isOutside = false)
         val byEur = sortWalletRows(listOf(shib, btc), WalletSortKey.AMOUNT, false)
         assertEquals("BTC", byEur.first().name) // 100 € > 5.10 € although 1 < 1,000,000 units
         val byUnits = sortWalletRows(listOf(shib, btc), WalletSortKey.ASSET_VALUE, false)
