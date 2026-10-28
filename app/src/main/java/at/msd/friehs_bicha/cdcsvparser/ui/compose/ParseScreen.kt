@@ -95,10 +95,11 @@ import java.time.ZoneOffset
 fun ParseScreen(
     isParsing: Boolean,
     /**
-     * Typed parse cards (null = not posted yet); a null field = row
-     * hidden. The transport tokens "no internet connection" and
-     * "prices loading" arrive in the fields and are re-mapped to friendly
-     * strings ([displayValue]).
+     * Typed parse cards (null = not posted yet). The card shape
+     * (`assets == null` = no crypto) renders only the money-spent card;
+     * the standard shape renders the 2x2. The transport tokens "no
+     * internet connection" and "prices loading" arrive in the fields and
+     * are re-mapped to friendly strings ([displayValue]).
      */
     data: ParseData?,
     /** P/L value rendered in this color (already resolved for the sign). */
@@ -162,45 +163,58 @@ fun ParseScreen(
                 Spacer(Modifier.height(8.dp))
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            if (data != null && data.assets == null) {
+                // Card/fiat scope: only "money spent" exists - the single
+                // card replaces the crypto 2x2 (the attribution footer is
+                // hidden by attributionVisible).
                 MetricCard(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.ic_savings_24,
-                    tint = MaterialTheme.colorScheme.primary,
-                    label = stringResource(R.string.assets_value_label),
-                    value = displayValue(context, data?.assets),
-                )
-                MetricCard(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     iconRes = R.drawable.ic_spending_24,
                     tint = MaterialTheme.colorScheme.secondary,
                     label = stringResource(R.string.money_spent_label),
-                    value = displayValue(context, data?.moneySpent),
+                    value = displayValue(context, data.moneySpent),
                 )
-            }
-            Spacer(Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                MetricCard(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.ic_trending_24,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    label = stringResource(R.string.profit_loss),
-                    value = displayValue(context, data?.profitLoss),
-                    valueColor = if (data?.profitLoss != null) profitLossColor else null,
-                )
-                MetricCard(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.ic_rewards_24,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    label = stringResource(R.string.rewards_earned),
-                    value = displayValue(context, data?.rewards),
-                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MetricCard(
+                        modifier = Modifier.weight(1f),
+                        iconRes = R.drawable.ic_savings_24,
+                        tint = MaterialTheme.colorScheme.primary,
+                        label = stringResource(R.string.assets_value_label),
+                        value = displayValue(context, data?.assets),
+                    )
+                    MetricCard(
+                        modifier = Modifier.weight(1f),
+                        iconRes = R.drawable.ic_spending_24,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        label = stringResource(R.string.money_spent_label),
+                        value = displayValue(context, data?.moneySpent),
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MetricCard(
+                        modifier = Modifier.weight(1f),
+                        iconRes = R.drawable.ic_trending_24,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        label = stringResource(R.string.profit_loss),
+                        value = displayValue(context, data?.profitLoss),
+                        valueColor = if (data?.profitLoss != null) profitLossColor else null,
+                    )
+                    MetricCard(
+                        modifier = Modifier.weight(1f),
+                        iconRes = R.drawable.ic_rewards_24,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        label = stringResource(R.string.rewards_earned),
+                        value = displayValue(context, data?.rewards),
+                    )
+                }
             }
 
             Spacer(Modifier.height(24.dp))

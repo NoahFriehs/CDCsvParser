@@ -93,8 +93,11 @@ class ComposeUiTest {
                 "pass-8;ui-pass-8;Manual;CITest\n",
         )
         // Belt and braces: the core also detects BlockPit from the file
-        // header, but set the intended type anyway.
+        // header, but set the intended type anyway. BlockPit imports only
+        // run on the C++ core, so pin the core mode - a device left on the
+        // Kotlin core would fail every import-based test with a timeout.
         PreferenceHelper.setSelectedType(target, AppType.BlockPit)
+        PreferenceHelper.setUseCpp(target, true)
 
         scenario = ActivityScenario.launch(StartingActivity::class.java)
     }

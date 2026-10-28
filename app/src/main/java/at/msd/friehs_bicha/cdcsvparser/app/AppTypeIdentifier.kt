@@ -46,10 +46,30 @@ object AppTypeIdentifier {
      * @param firstLine the first line of the CSV (or null)
      * @return true when the header matches the shared Crypto.com header. The
      * same header is used by both the CDC and the card format, so it cannot
-     * decide between the two — the settings type must.
+     * decide between the two — the first data line must ([looksLikeCardData]).
      */
     fun isCdCardFamily(firstLine: String?): Boolean {
         return firstLine?.takeIf { it.isNotBlank() }?.contains(AppTypeIdentifierCdCsv) == true
+    }
+
+    /**
+     * Content sniffing for files with the shared CDC/Card header.
+     *
+     * Card transactions are not on-chain and carry the plain number `0` in
+     * the Transaction Kind column; every CDC crypto row carries one of the
+     * known kind labels (see the core's `ttConverter`) or another non-zero
+     * value.
+     *
+     * @param firstDataLine the first non-blank data line (after the header), or null
+     * @return true when the line looks like a card transaction
+     */
+    fun looksLikeCardData(firstDataLine: String?): Boolean {
+        val line = firstDataLine?.trim()?.takeIf { it.isNotBlank() } ?: return false
+        val fields = line.split(",")
+        // Kind is the second-to-last column (last = hash, always plain):
+        // counting from the end stays correct even when an earlier quoted
+        // field (description) contains commas.
+        return fields.size >= 10 && fields[fields.size - 2].trim() == "0"
     }
 
     private const val AppTypeIdentifierCdCsv =

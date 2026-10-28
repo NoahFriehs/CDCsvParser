@@ -239,23 +239,30 @@ class CoreService : Service() {
         val appTypeFromSettings = AppType.safeFromOrdinal(mode)
         // A file with a distinctive header is parsed in that format,
         // independent of the (possibly stale) app type selected in the
-        // settings; for unknown or shared (CDC/Card) headers the settings
-        // decide. This avoids "N lines failed / 0 transactions" when a
-        // comma-delimited file is parsed in BlockPit mode (or vice versa).
+        // settings. For the shared CDC/Card header the first data line
+        // decides (card rows carry kind 0), so a stale or mismatched
+        // selection can no longer turn a card file into an all-line-failed
+        // crypto parse (or vice versa). Unknown headers: the settings
+        // decide.
         val firstLine = data.firstOrNull()
         val headerType = AppTypeIdentifier.getAppType(firstLine)
         val appType = when {
             headerType != null -> headerType
-            // Shared Crypto.com header but the selected type knows a
-            // different format (e.g. a stale BlockPit selection): fall back
-            // to the crypto CDC format instead of failing every line.
-            AppTypeIdentifier.isCdCardFamily(firstLine) &&
-                appTypeFromSettings !in setOf(AppType.CdCsvParser, AppType.CroCard) -> AppType.CdCsvParser
+            // Shared CDC/Card header: the content decides. Card transactions
+            // carry the plain kind 0, crypto rows a known kind label - a
+            // content-based pick works for any selection (stale ones
+            // included) and for card-family types the core cannot parse
+            // (CurveCard).
+            AppTypeIdentifier.isCdCardFamily(firstLine) ->
+                if (AppTypeIdentifier.looksLikeCardData(
+                        data.drop(1).firstOrNull { it.isNotBlank() }
+                    )
+                ) AppType.CroCard else AppType.CdCsvParser
 
             else -> appTypeFromSettings
         }
         if (appType != appTypeFromSettings) {
-            FileLog.i(TAG, "File header indicates $appType; using it instead of the selected type $appTypeFromSettings.")
+            FileLog.i(TAG, "File content indicates $appType; using it instead of the selected type $appTypeFromSettings.")
         }
         if (appType == AppType.BlockPit && !(isCoreInitialized && useCpp)) {
             FileLog.e(TAG, "BlockPit files can only be parsed with the C++ core.")
