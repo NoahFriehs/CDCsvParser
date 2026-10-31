@@ -1,14 +1,10 @@
 package at.msd.friehs_bicha.cdcsvparser.db
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 @Dao
 interface WalletDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertWallet(wallet: Wallet)
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(wallets: List<Wallet>)
 
