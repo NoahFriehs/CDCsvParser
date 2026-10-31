@@ -118,7 +118,7 @@ class AppModel : BaseAppModel, Serializable {
         if (PreferenceHelper.getIsDataLocal(App.instance) && PreferenceHelper.getIsAppModelSavedLocal(App.instance)) {
             // The Room load runs on a background scope; until it finished
             // (isFullyLoaded) the model is half-empty and the fast start must
-            // not post it (plan 003).
+            // not post it.
             loadAppModelLocal()
         }
         else PreferenceHelper.setIsAppModelSavedLocal(App.instance,false)

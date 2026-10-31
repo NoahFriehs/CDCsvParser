@@ -294,7 +294,7 @@ class CoreService : Service() {
                 }
                 checkAndSetModes()
                 // Persist the parsed C++ state for the next fast start
-                // (plan 003) - this runs on the core thread (serviceScope is
+                // - this runs on the core thread (serviceScope is
                 // the cpp-core dispatcher). A failed save only degrades
                 // future fast starts; the parse itself succeeded.
                 if (!save(savePath)) {
@@ -392,7 +392,7 @@ class CoreService : Service() {
                                 // Wait for the WHOLE model, not just the first
                                 // half of it: the Room load fills cardApp and
                                 // txApp in two steps, and any earlier exit
-                                // would post half-empty cards (plan 003).
+                                // would post half-empty cards.
                                 while (appModel?.isFullyLoaded != true) {
                                     delay(200)
                                 }
@@ -737,7 +737,7 @@ class CoreService : Service() {
      * The collections are passed explicitly (the same ones the caller
      * [postValue]'d): reading the LiveData `.value` back on the core thread
      * would race the main-thread delivery of `postValue` and could observe
-     * a null/stale state (plan 003 - that is what made the empty-state guard
+     * a null/stale state - that is what made the empty-state guard
      * below misfire and skipped real saves).
      */
     private fun saveToRoomsDB(
@@ -749,7 +749,7 @@ class CoreService : Service() {
         // A constraint conflict here must never kill the app: the in-memory
         // (C++ core + LiveData) state stays the source of truth and the next
         // parse retries the save.
-        // Plan 003: never wipe a stored model with an empty re-import. A
+        // Never wipe a stored model with an empty re-import. A
         // fast-start C++ state holds only the wallet balances (no
         // transactions), and an empty parse result would not carry any
         // either - in both cases the delete-before-insert would destroy the
@@ -820,7 +820,7 @@ class CoreService : Service() {
         when (isCoreInitialized && useCpp) {
             true -> {
                 if (init(logFilePath, savePath)) {
-                    // Fast start (C++ mode, plan 003): init() loaded the
+                    // Fast start (C++ mode): init() loaded the
                     // persisted C++ state. The save format holds the wallet
                     // balances but NOT the transactions, so the daily series
                     // are still empty here. Show the complete saved values
@@ -882,7 +882,7 @@ class CoreService : Service() {
      * would be posted while the model is still empty (zeros).
      */
     /**
-     * Plan 003: the newest CSV in private storage (the last uploaded /
+     * The newest CSV in private storage (the last uploaded /
      * imported file - the history dialog lists exactly these). The fast-
      * start C++ rebuild reparses it, because the persisted C++ state
      * contains only the wallet balances, not the transactions.
@@ -893,7 +893,7 @@ class CoreService : Service() {
             ?.maxByOrNull { it.lastModified() }
 
     /**
-     * Plan 003: reparses [csvFile] into the C++ core (background rebuild
+     * Reparses [csvFile] into the C++ core (background rebuild
      * behind the fast start), persists the resulting state and re-posts
      * the overview from the C++ core. Any failure keeps the previously
      * posted local values in place - the user never sees zeros.
@@ -1070,6 +1070,12 @@ class CoreService : Service() {
                         val walletArray = Array<String>(walletXml.size) { i -> walletXml[i] }
 
                         init(logFilePath, "")
+                        // The set*Data calls below are pure appenders: clear first, so
+                        // the restore REPLACES the live core state. The order is
+                        // load-bearing: clearAll() throws (DataHolder has no
+                        // TransactionManager yet) when no TM exists, so init() must
+                        // run first - on an initialized core it is a no-op.
+                        clearAll()
 
                         setTransactionData(dataArray)
                         setWalletData(walletArray)
@@ -1140,8 +1146,12 @@ class CoreService : Service() {
 
                         // "" on purpose: a live Firebase import must start
                         // from an empty core, never from the fast-start
-                        // save state (plan 003).
+                        // save state. clearAll() enforces it - the set*Data
+                        // calls below are pure appenders, and it must come
+                        // AFTER init() (it throws when no TM exists; init on
+                        // an initialized core is a no-op).
                         init(logFilePath, "")
+                        clearAll()
 
                         dbCardWallets?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
                             setCardWalletData(
@@ -1208,6 +1218,7 @@ class CoreService : Service() {
     private external fun setTransactionData(transactionData: Array<String>)
     private external fun setCardWalletData(cardWalletData: Array<String>)
     private external fun setCardTransactionData(cardTransactionData: Array<String>)
+    private external fun clearAll()
 
     private external fun calculateWalletBalances()
 
@@ -1271,7 +1282,7 @@ class CoreService : Service() {
          * Money spent bucketed into fixed [windowSeconds] slots from the
          * epoch (UTC): "YYYY-MM-DD HH:MM;value" lines (flow), oldest first.
          * [fromEpoch] (0 = no limit) suppresses slots starting before it.
-         * The 15-min and 6-hour chart frames (plan 009b) run this with
+         * The 15-min and 6-hour chart frames run this with
          * fromEpoch = 0 - the P/L inception reference and the Σ view need
          * the pre-window slots; the JVM windows the visible flow line with
          * ChartData.windowedSpentFlow. Only non-zero-flow slots are
@@ -1411,7 +1422,7 @@ class CoreService : Service() {
         val path: String
             get() = App.instance.filesDir.absolutePath
         /**
-         * Directory of the persisted C++ state (plan 003, fast start).
+         * Directory of the persisted C++ state (fast start).
          * Trailing slash required: the core writes `<dirPath> +
          * "wallets" | "cardWallets" | "state"`.
          */
@@ -1446,7 +1457,7 @@ class CoreService : Service() {
         }
 
         /**
-         * Starts the CoreService for the fast-start path (plan 003):
+         * Starts the CoreService for the fast-start path:
          * `ACTION_START_SERVICE` without persisting a core-mode choice -
          * `useCpp` already mirrors the user's setting from
          * `onStartCommand`, and fast start must not flip it.
