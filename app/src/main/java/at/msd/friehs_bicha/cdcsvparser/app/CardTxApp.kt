@@ -19,6 +19,16 @@ import java.text.DecimalFormatSymbols
  * @param useStrictWallet use strict wallet type
  * @param fastInit fast init, use only if you set the transactions and wallets manually
  */
+
+// Column counts after the trailing empty-field drop: legacy exports have
+// 9 fields, the current export adds the USD value and the Transaction Hash
+// (10). Both carry the signed charge in the Native Amount column, which
+// the per-merchant card wallets aggregate on - so both widths share the
+// column mapping in [CardTxApp] (and any new export column must keep the
+// Native Amount column index stable before it may join this guard).
+private const val LEGACY_CARD_COLUMNS = 9
+private const val CURRENT_CARD_COLUMNS = 10
+
 class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boolean = false) :
     BaseApp(), Serializable {
 
@@ -150,7 +160,9 @@ class CardTxApp(file: ArrayList<String>, useStrictWallet: Boolean, fastInit: Boo
             try {
                 val sa =
                     line.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                if (sa.size == 9) {
+                // Both column widths carry the signed charge in the Native
+                // Amount column (index 7) - see the width constants above.
+                if (sa.size == LEGACY_CARD_COLUMNS || sa.size == CURRENT_CARD_COLUMNS) {
                     val t = CroCardTransaction(
                         sa[0],
                         sa[1],
