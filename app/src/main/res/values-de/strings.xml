@@ -28,8 +28,8 @@
     <string name="series_portfolio_value">Vermögen</string>
     <string name="series_bonus">Belohnungen</string>
     <string name="chart_cumulative_spent_cd">Kumulative Ausgaben</string>
-    <!-- Plan 009a: short labels (T = Tag) so the row keeps fitting when
-         6 h / 15 m (009b) join it. -->
+    <!-- Short labels (T = Tag) so the row keeps fitting when
+         6 h / 15 m join it. -->
     <string name="timeframe_week">W</string>
     <string name="timeframe_month">M</string>
     <string name="timeframe_quarter">Q</string>
@@ -43,6 +43,7 @@
     <string name="chart_no_data">Keine Daten für diese Auswahl.</string>
     <string name="chart_history_loading">Preisverlauf: %1$d von %2$d …</string>
     <string name="chart_history_estimated_note">Gestrichelter Abschnitt: geschätzt – die kostenlose Preisgeschichte reicht nur ~1 Jahr zurück.</string>
+    <string name="chart_wallet_total">Gesamt</string>
     <string name="range_all">Alles</string>
     <string name="range_three_months">3 M</string>
     <string name="range_six_months">6 M</string>

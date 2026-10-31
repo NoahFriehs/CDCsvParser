@@ -30,14 +30,17 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseSubDailySpent
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletSeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletWindows
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.toEpochSecond
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.walletIntradayValueSeries
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.walletValueSeries
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.windowedSpentFlow
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Pure-logic tests for the overview chart panel data (G35). */
+/** Pure-logic tests for the overview chart panel data. */
 class ChartDataTest {
 
 
@@ -71,7 +74,7 @@ class ChartDataTest {
         assertTrue(bucketize(emptyList(), TimeFrame.MONTH, true).isEmpty())
     }
 
-    // Plan 009a: the 1-day frame - one bucket per calendar day (the core's
+    // The 1-day frame - one bucket per calendar day (the core's
     // native resolution), full history, no windowing.
     @Test
     fun dayFrameBucketizesOneBucketPerCalendarDay() {
@@ -235,7 +238,7 @@ class ChartDataTest {
         assertEquals(keys, keys.sorted())
     }
 
-    // ------------------------------------------------------------ G36 ----
+    // ------------------------------------------------------------ Historical ----
     // Historical (point-in-time) pricing of the stock chart series.
 
     private fun day(y: Int, m: Int, d: Int) = LocalDate.of(y, m, d)
@@ -396,7 +399,7 @@ class ChartDataTest {
     }
 
     // ----------------------------------------------------------------
-    // Plan 006: bucketStartDate (inverse of bucketKey) + limitRange
+    // bucketStartDate (inverse of bucketKey) + limitRange
     // ----------------------------------------------------------------
 
     @Test
@@ -497,7 +500,7 @@ class ChartDataTest {
     }
 
     // ------------------------------------------------------------------
-    // Plan 009b: the sub-daily (intraday) pure functions.
+    // The sub-daily (intraday) pure functions.
 
     @Test
     fun subDailyWindowKeyParsesToEpochSecond() {
@@ -1103,5 +1106,219 @@ class ChartDataTest {
         val frame = IntradayFrame(3600, 1)
         val now = 172_800L
         assertTrue(intradaySpentCumulative(emptyList(), now, frame).isEmpty())
+    }
+
+    // ----------------------------------------------------------------
+    // Per-wallet series (the wallet scope's single line)
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `wallet line keeps only its own currency across buckets`() {
+        // Two wallets, one history: the BTC line is exactly BTC's
+        // contribution; ETH (arriving in March) must not leak in.
+        val wallet =
+            mapOf(
+                "BTC" to listOf(
+                    WalletDay(day(2023, 1, 5), 1.0, 0.0),
+                    WalletDay(day(2023, 6, 10), 0.5, 0.0),
+                ),
+                "ETH" to listOf(WalletDay(day(2023, 3, 1), 2.0, 2.0)),
+            )
+        val prices =
+            mapOf(
+                "BTC" to PriceSeries(listOf(ed(2023, 1, 1) to 20000.0, ed(2023, 6, 1) to 30000.0)),
+                "ETH" to PriceSeries(listOf(ed(2023, 3, 1) to 100.0)),
+            )
+        val (value, pl, bonus, estimatedCount) = walletValueSeries(
+            wallet, prices, "BTC", TimeFrame.MONTH, day(2023, 7, 15),
+            currentPrices = mapOf("BTC" to 30000.0, "ETH" to 120.0),
+        )!!
+        assertEquals(
+            listOf("2023-01", "2023-02", "2023-03", "2023-04", "2023-05", "2023-06", "2023-07"),
+            value.map { it.key },
+        )
+        assertEquals(20000.0, value[0].value, 1e-6)
+        assertEquals(20000.0, value[2].value, 1e-6)   // no ETH in March
+        assertEquals(15000.0, value[5].value, 1e-6) // 0.5 x 30000
+        assertEquals(0.5 * 30000.0, value[6].value, 1e-6)  // live pin, BTC only
+        // No spent flow is passed for a single wallet: P/L == value, and
+        // the bonus line is BTC-only (0 here) as well.
+        assertEquals(value.map { it.value }, pl.map { it.value })
+        assertEquals(0.0, bonus[6].value, 1e-9)
+        assertEquals(0, estimatedCount)   // BTC has real history from day one
+    }
+
+    @Test
+    fun `wallet estimated region follows its own history start`() {
+        // BTC since January with history only from June; ETH history
+        // starts in mid-July (AFTER most of the domain). The BTC wallet
+        // line must dash only Jan..May (its OWN start) - the aggregate's
+        // all-symbols start would push the prefix to June.
+        val wallet =
+            mapOf(
+                "BTC" to (1..7).map { WalletDay(day(2023, it, 2), 1.0, 0.0) },
+                "ETH" to listOf(WalletDay(day(2023, 1, 2), 10.0, 0.0)),
+            )
+        val prices =
+            mapOf(
+                "BTC" to PriceSeries(listOf(ed(2023, 6, 1) to 20000.0, ed(2023, 7, 1) to 25000.0)),
+                "ETH" to PriceSeries(listOf(ed(2023, 7, 15) to 100.0)),
+            )
+        val (value, _, _, estimatedCount) = walletValueSeries(
+            wallet, prices, "BTC", TimeFrame.MONTH, day(2023, 7, 15),
+        )!!
+        assertEquals(7, value.size)
+        assertEquals(5, estimatedCount)   // Jan..May, BTC's own start only
+        // June: 1.0 x 20000 (the June-1 point); July (open, no live
+        // price): back-filled on the July-1 point.
+        assertEquals(20000.0, value[5].value, 1e-6)
+        assertEquals(25000.0, value[6].value, 1e-6)
+    }
+
+    @Test
+    fun `wallet without any history stays zero and fully estimated except the pin`() {
+        val wallet = mapOf("DOGE" to listOf(WalletDay(day(2023, 1, 2), 100.0, 0.0)))
+        val (value, _, _, estimatedCount) = walletValueSeries(
+            wallet, emptyMap(), "DOGE", TimeFrame.MONTH, day(2023, 3, 10),
+        )!!
+        assertEquals(3, value.size)   // Jan..Mar
+        value.forEach { assertEquals(0.0, it.value, 1e-12) }
+        assertEquals(2, estimatedCount)   // only the open (pinned) bucket is real
+    }
+
+    @Test
+    fun `wallet with a single active day yields one bucket`() {
+        // 2023-05-11 is a Thursday: the single (open, live-pinned) bucket
+        // is exactly that day's ISO week.
+        val wallet = mapOf("BTC" to listOf(WalletDay(day(2023, 5, 11), 2.0, 0.5)))
+        val prices = mapOf("BTC" to PriceSeries(listOf(ed(2023, 5, 1) to 20000.0)))
+        val (value, pl, bonus, estimatedCount) = walletValueSeries(
+            wallet, prices, "BTC", TimeFrame.WEEK, day(2023, 5, 11),
+        )!!
+        assertEquals(1, value.size)
+        assertEquals("2023-W19", value[0].key)
+        assertEquals(40000.0, value[0].value, 1e-9)
+        assertEquals(40000.0, pl[0].value, 1e-9)   // no spent flow -> P/L == value
+        assertEquals(10000.0, bonus[0].value, 1e-9)
+        assertEquals(0, estimatedCount)   // the single bucket IS the pinned one
+    }
+
+    @Test
+    fun `wallet line is null for a wallet without activity`() {
+        val wallet = mapOf("ETH" to listOf(WalletDay(day(2023, 1, 5), 1.0, 0.0)))
+        val prices = mapOf("ETH" to PriceSeries(listOf(ed(2023, 1, 1) to 100.0)))
+        assertNull(walletValueSeries(wallet, prices, "BTC", TimeFrame.MONTH, day(2023, 1, 20)))
+        val emptyWallet = mapOf("BTC" to listOf<WalletDay>())
+        assertNull(walletValueSeries(emptyWallet, prices, "BTC", TimeFrame.MONTH, day(2023, 1, 20)))
+    }
+
+    @Test
+    fun `wallet lines sum to the aggregate value without spent`() {
+        // Cross-check of the reuse: with no spent flow the aggregate's
+        // value line is the bucket-wise sum of the wallet lines (a bucket
+        // before a wallet's first day counts only the wallets already
+        // active).
+        val wallet =
+            mapOf(
+                "BTC" to listOf(
+                    WalletDay(day(2023, 1, 5), 1.0, 0.0),
+                    WalletDay(day(2023, 6, 10), 0.5, 0.0),
+                ),
+                "ETH" to listOf(WalletDay(day(2023, 3, 1), 2.0, 0.0)),
+            )
+        val prices =
+            mapOf(
+                "BTC" to PriceSeries(listOf(ed(2023, 1, 1) to 20000.0)),
+                "ETH" to PriceSeries(listOf(ed(2023, 3, 1) to 100.0)),
+            )
+        val (aggregate, _, _) = historicalStockSeries(
+            wallet, prices, emptyList(), TimeFrame.MONTH, day(2023, 7, 15),
+        )
+        val btc = walletValueSeries(wallet, prices, "BTC", TimeFrame.MONTH, day(2023, 7, 15))!!
+            .value.associate { it.key to it.value }
+        val eth = walletValueSeries(wallet, prices, "ETH", TimeFrame.MONTH, day(2023, 7, 15))!!
+            .value.associate { it.key to it.value }
+        assertEquals(7, aggregate.size)
+        assertEquals(7, btc.size)
+        assertEquals(5, eth.size)   // ETH's own line starts in March
+        for (bucket in aggregate) {
+            val sum = (btc[bucket.key] ?: 0.0) + (eth[bucket.key] ?: 0.0)
+            assertEquals(bucket.value, sum, 1e-6)
+        }
+    }
+
+    @Test
+    fun `intraday wallet line follows the single currency`() {
+        // 14 one-hour slots (00:00..11:00 of 1970-01-02): BTC carries 2.0
+        // into the window and drops to 1.5 at slot 5; the refined price
+        // rises 0.5 per slot. The ETH row must not touch the BTC line.
+        val rows =
+            listOf(
+                "BTC;1970-01-02 00:00;2.0;0.0",
+                "BTC;1970-01-02 05:00;1.5;0.0",
+                "ETH;1970-01-02 00:00;3.0;0.0",
+            )
+        val refined = (0 until 24).map { grid(it) to (10.0 + it * 0.5) }
+        val series = walletIntradayValueSeries(
+            subWalletRows = rows,
+            intraday = mapOf("BTC" to refined, "ETH" to refined),
+            daily = emptyMap(),
+            cur = "BTC",
+            livePrices = emptyMap(),
+            nowTsSec = 136_800L,   // 1970-01-02 12:00 UTC
+            frame = IntradayFrame(3_600, 7),
+            windowStart = 86_400L,
+            windowEnd = 136_800L,
+        )
+        assertNotNull(series)
+        val (value, _, _, estimatedCount) = series!!
+        assertEquals(gridKeys(14), value.map { it.key })
+        assertEquals(20.0, value[0].value, 1e-9)   // 2.0 x 10.0 - no ETH leak
+        assertEquals(24.0, value[4].value, 1e-9)   // 2.0 x 12.0
+        assertEquals(18.75, value[5].value, 1e-9) // 1.5 x 12.5 (balance change)
+        assertEquals(1.5 * (10.0 + 13 * 0.5), value[13].value, 1e-9)
+        assertEquals(0, estimatedCount)   // refined across the whole window
+    }
+
+    @Test
+    fun `intraday wallet line without refinement is fully estimated`() {
+        // Daily-only pricing (429 wall / offline): the daily close is held
+        // flat and the whole line is the estimated style - like the
+        // aggregate frame's degraded mode.
+        val rows = listOf("BTC;1970-01-02 00:00;2.0;0.0")
+        val series = walletIntradayValueSeries(
+            subWalletRows = rows,
+            intraday = emptyMap(),
+            daily = mapOf("BTC" to listOf(0L to 10.0)),
+            cur = "BTC",
+            livePrices = emptyMap(),
+            nowTsSec = 259_200L,    // 1970-01-03 12:00 UTC
+            frame = IntradayFrame(3_600, 7),
+            windowStart = 172_800L, // 1970-01-03 00:00 UTC
+            windowEnd = 259_200L,
+        )
+        assertNotNull(series)
+        val (value, _, _, estimatedCount) = series!!
+        assertEquals(24, value.size)
+        value.forEach { assertEquals(20.0, it.value, 1e-9) }
+        assertEquals(24, estimatedCount)
+    }
+
+    @Test
+    fun `intraday wallet line is null without the currency rows`() {
+        val rows = listOf("BTC;1970-01-02 00:00;2.0;0.0")
+        assertNull(
+            walletIntradayValueSeries(
+                subWalletRows = rows,
+                intraday = emptyMap(),
+                daily = emptyMap(),
+                cur = "ETH",
+                livePrices = emptyMap(),
+                nowTsSec = 136_800L,
+                frame = IntradayFrame(3_600, 7),
+                windowStart = 86_400L,
+                windowEnd = 136_800L,
+            ),
+        )
     }
 }

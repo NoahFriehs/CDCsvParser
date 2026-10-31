@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import at.msd.friehs_bicha.cdcsvparser.R
 
 /**
- * Main screen (Compose, P3.1). Import a CSV (new or from history) and jump
+ * Main screen (Compose). Import a CSV (new or from history) and jump
  * into the overview. The SAF upload flow, the history dialog and the
  * progress dialog stay in the fragment.
  */

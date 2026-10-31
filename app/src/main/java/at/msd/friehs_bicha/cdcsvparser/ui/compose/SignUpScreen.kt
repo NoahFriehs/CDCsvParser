@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import at.msd.friehs_bicha.cdcsvparser.R
 
 /**
- * Sign-up screen (Compose, P3.1). Mirrors the old `activity_sign_up.xml`;
+ * Sign-up screen (Compose). Mirrors the old `activity_sign_up.xml`;
  * the Firebase create-user call stays in the fragment.
  */
 @Composable

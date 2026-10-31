@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import at.msd.friehs_bicha.cdcsvparser.R
 
 /**
- * About screen (Compose, P3.1). Mirrors the old `activity_about_us.xml`
+ * About screen (Compose). Mirrors the old `activity_about_us.xml`
  * content one-to-one; the mail row opens the email chooser (fragment side).
  */
 @Composable

@@ -85,8 +85,8 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 
 /**
- * Parse/overview screen (Compose, P3.1). Metric cards + the chart panel
- * (G35: selectable series + time frame, data from the core's daily ledger
+ * Parse/overview screen (Compose). Metric cards + the chart panel
+ * (selectable series + time frame, data from the core's daily ledger
  * series) drawn with MPAndroidChart via AndroidView (decision #4 - a custom
  * Compose chart only if everything works). All LiveData observation stays in
  * the fragment, which pushes plain values down.
@@ -108,12 +108,12 @@ fun ParseScreen(
     attributionVisible: Boolean,
     /** Raw "series;YYYY-MM-DD;value" daily lines from the core (all 4 series). */
     dailySeries: List<String>,
-    /** Raw "CUR;YYYY-MM-DD;balance;bonus" per-wallet daily lines (G36): the
+    /** Raw "CUR;YYYY-MM-DD;balance;bonus" per-wallet daily lines: the
      *  basis for historical (point-in-time) pricing of the stock series. */
     walletSeries: List<String>,
     /** Fetched daily EUR price history per currency (may arrive in parts). */
     history: Map<String, PriceHistoryProvider.DailyPrices>,
-    /** Plan 009b: refined intraday EUR points per currency (pass phase 3;
+    /** Refined intraday EUR points per currency (pass phase 3;
      *  empty until a pass has fetched them). */
     intraday: Map<String, IntradayHistory.IntradayData>,
     /** (done, total) of the history fetch pass, or null before it starts. */
@@ -123,6 +123,11 @@ fun ParseScreen(
     currentPrices: Map<String, Double>,
     /** The asset cards show the offline placeholder. */
     noInternet: Boolean,
+    /** The chart panel's wallet scope (currency); null = the aggregate view.
+     *  Fragment-owned on purpose: a recreated view re-reads it, so the
+     *  selection survives navigation round-trips and theme toggles. */
+    chartWalletScope: String? = null,
+    onChartWalletScopeChanged: (String?) -> Unit = {},
     onFilterClick: () -> Unit,
     onAllTransactionsClick: () -> Unit,
     /** The core surface the chart frames read. */
@@ -248,6 +253,8 @@ fun ParseScreen(
                     historyProgress = historyProgress,
                     currentPrices = currentPrices,
                     noInternet = noInternet,
+                    walletScope = chartWalletScope,
+                    onWalletScopeChanged = onChartWalletScopeChanged,
                     core = core,
                 )
             }
@@ -347,7 +354,7 @@ private fun attributionAnnotatedString(context: android.content.Context): Annota
 }
 
 /**
- * The chart panel (G35, historical pricing G36, plan 006): series picker +
+ * The chart panel (point-in-time historical pricing): series picker +
  * time-frame picker + range picker (presets and a custom date range, all
  * M3) and a selection tooltip above the chart. The spent series buckets the
  * core's daily flow; the stock series (value / P/L / rewards) value every
@@ -362,29 +369,40 @@ private fun ChartPanel(
     dailySeries: List<String>,
     walletSeries: List<String>,
     history: Map<String, PriceHistoryProvider.DailyPrices>,
-    /** Plan 009b: refined intraday points per symbol (pass phase 3). */
+    /** Refined intraday points per symbol (pass phase 3). */
     intraday: Map<String, IntradayHistory.IntradayData>,
     historyProgress: Pair<Int, Int>?,
     currentPrices: Map<String, Double>,
     noInternet: Boolean,
+    /** The wallet scope (currency); null = the aggregate view. Owned by the
+     *  fragment (survives view recreation), see [ParseScreen]. */
+    walletScope: String?,
+    onWalletScopeChanged: (String?) -> Unit,
     core: CoreSource = Core,
 ) {
     val seriesData = remember(dailySeries) { parseDailySeries(dailySeries) }
     val walletData = remember(walletSeries) { parseWalletSeries(walletSeries) }
+    // A re-parse replaces the ledger: a stored scope the new file does not
+    // contain falls back to the aggregate view (and clears the stored
+    // selection so a later file does not silently re-activate it).
+    val activeScope = walletScope?.takeIf { currency -> walletData[currency] != null }
+    LaunchedEffect(walletData) {
+        if (activeScope == null && walletScope != null) onWalletScopeChanged(null)
+    }
     var selectedSeries by remember { mutableStateOf(ChartSeries.SPENT) }
     // The Σ toggle (series row): the SPENT series as the running total
     // from the export's start, instead of the per-bucket flow. Local UI
     // state like the selection (resets on rotation); it only ever affects
     // how the spent series is computed.
     var spentCumulative by remember { mutableStateOf(false) }
-    // Plan 009c: "All" draws the series overlaid; in that mode the four
+    // "All" draws the series overlaid; in that mode the four
     // single-series chips become visibility toggles (allVisible).
     var isAll by remember { mutableStateOf(false) }
     var allVisible by remember { mutableStateOf<Set<ChartSeries>>(ChartSeries.entries.toHashSet()) }
     var timeFrame by remember { mutableStateOf(TimeFrame.MONTH) }
     var range by remember { mutableStateOf(ChartRange.ALL) }
     var customRange by remember { mutableStateOf<Pair<LocalDate, LocalDate>?>(null) }
-    /** The touched bucket (plan 006 tooltip); null = nothing selected. */
+    /** The touched bucket (tooltip); null = nothing selected. */
     var selectedPoint by remember { mutableStateOf<ChartPoint?>(null) }
     /** The touched bucket in "All" mode (which series + which bucket). */
     var overlaySelection by remember { mutableStateOf<Pair<ChartSeries, ChartPoint>?>(null) }
@@ -406,7 +424,7 @@ private fun ChartPanel(
             currentPrices = currentPrices,
         )
     }
-    // Plan 006 B: the visible span. The custom range (when active) wins
+    // The visible span. The custom range (when active) wins
     // over the preset row; presets are start-only limits.
     val rangeStart: LocalDate?
     val rangeEnd: LocalDate?
@@ -458,7 +476,7 @@ private fun ChartPanel(
         subDaily = core.subDailySpentSeries(frame.windowSeconds, 0L) to
             core.subDailyWalletSeries(frame.windowSeconds, cut)
     }
-    // Plan 009c: the STOCK series of an intraday frame, computed for ALL
+    // The STOCK series of an intraday frame, computed for ALL
     // series at once (independent of the single-series selection).
     val intradayStock: HistoricalSeries? = remember(
         subDaily, timeFrame, history, intraday, currentPrices, nowTsSec,
@@ -479,7 +497,7 @@ private fun ChartPanel(
         )
     }
     // ALL FOUR series of the current frame as (points, estimated prefix)
-    // (plan 009c: single mode just picks its own entry; "All" aligns and
+    // (single mode just picks its own entry; "All" aligns and
     // overlays the visible ones). The spent flow comes from the daily
     // core rows on the daily frames (bucketed + ranged) and from the
     // windowed sub-daily rows on the intraday frames.
@@ -533,7 +551,7 @@ private fun ChartPanel(
         }
         m
     }
-    // Plan 009c: "All" mode - the overlay grid + the visible series
+    // "All" mode - the overlay grid + the visible series
     // projected onto it (null outside All mode).
     val overlay: Pair<List<String>, List<AlignedSeries>>? = remember(frameSeries, allVisible, isAll) {
         if (!isAll) return@remember null
@@ -544,19 +562,68 @@ private fun ChartPanel(
             },
         )
     }
-    val (points, estimatedCount) = frameSeries[selectedSeries] ?: (emptyList<ChartPoint>() to 0)
-    val visibleStock = if (isAll) allVisible.any { !it.isFlow } else !selectedSeries.isFlow
+    // The selected wallet's ONE valued-balance line (null = no scope, or
+    // the intraday frame's rows not loaded yet).
+    // Same range semantics as the aggregate: the daily frames go through
+    // the shared [limitRange], the intraday frame already carries the
+    // narrowed window in its rows.
+    val walletLine: Pair<List<ChartPoint>, Int>? = remember(
+        walletData, priceSeriesMap, subDaily, history, intraday, currentPrices,
+        nowTsSec, window, timeFrame, rangeStart, rangeEnd, activeScope,
+    ) {
+        val scope = activeScope ?: return@remember null
+        if (intradayFrame != null) {
+            val sub = subDaily ?: return@remember null
+            val win = window ?: return@remember null // narrowed window empty
+            walletIntradayValueSeries(
+                subWalletRows = sub.second,
+                intraday = intraday.mapValues { it.value.points },
+                daily = history.mapValues { it.value.points },
+                cur = scope,
+                livePrices = currentPrices,
+                nowTsSec = nowTsSec,
+                frame = intradayFrame,
+                windowStart = win.first,
+                windowEnd = win.last,
+            )?.let { it.value to it.estimatedCount }
+        } else {
+            walletValueSeries(
+                walletSeries = walletData,
+                prices = priceSeriesMap,
+                cur = scope,
+                frame = timeFrame,
+                today = today,
+                currentPrices = currentPrices,
+            )?.let { limitRange(it.value, it.estimatedCount, timeFrame, rangeStart, rangeEnd) }
+        }
+    }
+    // Wallet mode draws the single wallet line; "All" mode draws the
+    // overlay; everything else the single aggregate series. In-wallet-mode
+    // keys off the SCOPE (the selection), not off the line's presence:
+    // while the intraday frame's rows are still loading, walletLine is
+    // null and the panel shows its empty state with the wallet chip kept
+    // selected, instead of flickering back to the aggregate view.
+    val inWalletMode = activeScope != null
+    val useOverlay = !inWalletMode && isAll
+    val (points, estimatedCount) = if (inWalletMode)
+        walletLine ?: (emptyList<ChartPoint>() to 0)
+        else frameSeries[selectedSeries] ?: (emptyList<ChartPoint>() to 0)
+    val visibleStock = when {
+        inWalletMode -> true   // the wallet line is a valued (stock) line
+        isAll -> allVisible.any { !it.isFlow }
+        else -> !selectedSeries.isFlow
+    }
     val historyIncomplete = visibleStock &&
         historyProgress != null &&
         historyProgress.first < historyProgress.second
 
-    // Plan 006 C: theme the chart explicitly - MPAndroidChart's renderers
+    // Theme the chart explicitly - MPAndroidChart's renderers
     // hard-code light-mode colors (black axis labels), unreadable on the
     // dark surface.
     val lineColor = toArgbInt(MaterialTheme.colorScheme.primary)
     val labelColor = toArgbInt(MaterialTheme.colorScheme.onSurfaceVariant)
     val gridColor = toArgbInt(MaterialTheme.colorScheme.surfaceVariant)
-    // Plan 009c: one clearly distinct color per series for the overlay
+    // One clearly distinct color per series for the overlay
     // (brand primary/secondary/tertiary + a green for P/L).
     val seriesColors: Map<ChartSeries, Int> = linkedMapOf(
         ChartSeries.VALUE to toArgbInt(MaterialTheme.colorScheme.primary),
@@ -592,15 +659,21 @@ private fun ChartPanel(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(-SegmentedButtonDefaults.BorderWidth),
         ) {
-            // Plan 009c: the "All" segment + the four series; in All mode
+            // The "All" segment + the four series; in All mode
             // the four act as visibility toggles (the last visible one
             // can not be turned off), tapping "All" again exits. The Σ
             // toggle (spent as the running total) rides the same row -
             // disabled whenever the SPENT series is not visible; the
             // scroll keeps the six segments reachable on narrow screens.
             val total = ChartSeries.entries.size + 2
+            // Wallet mode draws ONE line (the selected wallet's valued
+            // balance): the aggregate series selection is meaningless there,
+            // so the whole row is disabled - the selection state itself is
+            // untouched and comes back when the wallet scope is cleared.
+            val seriesRowEnabled = !inWalletMode
             SeriesChip(
-                selected = isAll,
+                selected = if (seriesRowEnabled) isAll else false,
+                enabled = seriesRowEnabled,
                 onClick = {
                     isAll = !isAll
                     allVisible = ChartSeries.entries.toHashSet()
@@ -612,7 +685,10 @@ private fun ChartPanel(
             )
             ChartSeries.entries.forEachIndexed { index, series ->
                 SeriesChip(
-                    selected = if (isAll) series in allVisible else selectedSeries == series,
+                    selected = if (seriesRowEnabled)
+                        if (isAll) series in allVisible else selectedSeries == series
+                    else false,
+                    enabled = seriesRowEnabled,
                     onClick = {
                         if (isAll) {
                             if (series in allVisible) {
@@ -634,7 +710,7 @@ private fun ChartPanel(
                 else selectedSeries == ChartSeries.SPENT
             SeriesChip(
                 selected = spentCumulative,
-                enabled = spentVisible,
+                enabled = spentVisible && seriesRowEnabled,
                 onClick = {
                     spentCumulative = !spentCumulative
                     selectedPoint = null
@@ -759,7 +835,7 @@ private fun ChartPanel(
                     .padding(vertical = 48.dp),
             )
 
-            (if (isAll) overlay?.first.isNullOrEmpty() else points.isEmpty()) -> Text(
+            (if (useOverlay) overlay?.first.isNullOrEmpty() else points.isEmpty()) -> Text(
                 text = stringResource(R.string.chart_no_data),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -772,11 +848,11 @@ private fun ChartPanel(
             else -> {
                 val (overlayGrid, overlayAligned) =
                     overlay ?: (emptyList<String>() to emptyList<AlignedSeries>())
-                // Plan 006 A: the tooltip is a caption row ABOVE the chart
+                // The tooltip is a caption row ABOVE the chart
                 // (fixed height, so the chart never jumps while it shows).
                 Box(modifier = Modifier.fillMaxWidth().height(20.dp)) {
-                    if (isAll) {
-                        // Plan 009c: the overlay says WHICH series was hit.
+                    if (useOverlay) {
+                        // The overlay says WHICH series was hit.
                         overlaySelection?.let { (series, point) ->
                             Text(
                                 text = "${stringResource(series.labelRes)}  ·  " +
@@ -798,7 +874,7 @@ private fun ChartPanel(
                         }
                     }
                 }
-                if (isAll) {
+                if (useOverlay) {
                     ChartMultiLine(
                         grid = overlayGrid,
                         series = overlayAligned,
@@ -837,6 +913,44 @@ private fun ChartPanel(
                 }
             }
         }
+
+        // The wallet scope row (under the panel, the M3 segment-row
+        // precedent): the first chip restores the aggregate view, the rest
+        // are the ledger's currencies (one per line of the wallet series).
+        // Hidden when the ledger has no wallets at all (nothing to pick).
+        if (walletData.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .selectableGroup()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(-SegmentedButtonDefaults.BorderWidth),
+            ) {
+                val totalChips = walletData.size + 1
+                SeriesChip(
+                    selected = activeScope == null,
+                    onClick = {
+                        onWalletScopeChanged(null)
+                        selectedPoint = null
+                        overlaySelection = null
+                    },
+                    shape = SegmentedButtonDefaults.itemShape(0, totalChips),
+                    label = stringResource(R.string.chart_wallet_total),
+                )
+                walletData.keys.forEachIndexed { index, currency ->
+                    SeriesChip(
+                        selected = activeScope == currency,
+                        onClick = {
+                            onWalletScopeChanged(currency)
+                            selectedPoint = null
+                            overlaySelection = null
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index + 1, totalChips),
+                        label = currency,
+                    )
+                }
+            }
+        }
     }
 
     if (showRangeDialog) {
@@ -863,8 +977,8 @@ private val ChartSeries.labelRes: Int
         ChartSeries.BONUS -> R.string.series_bonus
     }
 
-// Plan 009a: the frame row uses SHORT labels (W/M/Q/J + T/D) so the
-// upcoming 6 h / 15 m frames (009b) fit the same one row.
+// The frame row uses SHORT labels (W/M/Q/J + T/D) so the
+// upcoming 6 h / 15 m intraday frames fit the same one row.
 private val TimeFrame.labelRes: Int
     get() = when (this) {
         TimeFrame.WEEK -> R.string.timeframe_week
@@ -894,19 +1008,19 @@ private fun shortDate(date: LocalDate): String =
         ),
     )
 
-/** At most this many buckets draw a per-point circle (plan 006 A+): on a
+/** At most this many buckets draw a per-point circle: on a
  *  dense series the circles are pure clutter - the line and the selection
  *  highlight carry the reading. */
 private const val MAX_CIRCLE_BUCKETS = 24
 
 /**
- * MPAndroidChart line chart for one bucketed series (plan 006: themed,
+ * MPAndroidChart line chart for one bucketed series (themed,
  * selection callback, sparse circles). The first [estimatedCount] points
  * (leading, chronological) are priced by first-price back-fill rather than
  * real history and are drawn dashed in a faded shade; the rest solid.
  *
  * Data + theme + listener live in [applyChartState] and are applied from
- * BOTH `factory` and `update` (see there) - plan 001.
+ * BOTH `factory` and `update` (see there).
  */
 @Composable
 private fun ChartLine(
@@ -952,7 +1066,7 @@ private fun ChartLine(
 }
 
 /**
- * MPAndroidChart line chart for the ALL-SERIES overlay (plan 009c): one
+ * MPAndroidChart line chart for the ALL-SERIES overlay: one
  * [LineDataSet] per visible series (plus its dashed estimated prefix, same
  * convention as [ChartLine]) on the COMMON [grid] - the values are already
  * projected onto it (see `alignOverlay`). Values stay raw euros on the
@@ -1041,7 +1155,7 @@ private fun LineChart.applyMultiState(
             }
         }
         // The same dashed-estimated / solid split as the single-series
-        // chart (plan 006 B's estimated region), per series.
+        // chart (the dashed estimated region), per series.
         if (estimated.isNotEmpty()) {
             sets.add(LineDataSet(entriesOfValues(estimated, 0), "").apply {
                 enableDashedLine(6f, 4f, 0f)
@@ -1068,7 +1182,7 @@ private fun LineChart.applyMultiState(
             setSource.add(index)
         }
     }
-    // Plan 007 A1: same stale-highlight reset as the single-series chart.
+    // Same stale-highlight reset as the single-series chart.
     highlightValues(null)
     data = LineData(*sets.toTypedArray())
 
@@ -1082,7 +1196,7 @@ private fun LineChart.applyMultiState(
     // Selection: the highlight knows the DATASET index - map it back to
     // the series it belongs to. The entry's x is the GLOBAL grid index
     // (the splits carry a matching offset), so key + value resolve
-    // directly (the caption names the series, plan 009c).
+    // directly (the caption names the series).
     setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
         override fun onValueSelected(entry: Entry, highlight: Highlight) {
             val srcIndex = setSource.getOrNull(highlight.getDataSetIndex()) ?: return
@@ -1108,14 +1222,14 @@ private fun LineChart.applyMultiState(
 
 /**
  * Data + theme + selection handling for the line chart. Called from BOTH
- * the `factory` and the `update` block (plan 001): on rotation / resize the
+ * the `factory` and the `update` block: on rotation / resize the
  * AndroidView is recreated and only `factory` runs - if the dataset lived
  * only in `update`, a fresh chart could stay empty forever (the reported
  * "messed up forever" bug). The x-axis label formatter is (re)assigned here
  * too, so it always resolves labels through the CURRENT points list.
  *
  * MPAndroidChart's renderers hard-code light-mode colors (the axis labels
- * are black in their constructors, plan 006 C) - every visible element is
+ * are black in their constructors) - every visible element is
  * themed explicitly from the Compose scheme.
  */
 private fun LineChart.applyChartState(
@@ -1133,7 +1247,7 @@ private fun LineChart.applyChartState(
     setNoDataTextColor(labelColor)
     xAxis.setDrawGridLines(false)
     xAxis.granularity = 1f
-    // Plan 009a/009b: the day/intraday labels are long enough ("20.01.26",
+    // The day/intraday labels are long enough ("20.01.26",
     // "26.10 06:00", "14:00") that 8 per axis run into each other.
     xAxis.labelCount = when (timeFrame) {
         TimeFrame.DAY -> 4
@@ -1180,7 +1294,7 @@ private fun LineChart.applyChartState(
             this.color = lineColor
         })
     }
-    // Plan 007 A1: drop the chart's internal highlight on every (re)apply.
+    // Drop the chart's internal highlight on every (re)apply.
     // The apply happens exactly when the data/theme changes (the tag guard
     // in ChartLine) - a selection change alone never re-applies - so this
     // clears the stale highlight (the orange line that survived a
@@ -1192,7 +1306,7 @@ private fun LineChart.applyChartState(
     highlightValues(null)
     data = LineData(*sets.toTypedArray())
 
-    // Selection -> the Compose tooltip above the chart (plan 006 A). The
+    // Selection -> the Compose tooltip above the chart. The
     // listener is (re)assigned on every apply so it always captures the
     // CURRENT points list. (v3.1.0 touches highlight by default - the
     // touch-enabled flag below is the only gate needed.)
@@ -1212,7 +1326,7 @@ private fun LineChart.applyChartState(
 }
 
 /**
- * Plan 006 B: the custom date range. Two M3 date pickers (start, end);
+ * The custom date range. Two M3 date pickers (start, end);
  * nothing before the first activity day or after today is pickable, and
  * end is clamped to >= start.
  */

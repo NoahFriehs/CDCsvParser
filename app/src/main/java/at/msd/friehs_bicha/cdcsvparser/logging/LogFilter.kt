@@ -1,12 +1,12 @@
 package at.msd.friehs_bicha.cdcsvparser.logging
 
 /**
- * Plan 010: the pure line filter behind the settings log viewer.
+ * The pure line filter behind the settings log viewer.
  *
  * FileLog lines look like
  * `yyyy-MM-dd HH:mm:ss.SSS LEVEL TAG: message` (LEVEL one of
  * VERBOSE/DEBUG/INFO/WARN/ERROR). Multi-line messages — most notably the
- * plan 007 "Crash" hook's stack dump — continue on FOLLOWING lines that
+ * the "Crash" log-hook stack dump — continue on FOLLOWING lines that
  * carry no head pattern; those belong to the entry they trail, so a
  * matching head keeps its run of continuation lines with it.
  */

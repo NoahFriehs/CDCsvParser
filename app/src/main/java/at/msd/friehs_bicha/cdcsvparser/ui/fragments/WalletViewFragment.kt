@@ -25,7 +25,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.viewmodel.WalletsViewModel
 import kotlinx.coroutines.launch
 
 /**
- * Wallet view screen (Compose surface, P3.1): allocation donut, searchable
+ * Wallet view screen (Compose surface): allocation donut, searchable
  * and sortable list of all wallets, backed by [WalletsViewModel].
  */
 class WalletViewFragment : Fragment() {

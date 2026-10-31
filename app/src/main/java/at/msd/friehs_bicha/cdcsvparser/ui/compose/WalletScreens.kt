@@ -49,7 +49,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import androidx.core.content.ContextCompat
 
 /**
- * Wallet view screen (Compose, P3.1): allocation donut (MPAndroidChart via
+ * Wallet view screen (Compose): allocation donut (MPAndroidChart via
  * AndroidView, decision #4), search + sort controls and the wallet list.
  * Search/sort state stays in WalletsViewModel; this file renders and
  * forwards input.
@@ -101,7 +101,7 @@ fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
         .map { PieEntry(it.assetValue.toFloat(), it.name) }
     val colors = CHART_COLOR_RES.map { ContextCompat.getColor(context, it) }
 
-    // Plan 006 C: MPAndroidChart legend text defaults to a light-mode
+    // MPAndroidChart legend text defaults to a light-mode
     // color; theme it from the Compose scheme (same as the line chart).
     val legendColor = toArgbInt(MaterialTheme.colorScheme.onSurfaceVariant)
     // The library's hole default is WHITE - a light disc in dark mode.

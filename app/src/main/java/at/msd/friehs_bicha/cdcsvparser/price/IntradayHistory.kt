@@ -15,7 +15,7 @@ import java.time.LocalDate
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Intraday EUR price REFINEMENT for the intraday chart frames (plan 009b).
+ * Intraday EUR price REFINEMENT for the intraday chart frames.
  *
  * A 15-minute chart frame cannot be priced from the daily closes alone, so
  * the pass fetches real sub-daily candles here:

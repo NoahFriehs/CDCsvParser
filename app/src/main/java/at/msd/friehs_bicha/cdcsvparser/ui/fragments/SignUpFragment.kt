@@ -16,7 +16,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 
 /**
- * Sign-up screen (Compose surface, P3.1). Validation + the Firebase
+ * Sign-up screen (Compose surface). Validation + the Firebase
  * create-user call stay here.
  */
 class SignUpFragment : Fragment() {
@@ -66,7 +66,7 @@ class SignUpFragment : Fragment() {
     private fun updateUI(currentUser: FirebaseUser?, errorText: String?) {
         if (currentUser != null) {
             if (!isAdded) return
-            // Plan 002: sign-up consumed the first-start screen as well.
+            // Sign-up consumed the first-start screen as well.
             PreferenceHelper.setIsFirstStart(requireContext(), false)
             findNavController().popBackStack(R.id.mainFragment, false)
         } else {

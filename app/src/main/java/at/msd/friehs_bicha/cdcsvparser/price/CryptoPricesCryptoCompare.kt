@@ -371,7 +371,7 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
      * handling as [getHistory]; (utcEpochSecond, price) ascending.
      */
     /**
-     * Plan 009b catch-all source: one CoinGecko `market_chart` call over
+     * Catch-all source for the intraday refinement: one CoinGecko `market_chart` call over
      * an ABSOLUTE window [fromDay]..[toDay] (epoch days, inclusive) - the
      * public tier answers with minute points for short windows and hourly
      * points up to 90 d. [symbol] must resolve to a CoinGecko id; the

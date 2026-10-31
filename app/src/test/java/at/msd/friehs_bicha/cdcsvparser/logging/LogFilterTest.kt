@@ -3,7 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser.logging
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** Plan 010: the settings log viewer's pure filter (JVM testable). */
+/** The settings log viewer's pure filter (JVM testable). */
 class LogFilterTest {
 
     private val head = "2026-10-15 14:50:01.123 "
@@ -55,7 +55,7 @@ class LogFilterTest {
 
     @Test
     fun crashHookMultiLineDumpIsKeptWhole() {
-        // The plan 007 A2 crash entry as it arrives after a file read:
+        // The crash entry as it arrives after a file read:
         // an ERROR head line (tag "Crash", message "uncaught on 'main': …")
         // followed by stack-frame continuation lines that match no head
         // pattern. Both must survive the ERROR filter together.

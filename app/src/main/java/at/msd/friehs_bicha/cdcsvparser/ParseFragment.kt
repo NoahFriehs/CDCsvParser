@@ -34,7 +34,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletSeries
 import kotlinx.coroutines.launch
 
 /**
- * Parse/overview screen (Compose surface, P3.1). An in-screen progress
+ * Parse/overview screen (Compose surface). An in-screen progress
  * indicator while the core processes the CSV, then the aggregate values as
  * metric cards.
  *
@@ -83,11 +83,19 @@ class ParseFragment : Fragment() {
     private val _parseData = mutableStateOf<ParseData?>(null)
     private val _profitLossColor = mutableStateOf(androidx.compose.ui.graphics.Color.Unspecified)
     private val _dailySeries = mutableStateOf<List<String>>(emptyList())
-    /** "CUR;YYYY-MM-DD;balance;bonus" wallet lines (G36 historical pricing). */
+    /** "CUR;YYYY-MM-DD;balance;bonus" wallet lines (historical pricing). */
     private val _walletSeries = mutableStateOf<List<String>>(emptyList())
     private val _currentPrices = mutableStateOf<Map<String, Double>>(emptyMap())
     private val _noInternet = mutableStateOf(false)
     private val _attributionVisible = mutableStateOf(true)
+    /**
+     * The chart panel's wallet scope (currency); null = the aggregate view.
+     * Fragment-instance state on purpose (like the chart rows around it):
+     * a recreated view re-reads it from [onCreateView], so the selection
+     * survives deep navigation back and theme toggles. Process death
+     * resets it to the aggregate like every other screen state.
+     */
+    private val _chartWalletScope = mutableStateOf<String?>(null)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -104,7 +112,7 @@ class ParseFragment : Fragment() {
                         attributionVisible = _attributionVisible.value,
                         dailySeries = _dailySeries.value,
                         walletSeries = _walletSeries.value,
-                        // Plan 008: the single process-wide pass publishes these
+                        // The single process-wide pass publishes these
                         // shared states; every visit observes the same objects,
                         // so a return re-joins the live counter (no second
                         // pass, no jumping counts).
@@ -113,6 +121,8 @@ class ParseFragment : Fragment() {
                         historyProgress = PriceHistoryPass.progress.value,
                         currentPrices = _currentPrices.value,
                         noInternet = _noInternet.value,
+                        chartWalletScope = _chartWalletScope.value,
+                        onChartWalletScopeChanged = { _chartWalletScope.value = it },
                         onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },
                         onAllTransactionsClick = { findNavController().navigate(R.id.transactionsFragment) },
                         core = core,
@@ -278,7 +288,7 @@ class ParseFragment : Fragment() {
     }
 
     /**
-     * G36 + plan 008: make sure the chart has the daily EUR price history
+     * Make sure the chart has the daily EUR price history
      * for every currency that holds assets — by ATTACHING to the single
      * process-wide pass ([PriceHistoryPass]): already running (or completed
      * today) with the same request = zero new work, the screen just reads

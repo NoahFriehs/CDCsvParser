@@ -5,7 +5,7 @@ import at.msd.friehs_bicha.cdcsvparser.BuildConfig
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 
 /**
- * Plan 004: price API key resolution. Precedence (one channel each):
+ * Price API key resolution. Precedence (one channel each):
  *
  * 1. the runtime key the user entered in Settings (DataStore),
  * 2. the build-time key - DEBUG builds pick it up from the gitignored

@@ -56,7 +56,7 @@ class AssetValue private constructor() : Serializable {
         }
 
         /**
-         * Plan 004: drops the in-memory 5-minute price cache for the
+         * Drops the in-memory 5-minute price cache for the
          * Settings "delete cache" feature. The on-disk JSON caches live in
          * the price package and are deleted by the caller.
          */

@@ -50,9 +50,9 @@ class App : Application() {
     }
 
     /**
-     * Plan 007 A2: before rethrowing, the full uncaught-exception stack is
+     * Before rethrowing, the full uncaught-exception stack is
      * written to the app log (`files/log/CDCsvParser.log`, tag "Crash") —
-     * visible in the settings log view (plan 010). The app still crashes
+     * visible in the settings log view. The app still crashes
      * EXACTLY as before (the previous handler is called, default or not);
      * this only guarantees that the next crash on ANY device leaves the
      * exact stack in a pullable file, no logcat needed. Early-startup

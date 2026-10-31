@@ -31,7 +31,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
 
 /**
- * Asset filter screen (Compose, P3.1): per-wallet aggregates above the
+ * Asset filter screen (Compose): per-wallet aggregates above the
  * wallet's transactions. The wallet list + value map come from
  * WalletsViewModel/CoreService (same R.id-keyed contract as the parse
  * screen); the transaction list is the shared Compose list component.

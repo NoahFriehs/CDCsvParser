@@ -45,7 +45,7 @@ object PriceApi {
         .readTimeout(15, TimeUnit.SECONDS)
         .callTimeout(30, TimeUnit.SECONDS)
         .addInterceptor { chain ->
-            // Plan 004: runtime user key (Settings) > build-time debug key
+            // Runtime user key (Settings) > build-time debug key
             // (gitignored root local.properties; release always "") >
             // keyless. Read per request so a changed key applies without a
             // restart; the header is only ever set for *.coingecko.com.
@@ -141,7 +141,7 @@ object PriceApi {
         ): Call<MarketChartResponse>
 
         /**
-         * Plan 009b: the same endpoint with an ABSOLUTE window (unix
+         * Intraday refinement: the same endpoint with an ABSOLUTE window (unix
          * seconds) so the intraday refinement can be anchored to the
          * export's last transaction day instead of "now".
          */

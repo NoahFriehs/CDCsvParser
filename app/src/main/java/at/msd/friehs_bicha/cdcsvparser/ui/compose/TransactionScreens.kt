@@ -48,7 +48,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.TransactionRow
 
 /**
- * Transactions screens (Compose, P3.1): the all-transactions list with the
+ * Transactions screens (Compose): the all-transactions list with the
  * search field, the currency chips (single-select) and the type chips
  * (multi-select), plus the transaction detail. All filtering logic stays in
  * TransactionsViewModel; this file only renders and forwards input.

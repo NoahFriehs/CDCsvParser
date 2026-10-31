@@ -29,8 +29,8 @@
     <!-- Accessibility label of the Σ (running-total spent) chip; the
          visible glyph is language-neutral. -->
     <string name="chart_cumulative_spent_cd">Cumulative spent</string>
-    <!-- Plan 009a: short labels so the row keeps fitting when 6 h / 15 m
-         (009b) join it. D = day (English); the German resource says T. -->
+    <!-- Short labels so the row keeps fitting when 6 h / 15 m
+         (the intraday frames) join it. D = day (English); the German resource says T. -->
     <string name="timeframe_week">W</string>
     <string name="timeframe_month">M</string>
     <string name="timeframe_quarter">Q</string>
@@ -44,6 +44,7 @@
     <string name="chart_no_data">No data for this selection.</string>
     <string name="chart_history_loading">Price history: %1$d of %2$d …</string>
     <string name="chart_history_estimated_note">Dashed section: estimated — the free price history only goes back ~1 year.</string>
+    <string name="chart_wallet_total">Total</string>
     <string name="range_all">All</string>
     <string name="range_three_months">3M</string>
     <string name="range_six_months">6M</string>

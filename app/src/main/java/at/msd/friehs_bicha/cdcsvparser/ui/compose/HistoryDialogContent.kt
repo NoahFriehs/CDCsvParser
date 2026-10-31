@@ -38,7 +38,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 /**
- * Upload history list (Compose, P3.1): pick an old upload to parse or delete
+ * Upload history list (Compose): pick an old upload to parse or delete
  * it — by swipe or the per-row button. Both ask for confirmation first,
  * because the files in `files/` are the only copy of the user's data on this
  * device. Lives in a ComposeView inside the dialog shell; results are

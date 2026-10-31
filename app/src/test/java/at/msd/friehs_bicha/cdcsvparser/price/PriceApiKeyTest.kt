@@ -3,7 +3,7 @@ package at.msd.friehs_bicha.cdcsvparser.price
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** JVM tests for the plan 004 key precedence. */
+/** JVM tests for the API key precedence. */
 class PriceApiKeyTest {
 
     @Test

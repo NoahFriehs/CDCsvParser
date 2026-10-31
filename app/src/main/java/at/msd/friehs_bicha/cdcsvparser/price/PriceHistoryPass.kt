@@ -13,7 +13,7 @@ import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryProvider.DailyPrices
 import java.time.LocalDate
 
 /**
- * The single process-wide price-history pass (plan 008). Screen visits are
+ * The single process-wide price-history pass. Screen visits are
  * OBSERVERS: [ensureAll] with the current export's currencies either
  * attaches to a pass that already covers the request (live, or completed
  * earlier today — every entry is fresh then) or supersedes the current
@@ -39,7 +39,7 @@ object PriceHistoryPass {
     val history: MutableState<Map<String, DailyPrices>> = mutableStateOf(emptyMap())
 
     /**
-     * Per-symbol intraday refinement (plan 009b) published by the pass's
+     * Per-symbol intraday refinement published by the pass's
      * phase 3; the intraday chart frames flatten it (missing entry = the
      * symbol only has the daily-held-flat fallback).
      */

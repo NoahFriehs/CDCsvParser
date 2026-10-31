@@ -21,7 +21,7 @@ import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.launch
 
 /**
- * All-transactions screen (Compose surface, P3.1): search + currency filter
+ * All-transactions screen (Compose surface): search + currency filter
  * chips on top of the transaction list, all fed by [TransactionsViewModel].
  */
 class TransactionsFragment : Fragment() {

@@ -24,7 +24,7 @@ import java.math.BigDecimal
 import kotlinx.coroutines.launch
 
 /**
- * Transaction detail screen (Compose surface, P3.1; argument: transactionID).
+ * Transaction detail screen (Compose surface; argument: transactionID).
  */
 class TransactionDetailFragment : Fragment() {
 

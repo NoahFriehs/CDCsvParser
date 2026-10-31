@@ -56,7 +56,7 @@ class StartingActivity : ComponentActivity() {
     private fun determineNextActivity(): Intent = Intent(this, MainActivity::class.java)
 
     private fun fastStart() {
-        // Fast start (plan 003): with "Store data local" + "Enable fast
+        // Fast start: with "Store data local" + "Enable fast
         // start" on and a local model present, the last parse is shown
         // directly. The C++ core mode loads its own persisted state (the
         // core saves it after every parse since the save fix); the Room

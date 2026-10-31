@@ -40,7 +40,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
 /**
- * Settings screen (Compose surface, P3.1). Persistence + the Firebase
+ * Settings screen (Compose surface). Persistence + the Firebase
  * confirm dialogs + logout stay here.
  */
 class SettingsFragment : Fragment() {
@@ -60,10 +60,10 @@ class SettingsFragment : Fragment() {
     private val _dataLocal = mutableStateOf(false)
     private val _fastStart = mutableStateOf(false)
     private val _signedIn = mutableStateOf(auth.currentUser != null)
-    // Plan 004: runtime price API keys ("" = unset / keyless).
+    // Runtime price API keys ("" = unset / keyless).
     private val _cgKey = mutableStateOf("")
     private val _ccKey = mutableStateOf("")
-    // Plan 010: the log viewer (file 0 = Kotlin app log, 1 = C++ core log;
+    // The log viewer (file 0 = Kotlin app log, 1 = C++ core log;
     // filter 0 = All, 1 = Warning+, 2 = Error). The lines are read +
     // filtered in [refreshLog] on the IO dispatcher.
     private val _logVisible = mutableStateOf(false)
@@ -74,7 +74,7 @@ class SettingsFragment : Fragment() {
     /** The longest tail the viewer reads into memory (2000 lines ≈ 200 KB). */
     private val LOG_TAIL_LINES = 2000
 
-    /** The on-disk price cache files (plan 004). */
+    /** The on-disk price cache files. */
     private val PRICE_CACHE_FILES = arrayOf("history_prices.json", "symbol_id_cache.json")
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -199,7 +199,7 @@ class SettingsFragment : Fragment() {
     }
 
     /**
-     * Plan 004: removes the app's price caches - the two on-disk JSON
+     * Removes the app's price caches - the two on-disk JSON
      * files (deep history + symbol->id map) and the in-memory 5-minute
      * price cache. The CSV imports (user data) and the Room DB are NOT
      * touched. The next parse re-fetches the history; until then the
@@ -239,7 +239,7 @@ class SettingsFragment : Fragment() {
         if (fileIndex == 0) FileLog.getLogFiles() else File(core.logFilePath)
 
     /**
-     * Plan 010: (re)read the chosen log tail on the IO dispatcher and
+     * Re-reads the chosen log tail on the IO dispatcher and
      * publish the filtered lines. Cheap to call on every toggle.
      */
     private fun refreshLog() {

@@ -41,7 +41,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 /**
- * Main screen (Compose surface, P3.1): import a CSV (new or from history)
+ * Main screen (Compose surface): import a CSV (new or from history)
  * and jump into the overview. The SAF upload flow, the history dialog and
  * the progress dialog stay in the fragment.
  */
@@ -151,7 +151,7 @@ class MainFragment : Fragment() {
         )
 
         // The launcher activity passes "fastStart" to go straight to the
-        // overview (plan 003). The extra is consumed ONCE: a recreated view
+        // overview (fast start). The extra is consumed ONCE: a recreated view
         // (pop-back delivers a fresh view with savedInstanceState == null,
         // and process restore / rotation re-deliver the same intent) must
         // never fire the navigation a second time - that is what made the

@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Asset filter screen (Compose surface, P3.1): per-wallet aggregate values
+ * Asset filter screen (Compose surface): per-wallet aggregate values
  * + the wallet's transactions (argument: walletID, optional).
  */
 class AssetsFilterFragment : Fragment() {

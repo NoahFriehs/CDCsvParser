@@ -46,7 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import at.msd.friehs_bicha.cdcsvparser.R
 
 /**
- * Settings screen (Compose, P3.1). Mirrors the old `activity_settings.xml`;
+ * Settings screen (Compose). Mirrors the old `activity_settings.xml`;
  * all persistence (PreferenceHelper) + the Firebase confirm dialogs stay in
  * the fragment.
  */
@@ -187,7 +187,7 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Plan 004: runtime price API keys + the cache delete feature.
+            // Runtime price API keys + the cache delete feature.
             Text(
                 text = stringResource(R.string.api_keys_section),
                 style = MaterialTheme.typography.titleMedium,
@@ -224,9 +224,9 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Plan 010: the two app logs (Kotlin app log + C++ core log).
+            // The two app logs (Kotlin app log + C++ core log).
             // Read/filter/copy from the app itself - no adb needed; the
-            // crash entries (plan 007 A2) show up here as ERROR lines.
+            // crash entries show up here as ERROR lines.
             LogSection(
                 visible = logVisible,
                 onVisibleChange = onLogVisibleChange,
@@ -298,7 +298,7 @@ fun SettingsScreen(
 }
 
 /**
- * Plan 010: the log viewer. File + severity are chosen with compact
+ * The log viewer. File + severity are chosen with compact
  * segmented rows; the body is a self-scrolling monospace tail that stays
  * at the newest lines (the log grows in time, the user reads from the
  * bottom). Copy works on the filtered tail; Clear confirms in the
@@ -401,7 +401,7 @@ private fun LogSection(
 }
 
 /**
- * Plan 004: a masked API-key field with a show/hide toggle and a clear
+ * A masked API-key field with a show/hide toggle and a clear
  * action. Persistence happens at every change (the value is a short
  * local settings string, not user data).
  */

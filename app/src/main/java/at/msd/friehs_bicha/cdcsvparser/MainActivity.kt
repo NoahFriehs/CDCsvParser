@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         EdgeToEdge.enable(this, findViewById(android.R.id.content))
         installDestinationMotion()
 
-        // Plan 002: the sign-in screen shows only on the very FIRST start
+        // The sign-in screen shows only on the very FIRST start
         // on this device (DataStore flag, default = true -> true on a
         // fresh install). Every later cold start goes straight to the main
         // screen; a signed-out user simply runs local-only. The flag is

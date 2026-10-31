@@ -51,7 +51,7 @@ object PreferenceHelper {
     const val MAX_LOG_LEVEL = "MAX_LOG_LEVEL"
     const val IS_FIRST_START = "IS_FIRST_START"
     const val USE_CPP = "USE_CPP"
-    // Plan 004: user-supplied price API keys (Settings -> API keys).
+    // User-supplied price API keys (Settings -> API keys).
     const val CG_API_KEY = "cg_api_key"
     const val CC_API_KEY = "cc_api_key"
 
@@ -397,7 +397,7 @@ object PreferenceHelper {
     }
 
     /**
-     * sets the user-supplied CoinGecko API key (plan 004; blank = unset,
+     * sets the user-supplied CoinGecko API key (blank = unset,
      * the provider falls back to the build-time key / keyless).
      */
     fun setCoinGeckoApiKey(context: Context, apiKey: String) {
@@ -413,7 +413,7 @@ object PreferenceHelper {
     }
 
     /**
-     * sets the user-supplied CryptoCompare API key (plan 004; blank =
+     * sets the user-supplied CryptoCompare API key (blank =
      * unset, the deep source is then disabled).
      */
     fun setCryptoCompareApiKey(context: Context, apiKey: String) {

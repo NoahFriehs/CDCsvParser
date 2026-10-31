@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import at.msd.friehs_bicha.cdcsvparser.R
 
 /**
- * Login screen (Compose, P3.1). Mirrors the look of the old
+ * Login screen (Compose). Mirrors the look of the old
  * `activity_login.xml`; the Firebase calls stay in the fragment (same
  * behavior, including the "use without login" first-start side effect).
  */

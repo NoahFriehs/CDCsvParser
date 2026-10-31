@@ -18,7 +18,7 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 /**
- * Login screen (Compose surface, P3.1). The Firebase auth calls and the
+ * Login screen (Compose surface). The Firebase auth calls and the
  * navigation stay here; the screen itself is `LoginScreen`.
  */
 class LoginFragment : Fragment() {
@@ -59,7 +59,7 @@ class LoginFragment : Fragment() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    // Plan 002: sign-in consumed the first-start screen -
+                    // Sign-in consumed the first-start screen -
                     // same side effect as "use without login".
                     PreferenceHelper.setIsFirstStart(requireContext(), false)
                     goToMain()

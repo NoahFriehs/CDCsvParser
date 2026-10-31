@@ -41,7 +41,7 @@ class PriceHistoryProvider(
         listOf(
             BitstampHistorySource(),
             KrakenHistorySource(),
-            // Plan 004: runtime user key (Settings) > build-time key >
+            // Runtime user key (Settings) > build-time key >
             // keyless. The provider is re-created on every screen visit,
             // so a changed key takes effect on the next one.
             CryptoCompareHistorySource(
@@ -120,7 +120,7 @@ class PriceHistoryProvider(
         /** Below this many shared days no source can yet be proven wrong. */
         private const val MIN_OVERLAP_DAYS = 30
 
-        /** Current UTC day (epoch days) - pass bookkeeping (plan 008). */
+        /** Current UTC day (epoch days) - pass bookkeeping. */
         fun todayUtcDay(): Long = System.currentTimeMillis() / DAY_MS
 
         /**
@@ -255,7 +255,7 @@ class PriceHistoryProvider(
         // Phase 2 (network): every symbol not published above — stale
         // caches (tail refresh OR deep backfill when the wanted window is
         // older than the cache) and uncached symbols. The per-symbol
-        // cancellation check makes a SUPERSEDED pass (plan 008, a newer
+        // cancellation check makes a SUPERSEDED pass (a newer
         // request cancelled the job) stop after the symbol in flight —
         // without it, this fully blocking loop would run to completion
         // regardless of the cancellation.

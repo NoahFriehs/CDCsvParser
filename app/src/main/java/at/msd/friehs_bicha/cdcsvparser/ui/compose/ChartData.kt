@@ -37,11 +37,11 @@ enum class ChartSeries(
 }
 
 /** User-selectable time frames for the overview charts. */
-// Order = chip order in the UI row (plan 009a: W/M/Q/J + T; plan 009b:
+// Order = chip order in the UI row (W/M/Q/J + T;
 // + 6 h / 15 m, the window-limited intraday frames).
 enum class TimeFrame { WEEK, MONTH, QUARTER, YEAR, DAY, HOURS_6, MINUTES_15 }
 
-/** An intraday frame's data window (plan 009b scope decisions). */
+/** An intraday frame's data window. */
 data class IntradayFrame(val windowSeconds: Int, val windowDays: Int)
 
 /** The intraday data window of an intraday frame; null for the daily ones. */
@@ -94,7 +94,7 @@ fun intradayWindow(
 }
 
 /**
- * Preset display ranges for the overview chart (plan 006): each preset is
+ * Preset display ranges for the overview chart: each preset is
  * a start-only limit relative to today; a custom (user-picked) range is
  * applied separately via [limitRange] with both bounds set.
  */
@@ -175,9 +175,9 @@ fun bucketize(
 
 /** Fixed-format bucket key (see [bucketLabel] for the display form). */
 fun bucketKey(date: LocalDate, timeFrame: TimeFrame): String = when (timeFrame) {
-    // Plan 009a: one bucket per calendar day (the core's native resolution).
+    // One bucket per calendar day (the core's native resolution).
     TimeFrame.DAY,
-    // Plan 009b: intraday points already carry the core's window keys -
+    // Intraday points already carry the core's window keys -
     // this arm only keeps the compiler happy (never bucketed).
     TimeFrame.HOURS_6,
     TimeFrame.MINUTES_15 -> date.toString()
@@ -206,7 +206,7 @@ fun bucketKey(date: LocalDate, timeFrame: TimeFrame): String = when (timeFrame) 
     TimeFrame.YEAR -> "%04d".format(date.year)
 }
 
-/** One line of the core's per-wallet daily series (G36): running token
+/** One line of the core's per-wallet daily series: running token
  *  `balance` / `bonus` of one currency after one active day. */
 data class WalletDay(val date: LocalDate, val balance: Double, val bonus: Double)
 
@@ -318,10 +318,10 @@ fun historicalStockSeries(
 
         TimeFrame.YEAR -> { d -> LocalDate.of(d.year, 12, 31) }
 
-        // Plan 009a: a day bucket ends on the day itself.
+        // A day bucket ends on the day itself.
         TimeFrame.DAY -> { d -> d }
 
-        // The intraday frames (009b) never reach this daily mapper (they
+        // The intraday frames never reach this daily mapper (they
         // use [historicalWindowState]); identity keeps the when exhaustive.
         TimeFrame.HOURS_6, TimeFrame.MINUTES_15 -> { d -> d }
     }
@@ -386,15 +386,55 @@ fun historicalStockSeries(
 }
 
 /**
+ * The historical trajectory of ONE wallet: its EUR-valued running balance
+ * over the same buckets and with the same rules as [historicalStockSeries]
+ * (bucket-end pricing, live-price pin for the bucket containing [today],
+ * first-price back-fill) - restricted to [cur] alone. No spent flow is
+ * passed: a single wallet's trajectory is its valued balance, so the
+ * returned P/L line coincides with the value line and only
+ * [HistoricalSeries.value] carries meaning.
+ *
+ * The wallet's OWN price history decides its estimated region: a bucket is
+ * estimated when it ends before the currency's first real data point,
+ * independent of the other symbols' histories (the aggregate's all-symbols
+ * start would misplace the dashed prefix for a wallet whose own history is
+ * younger or older).
+ *
+ * @return the single-wallet series, or null when the wallet has no
+ *         activity at all (the panel then shows its empty state instead of
+ *         a zero line).
+ */
+fun walletValueSeries(
+    walletSeries: Map<String, List<WalletDay>>,
+    prices: Map<String, PriceSeries>,
+    cur: String,
+    frame: TimeFrame,
+    today: LocalDate,
+    currentPrices: Map<String, Double> = emptyMap(),
+): HistoricalSeries? {
+    val days = walletSeries[cur] ?: return null
+    if (days.isEmpty()) return null
+    val own = prices[cur]
+    return historicalStockSeries(
+        walletSeries = mapOf(cur to days),
+        prices = if (own != null) mapOf(cur to own) else emptyMap(),
+        spentPoints = emptyList(),
+        frame = frame,
+        today = today,
+        currentPrices = currentPrices,
+    )
+}
+
+/**
  * The first day of the [timeFrame] bucket with the given [key] - the
  * inverse of [bucketKey] (both use the hand-rolled ISO-week logic: the
  * week is owned by its Thursday). Null when the key is malformed.
  */
 fun bucketStartDate(key: String, timeFrame: TimeFrame): LocalDate? = when (timeFrame) {
-    // Plan 009a: the key IS the ISO date (inverse of [bucketKey]).
+    // The key IS the ISO date (inverse of [bucketKey]).
     TimeFrame.DAY -> runCatching { LocalDate.parse(key) }.getOrNull()
 
-    // Plan 009b: the window start is embedded in the ISO date prefix.
+    // The intraday window start is embedded in the ISO date prefix.
     TimeFrame.HOURS_6, TimeFrame.MINUTES_15 ->
         runCatching { LocalDate.parse(key.substring(0, 10)) }.getOrNull()
 
@@ -475,7 +515,7 @@ fun cumulative(points: List<ChartPoint>): List<ChartPoint> {
  * follows the device locale like the old monthly chart did).
  */
 fun bucketLabel(key: String, timeFrame: TimeFrame): String = when (timeFrame) {
-    // Plan 009a: the device-locale short date ("15.1.26" in de).
+    // The device-locale short date ("15.1.26" in de).
     TimeFrame.DAY -> runCatching {
         LocalDate.parse(key).format(
             // Android's java.time has no 2-arg ofLocalizedDate(style, locale).
@@ -483,7 +523,7 @@ fun bucketLabel(key: String, timeFrame: TimeFrame): String = when (timeFrame) {
         )
     }.getOrDefault(key)
 
-    // Plan 009b intraday keys are the core's window starts ("YYYY-MM-DD
+    // Intraday keys are the core's window starts ("YYYY-MM-DD
     // HH:MM"): both frames show the date + time ("10-16 06:00",
     // "10-16 06:30") - each frame spans a full week, so a dateless clock
     // time makes every axis label look like one single day.
@@ -516,7 +556,7 @@ fun bucketLabel(key: String, timeFrame: TimeFrame): String = when (timeFrame) {
 }
 
 // ------------------------------------------------------------------------
-// Plan 009b: the intraday (sub-daily) series.
+// The intraday (sub-daily) series.
 
 /** One core sub-daily wallet line: the RUNNING unpriced token/bonus
  *  position at the start of one fixed [window]. */
@@ -576,7 +616,7 @@ internal fun windowKeyOf(tsSec: Long): String =
     Instant.ofEpochSecond(tsSec).atOffset(ZoneOffset.UTC).format(windowKeyFormatter)
 
 /**
- * One symbol's intraday pricing on a frame's window grid (plan 009b):
+ * One symbol's intraday pricing on a frame's window grid:
  * (windowStartTsSec, price) pairs covering the whole frame window.
  * [firstRealIndex] is the first pair backed by a REAL intraday price
  * (not the daily-held-flat / live fallback) - the leading pairs form the
@@ -811,7 +851,7 @@ fun historicalWindowState(
 }
 
 /**
- * The STOCK series (value/pl/bonus) of one intraday frame (plan 009b) from
+ * The STOCK series (value/pl/bonus) of one intraday frame from
  * the raw core rows: the per-currency symbols of the wallet rows are priced
  * with [flattenIntraday] (refinement first, then daily-close-held-flat,
  * then the live pin), then [historicalWindowState] values the running
@@ -827,7 +867,7 @@ fun historicalWindowState(
  *        full frame span); a narrowed past window ends the line there.
  */
 // ------------------------------------------------------------------------
-// Plan 009c: the all-series overlay.
+// The all-series overlay.
 
 /** One single-series point list as overlay input: [points] on its own
  *  bucket keys, [estimated] = the leading (dashed) prefix, [series] the
@@ -913,5 +953,43 @@ fun intradaySeries(
         )?.let { pricing[cur] = it }
     }
     return historicalWindowState(parseSubDailySpent(subSpentRows), wallet, pricing)
+}
+
+/**
+ * The intraday counterpart of [walletValueSeries]: one wallet's valued-
+ * balance trajectory on the frame's window grid, derived from the SAME raw
+ * rows and the SAME pipeline as [intradaySeries] with every non-[cur] row
+ * and symbol filtered out up front - so the window alignment, the opening-
+ * line carry, the daily-close fallback and the live pin are the identical
+ * code path as the aggregate. No spent flow (same rationale as
+ * [walletValueSeries]: only [HistoricalSeries.value] carries meaning).
+ *
+ * @return the single-wallet series, or null when the wallet has no
+ *         sub-daily rows at all (panel empty state, not a zero line).
+ */
+fun walletIntradayValueSeries(
+    subWalletRows: List<String>,
+    intraday: Map<String, List<Pair<Long, Double>>>,
+    daily: Map<String, List<Pair<Long, Double>>>,
+    cur: String,
+    livePrices: Map<String, Double>,
+    nowTsSec: Long,
+    frame: IntradayFrame,
+    windowStart: Long = intradayGridStart(nowTsSec, frame),
+    windowEnd: Long = nowTsSec,
+): HistoricalSeries? {
+    val ownRows = subWalletRows.filter { it.startsWith("$cur;") }
+    if (ownRows.isEmpty()) return null
+    return intradaySeries(
+        subSpentRows = emptyList(),
+        subWalletRows = ownRows,
+        intraday = intraday.filterKeys { it == cur },
+        daily = daily.filterKeys { it == cur },
+        livePrices = livePrices,
+        nowTsSec = nowTsSec,
+        frame = frame,
+        windowStart = windowStart,
+        windowEnd = windowEnd,
+    )
 }
 

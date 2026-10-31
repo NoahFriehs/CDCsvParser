@@ -67,7 +67,7 @@ class ComposeUiTest {
                 "20.01.2026 11:00:00;UI Test Wallet;Deposit;;;ETH;0.1;;;" +
                 "UI test deposit;ui-tx-2;Manual;CITest\n",
         )
-        // Plan 008: a second upload with 8 coins (deliberately NO BTC/ETH,
+        // A second upload with 8 coins (deliberately NO BTC/ETH,
         // so a still-running pass of another test cannot pollute this
         // test's per-symbol fetch counts).
         File(target.filesDir, "2026-02-10-09-00-00.csv").writeText(
@@ -134,8 +134,8 @@ class ComposeUiTest {
     }
 
     /**
-     * The series chip row is the only chart row that scrolls horizontally
-     * (021); the chips beyond the viewport are absent from the a11y
+     * The series chip row is the only chart row that scrolls horizontally;
+     * the chips beyond the viewport are absent from the a11y
      * window hierarchy. Locate the row's band through the first chip (which
      * is at rest right after the taps) and swipe left until the last chip
      * is revealed - a no-op when everything already fits. Each swipe is
@@ -188,7 +188,7 @@ class ComposeUiTest {
     /**
      * Waits for [by], scrolling the screen up in between polls: the parse
      * overview is a scrollable column and its lower parts (the chart,
-     * the attribution) sit below the fold since plan 006 grew the chart
+     * the attribution) sit below the fold: the tall chart
      * panel - a plain wait can never see them.
      */
     private fun waitForScrolling(by: BySelector, message: String, timeout: Long = 60_000): UiObject2 {
@@ -290,7 +290,7 @@ class ComposeUiTest {
             "price attribution not posted",
         )
         waitText(str(R.string.overview_charts))
-        // The G35 chart panel: the default series selection is visible.
+        // The chart panel: the default series selection is visible.
         waitText(str(R.string.series_spent))
     }
 
@@ -345,7 +345,7 @@ class ComposeUiTest {
         // Let the history pass start and run a bit, then LEAVE the screen
         // (the pass keeps running in its process scope) and return: the
         // returning visit must ATTACH to the live pass, not start a second
-        // one (plan 008: the old view-scoped launches both kept running —
+        // one (the old view-scoped launches both kept running —
         // the provider pass has no suspension points — and both wrote the
         // same counter, which is what the markers below would expose).
         sleep(2_000)
@@ -392,7 +392,7 @@ class ComposeUiTest {
     }
 
     /**
-     * Plan 007 A3: hammer the three chip rows of the posted chart panel in
+     * Hammer the three chip rows of the posted chart panel in
      * a fast, alternating order (the reported phone-crash interaction) and
      * assert the app is still alive with the chart panel intact. Will not
      * reproduce the data/OS-specific phone crash itself, but catches any
@@ -468,7 +468,7 @@ class ComposeUiTest {
             frames.size + ranges.size,
             fixedChips,
         )
-        // The series row is a horizontal scroll (021): on narrow screens the
+        // The series row scrolls horizontally: on narrow screens the
         // later chips sit beyond the viewport, where Compose keeps them out
         // of the a11y window hierarchy. Count them over the UNION of the row
         // at rest and the row scrolled to the end, incl. the Σ chip (matched
@@ -484,6 +484,56 @@ class ComposeUiTest {
             "series chips missing after rapid switching",
             seriesSelectors.size,
             union,
+        )
+    }
+
+    /**
+     * The wallet scope row under the chart panel: the aggregate chip plus
+     * one chip per ledger currency. Selecting a wallet keeps the panel up
+     * (single wallet line mode) and the total chip restores the aggregate
+     * view. The assertions stay text-only: the chart itself is a canvas -
+     * the per-wallet trajectory VALUES are verified by the device smoke on
+     * the real export against the asset screen.
+     */
+    @Test
+    fun chartWalletScopeRowSwitchesAndRestores() {
+        ensureOnMain()
+        parseTestUpload()
+        // The scope row sits at the bottom of the panel (under the chart)
+        // - the same scroll target band as the attribution footer.
+        waitForScrolling(
+            By.text(str(R.string.chart_wallet_total)),
+            "wallet scope row not visible",
+        )
+        // The fixture's wallet chip: the deposit row books an ETH wallet,
+        // the other row settles in the inner EUR wallet, which the core
+        // keeps OUT of the per-wallet series (cards scope).
+        tap(waitForScrolling(By.text("ETH"), "ETH wallet chip not visible"))
+        sleep(500)
+        waitForScrolling(
+            By.text(str(R.string.overview_charts)),
+            "chart panel gone in wallet mode",
+        )
+        waitForScrolling(
+            By.text(str(R.string.chart_wallet_total)),
+            "wallet scope row gone in wallet mode",
+        )
+
+        // Back to the aggregate view via the total chip.
+        tap(
+            waitForScrolling(
+                By.text(str(R.string.chart_wallet_total)),
+                "total chip not visible in wallet mode",
+            ),
+        )
+        sleep(500)
+        waitForScrolling(
+            By.text(str(R.string.overview_charts)),
+            "chart panel gone after restore",
+        )
+        waitForScrolling(
+            By.text(str(R.string.chart_wallet_total)),
+            "wallet scope row gone after restore",
         )
     }
 

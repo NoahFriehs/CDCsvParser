@@ -11,7 +11,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.AboutScreen
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 
 /**
- * About screen (Compose surface, P3.1).
+ * About screen (Compose surface).
  */
 class AboutUsFragment : Fragment() {
 
