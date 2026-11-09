@@ -23,6 +23,9 @@
     <string name="history_purged_count">%1$d Dateien gelöscht</string>
     <string name="history_updated_existing">Gleicher Upload wie bereits vorhanden - Eintrag aktualisiert</string>
     <string name="history_file_missing">Die Datei dieses Uploads existiert nicht mehr</string>
+    <string name="history_combined_open" formatted="false">Kombiniert öffnen · %1$d ausgewählt</string>
+    <string name="combined_view_badge" formatted="false">Kombinierte Ansicht · %1$d Dateien</string>
+    <string name="duplicates_skipped" formatted="false">Doppelte Zeilen übersprungen: %1$d</string>
     <string name="overview_charts">Diagramme</string>
     <string name="series_spent">Ausgaben</string>
     <string name="series_portfolio_value">Vermögen</string>

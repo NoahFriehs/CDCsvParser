@@ -22,6 +22,9 @@
     <string name="history_purged_count">%1$d files deleted</string>
     <string name="history_updated_existing">Same file as an existing upload - entry updated</string>
     <string name="history_file_missing">The file for this upload no longer exists</string>
+    <string name="history_combined_open" formatted="false">Open combined · %1$d selected</string>
+    <string name="combined_view_badge" formatted="false">Combined view · %1$d files</string>
+    <string name="duplicates_skipped" formatted="false">Duplicate rows skipped: %1$d</string>
     <string name="overview_charts">Charts</string>
     <string name="series_spent">Spent</string>
     <string name="series_portfolio_value">Portfolio value</string>

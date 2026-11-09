@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -130,6 +131,13 @@ fun ParseScreen(
     onChartWalletScopeChanged: (String?) -> Unit = {},
     onFilterClick: () -> Unit,
     onAllTransactionsClick: () -> Unit,
+    /**
+     * How many history files the live model was built from (null = a
+     * plain single import, the badge is hidden). Tap = the pre-checked
+     * multi-select dialog (re-import the union, or edit it).
+     */
+    combinedFileCount: Int? = null,
+    onCombinedBadgeClick: () -> Unit = {},
     /** The core surface the chart frames read. */
     core: CoreSource = Core,
 ) {
@@ -166,6 +174,28 @@ fun ParseScreen(
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 Spacer(Modifier.height(8.dp))
+            }
+
+            // The combined-view badge: the one live model is a union of N
+            // persisted history files - explainable after EVERY restart
+            // (the fast start rehydrates that model from the v3 save), and
+            // tapping it re-opens the multi-select dialog pre-checked.
+            AnimatedVisibility(
+                visible = combinedFileCount != null,
+                enter = Motion.sectionEnter(),
+                exit = Motion.sectionExit(),
+            ) {
+                val combinedCount = combinedFileCount ?: 0
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.combined_view_badge, combinedCount),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onCombinedBadgeClick)
+                        .padding(vertical = 4.dp),
+                )
             }
 
             if (data != null && data.assets == null) {

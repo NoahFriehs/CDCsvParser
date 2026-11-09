@@ -26,7 +26,10 @@ import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryPass
+import at.msd.friehs_bicha.cdcsvparser.ui.fragments.HistoryDialogFragment
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
+import java.io.File
 import java.time.LocalDate
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.ParseScreen
@@ -68,6 +71,16 @@ class ParseFragment : Fragment() {
     private val dedupNoteHandler = Handler(Looper.getMainLooper())
 
     /**
+     * The counted-duplicate note of a COMBINED import: the core's skip
+     * counter is read once per combined run (latched in the service),
+     * shown debounced exactly like the dedup re-upload note - both notes
+     * are one-shot and mutually exclusive (a single re-upload never
+     * dedups, a combined import never arrives as a re-upload note).
+     */
+    private var pendingDuplicateSkips = 0L
+    private val dupNoteHandler = Handler(Looper.getMainLooper())
+
+    /**
      * Shows the pending dedup note. Lives on its own handler (not
      * [timeoutHandler]) because it is re-debounced on every data post;
      * the delay outlasts the skip note's LENGTH_LONG (2700 ms) so the
@@ -78,7 +91,21 @@ class ParseFragment : Fragment() {
         if (isAdded && v != null) showDedupNote(v)
     }
 
+    private val dupNoteRunnable = Runnable {
+        val v = view  // local: Fragment.view is open - no smart cast
+        if (isAdded && v != null) showDuplicateNote(v)
+    }
+
     private val _isParsing = mutableStateOf(true)
+    /**
+     * The combined-view badge (file count, null = hidden): the live
+     * model is a union of N persisted history files, not a plain single
+     * import - the badge makes the fast-start rehydrated state
+     * explainable after every restart. Source of truth = the DataStore
+     * selection, re-read at view creation AND on every data post (the
+     * import pipeline updates it right before its post).
+     */
+    private val _combinedFileCount = mutableStateOf<Int?>(null)
     /** Typed parse cards (null = not posted yet); a null field = hidden row. */
     private val _parseData = mutableStateOf<ParseData?>(null)
     private val _profitLossColor = mutableStateOf(androidx.compose.ui.graphics.Color.Unspecified)
@@ -125,9 +152,20 @@ class ParseFragment : Fragment() {
                         onChartWalletScopeChanged = { _chartWalletScope.value = it },
                         onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },
                         onAllTransactionsClick = { findNavController().navigate(R.id.transactionsFragment) },
+                        combinedFileCount = _combinedFileCount.value,
+                        onCombinedBadgeClick = { onCombinedBadgeClick() },
                         core = core,
                     )
                 }
+            }
+            // The badge re-open: the pre-checked multi-select dialog.
+            childFragmentManager.setFragmentResultListener(
+                HistoryDialogFragment.REQUESTED_SELECT_COMBINED, viewLifecycleOwner
+            ) { _, bundle ->
+                val fileNames =
+                    bundle.getStringArrayList(HistoryDialogFragment.KEY_FILES)
+                        ?: return@setFragmentResultListener
+                startCombinedImportFromBadge(fileNames)
             }
         }
     }
@@ -156,6 +194,10 @@ class ParseFragment : Fragment() {
             arguments?.remove(ARG_DEDUP_NOTE)
             pendingDedupNote = true
         }
+        // Fast-start landing: the selection may already be persisted
+        // (model rehydrated from the v3 save) - the data observer keeps
+        // it fresh when an import in flight updates it.
+        refreshCombinedBadge()
         // #47: the settings gear lives in the activity action bar (one
         // header bar, like every other screen). View-scoped provider:
         // it is attached for the lifetime of THIS fragment's view and
@@ -187,6 +229,7 @@ class ParseFragment : Fragment() {
     override fun onDestroyView() {
         timeoutHandler.removeCallbacks(parseTimeout)
         dedupNoteHandler.removeCallbacks(dedupNoteRunnable)
+        dupNoteHandler.removeCallbacks(dupNoteRunnable)
         super.onDestroyView()
     }
 
@@ -195,6 +238,63 @@ class ParseFragment : Fragment() {
         if (!pendingDedupNote) return
         pendingDedupNote = false
         Snackbar.make(view, R.string.history_updated_existing, Snackbar.LENGTH_SHORT).show()
+    }
+
+    /** Shows (and consumes) the pending counted-duplicate note. */
+    private fun showDuplicateNote(view: View) {
+        if (pendingDuplicateSkips <= 0L) return
+        val count = pendingDuplicateSkips
+        pendingDuplicateSkips = 0L
+        Snackbar.make(
+            view,
+            getString(R.string.duplicates_skipped, count),
+            Snackbar.LENGTH_LONG,
+        ).show()
+    }
+
+    /**
+     * Re-reads the persisted combined selection; null hides the badge
+     * (a plain single model is never "combined · 0 files").
+     */
+    private fun refreshCombinedBadge() {
+        val count = PreferenceHelper.getCombinedSelection(requireContext()).size
+        _combinedFileCount.value = count.takeIf { it > 0 }
+    }
+
+    /**
+     * The badge tap: the same multi-select dialog, the persisted
+     * selection pre-checked - "Open combined" re-imports it (possibly
+     * edited), a row tap is the plain single re-import.
+     */
+    private fun onCombinedBadgeClick() {
+        HistoryDialogFragment.prechecked().show(childFragmentManager, "combined_selection")
+    }
+
+    /**
+     * Combined import dispatched from this screen. The in-screen parse
+     * contract is the same as the entry parse: the data observer settles
+     * the progress (this screen stays up, unlike the main screen's
+     * dialog + navigation), so re-arm the watchdog for this run.
+     */
+    private fun startCombinedImportFromBadge(fileNames: List<String>) {
+        val filesDir = requireContext().filesDir
+        val selection = fileNames.filter { File(filesDir, it).isFile }
+        if (selection.size < 2) {
+            Snackbar.make(
+                requireView(),
+                getString(R.string.history_file_missing),
+                Snackbar.LENGTH_LONG,
+            ).show()
+            refreshCombinedBadge()
+            return
+        }
+        val mode = PreferenceHelper.getSelectedType(requireContext()).ordinal
+        FileLog.d(TAG, "Import dispatched: combined ${selection.size} file(s) from the badge (mode $mode)")
+        Benchmarker.start()
+        core.startCombinedSelection(selection, mode)
+        _isParsing.value = true
+        timeoutHandler.removeCallbacks(parseTimeout)
+        timeoutHandler.postDelayed(parseTimeout, PARSE_TIMEOUT_MS)
     }
 
     private fun displayInformation(view: View) {
@@ -207,12 +307,24 @@ class ParseFragment : Fragment() {
             fillFromData(it)
             FileLog.d(TAG, "parsedDataLiveData changed")
             _isParsing.value = false
+            // The pipeline updates the selection right before its post, so
+            // this read is always the one the posted model describes.
+            refreshCombinedBadge()
             if (core.lastFailedLines > 0) {
                 Snackbar.make(
                     view,
                     getString(R.string.unparsable_lines_skipped, core.lastFailedLines),
                     Snackbar.LENGTH_LONG
                 ).show()
+            }
+            val duplicateSkips = core.lastDuplicateSkips
+            if (duplicateSkips > 0L) {
+                // Same one-slot discipline as the dedup note: debounce it
+                // past the skip note's LENGTH_LONG so it lands in a free
+                // snack slot after the last post of the run.
+                pendingDuplicateSkips = duplicateSkips
+                dupNoteHandler.removeCallbacks(dupNoteRunnable)
+                dupNoteHandler.postDelayed(dupNoteRunnable, DEDUP_NOTE_DELAY_MS)
             }
             if (pendingDedupNote) {
                 // Snackbars replace, they don't queue - and the skip note

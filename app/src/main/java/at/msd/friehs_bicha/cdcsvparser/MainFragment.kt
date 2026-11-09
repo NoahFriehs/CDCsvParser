@@ -107,6 +107,14 @@ class MainFragment : Fragment() {
                 HistoryDialogFragment.REQUESTED_DELETE, this@MainFragment.viewLifecycleOwner
             ) { _, _ -> onHistoryDeleted() }
             childFragmentManager.setFragmentResultListener(
+                HistoryDialogFragment.REQUESTED_SELECT_COMBINED, this@MainFragment.viewLifecycleOwner
+            ) { _, bundle ->
+                val fileNames =
+                    bundle.getStringArrayList(HistoryDialogFragment.KEY_FILES)
+                        ?: return@setFragmentResultListener
+                startParseFromCombinedSelection(fileNames)
+            }
+            childFragmentManager.setFragmentResultListener(
                 HistoryDialogFragment.REQUESTED_PURGE, this@MainFragment.viewLifecycleOwner
             ) { _, bundle ->
                 // The purge already happened in the dialog; sync this
@@ -229,6 +237,37 @@ class MainFragment : Fragment() {
         } catch (e: Exception) {
             hideProgressDialog()
             view?.let { Snackbar.make(it, e.message ?: getString(R.string.error_empty_fields), Snackbar.LENGTH_SHORT).show() }
+        }
+    }
+
+    /**
+     * Starts the combined (union) parse for the checked history files.
+     * The names came from this very directory; a miss means a file
+     * vanished since the list was drawn - below two survivors there is
+     * no union left to import.
+     */
+    private fun startParseFromCombinedSelection(fileNames: List<String>) {
+        showProgressDialog()
+        try {
+            val selection = fileNames.filter { name ->
+                files?.any { it.name == name } == true
+            }
+            if (selection.size < 2) {
+                throw IllegalStateException(getString(R.string.history_file_missing))
+            }
+            val mode = PreferenceHelper.getSelectedType(requireContext()).ordinal
+            FileLog.d(
+                TAG,
+                "Import dispatched: combined ${selection.size} file(s) (mode $mode)"
+            )
+            Benchmarker.start()
+            core.startCombinedSelection(selection, mode)
+            callParseView()
+        } catch (e: Exception) {
+            hideProgressDialog()
+            view?.let {
+                Snackbar.make(it, e.message ?: getString(R.string.error_empty_fields), Snackbar.LENGTH_SHORT).show()
+            }
         }
     }
 

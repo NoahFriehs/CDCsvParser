@@ -35,6 +35,16 @@ object HistoryFileUtil {
     }
 
     /**
+     * Normalizes a combined-view selection: trims, drops blank entries,
+     * removes duplicates (first occurrence wins, order kept). The history
+     * file names are the selection's stable ids; the same normalization
+     * runs on store and on read, so a hand-edited store value can never
+     * carry blanks or double entries into the pipeline.
+     */
+    fun normalizeCombinedSelection(raw: List<String>): List<String> =
+        raw.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+
+    /**
      * Files strictly older than [now] - [maxAgeMs] (mtime-based: the dedup
      * refresh touches the same clock, so a re-imported upload is protected
      * for another full window). Newest first, like the history list; an

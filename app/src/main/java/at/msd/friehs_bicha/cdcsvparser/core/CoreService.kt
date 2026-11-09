@@ -212,7 +212,19 @@ class CoreService : Service() {
             errorCounter.postValue((errorCounter.value ?: 0) + 1)
             return
         }
+        replaceClearsCombinedState()
         provideDataToActivity()
+    }
+
+    /**
+     * A plain single import or a cloud restore REPLACES the live model:
+     * the persisted combined-view selection and the duplicate-skip count
+     * of the last combined run no longer describe what is loaded.
+     * Runs on the cpp-core thread (like every model-replacing path).
+     */
+    private fun replaceClearsCombinedState() {
+        lastDuplicateSkips = 0L
+        PreferenceHelper.setCombinedSelection(App.instance, emptyList())
     }
 
     /**
@@ -223,6 +235,15 @@ class CoreService : Service() {
         // Large CSVs (e.g. BlockPit exports) do not fit into a binder parcel,
         // so the caller passes the file name (the file always exists in
         // private app storage) and we read the lines here.
+        // Combined (multi-file) import: the caller passes the history file
+        // names; the pipeline builds the union model HERE, on this thread
+        // (the init-then-append order is a cpp-core-thread invariant).
+        val combinedFileNames = intent.getStringArrayListExtra("combined")
+        if (combinedFileNames != null) {
+            FileLog.i(TAG, "Parsing combined import: ${combinedFileNames.size} file(s), mode $mode (gen $generation)")
+            parseCombinedSelection(combinedFileNames, mode)
+            return
+        }
         // First statement: if "Service start command" is present but this
         // line is not, the queued launch was cancelled before it dispatched.
         val pendingFile = intent.getStringExtra("file")
@@ -289,6 +310,7 @@ class CoreService : Service() {
                 if (!save(savePath)) {
                     FileLog.w(TAG, "Saving the C++ state for fast start failed; the next fast start will fall back to the local model.")
                 }
+                replaceClearsCombinedState()
             }
 
             false -> {
@@ -298,6 +320,7 @@ class CoreService : Service() {
                     isInitialized = true
                 } else {
                     appModel = AppModel(data, appType, false)
+                    replaceClearsCombinedState()
                 }
                 isInitialized = true
                 isRunning = true
@@ -1040,6 +1063,12 @@ class CoreService : Service() {
             "Combined selection done: ${fileNames.size} file(s), $skippedFiles skipped, " +
                 "$totalFailedLines failed line(s), $duplicateSkips duplicate row(s) skipped.")
 
+        // The success state, readable by the UI: the skip count for the
+        // one-shot parse-screen note, and the selection for the badge +
+        // the pre-checked re-open after a restart.
+        lastDuplicateSkips = duplicateSkips
+        PreferenceHelper.setCombinedSelection(App.instance, fileNames)
+
         isRunning = true
         checkAndSetModes()
         if (!save(savePath)) {
@@ -1528,6 +1557,11 @@ class CoreService : Service() {
         // Kotlin core's amountTxFailed)
         @Volatile internal var lastFailedLines: Int = 0
 
+        // Duplicate rows the C++ core skipped in the LAST COMBINED
+        // import (the fresh-TM counter; every plain single import
+        // resets it to 0, the manager is new after each init).
+        @Volatile internal var lastDuplicateSkips: Long = 0L
+
         /**
          * Runs [block] on the core thread, blocking the caller until it
          * returns. Passes through when already on the core thread.
@@ -1662,6 +1696,24 @@ class CoreService : Service() {
                 file != null -> intent.putExtra("file", file)
                 else -> intent.putExtra("data", data!!)
             }
+            intent.putExtra("mode", mode)
+            App.instance.startService(intent)
+        }
+
+        /**
+         * Starts the CoreService with a COMBINED multi-file import: the
+         * history file names (private storage) go over the binder, the
+         * service builds the union model (init + dedup appends, on the
+         * cpp-core thread). [mode] is the settings' AppType ordinal,
+         * the per-file fallback for files without a distinctive header.
+         */
+        fun startCombinedSelection(fileNames: List<String>, mode: Int) {
+            check(fileNames.size >= 2) {
+                "startCombinedSelection needs at least 2 file names"
+            }
+            val intent = Intent(App.instance, CoreService::class.java)
+            intent.action = ACTION_START_SERVICE_WITH_DATA
+            intent.putStringArrayListExtra("combined", ArrayList(fileNames))
             intent.putExtra("mode", mode)
             App.instance.startService(intent)
         }

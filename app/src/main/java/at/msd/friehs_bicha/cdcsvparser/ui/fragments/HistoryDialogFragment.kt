@@ -10,6 +10,7 @@ import at.msd.friehs_bicha.cdcsvparser.general.HistoryFileUtil
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.HistoryDialogContent
+import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
@@ -39,12 +40,33 @@ class HistoryDialogFragment : DialogFragment() {
         // the purge are skipped harmlessly (checked below).
         val purgeCandidates = HistoryFileUtil.purgeCandidates(fileList, System.currentTimeMillis())
 
+        // The badge re-open (ARG_PRECHECKED) pre-checks the persisted
+        // combined selection; names no longer on disk fall out here, so
+        // the dialog can never propose a selection the files do not back.
+        val existingNames = fileList.mapTo(HashSet()) { it.name }
+        val initialSelected = if (arguments?.getBoolean(ARG_PRECHECKED) == true) {
+            PreferenceHelper.getCombinedSelection(context)
+                .filterTo(mutableSetOf(), { it in existingNames })
+        } else {
+            emptySet<String>()
+        }
+
         val composeView = ComposeView(context).apply {
             setContent {
                 CdcsvTheme {
                     HistoryDialogContent(
                         initialFiles = fileList,
                         purgeCandidates = purgeCandidates,
+                        initialSelected = initialSelected,
+                        onSelectCombined = { files ->
+                            setFragmentResult(
+                                REQUESTED_SELECT_COMBINED,
+                                Bundle().apply {
+                                    putStringArrayList(KEY_FILES, ArrayList(files.map { it.name }))
+                                }
+                            )
+                            dismiss()
+                        },
                         onSelect = { file ->
                             setFragmentResult(
                                 REQUESTED_SELECT,
@@ -98,7 +120,21 @@ class HistoryDialogFragment : DialogFragment() {
         const val REQUESTED_SELECT = "history_select"
         const val REQUESTED_DELETE = "history_delete"
         const val REQUESTED_PURGE = "history_purge"
+        const val REQUESTED_SELECT_COMBINED = "history_select_combined"
         const val KEY_FILE = "file"
         const val KEY_PURGE_COUNT = "purge_count"
+        const val KEY_FILES = "files"
+
+        private const val ARG_PRECHECKED = "prechecked"
+
+        /**
+         * The dialog with the persisted combined selection pre-checked
+         * (the badge re-open entry point); the plain constructor opens it
+         * without pre-checks (the main-screen history button).
+         */
+        fun prechecked(): HistoryDialogFragment =
+            HistoryDialogFragment().apply {
+                arguments = Bundle().apply { putBoolean(ARG_PRECHECKED, true) }
+            }
     }
 }

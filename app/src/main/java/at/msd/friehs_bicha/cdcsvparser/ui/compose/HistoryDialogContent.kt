@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +53,13 @@ fun HistoryDialogContent(
     initialFiles: List<java.io.File>,
     /** The "older than 30 days" set, computed by the dialog at creation. */
     purgeCandidates: List<java.io.File>,
+    /**
+     * File names pre-checked for the combined view (the badge re-open
+     * passes the persisted selection filtered to files that exist).
+     */
+    initialSelected: Set<String> = emptySet(),
+    /** Confirmed combined selection (in list order); the shell dismisses. */
+    onSelectCombined: (List<java.io.File>) -> Unit,
     onSelect: (java.io.File) -> Unit,
     /** Called after a confirmed deletion (file already removed from disk). */
     onDeleted: (java.io.File) -> Unit,
@@ -65,6 +75,9 @@ fun HistoryDialogContent(
     var files by remember { mutableStateOf(initialFiles) }
     var fileToConfirmDelete by remember { mutableStateOf<java.io.File?>(null) }
     var purgeToConfirm by remember { mutableStateOf(false) }
+    // The per-row checkbox state (combined selection): toggling it never
+    // imports - a row TAP still does a plain single-file re-import.
+    var selectedNames by remember { mutableStateOf(initialSelected) }
 
     val sdf = remember { SimpleDateFormat(MainFragment.HISTORY_FILE_PATTERN, Locale.getDefault()) }
     val display = remember { SimpleDateFormat("d.M. HH:mm", Locale.getDefault()) }
@@ -81,6 +94,7 @@ fun HistoryDialogContent(
                         fileToConfirmDelete = null
                         if (confirmFile.delete()) {
                             files = files.filterNot { it.name == confirmFile.name }
+                            selectedNames = selectedNames - confirmFile.name
                             onDeleted(confirmFile)
                             if (files.isEmpty()) onEmpty()
                         }
@@ -111,6 +125,7 @@ fun HistoryDialogContent(
                         val deletedNames = onPurge(purgeCandidates).mapTo(HashSet()) { it.name }
                         if (deletedNames.isNotEmpty()) {
                             files = files.filterNot { it.name in deletedNames }
+                            selectedNames = selectedNames - deletedNames
                             if (files.isEmpty()) onEmpty()
                         }
                     },
@@ -145,6 +160,7 @@ fun HistoryDialogContent(
         }
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
         itemsIndexed(files) { index, file ->
+            val isSelected = file.name in selectedNames
             val state = rememberSwipeToDismissBoxState(
                 initialValue = SwipeToDismissBoxValue.Settled,
                 confirmValueChange = { it != SwipeToDismissBoxValue.Settled },
@@ -185,6 +201,16 @@ fun HistoryDialogContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = { checked ->
+                                selectedNames =
+                                    if (checked) selectedNames + file.name else selectedNames - file.name
+                            },
+                            modifier = Modifier
+                                .padding(end = 4.dp)
+                                .semantics { contentDescription = file.name },
+                        )
                         IconButton(onClick = { fileToConfirmDelete = file }) {
                             Icon(
                                 imageVector = Icons.Filled.Delete,
@@ -197,6 +223,23 @@ fun HistoryDialogContent(
             }
         }
         }
+        // The combined action: enabled at >=2 checked rows (a one-file
+        // "union" is just a plain re-import, which the row tap already is).
+        Text(
+            text = stringResource(R.string.history_combined_open, selectedNames.size),
+            style = MaterialTheme.typography.titleSmall,
+            color = if (selectedNames.size >= 2) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = selectedNames.size >= 2) {
+                    onSelectCombined(files.filter { it.name in selectedNames })
+                }
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+        )
     }
 }
 

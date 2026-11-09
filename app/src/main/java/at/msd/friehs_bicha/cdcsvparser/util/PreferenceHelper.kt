@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.preferencesDataStore
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
+import at.msd.friehs_bicha.cdcsvparser.general.HistoryFileUtil
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +64,9 @@ object PreferenceHelper {
     // plaintext document re-encryption); set only after the document
     // was seen and handled.
     const val CLOUD_MIGRATION_COMPLETED = "cloud_migration_completed"
+    // The combined (multi-file) view: the history file names the live core
+    // model was built from (comma-joined, "" = no combined view).
+    const val COMBINED_SELECTION = "combined_selection"
 
     private const val LOAD_TIMEOUT_MS = 500L
     private const val DATASTORE_FILE = "settings.preferences_pb"
@@ -490,6 +494,32 @@ object PreferenceHelper {
         awaitLoaded()
         put(CLOUD_MIGRATION_COMPLETED, true)
         persist(CLOUD_MIGRATION_COMPLETED, true)
+    }
+
+    /**
+     * The history file names of the persisted combined view (empty =
+     * the live model is a plain single file, not a union). Normalized:
+     * the store value is comma-joined and re-normalized on every read,
+     * so a stale or corrupted value degrades to a smaller selection,
+     * never a pipeline error.
+     */
+    fun getCombinedSelection(context: Context): List<String> {
+        awaitLoaded()
+        return HistoryFileUtil.normalizeCombinedSelection(
+            cachedString(COMBINED_SELECTION).orEmpty().split(',')
+        )
+    }
+
+    /**
+     * Persists the combined selection (empty = clear it). Written by the
+     * import pipeline: set on a successful combined import, cleared by
+     * every plain re-import / restore that REPLACES the model.
+     */
+    fun setCombinedSelection(context: Context, fileNames: List<String>) {
+        awaitLoaded()
+        val value = HistoryFileUtil.normalizeCombinedSelection(fileNames).joinToString(",")
+        put(COMBINED_SELECTION, value)
+        persist(COMBINED_SELECTION, value)
     }
 
     private const val TAG = "PreferenceHelper"

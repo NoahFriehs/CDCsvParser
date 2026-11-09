@@ -36,6 +36,12 @@ interface CoreSource {
     /** Unparsable CSV lines of the last parse (0 = clean). */
     val lastFailedLines: Int
 
+    /**
+     * Duplicate rows the C++ core skipped in the last COMBINED import
+     * (0 after any plain single import — a fresh TM per single import).
+     */
+    val lastDuplicateSkips: Long
+
     /** The legacy-Kotlin-core model, when that path runs. */
     val appModel: AppModel?
 
@@ -63,6 +69,13 @@ interface CoreSource {
     fun getAssetMap(walletId: Int): WalletAssets
 
     fun startServiceWithData(data: ArrayList<String>?, mode: Int, fileName: String? = null)
+
+    /**
+     * Dispatches a COMBINED multi-file import (union view) for the given
+     * history file names; needs at least 2, runs on the cpp-core thread.
+     */
+    fun startCombinedSelection(fileNames: List<String>, mode: Int)
+
     fun startServiceFromLocal()
     fun saveDataToFirebase()
     fun refreshPricesIfStale()
@@ -86,6 +99,9 @@ object Core : CoreSource {
 
     override val lastFailedLines: Int
         get() = CoreService.lastFailedLines
+
+    override val lastDuplicateSkips: Long
+        get() = CoreService.lastDuplicateSkips
 
     override val appModel: AppModel?
         get() = CoreService.appModel
@@ -135,6 +151,9 @@ object Core : CoreSource {
         mode: Int,
         fileName: String?,
     ) = CoreService.startServiceWithData(data, mode, fileName)
+
+    override fun startCombinedSelection(fileNames: List<String>, mode: Int) =
+        CoreService.startCombinedSelection(fileNames.toList(), mode)
 
     override fun startServiceFromLocal() = CoreService.startServiceFromLocal()
 

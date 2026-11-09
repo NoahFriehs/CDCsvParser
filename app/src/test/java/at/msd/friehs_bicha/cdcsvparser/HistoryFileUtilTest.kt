@@ -109,6 +109,38 @@ class HistoryFileUtilTest {
         assertEquals(listOf<File>(justOutside), out)
     }
 
+    // ---------- normalizeCombinedSelection ----------
+
+    @Test
+    fun normalizeCombinedSelectionDropsBlanksAndTrims() {
+        assertEquals(
+            listOf("a.csv", "b.csv"),
+            HistoryFileUtil.normalizeCombinedSelection(listOf(" a.csv ", "", "  ", "b.csv"))
+        )
+    }
+
+    @Test
+    fun normalizeCombinedSelectionKeepsFirstOccurrenceOrder() {
+        // Case-sensitive: "B.csv" is a different name (file names carry the
+        // timestamp, never a case variant).
+        assertEquals(
+            listOf("b.csv", "a.csv", "B.csv"),
+            HistoryFileUtil.normalizeCombinedSelection(listOf("b.csv", "a.csv", "b.csv", "B.csv"))
+        )
+    }
+
+    @Test
+    fun normalizeCombinedSelectionEmptyStaysEmpty() {
+        assertTrue(HistoryFileUtil.normalizeCombinedSelection(emptyList()).isEmpty())
+        assertTrue(HistoryFileUtil.normalizeCombinedSelection(listOf("", "  ")).isEmpty())
+    }
+
+    @Test
+    fun normalizeCombinedSelectionIsIdempotent() {
+        val once = HistoryFileUtil.normalizeCombinedSelection(listOf("a.csv", " b.csv ", "a.csv"))
+        assertEquals(once, HistoryFileUtil.normalizeCombinedSelection(once))
+    }
+
     // ---------- dedup refresh ordering ----------
 
     @Test
