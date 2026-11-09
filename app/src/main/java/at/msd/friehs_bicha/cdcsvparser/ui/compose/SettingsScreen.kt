@@ -77,6 +77,8 @@ fun SettingsScreen(
     onCloudKeyModelSelected: (Int) -> Unit,
     cloudPassword: String,
     onCloudPasswordChange: (String) -> Unit,
+    cloudPasswordApplyEnabled: Boolean,
+    onCloudPasswordApply: () -> Unit,
     onDeletePriceCaches: () -> Unit,
     logVisible: Boolean,
     onLogVisibleChange: (Boolean) -> Unit,
@@ -271,6 +273,11 @@ fun SettingsScreen(
                     onValueChange = onCloudPasswordChange,
                     onClear = { onCloudPasswordChange("") },
                 )
+                if (cloudPasswordApplyEnabled) {
+                    TextButton(onClick = onCloudPasswordApply) {
+                        Text(stringResource(R.string.cloud_password_apply))
+                    }
+                }
             }
 
             Spacer(Modifier.height(24.dp))

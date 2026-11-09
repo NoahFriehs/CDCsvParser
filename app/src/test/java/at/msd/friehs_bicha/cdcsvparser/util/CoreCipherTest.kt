@@ -10,6 +10,7 @@ import at.msd.friehs_bicha.cdcsvparser.util.CoreCipher.UnreadableReason
 import com.google.firebase.firestore.Blob
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -343,6 +344,61 @@ class CoreCipherTest {
             MigrationAction.UNREADABLE,
             CoreCipher.migrationAction(hashMapOf<String, Any?>(CoreCipher.FIELD_CIPHER_VERSION to "one")),
         )
+    }
+
+    // ------------------------------------------------------------------
+    // Legacy plaintext documents (the migration's re-encrypt source)
+    // ------------------------------------------------------------------
+
+    @Test
+    fun theLegacyPayloadReadsTheTopLevelCollections() {
+        // A complete pre-encryption document: the five collections ride
+        // top level and survive the extraction untouched.
+        val wallets = listOf(hashMapOf<String, Any>("walletId" to 1L))
+        val txs = listOf(hashMapOf<String, Any>("transactionId" to 7L))
+        val doc: Map<String, Any?> = hashMapOf(
+            "appSettings" to settingsFixture(),
+            "wallets" to wallets,
+            "outsideWallets" to emptyList<Any>(),
+            "transactions" to txs,
+            "cardWallets" to emptyList<Any>(),
+            "cardTransactions" to emptyList<Any>(),
+        )
+        val payload = CoreCipher.legacyPayloadFromDoc(doc)
+            ?: error("expected a legacy payload, got null")
+        assertSame(wallets, payload["wallets"])
+        assertSame(txs, payload["transactions"])
+        // The re-encrypt write builds directly from this map: it must be
+        // encodable as-is.
+        CoreCipher.encodePayload(payload)
+    }
+
+    @Test
+    fun aWalletEraLegacyDocReadsMissingCollectionsAsEmpty() {
+        // Documents written before the card half existed carry no card
+        // collections: the missing keys read as empty lists.
+        val doc: Map<String, Any?> = hashMapOf(
+            "appSettings" to settingsFixture(),
+            "wallets" to listOf(hashMapOf<String, Any>("walletId" to 1L)),
+            "outsideWallets" to emptyList<Any>(),
+            "transactions" to emptyList<Any>(),
+        )
+        val payload = CoreCipher.legacyPayloadFromDoc(doc)
+            ?: error("expected a legacy payload, got null")
+        assertEquals(0, (payload["cardWallets"] as List<*>).size)
+        assertEquals(0, (payload["cardTransactions"] as List<*>).size)
+    }
+
+    @Test
+    fun aNonListCollectionRefusesTheLegacyPayload() {
+        // A present collection of the wrong type is a shape this app
+        // never wrote: no extraction (the document is never re-written
+        // over a guess).
+        val doc: Map<String, Any?> = hashMapOf(
+            "appSettings" to settingsFixture(),
+            "wallets" to hashMapOf<String, Any>("bogus" to 1L),
+        )
+        assertNull(CoreCipher.legacyPayloadFromDoc(doc))
     }
 
     // ------------------------------------------------------------------

@@ -198,6 +198,9 @@
     <string name="cloud_state_keystore">Aktiv: gerätegebundener Schlüssel</string>
     <string name="cloud_state_password">Aktiv: passwortabgeleiteter Schlüssel</string>
     <string name="cloud_password_label">Passwort für das Cloud-Backup</string>
+    <string name="cloud_password_apply">Auf die Cloud-Sicherung anwenden</string>
     <string name="cloud_cannot_decrypt">Die Cloud-Sicherung kann mit dem Schlüssel dieses Geräts nicht gelesen werden (der Schlüssel wurde ggf. zurückgesetzt oder geändert). Löschen Sie die App-Daten und importieren Sie Ihre CSV-Dateien erneut.</string>
     <string name="cloud_cipher_too_new">Diese Cloud-Sicherung wurde von einer neueren App-Version gespeichert und kann von dieser Version nicht gelesen werden.</string>
+    <string name="cloud_reencrypt_success">Cloud-Sicherung unter dem neuen Schlüssel erneut verschlüsselt</string>
+    <string name="cloud_reencrypt_failed">Die Cloud-Sicherung konnte nicht erneut verschlüsselt werden: Die aktuelle Sicherung ist nicht lesbar, oder es existiert kein Schlüssel für das gewählte Schlüsselmodell. Die Sicherung wurde unverändert gelassen.</string>
 </resources>

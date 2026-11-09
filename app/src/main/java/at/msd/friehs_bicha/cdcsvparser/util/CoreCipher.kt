@@ -159,6 +159,28 @@ object CoreCipher {
         }
 
     /**
+     * The payload of a LEGACY plaintext document (no cipher metadata) for
+     * the re-encrypt pass: the five collections exactly where the pre-
+     * encryption document keeps them (top level), a missing collection
+     * reading as EMPTY - old documents of the wallet-only era carry no
+     * card half at all. Returns null when a collection that IS present
+     * is not a list (a shape this app never wrote - the document is never
+     * re-written over a guess).
+     */
+    fun legacyPayloadFromDoc(doc: Map<String, Any?>): Map<String, Any>? {
+        val payload = HashMap<String, Any>()
+        for (collection in PAYLOAD_COLLECTIONS) {
+            val value = doc[collection]
+            when {
+                value == null -> payload[collection] = emptyList<Any>()
+                value is List<*> -> payload[collection] = value
+                else -> return null
+            }
+        }
+        return payload
+    }
+
+    /**
      * The explicit no-decrypt error states. A restore may never fall back
      * to a partial load: every one of these is surfaced to the user
      * (wipe + re-import, or update the app) instead of an empty core.

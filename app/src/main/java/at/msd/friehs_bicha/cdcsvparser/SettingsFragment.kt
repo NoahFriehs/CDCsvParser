@@ -28,11 +28,14 @@ import at.msd.friehs_bicha.cdcsvparser.logging.LogFilter
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.SettingsScreen
+import at.msd.friehs_bicha.cdcsvparser.util.CloudMigration
 import at.msd.friehs_bicha.cdcsvparser.util.CoreCipher
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.android.material.snackbar.Snackbar
 import java.io.File
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.google.firebase.auth.FirebaseAuth
@@ -68,6 +71,27 @@ class SettingsFragment : Fragment() {
     // + the password of password mode (hidden until that model is selected).
     private val _cloudKeyModelIndex = mutableStateOf(0)
     private val _cloudPassword = mutableStateOf("")
+
+    // The immediate cloud re-encrypt (key-model switch / password
+    // change) runs on ONE serial IO lane: the write of one pass is on
+    // file before the next pass fetches, so two rapid changes cannot
+    // interleave a stale read over a fresh write.
+    private val cloudReEncryptScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO.limitedParallelism(1)
+    )
+
+    // What the cloud document is still protected with (the pre-change
+    // credentials of the NEXT re-encrypt): the password value at the
+    // LAST COMMIT - the apply button for a password change, the model
+    // switch for a key-model change. This is NOT the current pref value:
+    // the pref is written LIVE as the user types (every keystroke), so a
+    // typed-but-unapplied password already sits in it. Reading the old
+    // document under this value + writing under the pref at commit time
+    // keeps document and pref in step with no readability window on
+    // another device. Seeded from the pref at settings load, updated at
+    // the commit point, and carried forward across model switches (which
+    // leave the password field itself untouched).
+    private val _cloudPasswordLastCommitted = mutableStateOf<String?>(null)
     // The log viewer (file 0 = Kotlin app log, 1 = C++ core log;
     // filter 0 = All, 1 = Warning+, 2 = Error). The lines are read +
     // filtered in [refreshLog] on the IO dispatcher.
@@ -160,16 +184,47 @@ class SettingsFragment : Fragment() {
                         ),
                         cloudKeyModelSelected = _cloudKeyModelIndex.value,
                         onCloudKeyModelSelected = { index ->
-                            _cloudKeyModelIndex.value = index
-                            PreferenceHelper.setCloudKeyModel(
-                                requireContext(),
-                                if (index == 1) CoreCipher.KEY_MODEL_PASSWORD else CoreCipher.KEY_MODEL_KEYSTORE,
-                            )
+                            if (index != _cloudKeyModelIndex.value) {
+                                // The document is still protected by the
+                                // credentials of the OLD settings: the
+                                // password pref the model switch does not
+                                // touch (a keystore-protected document
+                                // needs no password at all).
+                                val oldPassword =
+                                    PreferenceHelper.getCloudPassword(requireContext())
+                                _cloudKeyModelIndex.value = index
+                                PreferenceHelper.setCloudKeyModel(
+                                    requireContext(),
+                                    if (index == 1) CoreCipher.KEY_MODEL_PASSWORD else CoreCipher.KEY_MODEL_KEYSTORE,
+                                )
+                                // Re-encrypt immediately: no window in
+                                // which the document is unreadable to its
+                                // owner.
+                                cloudReEncryptScope.launch {
+                                    CloudMigration.reEncryptUnderCurrentSettings(oldPassword)
+                                }
+                            }
                         },
                         cloudPassword = _cloudPassword.value,
                         onCloudPasswordChange = { password ->
                             _cloudPassword.value = password
                             PreferenceHelper.setCloudPassword(requireContext(), password)
+                        },
+                        cloudPasswordApplyEnabled =
+                            (_cloudPasswordLastCommitted.value != null)
+                                && _cloudPasswordLastCommitted.value != _cloudPassword.value,
+                        onCloudPasswordApply = {
+                            // The commit point of a password change: read
+                            // the document under the password it is still
+                            // protected with, write it under the new one.
+                            val committed = _cloudPasswordLastCommitted.value
+                            val current = _cloudPassword.value
+                            if (committed != null && committed != current) {
+                                cloudReEncryptScope.launch {
+                                    CloudMigration.reEncryptUnderCurrentSettings(committed)
+                                }
+                                _cloudPasswordLastCommitted.value = current
+                            }
                         },
                         onDeletePriceCaches = { deletePriceCaches() },
                         logVisible = _logVisible.value,
@@ -220,7 +275,9 @@ class SettingsFragment : Fragment() {
         _ccKey.value = PreferenceHelper.getCryptoCompareApiKey(requireContext())
         _cloudKeyModelIndex.value =
             if (PreferenceHelper.getCloudKeyModel(requireContext()) == CoreCipher.KEY_MODEL_PASSWORD) 1 else 0
-        _cloudPassword.value = PreferenceHelper.getCloudPassword(requireContext())
+        val storedCloudPassword = PreferenceHelper.getCloudPassword(requireContext())
+        _cloudPassword.value = storedCloudPassword
+        _cloudPasswordLastCommitted.value = storedCloudPassword
     }
 
     /**

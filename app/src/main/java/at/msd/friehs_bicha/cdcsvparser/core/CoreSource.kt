@@ -1,7 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.core
 
 import androidx.lifecycle.MutableLiveData
-import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
@@ -9,7 +8,7 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
 /**
  * Read surface of the process-wide transaction core.
- * seam). Consumers (fragments, view-models, screens, utilities) hold a
+ * Consumers (fragments, view-models, screens, utilities) hold a
  * [CoreSource] — never the `CoreService.Companion` directly — so the
  * core's home (a bound `Service` today) can move without touching the
  * UI layer. The surface is EXACTLY the members the consumers read
@@ -47,7 +46,6 @@ interface CoreSource {
     val cardTransactionsLiveData: MutableLiveData<ArrayList<CroCardTransaction>>
     val walletsLiveData: MutableLiveData<ArrayList<Wallet>>
     val allWalletsLiveData: MutableLiveData<ArrayList<Wallet>>
-    val firebaseDataLiveData: MutableLiveData<MutableList<FirebaseAppmodel>>
 
     /** The C++ core's own log file (settings screen target). */
     val logFilePath: String
@@ -112,9 +110,6 @@ object Core : CoreSource {
 
     override val allWalletsLiveData: MutableLiveData<ArrayList<Wallet>>
         get() = CoreService.allWalletsLiveData
-
-    override val firebaseDataLiveData: MutableLiveData<MutableList<FirebaseAppmodel>>
-        get() = CoreService.firebaseDataLiveData
 
     override val logFilePath: String
         get() = CoreService.logFilePath

@@ -59,6 +59,10 @@ object PreferenceHelper {
     // derives the key in password mode.
     const val CLOUD_KEY_MODEL = "cloud_key_model"
     const val CLOUD_PASSWORD = "cloud_password"
+    // One-shot flag of the post-update start-up check (the legacy
+    // plaintext document re-encryption); set only after the document
+    // was seen and handled.
+    const val CLOUD_MIGRATION_COMPLETED = "cloud_migration_completed"
 
     private const val LOAD_TIMEOUT_MS = 500L
     private const val DATASTORE_FILE = "settings.preferences_pb"
@@ -468,6 +472,24 @@ object PreferenceHelper {
         awaitLoaded()
         put(CLOUD_PASSWORD, password)
         persist(CLOUD_PASSWORD, password)
+    }
+
+    /**
+     * Whether the one-shot post-update cloud migration already ran. The
+     * flag is only set after the cloud document was seen and handled
+     * (signed-out starts and failed fetches keep it unset, so the check
+     * retries on the next launch).
+     */
+    fun getCloudMigrationCompleted(context: Context): Boolean {
+        awaitLoaded()
+        return cachedBoolean(CLOUD_MIGRATION_COMPLETED) == true
+    }
+
+    /** Marks the one-shot cloud migration as done. */
+    fun setCloudMigrationCompleted(context: Context) {
+        awaitLoaded()
+        put(CLOUD_MIGRATION_COMPLETED, true)
+        persist(CLOUD_MIGRATION_COMPLETED, true)
     }
 
     private const val TAG = "PreferenceHelper"

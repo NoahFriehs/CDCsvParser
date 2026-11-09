@@ -13,7 +13,6 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppStatus
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.app.AppTypeIdentifier
 import at.msd.friehs_bicha.cdcsvparser.app.DataTypes
-import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
 import at.msd.friehs_bicha.cdcsvparser.app.TxAppFactory
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -1461,8 +1460,6 @@ class CoreService : Service() {
 
         var dataLiveData = MutableLiveData<List<String>>()
 
-        var firebaseDataLiveData = MutableLiveData<MutableList<FirebaseAppmodel>>()
-
         var parsedDataLiveData = MutableLiveData<ParseData>()
         var chartSeriesLiveData = MutableLiveData<ChartSeries>()
 
@@ -1498,7 +1495,6 @@ class CoreService : Service() {
 
         init {
             dataLiveData.value = ArrayList()
-            firebaseDataLiveData.value = ArrayList()
             assetMaps.value = ArrayList()
             //mkdir for save
             try {

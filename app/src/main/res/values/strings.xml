@@ -205,6 +205,9 @@
     <string name="cloud_state_keystore">In force: device-bound key</string>
     <string name="cloud_state_password">In force: password-derived key</string>
     <string name="cloud_password_label">Password for the cloud backup</string>
+    <string name="cloud_password_apply">Apply to the cloud backup</string>
     <string name="cloud_cannot_decrypt">The cloud backup cannot be read with this device\'s key (the key may have been reset or changed). Wipe the app data and import your CSV files again.</string>
     <string name="cloud_cipher_too_new">This cloud backup was saved by a newer version of the app and cannot be read by this version.</string>
+    <string name="cloud_reencrypt_success">Cloud backup re-encrypted under the new key</string>
+    <string name="cloud_reencrypt_failed">The cloud backup could not be re-encrypted: the current backup cannot be read, or no key exists for the selected key model. The backup was left unchanged.</string>
 </resources>

@@ -4,10 +4,15 @@ import android.app.Application
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.db.AppDatabase
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.util.CloudMigration
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.work.PriceRefreshWorker
 import java.io.PrintWriter
 import java.io.StringWriter
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Application entry point: boots the crash hook, then the app
@@ -22,6 +27,9 @@ class App : Application() {
     lateinit var db: AppDatabase
         private set
 
+    /** Fire-and-forget cloud maintenance (never core-touching). */
+    private val cloudScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCreate() {
         super.onCreate()
         // First, so an early-startup failure still leaves a line behind.
@@ -29,6 +37,11 @@ class App : Application() {
         initAppInstances()
         PreferenceHelper.init(this)
         PriceRefreshWorker.enqueue(this)
+        // The one-shot post-update cloud migration (re-encrypts a legacy
+        // plaintext document under the key model in force): it is a
+        // silent no-op on a signed-out start and retries on the next
+        // launch until the document was seen or is handled.
+        cloudScope.launch { CloudMigration.runFirstLaunchMigration() }
     }
 
     /**

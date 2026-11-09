@@ -3,19 +3,12 @@ package at.msd.friehs_bicha.cdcsvparser.util
 import at.msd.friehs_bicha.cdcsvparser.App
 
 import android.content.Context
-import android.content.Intent
 import android.widget.Toast
-import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
-import at.msd.friehs_bicha.cdcsvparser.app.AppType
-import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
-import at.msd.friehs_bicha.cdcsvparser.core.Core
-import at.msd.friehs_bicha.cdcsvparser.core.CoreService
-import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -41,12 +34,6 @@ import javax.crypto.SecretKey
  * which blocked the calling thread and only sometimes worked.
  */
 class FirebaseUtil(private val context: Context) {
-
-    /** The core surface this utility publishes to. */
-    private val core: CoreSource = Core
-
-    val userMapLiveData = MutableLiveData<HashMap<String, Any>?>()
-    var userMapError = false
 
     /**
      * Saves the local app model to the user's Firebase document.
@@ -127,124 +114,6 @@ class FirebaseUtil(private val context: Context) {
         return true
     }
 
-    /**
-     * Loads the user's document from Firebase and starts the core service
-     * with it (or shows an error for an incompatible/empty database).
-     */
-    fun loadDataFromFirebase() {
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user == null) {
-            FileLog.e("FirebaseUtil", "loadDataFromFirebase: user is null")
-            return
-        }
-        val db = Firebase.firestore
-
-        getUserDataFromFirestore(user.uid, db) { result ->
-            if (result.isFailure) {
-                userMapError = true
-                userMapLiveData.value = null
-                val message = context.getString(R.string.db_nothing_saved)
-                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                FileLog.e("FirebaseUtil", message)
-                return@getUserDataFromFirestore
-            }
-            val userMap = result.getOrNull() ?: hashMapOf()
-            userMapLiveData.value = userMap
-
-            val appSettings = userMap["appSettings"] as? HashMap<String, Any>
-            val dbVersion = appSettings?.get("dbVersion")?.toString()
-
-            if (dbVersion != null && StringHelper.compareVersions(dbVersion, "1.0.0")) {
-                val text = context.getString(R.string.db_incompatible_version)
-                Toast.makeText(context, text, Toast.LENGTH_LONG).show()
-                return@getUserDataFromFirestore
-            }
-
-            var hasCard = false
-            var hasTxModule = false
-
-            appSettings?.get("useStrictType")?.let {
-                if (it is Boolean) {
-                    PreferenceHelper.setUseStrictType(App.instance, it)
-                } else {
-                    FileLog.w("FirebaseUtil", "useStrictType missing or not a Boolean")
-                }
-            }
-
-            (userMap["appModelCard"] as? HashMap<String, Any>)?.let { txAppMap ->
-                hasCard = true
-                FileLog.i("FirebaseUtil", "hasCard")
-                processCardData(txAppMap, appSettings)
-            }
-            (userMap["appModel"] as? HashMap<String, Any>)?.let { txAppMap ->
-                hasTxModule = true
-                FileLog.i("FirebaseUtil", "hasTxModule")
-                processTxModuleData(txAppMap, appSettings)
-            }
-
-            if (!hasCard && !hasTxModule) {
-                val message = context.getString(R.string.db_nothing_saved)
-                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                FileLog.e("FirebaseUtil", message)
-                return@getUserDataFromFirestore
-            }
-
-            App.instance.startService(
-                Intent(App.instance, CoreService::class.java)
-                    .apply { action = core.ACTION_START_SERVICE_WITH_FIREBASE_DATA })
-        }
-    }
-
-    private fun processTxModuleData(
-        txAppMap: HashMap<String, Any>,
-        appSettings: HashMap<String, Any>?
-    ) {
-        val dbWallets =
-            txAppMap["wallets"] as? java.util.ArrayList<java.util.HashMap<String, *>>
-        val dbOutsideWallets =
-            txAppMap["outsideWallets"] as? java.util.ArrayList<java.util.HashMap<String, *>>
-        val dbTransactions =
-            txAppMap["transactions"] as? java.util.ArrayList<java.util.HashMap<String, *>>
-        val amountTxFailed = (txAppMap["amountTxFailed"] as? Number)?.toLong() ?: 0
-        val appType = AppType.safeFromName(txAppMap["appType"] as? String ?: "")
-            ?: return
-
-        core.firebaseDataLiveData.value?.add(
-            FirebaseAppmodel(
-                dbWallets,
-                dbOutsideWallets,
-                dbTransactions,
-                appType,
-                amountTxFailed,
-                appSettings?.get("useStrictType") as? Boolean ?: true
-            )
-        )
-    }
-
-    private fun processCardData(
-        txAppMap: HashMap<String, Any>,
-        appSettings: HashMap<String, Any>?
-    ) {
-        val dbWallets =
-            txAppMap["wallets"] as? java.util.ArrayList<java.util.HashMap<String, *>>
-        val dbTransactions =
-            txAppMap["transactions"] as? java.util.ArrayList<java.util.HashMap<String, *>>
-        val amountTxFailed = (txAppMap["amountTxFailed"] as? Number)?.toLong() ?: 0
-        val appType = AppType.safeFromName(txAppMap["appType"] as? String ?: "")
-            ?: return
-
-        core.firebaseDataLiveData.value?.add(
-            FirebaseAppmodel(
-                dbWallets,
-                null,
-                dbTransactions,
-                appType,
-                amountTxFailed,
-                appSettings?.get("useStrictType") as? Boolean ?: true
-            )
-        )
-    }
-
     companion object {
         /**
          * Fetches the user document. The callback receives a non-null
@@ -284,13 +153,6 @@ class FirebaseUtil(private val context: Context) {
         }
 
         /**
-         * Resolves the local key for a document's key metadata from
-         * device + settings: the device-bound keystore key, or the key
-         * derived from the stored cloud password. null = the device has
-         * no key for this document (the explicit "cannot read" state,
-         * the documented fallback is wipe + re-import).
-         */
-        /**
          * Normalizes a fetched document for the cipher layer: the SDK
          * returns byte fields as [Blob], the cipher reads plain byte
          * arrays. One level is the whole surface - the cipher fields sit
@@ -304,6 +166,13 @@ class FirebaseUtil(private val context: Context) {
             return out
         }
 
+        /**
+         * Resolves the local key for a document's key metadata from
+         * device + settings: the device-bound keystore key, or the key
+         * derived from the stored cloud password. null = the device has
+         * no key for this document (the explicit "cannot read" state,
+         * the documented fallback is wipe + re-import).
+         */
         fun keyForDocMetadata(
             keyModel: String,
             kdfSalt: ByteArray?,
@@ -355,14 +224,6 @@ class FirebaseUtil(private val context: Context) {
         }
 
         /**
-         * Writes the user document with a single `set` (no field merge: an
-         * encrypted payload makes partial documents meaningless) and
-         * reports the result via toast + log. The SDK's byte type is
-         * [Blob]: raw `byte[]` values are rejected by `set` ("Arrays are
-         * not supported"), so the cipher fields (payload + KDF salt)
-         * cross the SDK boundary wrapped.
-         */
-        /**
          * Wraps the top-level byte arrays for the SDK write path (the
          * cipher fields: payload + KDF salt); everything else passes
          * through unchanged.
@@ -375,6 +236,14 @@ class FirebaseUtil(private val context: Context) {
             return out
         }
 
+        /**
+         * Writes the user document with a single `set` (no field merge: an
+         * encrypted payload makes partial documents meaningless) and
+         * reports the result via toast + log. The SDK's byte type is
+         * [Blob]: raw `byte[]` values are rejected by `set` ("Arrays are
+         * not supported"), so the cipher fields (payload + KDF salt)
+         * cross the SDK boundary wrapped.
+         */
         fun writeUserDoc(
             uid: String,
             db: FirebaseFirestore,
