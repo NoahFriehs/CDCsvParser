@@ -197,4 +197,14 @@
     <string name="db_incompatible_version">Your database is not compatible with this version of the app. Please downgrade the app or override the database with a new upload.</string>
     <string name="data_saved_successfully">Data saved successfully</string>
     <string name="error_loading_data">Error loading data</string>
+    <string name="cloud_backup_section">Cloud backup</string>
+    <string name="cloud_backup_help">Your cloud documents are encrypted on this device before upload (AES-256-GCM). Only this device - or your password, in password mode - can read them back.</string>
+    <string name="cloud_key_model_label">Encryption key model</string>
+    <string name="cloud_key_model_device">Device-bound</string>
+    <string name="cloud_key_model_password">Password</string>
+    <string name="cloud_state_keystore">In force: device-bound key</string>
+    <string name="cloud_state_password">In force: password-derived key</string>
+    <string name="cloud_password_label">Password for the cloud backup</string>
+    <string name="cloud_cannot_decrypt">The cloud backup cannot be read with this device\'s key (the key may have been reset or changed). Wipe the app data and import your CSV files again.</string>
+    <string name="cloud_cipher_too_new">This cloud backup was saved by a newer version of the app and cannot be read by this version.</string>
 </resources>

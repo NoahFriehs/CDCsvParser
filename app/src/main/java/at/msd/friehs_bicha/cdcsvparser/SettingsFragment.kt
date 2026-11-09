@@ -28,6 +28,7 @@ import at.msd.friehs_bicha.cdcsvparser.logging.LogFilter
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.SettingsScreen
+import at.msd.friehs_bicha.cdcsvparser.util.CoreCipher
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.android.material.snackbar.Snackbar
 import java.io.File
@@ -63,6 +64,10 @@ class SettingsFragment : Fragment() {
     // Runtime price API keys ("" = unset / keyless).
     private val _cgKey = mutableStateOf("")
     private val _ccKey = mutableStateOf("")
+    // The cloud backup key model (0 = device-bound keystore, 1 = password)
+    // + the password of password mode (hidden until that model is selected).
+    private val _cloudKeyModelIndex = mutableStateOf(0)
+    private val _cloudPassword = mutableStateOf("")
     // The log viewer (file 0 = Kotlin app log, 1 = C++ core log;
     // filter 0 = All, 1 = Warning+, 2 = Error). The lines are read +
     // filtered in [refreshLog] on the IO dispatcher.
@@ -149,6 +154,23 @@ class SettingsFragment : Fragment() {
                             _ccKey.value = key
                             PreferenceHelper.setCryptoCompareApiKey(requireContext(), key)
                         },
+                        cloudKeyModelOptions = listOf(
+                            getString(R.string.cloud_key_model_device),
+                            getString(R.string.cloud_key_model_password),
+                        ),
+                        cloudKeyModelSelected = _cloudKeyModelIndex.value,
+                        onCloudKeyModelSelected = { index ->
+                            _cloudKeyModelIndex.value = index
+                            PreferenceHelper.setCloudKeyModel(
+                                requireContext(),
+                                if (index == 1) CoreCipher.KEY_MODEL_PASSWORD else CoreCipher.KEY_MODEL_KEYSTORE,
+                            )
+                        },
+                        cloudPassword = _cloudPassword.value,
+                        onCloudPasswordChange = { password ->
+                            _cloudPassword.value = password
+                            PreferenceHelper.setCloudPassword(requireContext(), password)
+                        },
                         onDeletePriceCaches = { deletePriceCaches() },
                         logVisible = _logVisible.value,
                         onLogVisibleChange = { visible ->
@@ -196,6 +218,9 @@ class SettingsFragment : Fragment() {
         _fastStart.value = PreferenceHelper.getFastStartEnabled(requireContext())
         _cgKey.value = PreferenceHelper.getCoinGeckoApiKey(requireContext())
         _ccKey.value = PreferenceHelper.getCryptoCompareApiKey(requireContext())
+        _cloudKeyModelIndex.value =
+            if (PreferenceHelper.getCloudKeyModel(requireContext()) == CoreCipher.KEY_MODEL_PASSWORD) 1 else 0
+        _cloudPassword.value = PreferenceHelper.getCloudPassword(requireContext())
     }
 
     /**

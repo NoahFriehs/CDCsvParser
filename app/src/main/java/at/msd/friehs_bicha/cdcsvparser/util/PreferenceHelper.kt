@@ -54,6 +54,11 @@ object PreferenceHelper {
     // User-supplied price API keys (Settings -> API keys).
     const val CG_API_KEY = "cg_api_key"
     const val CC_API_KEY = "cc_api_key"
+    // Cloud document encryption (Settings -> Cloud backup): the key model
+    // ("keystore" | "password", default keystore) and the password that
+    // derives the key in password mode.
+    const val CLOUD_KEY_MODEL = "cloud_key_model"
+    const val CLOUD_PASSWORD = "cloud_password"
 
     private const val LOAD_TIMEOUT_MS = 500L
     private const val DATASTORE_FILE = "settings.preferences_pb"
@@ -426,6 +431,43 @@ object PreferenceHelper {
     fun getCryptoCompareApiKey(context: Context): String {
         awaitLoaded()
         return cachedString(CC_API_KEY).orEmpty()
+    }
+
+    /**
+     * Returns the key model for the cloud documents ("keystore" or
+     * "password"); anything else (incl. unset) reads as the default,
+     * the device-bound keystore model.
+     */
+    fun getCloudKeyModel(context: Context): String {
+        awaitLoaded()
+        return if (cachedString(CLOUD_KEY_MODEL) == CoreCipher.KEY_MODEL_PASSWORD) {
+            CoreCipher.KEY_MODEL_PASSWORD
+        } else {
+            CoreCipher.KEY_MODEL_KEYSTORE
+        }
+    }
+
+    /** Sets the key model for the cloud documents. */
+    fun setCloudKeyModel(context: Context, keyModel: String) {
+        awaitLoaded()
+        put(CLOUD_KEY_MODEL, keyModel)
+        persist(CLOUD_KEY_MODEL, keyModel)
+    }
+
+    /** Returns the cloud password in password mode ("" = unset). */
+    fun getCloudPassword(context: Context): String {
+        awaitLoaded()
+        return cachedString(CLOUD_PASSWORD).orEmpty()
+    }
+
+    /**
+     * Sets the cloud password (an empty string clears it). Written only
+     * from the settings entry, which exists solely in password mode.
+     */
+    fun setCloudPassword(context: Context, password: String) {
+        awaitLoaded()
+        put(CLOUD_PASSWORD, password)
+        persist(CLOUD_PASSWORD, password)
     }
 
     private const val TAG = "PreferenceHelper"

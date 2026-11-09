@@ -190,4 +190,14 @@
     <string name="db_incompatible_version">Ihre Datenbank ist mit dieser Version der App nicht kompatibel. Bitte die App herunterstufen oder die Datenbank mit einem neuen Upload überschreiben.</string>
     <string name="data_saved_successfully">Daten erfolgreich gespeichert</string>
     <string name="error_loading_data">Fehler beim Laden der Daten</string>
+    <string name="cloud_backup_section">Cloud-Backup</string>
+    <string name="cloud_backup_help">Ihre Cloud-Dokumente werden auf diesem Gerät vor dem Upload verschlüsselt (AES-256-GCM). Nur dieses Gerät – oder im Passwort-Modus Ihr Passwort – kann sie wieder entschlüsseln.</string>
+    <string name="cloud_key_model_label">Verschlüsselungsschlüssel</string>
+    <string name="cloud_key_model_device">Gerätegebunden</string>
+    <string name="cloud_key_model_password">Passwort</string>
+    <string name="cloud_state_keystore">Aktiv: gerätegebundener Schlüssel</string>
+    <string name="cloud_state_password">Aktiv: passwortabgeleiteter Schlüssel</string>
+    <string name="cloud_password_label">Passwort für das Cloud-Backup</string>
+    <string name="cloud_cannot_decrypt">Die Cloud-Sicherung kann mit dem Schlüssel dieses Geräts nicht gelesen werden (der Schlüssel wurde ggf. zurückgesetzt oder geändert). Löschen Sie die App-Daten und importieren Sie Ihre CSV-Dateien erneut.</string>
+    <string name="cloud_cipher_too_new">Diese Cloud-Sicherung wurde von einer neueren App-Version gespeichert und kann von dieser Version nicht gelesen werden.</string>
 </resources>

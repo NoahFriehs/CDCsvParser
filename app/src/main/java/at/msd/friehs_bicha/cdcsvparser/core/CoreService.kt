@@ -34,7 +34,8 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.DBWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.WalletData
 import at.msd.friehs_bicha.cdcsvparser.wallet.WalletXmlSerializer
-import com.google.android.gms.tasks.Task
+import at.msd.friehs_bicha.cdcsvparser.util.CoreCipher
+import at.msd.friehs_bicha.cdcsvparser.util.buildCollectionsMap
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -1010,14 +1011,16 @@ class CoreService : Service() {
             errorCounter.postValue((errorCounter.value ?: 0) + 1)
             return
         }
-        loadFromMap(userMap)
+        // The SDK byte fields (the cipher payload + salt) cross into the
+        // cipher layer as plain byte arrays.
+        loadFromMap(FirebaseUtil.toPlainByteDoc(userMap))
         FileLog.i("FirebaseUtil", "User data loaded successfully")
     }
 
     /**
-     * Loads the data from the HashMap
+     * Loads the data from the fetched user document (the HashMap).
      */
-    private fun loadFromMap(userMap: HashMap<String, Any>) {
+    private suspend fun loadFromMap(userMap: HashMap<String, Any>) {
         userMap.let {
             val appSettingsMap = it["appSettings"] as? HashMap<String, Any>
             if (appSettingsMap == null) {
@@ -1026,18 +1029,46 @@ class CoreService : Service() {
                 return
             }
             val appSettings = AppSettings().fromHashMap(appSettingsMap)
+            // The dbVersion gate runs on the CLEAR settings, before any
+            // decrypt attempt.
             if (!appSettings.compareVersionsWithDefault()) {
                 FileLog.e(TAG, "Version mismatch")
                 return
             }
+            // The cipher layer, next to the version gate: a document with
+            // the current cipher version is decrypted on the IO pool
+            // (KDF/GCM must not run on the core thread); a document
+            // WITHOUT cipher metadata is a legacy plaintext document and
+            // reads through exactly as before. Anything unreadable is an
+            // explicit error state - never a partial load.
+            val effective: Map<String, Any> = when (
+                val resolved = withContext(Dispatchers.IO) {
+                    CoreCipher.resolveDocPayload(it) { keyModel, salt, iterations ->
+                        FirebaseUtil.keyForDocMetadata(keyModel, salt, iterations)
+                    }
+                }
+            ) {
+                is CoreCipher.DocPayloadResult.Ready -> resolved.payload
+                is CoreCipher.DocPayloadResult.Unreadable -> {
+                    val text = if (resolved.reason == CoreCipher.UnreadableReason.CIPHER_TOO_NEW) {
+                        App.instance.getString(R.string.cloud_cipher_too_new)
+                    } else {
+                        App.instance.getString(R.string.cloud_cannot_decrypt)
+                    }
+                    FileLog.e(TAG, "loadFromMap: cloud document unreadable: ${resolved.reason}")
+                    Toast.makeText(App.instance, text, Toast.LENGTH_LONG).show()
+                    errorCounter.postValue((errorCounter.value ?: 0) + 1)
+                    return
+                }
+            }
             hasCryptoTx = appSettings.hasCryptoTx == "true"
             hasCardTx = appSettings.hasCardTx == "true"
-            val dbWallets = it["wallets"] as ArrayList<HashMap<String, *>>?
-            val dbOutsideWallets = it["outsideWallets"] as ArrayList<HashMap<String, *>>?
-            val dbTransactions = it["transactions"] as ArrayList<HashMap<String, *>>?
-            val dbCardWallets = it["cardWallets"] as ArrayList<HashMap<String, *>>?
+            val dbWallets = effective["wallets"] as? ArrayList<HashMap<String, *>>
+            val dbOutsideWallets = effective["outsideWallets"] as? ArrayList<HashMap<String, *>>
+            val dbTransactions = effective["transactions"] as? ArrayList<HashMap<String, *>>
+            val dbCardWallets = effective["cardWallets"] as? ArrayList<HashMap<String, *>>
             val dbCardTransactions =
-                it["cardTransactions"] as ArrayList<HashMap<String, *>>?
+                effective["cardTransactions"] as? ArrayList<HashMap<String, *>>?
 
             PreferenceHelper.setUseStrictType(
                 App.instance,
@@ -1595,9 +1626,15 @@ class CoreService : Service() {
         }
 
         /**
-         * Saves the data to Firebase
+         * Saves the data to Firebase as the canonical ENCRYPTED document:
+         * `appSettings` (incl. `dbVersion`) in the clear so the version
+         * gate can run before any decrypt attempt, plus the
+         * wallet/transaction collections as one AES-256-GCM blob with
+         * the cipher metadata (version / key model / KDF salt). The
+         * mapping + the encryption (incl. the password-model KDF) run on
+         * the IO pool - never on the core thread.
          */
-        private fun saveToFireBase() {
+        private suspend fun saveToFireBase() {
             val uid = FirebaseAuth.getInstance().currentUser?.uid
             if (uid == null) {
                 FileLog.e(TAG, "saveToFireBase: user is null")
@@ -1612,64 +1649,36 @@ class CoreService : Service() {
             if (hasCardTx) appSettings.hasCardTx = "true"
             if (hasCryptoTx) appSettings.hasCryptoTx = "true"
 
-            val appHashMap: java.util.HashMap<String, Any>
-            val dbWallets = java.util.ArrayList<DBWallet>()
-            val dbOutsideWallets = java.util.ArrayList<DBWallet>()
-            val dbCardWallets = java.util.ArrayList<CCDBWallet>()
-            val dbTransactions = java.util.ArrayList<DBTransaction>()
-            val cardTransactions = java.util.ArrayList<CCDBTransaction>()
-            walletsLiveData.value?.forEach {
-                dbWallets.add(DBWallet(it))
-            }
-            outsideWalletsLiveData.value?.forEach {
-                dbOutsideWallets.add(DBWallet(it))
-            }
-            cardWalletsLiveData.value?.forEach {
-                dbCardWallets.add(CCDBWallet(it))
-            }
-            transactionsLiveData.value?.forEach {
-                dbTransactions.add(DBTransaction(it))
-            }
-            cardTransactionsLiveData.value?.forEach {
-                cardTransactions.add(CCDBTransaction(it))
-            }
-
-            appHashMap = hashMapOf<String, Any>(
-                "wallets" to dbWallets,
-                "outsideWallets" to dbOutsideWallets,
-                "cardWallets" to dbCardWallets,
-                "transactions" to dbTransactions,
-                "cardTransactions" to cardTransactions,
-                "appSettings" to appSettings.toHashMap()
-            )
-
-            val db = Firebase.firestore
-
-            db.collection("user").document(uid).set(appHashMap)
-                .addOnCompleteListener { task ->
-                    handleFirebaseTaskResult(
-                        task,
-                        App.instance.getString(R.string.data_saved_successfully),
-                        App.instance.getString(R.string.error_saving_data)
+            try {
+                val docFields = withContext(Dispatchers.IO) {
+                    val dbWallets = java.util.ArrayList<DBWallet>()
+                    val dbOutsideWallets = java.util.ArrayList<DBWallet>()
+                    val dbCardWallets = java.util.ArrayList<CCDBWallet>()
+                    val dbTransactions = java.util.ArrayList<DBTransaction>()
+                    val cardTransactions = java.util.ArrayList<CCDBTransaction>()
+                    walletsLiveData.value?.forEach { dbWallets.add(DBWallet(it)) }
+                    outsideWalletsLiveData.value?.forEach { dbOutsideWallets.add(DBWallet(it)) }
+                    cardWalletsLiveData.value?.forEach { dbCardWallets.add(CCDBWallet(it)) }
+                    transactionsLiveData.value?.forEach { dbTransactions.add(DBTransaction(it)) }
+                    cardTransactionsLiveData.value?.forEach {
+                        cardTransactions.add(CCDBTransaction(it))
+                    }
+                    val collections = buildCollectionsMap(
+                        dbWallets, dbOutsideWallets, dbTransactions, dbCardWallets, cardTransactions
                     )
+                    FirebaseUtil.buildEncryptedUserDoc(appSettings.toHashMap(), collections)
                 }
-        }
-
-
-        /**
-         * Handles the result of the Firebase task
-         */
-        private fun handleFirebaseTaskResult(
-            task: Task<Void>,
-            successMessage: String,
-            errorMessage: String
-        ) {
-            if (task.isSuccessful) {
-                Toast.makeText(App.instance, successMessage, Toast.LENGTH_SHORT).show()
-                FileLog.i("FirebaseUtil", successMessage)
-            } else {
-                Toast.makeText(App.instance, errorMessage, Toast.LENGTH_SHORT).show()
-                FileLog.e("FirebaseUtil", "Error: ${task.exception}")
+                FirebaseUtil.writeUserDoc(
+                    uid,
+                    Firebase.firestore,
+                    docFields,
+                    App.instance,
+                    App.instance.getString(R.string.data_saved_successfully),
+                    App.instance.getString(R.string.error_saving_data),
+                )
+            } catch (e: Exception) {
+                FileLog.e(TAG, "saveToFireBase: failed to build the encrypted document: ${e.message}")
+                Toast.makeText(App.instance, R.string.error_saving_data, Toast.LENGTH_SHORT).show()
             }
         }
 

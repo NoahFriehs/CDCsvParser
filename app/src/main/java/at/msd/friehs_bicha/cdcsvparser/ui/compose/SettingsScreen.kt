@@ -72,6 +72,11 @@ fun SettingsScreen(
     onCoinGeckoKeyChange: (String) -> Unit,
     cryptocompareKey: String,
     onCryptoCompareKeyChange: (String) -> Unit,
+    cloudKeyModelOptions: List<String>,
+    cloudKeyModelSelected: Int,
+    onCloudKeyModelSelected: (Int) -> Unit,
+    cloudPassword: String,
+    onCloudPasswordChange: (String) -> Unit,
     onDeletePriceCaches: () -> Unit,
     logVisible: Boolean,
     onLogVisibleChange: (Boolean) -> Unit,
@@ -220,6 +225,52 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.delete_price_caches))
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // The cloud backup encryption: the key model in force + the
+            // model switch. The password field exists only while the
+            // password model is selected.
+            Text(
+                text = stringResource(R.string.cloud_backup_section),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.cloud_backup_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(
+                    if (cloudKeyModelSelected == 1) {
+                        R.string.cloud_state_password
+                    } else {
+                        R.string.cloud_state_keystore
+                    },
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(8.dp))
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                cloudKeyModelOptions.forEachIndexed { index, label ->
+                    SegmentedButton(
+                        selected = index == cloudKeyModelSelected,
+                        onClick = { onCloudKeyModelSelected(index) },
+                        shape = SegmentedButtonDefaults.itemShape(index, cloudKeyModelOptions.size),
+                    ) { Text(label) }
+                }
+            }
+            if (cloudKeyModelSelected == 1) {
+                Spacer(Modifier.height(8.dp))
+                ApiKeyField(
+                    label = stringResource(R.string.cloud_password_label),
+                    value = cloudPassword,
+                    onValueChange = onCloudPasswordChange,
+                    onClear = { onCloudPasswordChange("") },
+                )
             }
 
             Spacer(Modifier.height(24.dp))
