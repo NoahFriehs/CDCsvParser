@@ -7,6 +7,7 @@ import android.graphics.Color
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.OfflinePriceNote
 import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.core.WalletAssets
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
@@ -281,6 +282,7 @@ class AppModel : BaseAppModel, Serializable {
                             profitLossText = formatAmountToString(
                                 amountOfAsset - total.toDouble()
                             ),
+                            offlinePriceNote = offlineNote(),
                         )
                     } else {
                         ParseData.standard(
@@ -288,6 +290,7 @@ class AppModel : BaseAppModel, Serializable {
                             assetsText = WalletAssets.NO_INTERNET,
                             rewardsText = WalletAssets.NO_INTERNET,
                             profitLossText = WalletAssets.NO_INTERNET,
+                            offlinePriceNote = offlineNote(),
                         )
                     }
                 }
@@ -296,6 +299,11 @@ class AppModel : BaseAppModel, Serializable {
                 null
             }
         }
+
+    /** The offline valuation note for this file's wallet symbols (null = no note). */
+    private fun offlineNote(): OfflinePriceNote? =
+        txApp?.wallets?.map { it.currencyType }
+            ?.let { AssetValue.getInstance().offlinePriceNote(it) }
 
 
     private fun saveAppModelLocal()

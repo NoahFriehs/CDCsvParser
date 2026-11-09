@@ -517,6 +517,12 @@ class CoreService : Service() {
         val prices = Array<Double>(currencies.size) { i -> cachePrices[currencies[i]] ?: 0.0 }
         setPrice(prices)
 
+        // Offline valuation note: while the connection flag says offline,
+        // which era the numbers below carry - last cached prices (any age)
+        // and/or the static baseline table. Online or fresh-only: the
+        // helper returns null and the screen shows no note.
+        val offlinePriceNote = priceProvider.offlinePriceNote(currencies)
+
         var totalMoneySpent = getTotalMoneySpent()
         val totalMoneySpentString =
             StringHelper.formatAmountToString(totalMoneySpent)
@@ -543,6 +549,7 @@ class CoreService : Service() {
                         profitLossText = StringHelper.formatAmountToString(
                             amountOfAsset - totalMoneySpent
                         ),
+                        offlinePriceNote = offlinePriceNote,
                     )
                 }
 
@@ -556,6 +563,7 @@ class CoreService : Service() {
                         assetsText = "prices loading",
                         rewardsText = "prices loading",
                         profitLossText = "prices loading",
+                        offlinePriceNote = offlinePriceNote,
                     )
                 }
 
@@ -584,6 +592,7 @@ class CoreService : Service() {
                         assetsText = WalletAssets.NO_INTERNET,
                         rewardsText = WalletAssets.NO_INTERNET,
                         profitLossText = WalletAssets.NO_INTERNET,
+                        offlinePriceNote = offlinePriceNote,
                     )
                 }
             }
@@ -1329,6 +1338,20 @@ class CoreService : Service() {
             windowSeconds: Int,
             fromEpoch: Long,
         ): Array<String>
+
+        /**
+         * The static baseline EUR price for [symbol] (the C++ canon -
+         * the single source of the 144-symbol offline table); 0.0 for
+         * unknown symbols. Runs on the cpp-core thread (the JNI rule);
+         * the C++ side is a stateless table read, and the caller
+         * ([AssetValue]) memoizes per symbol (the table is read-only for
+         * the process lifetime).
+         */
+        fun staticBaselinePrice(symbol: String): Double = onCoreThread {
+            getStaticPrice(symbol)
+        }
+
+        private external fun getStaticPrice(symbol: String): Double
 
         /**
          * All core work - and in particular every JNI call into the C++

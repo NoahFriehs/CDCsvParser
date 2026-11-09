@@ -313,6 +313,14 @@ class CryptoPricesCryptoCompare : BaseCryptoPrices() {
     fun isCoinGeckoInCooldown(): Boolean = coinGeckoSkipMs() > 0
 
     /**
+     * The price-chain contract: while the CoinGecko cooldown / blackout
+     * is active, a failed bulk fetch is a 429 rate-limit artifact (the
+     * fast-fail gates answered), not a network failure - the app's
+     * connectivity flag must not flip for it.
+     */
+    override fun isRateLimited(): Boolean = isCoinGeckoInCooldown()
+
+    /**
      * CoinGecko daily EUR price history for [symbol] over the last [days]
      * days, ascending, one point per UTC calendar day (sub-daily replies -
      * days = 1 carries ~5-minute resolution - are reduced to the last point

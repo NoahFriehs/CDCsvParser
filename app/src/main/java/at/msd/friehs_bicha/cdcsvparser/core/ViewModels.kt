@@ -85,6 +85,7 @@ data class ParseData(
     val rewards: String? = null,
     val profitLoss: String? = null,
     val attributionVisible: Boolean = true,
+    val offlinePriceNote: OfflinePriceNote? = null,
 ) {
     companion object {
         /**
@@ -105,11 +106,28 @@ data class ParseData(
             assetsText: String,
             rewardsText: String,
             profitLossText: String,
+            offlinePriceNote: OfflinePriceNote? = null,
         ): ParseData = ParseData(
             moneySpent = moneySpentText,
             assets = assetsText,
             rewards = rewardsText,
             profitLoss = profitLossText,
+            offlinePriceNote = offlinePriceNote,
         )
     }
 }
+
+/**
+ * The two-stage offline valuation note (transport for [ParseData]; the
+ * screen renders the non-null parts as note row(s)). Present only while
+ * [com.at.msd.friehs_bicha.cdcsvparser.price.AssetValue.isConnected] is
+ * false AND degraded prices are actually in use (a cache entry of any
+ * age and/or the static baseline table) - fresh-only valuations stay
+ * note-free.
+ */
+data class OfflinePriceNote(
+    /** Minutes since the oldest cache entry in use; null when no cache entry was used at all (everything from the static table). */
+    val oldestAgeMinutes: Int? = null,
+    /** At least one held symbol had no cache entry and was filled from the static baseline table. */
+    val usesStaticBaseline: Boolean = false,
+)

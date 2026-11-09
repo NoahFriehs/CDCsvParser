@@ -1,5 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser
 
+import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionType
 import at.msd.friehs_bicha.cdcsvparser.ui.display.ProfitTrend
@@ -17,9 +18,21 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.math.BigDecimal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class RowModelsTest {
+
+    @Before
+    fun setUp() {
+        // AssetValue is a process-wide singleton: reset the price state
+        // and substitute a fake static baseline (the JVM cannot reach
+        // the JNI canon; the rows must price at zero, not at a table).
+        AssetValue.clearPriceCache()
+        AssetValue.getInstance().staticLookup = { 0.0 }
+        AssetValue.getInstance().isConnected = true
+        AssetValue.getInstance().isRunning = true
+    }
 
     private fun tx(desc: String, amount: Double, currency: String): Transaction =
         Transaction(

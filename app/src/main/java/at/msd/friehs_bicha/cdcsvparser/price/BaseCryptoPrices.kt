@@ -32,4 +32,12 @@ abstract class BaseCryptoPrices {
         return prices
     }
 
+    /**
+     * True while the provider is rate-limiting its own calls (429
+     * cooldown / blackout). A failed fetch while this is true is a
+     * rate-limit artifact, not a network failure - the connectivity
+     * flag must not flip for it (rate-limited is not offline).
+     */
+    open fun isRateLimited(): Boolean = false
+
 }

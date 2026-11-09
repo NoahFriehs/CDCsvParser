@@ -222,6 +222,38 @@ fun ParseScreen(
                 }
             }
 
+            // Offline valuation note (two stages): last cached prices
+            // (with the age of the oldest entry) and/or the static
+            // baseline table - null when online or fresh-only (the core
+            // posts it alongside the cards).
+            data?.offlinePriceNote?.let { note ->
+                Spacer(Modifier.height(8.dp))
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    note.oldestAgeMinutes?.let { minutes ->
+                        // The note names the era of the cached data: hours
+                        // once the oldest entry is at least an hour old,
+                        // minutes below that.
+                        Text(
+                            text = stringResource(
+                                if (minutes >= 60) R.string.offline_cached_prices_hours
+                                else R.string.offline_cached_prices_minutes,
+                                if (minutes >= 60) minutes / 60 else minutes,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (note.usesStaticBaseline) {
+                        if (note.oldestAgeMinutes != null) Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = stringResource(R.string.offline_static_baseline_prices),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
 
             FilledTonalButton(

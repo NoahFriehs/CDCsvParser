@@ -51,6 +51,10 @@ class AssetValuePricePassTest {
         // previous test could have left behind.
         AssetValue.clearPriceCache()
         assetValue.priceProvider = provider
+        // No static baseline table in these tests: a fake that prices
+        // every symbol at 0.0 keeps the pass-1 "unseen stays missing"
+        // contract under test (the real one is the JNI canon lookup).
+        assetValue.staticLookup = { 0.0 }
         assetValue.isConnected = true
         assetValue.isRunning = true
         provider.result = mapOf("BTC" to 100_000.0)

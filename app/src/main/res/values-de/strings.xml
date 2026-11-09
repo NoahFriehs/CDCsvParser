@@ -110,6 +110,9 @@
 
     <string name="no_internet_connection">Keine Internetverbindung</string>
     <string name="prices_loading">Preise werden geladen…</string>
+    <string name="offline_cached_prices_hours">Offline – zuletzt gecachte Preise in Verwendung (älteste ≈ %1$d Std.)</string>
+    <string name="offline_cached_prices_minutes">Offline – zuletzt gecachte Preise in Verwendung (älteste ≈ %1$d Min.)</string>
+    <string name="offline_static_baseline_prices">Statische Basispreise in Verwendung (für einige Symbole liegt kein gecachter Preis vor)</string>
     <string name="logoutQuestion">Sind Sie sicher, dass Sie sich abmelden möchten?</string>
     <string name="yes">Ja</string>
     <string name="no">Nein</string>

@@ -70,6 +70,14 @@ class PriceCache : Serializable {
     fun getStale(symbol: String): Double? = cache[symbol]?.price
 
     /**
+     * Creation times of the entries for [symbols] that have a cache
+     * entry (fresh or stale); symbols without an entry simply don't
+     * appear. Feeds the offline note's "oldest cached price" age.
+     */
+    fun creationTimesFor(symbols: Collection<String>): List<Instant> =
+        symbols.mapNotNull { cache[it]?.creationTime }
+
+    /**
      * @return true if no cache entry is within the TTL anymore (empty cache
      * or everything older than five minutes)
      */
