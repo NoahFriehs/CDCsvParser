@@ -205,7 +205,10 @@ class CroCardWallet(
     }
 
     private fun getNonStrictWallet(tt: String?): CroCardWallet? {
-        var tt = tt!!
+        // Write-only construction: the parse path that fed these lookups is
+        // retired, callers pass a fully resolved merchant string; the
+        // null-safe default instead of a bang keeps the lookup crash-free.
+        var tt = tt ?: ""
         tt = checkForRefund(tt)
         for (w in txApp.wallets) {
             if (tt.contains(" ")) {
@@ -254,7 +257,9 @@ class CroCardWallet(
     }
 
     private fun findWallet(tt: String?): CroCardWallet? {
-        var tt = tt!!
+        // Write-only construction: see getNonStrictWallet - no bang, the
+        // caller hands in a fully resolved merchant string.
+        var tt = tt ?: ""
         if (!txApp.isUseStrictWalletType) {
             tt = checkForRefund(tt)
         }

@@ -77,7 +77,11 @@ open class CroCardTransaction(
     var transactionTypeString: String
 
     init {
-        this.transactionTypeString = transactionType!!
+        // Write-only construction: the parse path that could hand a nullable
+        // type string into this constructor is retired, every remaining call
+        // site passes a fully set string. The null-safe default instead of a
+        // bang keeps the entity construction crash-free.
+        this.transactionTypeString = transactionType ?: ""
     }
 
     @Ignore

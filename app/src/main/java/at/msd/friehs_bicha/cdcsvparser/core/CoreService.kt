@@ -12,7 +12,6 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppStatus
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.app.AppTypeIdentifier
-import at.msd.friehs_bicha.cdcsvparser.app.CardTxApp
 import at.msd.friehs_bicha.cdcsvparser.app.DataTypes
 import at.msd.friehs_bicha.cdcsvparser.app.FirebaseAppmodel
 import at.msd.friehs_bicha.cdcsvparser.app.TxAppFactory
@@ -402,9 +401,8 @@ class CoreService : Service() {
                         }
                         try {
                             withTimeout(60_000) {
-                                // Wait for the WHOLE model, not just the first
-                                // half of it: the Room load fills cardApp and
-                                // txApp in two steps, and any earlier exit
+                                // Wait for the WHOLE model: the Room load builds
+                                // txApp asynchronously, and an earlier exit
                                 // would post half-empty cards.
                                 while (appModel?.isFullyLoaded != true) {
                                     delay(200)
@@ -417,14 +415,14 @@ class CoreService : Service() {
                         }
                         walletsLiveData.postValue(appModel?.txApp?.wallets)
                         outsideWalletsLiveData.postValue(appModel?.txApp?.outsideWallets)
-                        cardWalletsLiveData.postValue(appModel?.cardApp?.wallets)
-                        if (appModel?.txApp != null && appModel?.txApp is CardTxApp) {
-                            cardWalletsLiveData.postValue(appModel?.txApp?.wallets)
-                        }
+                        // The Kotlin core holds no card data anymore (the card
+                        // parser island is retired, the C++ core is the only
+                        // card path): the card LiveData is populated by the
+                        // core path only, this side posts an empty set.
+                        cardWalletsLiveData.postValue(ArrayList())
 
                         val allWallets = mutableListOf<Wallet>()
                         allWallets.addAll(appModel?.txApp?.wallets ?: emptyList())
-                        allWallets.addAll(appModel?.cardApp?.wallets ?: emptyList())
 
                         val noDuplicatesAllWallets = allWallets.distinctBy { it.walletId }
                         allWalletsLiveData.postValue(noDuplicatesAllWallets.toCollection(ArrayList()))
@@ -472,9 +470,6 @@ class CoreService : Service() {
                         appModel?.txApp?.wallets?.forEach {
                             transactions_.addAll(it.transactions.toCollection(ArrayList()))
                         }
-                        appModel?.cardApp?.wallets?.forEach {
-                            cardTransactions_.addAll(it.transactions.toCollection(ArrayList()) as ArrayList<CroCardTransaction?>)
-                        }
                         appModel?.txApp?.outsideWallets?.forEach {
                             transactions_.addAll(it.transactions.toCollection(ArrayList()))
                         }
@@ -492,16 +487,12 @@ class CoreService : Service() {
                         // Same data the LiveData posts above (explicit: the
                         // `.value` of a postValue is not visible here yet).
                         val stdWallets_ = appModel?.txApp?.wallets
-                        // Card wallets are CroCardWallets (a Wallet subclass);
-                        // the static field type is the base class.
-                        val cardWallets_ = (if (appModel?.txApp is CardTxApp) {
-                            stdWallets_
-                        } else {
-                            appModel?.cardApp?.wallets
-                        }) as? List<CroCardWallet>
+                        // The Kotlin path never holds card data: the card DAOs
+                        // get wiped by the guarded save but nothing is
+                        // re-inserted on this path (the core path re-inserts).
                         saveToRoomsDB(
                             stdWallets_, validTransactions,
-                            cardWallets_, cardTransactions_.filterNotNull()
+                            null, cardTransactions_.filterNotNull()
                         )
                     } catch (e: InterruptedException) {
                         FileLog.e(TAG, " : $e")
@@ -736,7 +727,6 @@ class CoreService : Service() {
     private fun walletAssetMapFromKotlinCore(walletId: Int): WalletAssets {
         val app = appModel ?: return WalletAssets()
         val wallet = app.txApp?.wallets?.find { it.walletId == walletId }
-            ?: app.cardApp?.wallets?.find { it.walletId == walletId }
         if (wallet == null) {
             FileLog.w(TAG, "No wallet with id $walletId found")
             return WalletAssets()
@@ -966,10 +956,12 @@ class CoreService : Service() {
         }
     }
 
-    /** True while the (Room-loaded) local model has no wallets yet. */
+    /**
+     * True while the (Room-loaded) local model has no wallets yet: the Kotlin
+     * model holds only the crypto half, card data lives in the core state.
+     */
     private fun localModelWalletsEmpty(): Boolean =
-        appModel?.txApp?.wallets.isNullOrEmpty() &&
-            (appModel?.cardApp?.wallets?.isNullOrEmpty() ?: true)
+        appModel?.txApp?.wallets.isNullOrEmpty()
 
     /**
      * Loads the data from Firebase.
@@ -1138,20 +1130,12 @@ class CoreService : Service() {
                         })
                     }
 
-                    false -> {
-                        requireNotNull(appModel) {
-                            "AppModel has not been initialized. Call setInstance() first."
-                        }.cardApp = TxAppFactory.createTxApp(
-                            AppType.CroCard,
-                            AppStatus.importFromFB,
-                            appSettings.useStrictType,
-                            hashMapOf(
-                                DataTypes.dbWallets to dbCardWallets,
-                                DataTypes.dbTransactions to dbCardTransactions,
-                                DataTypes.amountTxFailed to 0
-                            )
-                        ) as CardTxApp
-                    }
+                    // useCpp off: the Kotlin core holds no card data anymore
+                    // (the card parser island is retired, the C++ core is the
+                    // only card path): nothing to rehydrate on this side -
+                    // the card rows simply ride the crypto model's restore
+                    // (documented limitation of the escape switch).
+                    false -> {}
                 }
             }
             if (hasCardTx) {
@@ -1194,6 +1178,9 @@ class CoreService : Service() {
                     }
 
                     false -> {
+                        // useCpp off: the Kotlin card path is retired, so this
+                        // hits the factory's not-supported arm (throws) - the
+                        // documented broken state of the escape switch.
                         val newAppModel = AppModel(
                             dbCardWallets,
                             null,

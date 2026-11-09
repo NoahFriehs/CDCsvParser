@@ -1,16 +1,19 @@
 package at.msd.friehs_bicha.cdcsvparser.app
 
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
-import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
-import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import java.util.function.Consumer
 
 /**
  * TxApp factory
  *
+ * The card family (CroCard/CurveCard) has no branch on purpose: the Kotlin
+ * card parse path is retired and the C++ core is the only card path. Any
+ * card type handed in - CSV or DB restore - falls through to the
+ * not-supported arm below (throws), which is the documented limitation of
+ * the escape switch (useCpp off), not a live promise.
  */
 @Suppress("UNCHECKED_CAST")
 class TxAppFactory {
@@ -26,7 +29,7 @@ class TxAppFactory {
          * @param dataContainer HashMap with data:
          *                     - For not started: csvAsList
          *                     - For importFromFB: dbWallets, dbOutsideWallets, dbTransactions, amountTxFailed
-         * @return BaseApp child object (StandardTxApp, CardTxApp)
+         * @return BaseApp child object (StandardTxApp)
          */
         fun createTxApp(
             appType: AppType,
@@ -64,32 +67,6 @@ class TxAppFactory {
                     }
                 }
 
-                AppType.CroCard -> {
-                    when (appStatus) {
-                        AppStatus.NotStarted -> CardTxApp(
-                            dataContainer[DataTypes.csvAsList] as ArrayList<String>,
-                            useStrictType
-                        )
-
-                        AppStatus.importFromFB -> processCroCardFromDB(
-                            dataContainer[DataTypes.dbWallets] as ArrayList<java.util.HashMap<String, *>>,
-                            dataContainer[DataTypes.dbTransactions] as ArrayList<java.util.HashMap<String, *>>,
-                            dataContainer[DataTypes.amountTxFailed] as Long
-                        )
-
-                        AppStatus.Finished -> initCardFromLocalDB(
-                            dataContainer[DataTypes.dbWallets] as ArrayList<Wallet>,
-                            dataContainer[DataTypes.dbTransactions] as ArrayList<Transaction>,
-                            dataContainer[DataTypes.amountTxFailed] as Long
-                        )
-
-                        else -> {
-                            FileLog.e("TxAppFactory", "CroCard: Usage not found, AppStatus: $appStatus")
-                            throw RuntimeException("Usage not found")
-                        }
-                    }
-                }
-
                 AppType.Default -> {
                     when (appStatus) {
                         AppStatus.NotStarted -> StandardTxApp(
@@ -111,10 +88,6 @@ class TxAppFactory {
             return txApp
         }
 
-        private fun initCardFromLocalDB(wallets: ArrayList<Wallet>, transactions: ArrayList<Transaction>, amountTxFailed: Long): CardTxApp {
-            return CardTxApp(transactions as ArrayList<CroCardTransaction>, wallets as ArrayList<CroCardWallet>, amountTxFailed)
-        }
-
         private fun initFromLocalDB(wallets: ArrayList<Wallet>, outsideWallets: ArrayList<Wallet>, transactions: ArrayList<Transaction>, appType: AppType, amountTxFailed: Long): StandardTxApp {
             val tXs: MutableList<Transaction> = ArrayList()
             val wTXs: MutableList<Wallet> = ArrayList()
@@ -125,31 +98,6 @@ class TxAppFactory {
             tXs.addAll(transactions)
 
             return StandardTxApp(tXs, wTXs, wTXsOutside, amountTxFailed, appType, true)
-        }
-
-        /**
-         * Init from firebase
-         *
-         * @param dbWallets
-         * @param dbTransactions
-         * @param amountTxFailed
-         * @return CroCardTxApp
-         */
-        private fun processCroCardFromDB(
-            dbWallets: ArrayList<java.util.HashMap<String, *>>,
-            dbTransactions: ArrayList<java.util.HashMap<String, *>>,
-            amountTxFailed: Long
-        ): CroCardTxApp {
-            val tXs: MutableList<CroCardTransaction> = ArrayList()
-            val wTXs: MutableList<CroCardWallet> = ArrayList()
-
-            dbTransactions.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
-                tXs.add(CroCardTransaction.fromDb(hashMap))
-            })
-            dbWallets.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
-                wTXs.add(CroCardWallet.fromDb(hashMap))
-            })
-            return CroCardTxApp(tXs, wTXs, amountTxFailed)
         }
 
         /**

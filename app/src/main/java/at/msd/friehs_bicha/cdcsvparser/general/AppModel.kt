@@ -39,9 +39,6 @@ import java.util.*
  */
 class AppModel : BaseAppModel, Serializable {
 
-    var cardApp: CardTxApp? = null
-
-
     /**
      * Creates a new AppModel
      *
@@ -66,9 +63,6 @@ class AppModel : BaseAppModel, Serializable {
         if (PreferenceHelper.getIsDataLocal(App.instance)) saveAppModelLocal()
         else PreferenceHelper.setIsAppModelSavedLocal(App.instance, false)
         isRunning = true
-        if (appType == AppType.CroCard) {
-            cardApp = app as CardTxApp
-        }
         // Partial parse failures must not crash the app: continue with the
         // parsed subset (the C++ core path behaves the same way and
         // surfaces the count via log/UI).
@@ -136,9 +130,11 @@ class AppModel : BaseAppModel, Serializable {
             var totalPrice = BigDecimal(0)
             when (appType) {
                 AppType.CroCard, AppType.CurveCard -> {
-                    val app = txApp ?: cardApp
-                    val wallets = app!!.wallets.clone() as ArrayList<Wallet>
-                    for (wallet in wallets) {
+                    // The Kotlin core holds no card data anymore (the card
+                    // parser island is retired, the C++ core is the only card
+                    // path): guard the missing model instead of asserting.
+                    val wallets = txApp?.wallets
+                    for (wallet in wallets ?: emptyList()) {
                         totalPrice = totalPrice.add(wallet.amount)
                     }
                 }
@@ -271,9 +267,6 @@ class AppModel : BaseAppModel, Serializable {
             return try {
                 val total = totalPrice
                 val totalMoneySpent = formatAmountToString(total.toDouble())
-                if (appType != AppType.CdCsvParser && txApp != null && cardApp != null) {
-                    appType = txApp!!.appType
-                }
                 when (appType) {
                     AppType.CroCard, AppType.CurveCard ->
                         ParseData.card(totalMoneySpent)
@@ -310,8 +303,6 @@ class AppModel : BaseAppModel, Serializable {
         appModelScope.launch {
             val walletDao = App.instance.db.walletDao()
             val txDao = App.instance.db.transactionDao()
-            val cardWalletDao = App.instance.db.cardWalletDao()
-            val cardTransactionDao = App.instance.db.cardTransactionDao()
 
             if (txApp is StandardTxApp) {
                 walletDao.deleteAll()
@@ -321,28 +312,6 @@ class AppModel : BaseAppModel, Serializable {
                 txDao.insertAll(txApp!!.transactions)
             }
             PreferenceHelper.setIsAppModelSavedLocal(App.instance, true)
-
-            if (cardApp == null) return@launch
-            cardWalletDao.deleteAll()
-            cardTransactionDao.deleteAll()
-
-            val listOfWalletIDs = ArrayList<Int>()
-
-            for (wallet in cardApp!!.wallets) {
-                listOfWalletIDs.add(wallet.walletId)
-            }
-            for (transaction in cardApp!!.transactions) {
-                if (!listOfWalletIDs.contains(transaction.walletId)) {
-                    FileLog.e(
-                        "AppModel",
-                        "saveAppModelLocal: $transaction.walletId not found in wallets"
-                    )
-                    continue
-                }
-            }
-
-            cardWalletDao.insertAll(cardApp!!.wallets as ArrayList<CroCardWallet>)
-            cardTransactionDao.insertAll(cardApp!!.transactions as ArrayList<CroCardTransaction>)
         }
     }
 
@@ -355,30 +324,14 @@ class AppModel : BaseAppModel, Serializable {
             val useStrictType = PreferenceHelper.getUseStrictType(App.instance)
             val ws = App.instance.db.walletDao().getAllWallets()
             val txs = App.instance.db.transactionDao().getAllTransactions()
-            val cws = App.instance.db.cardWalletDao().getAllWallets()
-            val cts = App.instance.db.cardTransactionDao().getAllTransactions()
 
-            if (ws.isEmpty() && txs.isEmpty() && cws.isEmpty() && cts.isEmpty()) {
+            // The card rows stay in Room only as legacy-schema persistence of
+            // the core's output; the Kotlin model is not rehydrated from them
+            // (the card parser island is retired, the C++ core is the only
+            // card path).
+            if (ws.isEmpty() && txs.isEmpty()) {
                 FileLog.e("AppModel", "loadAppModelLocal: no data found in db")
                 return@launch
-            }
-
-            if (cws.isNotEmpty() && cts.isNotEmpty()) {
-                val cardWallets = ArrayList<CroCardWallet>()
-                cws.forEach {
-                    it.wallet.transactions.addAll(it.transactions)
-                    cardWallets.add(it.wallet)}
-
-                cardApp = TxAppFactory.createTxApp(
-                    AppType.CroCard,
-                    AppStatus.Finished,
-                    useStrictType,
-                    hashMapOf(
-                        DataTypes.dbWallets to cardWallets,
-                        DataTypes.dbTransactions to cts,
-                        DataTypes.amountTxFailed to 0L
-                    )
-                ) as CardTxApp
             }
 
             if (ws.isNotEmpty() && txs.isNotEmpty()) {
@@ -410,13 +363,9 @@ class AppModel : BaseAppModel, Serializable {
                 )
             }
 
-            if (txApp == null && cardApp == null) {
+            if (txApp == null) {
                 FileLog.e("AppModel", "loadAppModelLocal: no data found in db")
                 return@launch
-            }
-
-            if (txApp == null) {
-                txApp = cardApp
             }
 
             isRunning = true
@@ -492,8 +441,13 @@ class AppModel : BaseAppModel, Serializable {
 
     
 
+    /**
+     * The Kotlin core holds no card data anymore (the card parser island is
+     * retired, the C++ core is the only card path): card presence is tracked
+     * on the core side (hasCardTx from the JNI modes), never on this model.
+     */
     fun hasCard(): Boolean {
-        return cardApp != null || appType == AppType.CroCard || appType == AppType.CurveCard
+        return false
     }
 
     fun hasTxModule(): Boolean {
