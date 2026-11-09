@@ -97,13 +97,26 @@ class CoreService : Service() {
     override fun onCreate() {
         super.onCreate()
         FileLog.i(TAG, "Service created (gen $generation)")
+        // Executor liveness per service generation: at gen n+1 (a service
+        // restart WITHIN one process) this line proves whether the shared
+        // cpp-core thread survived the previous service death -
+        // 'alive=false' would be the wedge signature (every later import
+        // queues forever, no error, no log).
+        val coreThreadAtGen = coreThread
+        FileLog.i(
+            TAG,
+            "Core executor liveness: ${coreThreadAtGen?.let { "'${it.name}' alive=${it.isAlive}" } ?: "not created yet"} (gen $generation)"
+        )
     }
 
     override fun onDestroy() {
         FileLog.i(TAG, "Service destroyed (gen $generation)")
         CoreService.service = null
+        // The dead service's own scope is cancelled (its undelivered
+        // coroutines die with it), but the shared cpp-core executor is
+        // app-lifetime and deliberately survives the service (KDoc on
+        // coreExecutor).
         serviceScope.cancel()
-        CoreService.shutdownCoreThread()
         super.onDestroy()
     }
 
@@ -749,12 +762,11 @@ class CoreService : Service() {
         // A constraint conflict here must never kill the app: the in-memory
         // (C++ core + LiveData) state stays the source of truth and the next
         // parse retries the save.
-        // Never wipe a stored model with an empty re-import. A
-        // fast-start C++ state holds only the wallet balances (no
-        // transactions), and an empty parse result would not carry any
-        // either - in both cases the delete-before-insert would destroy the
-        // previously parsed rows (the fast-start local fallback reads
-        // exactly from Room), so the old model is kept.
+        // Never wipe a stored model with an empty re-import. An empty
+        // state here (e.g. an empty parse result) carries no transactions,
+        // and the delete-before-insert would destroy the previously parsed
+        // rows (the fast-start local fallback reads exactly from Room), so
+        // the old model is kept.
         if ((transactions ?: emptyList()).isEmpty() && (cardTransactions ?: emptyList()).isEmpty()) {
             FileLog.w(TAG, "saveToRoomsDB: no transactions in the current state; keeping the stored model.")
             return
@@ -820,9 +832,10 @@ class CoreService : Service() {
         when (isCoreInitialized && useCpp) {
             true -> {
                 if (init(logFilePath, savePath)) {
-                    // Fast start (C++ mode): init() loaded the
-                    // persisted C++ state. The save format holds the wallet
-                    // balances but NOT the transactions, so the daily series
+                    // Fast start (C++ mode): init() loaded the persisted
+                    // C++ state - the wallet balances and the per-wallet
+                    // transaction lists, but NOT the applied
+                    // per-transaction ledger series, so the daily series
                     // are still empty here. Show the complete saved values
                     // from the local (Room) model first, then re-parse the
                     // last imported CSV in the background and re-post from
@@ -885,7 +898,8 @@ class CoreService : Service() {
      * The newest CSV in private storage (the last uploaded /
      * imported file - the history dialog lists exactly these). The fast-
      * start C++ rebuild reparses it, because the persisted C++ state
-     * contains only the wallet balances, not the transactions.
+     * restores the transaction lists but not the applied
+     * per-transaction ledger series behind the daily chart.
      */
     private fun latestImportedCsv(): File? =
         filesDir.listFiles { f -> f.isFile && f.name.endsWith(".csv") }
@@ -1335,9 +1349,23 @@ class CoreService : Service() {
          * TransactionManager is not thread-safe, so the whole JNI surface
          * must stay on one thread; heavy Kotlin-core work (parsing, DB
          * saves) uses it as well.
+         *
+         * APP-LIFETIME INVARIANT: created once per process and NEVER shut
+         * down - the service's onDestroy deliberately leaves it running.
+         * The C++ state lives for the process lifetime on this thread; a
+         * mid-process shutdown (as on a service death) would silently
+         * wedge every later import: tasks queue on the dead executor, are
+         * never dispatched, and leave no error and no log (the 2026-10-29
+         * on-device stall). The thread is a daemon, so it costs nothing
+         * at process exit.
          */
+        @Volatile
+        private var coreThread: Thread? = null
         private val coreExecutor = Executors.newSingleThreadExecutor {
-            Thread(it, CORE_THREAD_NAME).apply { isDaemon = true }
+            Thread(it, CORE_THREAD_NAME).apply {
+                isDaemon = true
+                coreThread = this
+            }
         }
         internal val coreDispatcher: CoroutineDispatcher = coreExecutor.asCoroutineDispatcher()
 
@@ -1358,10 +1386,6 @@ class CoreService : Service() {
                 e.cause ?: e
             }
             throw error
-        }
-
-        internal fun shutdownCoreThread() {
-            coreExecutor.shutdownNow()
         }
 
         @Volatile var isCoreInitialized = false
