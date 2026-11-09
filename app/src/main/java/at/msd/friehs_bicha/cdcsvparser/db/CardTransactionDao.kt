@@ -9,9 +9,6 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 @Dao
 interface CardTransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertTransaction(transaction: CroCardTransaction)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(transactions: List<CroCardTransaction>)
 
     @Query("SELECT * FROM card_transactions")
