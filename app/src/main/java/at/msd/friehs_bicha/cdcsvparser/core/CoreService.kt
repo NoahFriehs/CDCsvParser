@@ -249,30 +249,7 @@ class CoreService : Service() {
             }
         }
         val appTypeFromSettings = AppType.safeFromOrdinal(mode)
-        // A file with a distinctive header is parsed in that format,
-        // independent of the (possibly stale) app type selected in the
-        // settings. For the shared CDC/Card header the first data line
-        // decides (card rows carry kind 0), so a stale or mismatched
-        // selection can no longer turn a card file into an all-line-failed
-        // crypto parse (or vice versa). Unknown headers: the settings
-        // decide.
-        val firstLine = data.firstOrNull()
-        val headerType = AppTypeIdentifier.getAppType(firstLine)
-        val appType = when {
-            headerType != null -> headerType
-            // Shared CDC/Card header: the content decides. Card transactions
-            // carry the plain kind 0, crypto rows a known kind label - a
-            // content-based pick works for any selection (stale ones
-            // included) and for card-family types the core cannot parse
-            // (CurveCard).
-            AppTypeIdentifier.isCdCardFamily(firstLine) ->
-                if (AppTypeIdentifier.looksLikeCardData(
-                        data.drop(1).firstOrNull { it.isNotBlank() }
-                    )
-                ) AppType.CroCard else AppType.CdCsvParser
-
-            else -> appTypeFromSettings
-        }
+        val appType = detectAppType(data, appTypeFromSettings)
         if (appType != appTypeFromSettings) {
             FileLog.i(TAG, "File content indicates $appType; using it instead of the selected type $appTypeFromSettings.")
         }
@@ -340,6 +317,34 @@ class CoreService : Service() {
 
         provideDataToActivity()
 
+    }
+
+    /**
+     * Resolves the AppType a file's content asks for: a distinctive header
+     * decides, independent of the (possibly stale) app type selected in the
+     * settings. For the shared CDC/Card header the first data line decides
+     * (card rows carry kind 0), so a stale or mismatched selection can no
+     * longer turn a card file into an all-line-failed crypto parse (or
+     * vice versa). Unknown headers: the settings decide.
+     */
+    private fun detectAppType(data: List<String>, appTypeFromSettings: AppType): AppType {
+        val firstLine = data.firstOrNull()
+        val headerType = AppTypeIdentifier.getAppType(firstLine)
+        return when {
+            headerType != null -> headerType
+            // Shared CDC/Card header: the content decides. Card transactions
+            // carry the plain kind 0, crypto rows a known kind label - a
+            // content-based pick works for any selection (stale ones
+            // included) and for card-family types the core cannot parse
+            // (CurveCard).
+            AppTypeIdentifier.isCdCardFamily(firstLine) ->
+                if (AppTypeIdentifier.looksLikeCardData(
+                        data.drop(1).firstOrNull { it.isNotBlank() }
+                    )
+                ) AppType.CroCard else AppType.CdCsvParser
+
+            else -> appTypeFromSettings
+        }
     }
 
     /**
@@ -943,6 +948,106 @@ class CoreService : Service() {
         }
     }
 
+    /**
+     * Combined import of a multi-file selection (the union view): file 1
+     * goes through the normal init path (REPLACE, the C++ side), files
+     * 2..N are appended to the live core - the core skips and COUNTS
+     * rows that are exact-tuple duplicates of rows already present (date,
+     * description, amount, currency), so overlapping selections never
+     * double-account. Each file's parse mode is detected from its content
+     * as for a single import, so a mixed card + crypto selection lands in
+     * the right buckets.
+     *
+     * Runs on the cpp-core thread. A file whose type the core cannot
+     * parse (or that yields zero rows) is counted in the error counter
+     * and the remaining files still land; a first-file failure aborts the
+     * whole selection (without an init there is nothing to append). The
+     * failed-line counts are accumulated per file, the duplicate count is
+     * read once at the end (the manager is fresh after the init). On
+     * success the normal post-parse post (prices + LiveData) happens
+     * exactly ONCE over the union.
+     *
+     * [fileNames] are file names in [filesDir] (the history entries' stable
+     * names); [settingsMode] is the AppType ordinal the settings currently
+     * carry - the fallback for files without a distinctive header, exactly
+     * as for a single import.
+     */
+    fun parseCombinedSelection(fileNames: List<String>, settingsMode: Int) {
+        if (!isCoreInitialized || !useCpp) {
+            FileLog.w(TAG, "Combined selection needs the C++ core path; refusing ${fileNames.size} file(s).")
+            errorCounter.postValue(errorCounter.value?.plus(1) ?: 1)
+            return
+        }
+        if (fileNames.size < 2) {
+            FileLog.w(TAG, "Combined selection needs at least 2 files, got ${fileNames.size}.")
+            return
+        }
+        FileLog.i(TAG, "Parsing combined selection: ${fileNames.size} file(s) -> one union model")
+        val appTypeFromSettings = AppType.safeFromOrdinal(settingsMode)
+
+        val contents = ArrayList<List<String>>(fileNames.size)
+        for (name in fileNames) {
+            val data = try {
+                FileUtil.getFileContent(File(filesDir, name))
+            } catch (e: IOException) {
+                FileLog.e(TAG, "Combined selection: reading $name from storage failed: $e")
+                errorCounter.postValue(errorCounter.value?.plus(1) ?: 1)
+                return
+            }
+            contents.add(data)
+        }
+
+        // File 1: the normal init path (REPLACE semantics).
+        val firstMode = CoreModeMapper.toCoreMode(detectAppType(contents[0], appTypeFromSettings))
+        if (firstMode == null) {
+            FileLog.e(TAG, "Combined selection: the first file has no supported core mode.")
+            errorCounter.postValue(errorCounter.value?.plus(1) ?: 1)
+            return
+        }
+        val firstArray = Array(contents[0].size) { i -> contents[0][i] }
+        if (!initWithData(firstArray, contents[0].size, firstMode, logFilePath, PARSE_BUDGET_MS)) {
+            FileLog.w(TAG, "Combined selection: initialization with the first file failed; aborting.")
+            errorCounter.postValue(errorCounter.value?.plus(1) ?: 1)
+            return
+        }
+        var totalFailedLines = getFailedLines().coerceAtLeast(0)
+
+        // Files 2..N: the dedup append. The TM carries each file's own
+        // failed-line count after the call, so accumulate per success.
+        var skippedFiles = 0
+        for (i in 1 until fileNames.size) {
+            val data = contents[i]
+            val coreMode = CoreModeMapper.toCoreMode(detectAppType(data, appTypeFromSettings))
+            if (coreMode == null) {
+                FileLog.e(TAG, "Combined selection: ${fileNames[i]} has no supported core mode, skipped.")
+                skippedFiles++
+                continue
+            }
+            val array = Array(data.size) { j -> data[j] }
+            if (appendWithData(array, data.size, coreMode, logFilePath, PARSE_BUDGET_MS)) {
+                totalFailedLines += getFailedLines().coerceAtLeast(0)
+            } else {
+                FileLog.w(TAG, "Combined selection: ${fileNames[i]} added no rows, skipped.")
+                skippedFiles++
+            }
+        }
+
+        val duplicateSkips = getDuplicateSkips()
+        if (totalFailedLines > 0) {
+            FileLog.w(TAG, "Combined selection skipped $totalFailedLines unparsable line(s) altogether.")
+        }
+        FileLog.i(TAG,
+            "Combined selection done: ${fileNames.size} file(s), $skippedFiles skipped, " +
+                "$totalFailedLines failed line(s), $duplicateSkips duplicate row(s) skipped.")
+
+        isRunning = true
+        checkAndSetModes()
+        if (!save(savePath)) {
+            FileLog.w(TAG, "Saving the combined C++ state for fast start failed; the next fast start will fall back to the local model.")
+        }
+        provideDataToActivity()
+    }
+
     private fun waitLocalModelAndProvide() {
         serviceScope.launch {
             try {
@@ -1248,6 +1353,16 @@ class CoreService : Service() {
         logFilePath: String,
         parseBudgetMs: Long
     ): Boolean
+
+    private external fun appendWithData(
+        data: Array<String>,
+        dataSize: Int,
+        mode: Int,
+        logFilePath: String,
+        parseBudgetMs: Long
+    ): Boolean
+
+    private external fun getDuplicateSkips(): Long
 
     private external fun save(savePath: String): Boolean
     private external fun load(savePath: String)
