@@ -62,7 +62,7 @@ class ComposeUiTest {
                 "Incoming Asset;Incoming Amount;Fee Asset (optional);" +
                 "Fee Amount (optional);Comment (optional);Trx. ID (optional);" +
                 "Source Type;Source Name\n" +
-                "15.01.2026 10:00:00;UI Test Wallet;Trade;EUR;50;;BTC;0.5;;;" +
+                "15.01.2026 10:00:00;UI Test Wallet;Trade;EUR;50;BTC;0.5;;;" +
                 "UI test purchase;ui-tx-1;Manual;CITest\n" +
                 "20.01.2026 11:00:00;UI Test Wallet;Deposit;;;ETH;0.1;;;" +
                 "UI test deposit;ui-tx-2;Manual;CITest\n",
@@ -505,9 +505,10 @@ class ComposeUiTest {
             By.text(str(R.string.chart_wallet_total)),
             "wallet scope row not visible",
         )
-        // The fixture's wallet chip: the deposit row books an ETH wallet,
-        // the other row settles in the inner EUR wallet, which the core
-        // keeps OUT of the per-wallet series (cards scope).
+        // The fixture's wallet chips: the deposit row books an ETH wallet
+        // and the trade row a BTC one (that trade's 50 EUR cost settles in
+        // the inner fiat wallet, which the core keeps OUT of the per-wallet
+        // series).
         tap(waitForScrolling(By.text("ETH"), "ETH wallet chip not visible"))
         sleep(500)
         waitForScrolling(
