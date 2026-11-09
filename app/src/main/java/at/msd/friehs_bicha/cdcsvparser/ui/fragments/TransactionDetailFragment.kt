@@ -2,18 +2,23 @@ package at.msd.friehs_bicha.cdcsvparser.ui.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.TransactionDetailScreen
@@ -72,6 +77,23 @@ class TransactionDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // This destination must never offer the settings action. The
+        // gear itself comes from the view-scoped MenuProviders of the
+        // other fragments; a navigation transition can briefly hold two
+        // views alive at once, so this destination removes the item on
+        // every menu build within its own view lifetime instead of
+        // relying on the leaving fragment's provider to be gone first.
+        // View-scoped: it is gone with this view.
+        requireActivity().addMenuProvider(
+            object : MenuProvider {
+                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                    menu.findItem(R.id.action_settings)?.let { menu.removeItem(it.itemId) }
+                }
+
+                override fun onMenuItemSelected(menuItem: MenuItem) = false
+            },
+            viewLifecycleOwner,
+        )
         transactionId = arguments?.getInt("transactionID", -1) ?: -1
         if (transactionId == -1) {
             popBack()
