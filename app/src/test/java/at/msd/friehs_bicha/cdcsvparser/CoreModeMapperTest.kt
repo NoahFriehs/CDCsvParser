@@ -15,13 +15,13 @@ class CoreModeMapperTest {
         assertEquals(1, CoreModeMapper.toCoreMode(AppType.CroCard))
         assertEquals(4, CoreModeMapper.toCoreMode(AppType.Kraken))
         assertEquals(5, CoreModeMapper.toCoreMode(AppType.BlockPit))
+        assertEquals(6, CoreModeMapper.toCoreMode(AppType.CurveCard))
     }
 
     @Test
     fun unsupportedTypesMapToNull() {
         // Null means "reject with an error", not "guess a mode" - the old
         // ordinal passthrough silently used the wrong parser here.
-        assertNull(CoreModeMapper.toCoreMode(AppType.CurveCard))
         assertNull(CoreModeMapper.toCoreMode(AppType.Default))
         assertNull(CoreModeMapper.toCoreMode(AppType.Custom))
     }
