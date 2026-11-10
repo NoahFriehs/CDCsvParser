@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
@@ -117,14 +121,25 @@ fun LoginScreen(
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(24.dp),
         ) {
+            // The string carries no markup any more: the link underline is
+            // text style, so every locale/theme renders the same look (the
+            // night-locale divergence came from the <u> markup living in res).
             Text(
-                text = stringResource(R.string.signup),
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                        append(stringResource(R.string.signup))
+                    }
+                },
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.clickable(onClickLabel = "signup") { onSignup() },
             )
             Text(
-                text = stringResource(R.string.password_forgotten),
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                        append(stringResource(R.string.password_forgotten))
+                    }
+                },
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.clickable(onClickLabel = "forgot") { onForgotPassword(email) },

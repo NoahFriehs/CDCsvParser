@@ -83,7 +83,7 @@
     <string name="email">Email:</string>
     <string name="password">Password:</string>
     <string name="login">Login</string>
-    <string name="signup"><u>Signup</u></string>
+    <string name="signup">Signup</string>
     <string name="error_login_failed">Login failed</string>
     <string name="error_empty_fields">Please fill out all fileds</string>
     <string name="load_latest_from_database">Load latest from Database</string>
@@ -94,10 +94,9 @@
     <string name="use_app_without_login">Use App without Login</string>
     <string name="logout">Logout</string>
     <string name="delete_account">Delete Account</string>
-    <string name="password_forgotten"><u>Password forgotten</u></string>
+    <string name="password_forgotten">Password forgotten</string>
     <string name="error_noEmail">Please enter your email address</string>
     <string name="title_activity_starting">StartingActivity</string>
-    <string name="allow_permissions_for_storage">Allow Permissions for Storage</string>
     <string name="title_activity_transaction">TransactionActivity</string>
     <string name="transaction_type">Type</string>
     <string name="amount">Amount:</string>
