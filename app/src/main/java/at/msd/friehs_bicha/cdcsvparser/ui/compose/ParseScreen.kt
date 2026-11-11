@@ -284,6 +284,31 @@ fun ParseScreen(
                 }
             }
 
+            // Partial-import note: the hard parse budget cut the last
+            // import short. A parser cut names the unprocessed row count;
+            // a wallet-build cut (every row was read, the aggregation
+            // stopped) gets the distinct wording - the tell is
+            // unprocessedRows > 0. Stacks with the offline note and the
+            // skip-note, each a different fact.
+            data?.parseBudgetNote?.let { note ->
+                Spacer(Modifier.height(8.dp))
+                val noteText =
+                    if (note.unprocessedRows > 0) {
+                        stringResource(
+                            R.string.parse_incomplete_rows,
+                            note.budgetSeconds,
+                            note.unprocessedRows,
+                        )
+                    } else {
+                        stringResource(R.string.parse_incomplete_aggregation, note.budgetSeconds)
+                    }
+                Text(
+                    text = noteText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             Spacer(Modifier.height(24.dp))
 
             FilledTonalButton(

@@ -165,6 +165,8 @@
     <string name="error_saving_data">Error saving data</string>
     <string name="password_reset_email_sent">Password reset email sent</string>
     <string name="unparsable_lines_skipped" formatted="false">Unparsable lines were skipped: %1$d</string>
+    <string name="parse_incomplete_rows" formatted="false">Incomplete import: the %1$d s time limit was reached — %2$d line(s) were not read</string>
+    <string name="parse_incomplete_aggregation" formatted="false">Incomplete import: the %1$d s time limit was reached — the aggregation was interrupted</string>
     <string name="parsing_text">Parsing your file…</string>
     <string name="metric_value_placeholder">0 €</string>
     <string name="search_hint">Search transactions</string>

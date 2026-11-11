@@ -86,14 +86,19 @@ data class ParseData(
     val profitLoss: String? = null,
     val attributionVisible: Boolean = true,
     val offlinePriceNote: OfflinePriceNote? = null,
+    val parseBudgetNote: ParseBudgetNote? = null,
 ) {
     companion object {
         /**
          * Files without crypto transactions (card/fiat scope): only "money
          * spent" exists and the attribution footer is hidden.
          */
-        fun card(moneySpentText: String?): ParseData =
-            ParseData(moneySpent = moneySpentText, attributionVisible = false)
+        fun card(moneySpentText: String?, parseBudgetNote: ParseBudgetNote? = null): ParseData =
+            ParseData(
+                moneySpent = moneySpentText,
+                attributionVisible = false,
+                parseBudgetNote = parseBudgetNote,
+            )
 
         /**
          * Standard (crypto) files: footer stays up; the three derived
@@ -107,12 +112,14 @@ data class ParseData(
             rewardsText: String,
             profitLossText: String,
             offlinePriceNote: OfflinePriceNote? = null,
+            parseBudgetNote: ParseBudgetNote? = null,
         ): ParseData = ParseData(
             moneySpent = moneySpentText,
             assets = assetsText,
             rewards = rewardsText,
             profitLoss = profitLossText,
             offlinePriceNote = offlinePriceNote,
+            parseBudgetNote = parseBudgetNote,
         )
     }
 }
@@ -130,4 +137,20 @@ data class OfflinePriceNote(
     val oldestAgeMinutes: Int? = null,
     /** At least one held symbol had no cache entry and was filled from the static baseline table. */
     val usesStaticBaseline: Boolean = false,
+)
+
+/**
+ * Partial-import note (transport for [ParseData]): the hard parse budget
+ * cut the last import short. [unprocessedRows] &gt; 0 = the parser stopped
+ * reading the input (that many lines were never read); 0 = every line was
+ * read but the wallet aggregation stopped (the screen renders a distinct
+ * wording for the two). [budgetSeconds] is the budget the cut hit - the
+ * app passes its own constant into the core, so the note names the limit
+ * that actually applied. Present only when the last import was cut: it is
+ * per-parse process state (the core resets it at the start of every
+ * parse), never part of the saved model.
+ */
+data class ParseBudgetNote(
+    val unprocessedRows: Int,
+    val budgetSeconds: Int,
 )

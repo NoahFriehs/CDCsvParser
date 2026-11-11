@@ -292,6 +292,15 @@ class CoreService : Service() {
                     FileLog.d(TAG, "Initialization with data successful.")
                     isRunning = true
                     lastFailedLines = getFailedLines().coerceAtLeast(0)
+                    // Read right after the parse, still on the core thread:
+                    // the cut state is per-thread and must be consumed
+                    // before any other core work (same discipline as the
+                    // failed-line count above).
+                    lastParseBudgetCut = wasLastParseBudgetCut()
+                    lastParseUnprocessedRows = getLastParseUnprocessedRows().coerceAtLeast(0)
+                    if (lastParseBudgetCut) {
+                        FileLog.w(TAG, "C++ core parse cut by the budget: $lastParseUnprocessedRows row(s) unprocessed.")
+                    }
                     if (lastFailedLines > 0) {
                         FileLog.w(TAG, "C++ core skipped $lastFailedLines unparsable CSV line(s).")
                     }
@@ -551,6 +560,17 @@ class CoreService : Service() {
         // helper returns null and the screen shows no note.
         val offlinePriceNote = priceProvider.offlinePriceNote(currencies)
 
+        // Partial-import note: the per-parse cut state read on this thread
+        // after the import. It survives the price re-posts of the SAME
+        // import and resets with the next one (the core resets it at the
+        // start of every parse), so a completed import posts no note.
+        val parseBudgetNote = if (lastParseBudgetCut) {
+            ParseBudgetNote(
+                unprocessedRows = lastParseUnprocessedRows,
+                budgetSeconds = (PARSE_BUDGET_MS / 1000).toInt(),
+            )
+        } else null
+
         var totalMoneySpent = getTotalMoneySpent()
         val totalMoneySpentString =
             StringHelper.formatAmountToString(totalMoneySpent)
@@ -578,6 +598,7 @@ class CoreService : Service() {
                             amountOfAsset - totalMoneySpent
                         ),
                         offlinePriceNote = offlinePriceNote,
+                        parseBudgetNote = parseBudgetNote,
                     )
                 }
 
@@ -592,6 +613,7 @@ class CoreService : Service() {
                         rewardsText = "prices loading",
                         profitLossText = "prices loading",
                         offlinePriceNote = offlinePriceNote,
+                        parseBudgetNote = parseBudgetNote,
                     )
                 }
 
@@ -621,6 +643,7 @@ class CoreService : Service() {
                         rewardsText = WalletAssets.NO_INTERNET,
                         profitLossText = WalletAssets.NO_INTERNET,
                         offlinePriceNote = offlinePriceNote,
+                        parseBudgetNote = parseBudgetNote,
                     )
                 }
             }
@@ -628,7 +651,7 @@ class CoreService : Service() {
             // Files without crypto (card/fiat scope): only "money spent"
             // exists, the attribution footer is hidden (ParseData.card).
             totalMoneySpent = getTotalMoneySpentCard()
-            ParseData.card(StringHelper.formatAmountToString(totalMoneySpent))
+            ParseData.card(StringHelper.formatAmountToString(totalMoneySpent), parseBudgetNote)
         }
         parsedDataLiveData.postValue(parseData)
 
@@ -959,6 +982,14 @@ class CoreService : Service() {
             }
             val dataArray = Array<String>(data.size) { i -> data[i] }
             if (initWithData(dataArray, data.size, coreMode, logFilePath, PARSE_BUDGET_MS)) {
+                // Consume the cut state of THIS re-parse: the fast-start leg
+                // re-derives everything from the CSV, so the note must
+                // describe this parse, not the pre-restart import.
+                lastParseBudgetCut = wasLastParseBudgetCut()
+                lastParseUnprocessedRows = getLastParseUnprocessedRows().coerceAtLeast(0)
+                if (lastParseBudgetCut) {
+                    FileLog.w(TAG, "Fast-start rebuild cut by the budget: $lastParseUnprocessedRows row(s) unprocessed.")
+                }
                 checkAndSetModes()
                 if (!save(savePath)) {
                     FileLog.w(TAG, "Saving the rebuilt C++ state failed.")
@@ -1034,6 +1065,11 @@ class CoreService : Service() {
             return
         }
         var totalFailedLines = getFailedLines().coerceAtLeast(0)
+        // Per-file budget units: every entry point gets the full budget, so
+        // more than one file of the selection can be cut - accumulate.
+        var cutAny = wasLastParseBudgetCut()
+        var totalUnprocessed =
+            if (cutAny) getLastParseUnprocessedRows().coerceAtLeast(0) else 0
 
         // Files 2..N: the dedup append. The TM carries each file's own
         // failed-line count after the call, so accumulate per success.
@@ -1049,6 +1085,10 @@ class CoreService : Service() {
             val array = Array(data.size) { j -> data[j] }
             if (appendWithData(array, data.size, coreMode, logFilePath, PARSE_BUDGET_MS)) {
                 totalFailedLines += getFailedLines().coerceAtLeast(0)
+                if (wasLastParseBudgetCut()) {
+                    cutAny = true
+                    totalUnprocessed += getLastParseUnprocessedRows().coerceAtLeast(0)
+                }
             } else {
                 FileLog.w(TAG, "Combined selection: ${fileNames[i]} added no rows, skipped.")
                 skippedFiles++
@@ -1067,6 +1107,11 @@ class CoreService : Service() {
         // one-shot parse-screen note, and the selection for the badge +
         // the pre-checked re-open after a restart.
         lastDuplicateSkips = duplicateSkips
+        lastParseBudgetCut = cutAny
+        lastParseUnprocessedRows = totalUnprocessed
+        if (cutAny) {
+            FileLog.w(TAG, "Combined selection cut by the budget: $totalUnprocessed row(s) unprocessed in total.")
+        }
         PreferenceHelper.setCombinedSelection(App.instance, fileNames)
 
         isRunning = true
@@ -1374,6 +1419,8 @@ class CoreService : Service() {
 
     private external fun init(logFilePath: String, savePath: String): Boolean
     private external fun getFailedLines(): Int
+    private external fun wasLastParseBudgetCut(): Boolean
+    private external fun getLastParseUnprocessedRows(): Int
 
     private external fun initWithData(
         data: Array<String>,
@@ -1556,6 +1603,14 @@ class CoreService : Service() {
         // Lines skipped by the C++ core in the last import (mirrors the
         // Kotlin core's amountTxFailed)
         @Volatile internal var lastFailedLines: Int = 0
+
+        // The hard parse budget cut the last import short (per-parse core
+        // state, read on the core thread right after the import). With
+        // [lastParseUnprocessedRows] > 0 the parser stopped reading the
+        // input; with 0 the wallet aggregation stopped. The core resets
+        // both at the start of every parse.
+        @Volatile internal var lastParseBudgetCut: Boolean = false
+        @Volatile internal var lastParseUnprocessedRows: Int = 0
 
         // Duplicate rows the C++ core skipped in the LAST COMBINED
         // import (the fresh-TM counter; every plain single import
