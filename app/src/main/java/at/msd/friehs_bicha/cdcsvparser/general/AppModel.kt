@@ -7,12 +7,14 @@ import android.graphics.Color
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.*
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.IncompleteWalletNote
 import at.msd.friehs_bicha.cdcsvparser.core.OfflinePriceNote
 import at.msd.friehs_bicha.cdcsvparser.core.ParseData
 import at.msd.friehs_bicha.cdcsvparser.core.WalletAssets
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.*
+import at.msd.friehs_bicha.cdcsvparser.ui.display.incompleteHistoryNotes
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import at.msd.friehs_bicha.cdcsvparser.wallet.*
@@ -283,6 +285,7 @@ class AppModel : BaseAppModel, Serializable {
                                 amountOfAsset - total.toDouble()
                             ),
                             offlinePriceNote = offlineNote(),
+                            incompleteHistory = incompleteHistoryNote(),
                         )
                     } else {
                         ParseData.standard(
@@ -291,6 +294,7 @@ class AppModel : BaseAppModel, Serializable {
                             rewardsText = WalletAssets.NO_INTERNET,
                             profitLossText = WalletAssets.NO_INTERNET,
                             offlinePriceNote = offlineNote(),
+                            incompleteHistory = incompleteHistoryNote(),
                         )
                     }
                 }
@@ -304,6 +308,15 @@ class AppModel : BaseAppModel, Serializable {
     private fun offlineNote(): OfflinePriceNote? =
         txApp?.wallets?.map { it.currencyType }
             ?.let { AssetValue.getInstance().offlinePriceNote(it) }
+
+    /** Token wallets with a negative FINAL balance (partial export);
+     *  empty list = the parse screen keeps the note row off. Mirrors
+     *  the core path: the full wallet set (held + outside) goes in,
+     *  the detector excludes the never-flagged families itself. */
+    private fun incompleteHistoryNote(): List<IncompleteWalletNote> =
+        incompleteHistoryNotes(
+            (txApp?.wallets ?: emptyList()) + (txApp?.outsideWallets ?: emptyList())
+        )
 
 
     private fun saveAppModelLocal()

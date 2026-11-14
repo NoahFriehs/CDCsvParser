@@ -79,6 +79,7 @@
     <string name="priceAttribution">Preise bereitgestellt von \n<a href="https://www.bitstamp.net/">Bitstamp</a>, <a href="https://min-api.cryptocompare.com/">CryptoCompare API</a>, <a href="https://www.kraken.com/">Kraken</a> &amp; <a href="https://www.coingecko.com/">CoinGecko</a></string>
     <string name="settings">Einstellungen</string>
     <string name="use_strict_wallet_type">Verwende strikten Wallet-Typ (Nur für Karten)</string>
+    <string name="wallet_incomplete_history">Negativ durch unvollständigen Export – die frühesten Transaktionen fehlen</string>
     <string name="email">E-Mail:</string>
     <string name="password">Passwort:</string>
     <string name="login">Anmelden</string>
@@ -160,6 +161,7 @@
     <string name="unparsable_lines_skipped" formatted="false">Nicht verwertbare Zeilen wurden übersprungen: %1$d</string>
     <string name="parse_incomplete_rows" formatted="false">Import unvollständig: die %1$d-s-Zeitgrenze wurde erreicht — %2$d Zeilen wurden nicht eingelesen</string>
     <string name="parse_incomplete_aggregation" formatted="false">Import unvollständig: die %1$d-s-Zeitgrenze wurde erreicht — die Aggregation wurde abgebrochen</string>
+    <string name="incomplete_history_note">Unvollständiger Export: %1$s</string>
     <string name="parsing_text">Ihre Datei wird analysiert…</string>
     <string name="metric_value_placeholder">0 €</string>
     <string name="search_hint">Transaktionen durchsuchen</string>

@@ -236,6 +236,17 @@ private fun WalletRowView(row: WalletRow, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
+        // Incomplete history: the negative balance comes from a partial
+        // export (missing early rows), not from a loss - the footnote says
+        // so right at the number (isIncompleteHistory on the row model).
+        if (row.incompleteHistory) {
+            Text(
+                text = stringResource(R.string.wallet_incomplete_history),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(ContextCompat.getColor(context, R.color.trend_negative)),
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant,
             modifier = Modifier.padding(top = 10.dp),

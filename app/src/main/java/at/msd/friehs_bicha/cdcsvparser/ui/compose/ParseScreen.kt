@@ -309,6 +309,24 @@ fun ParseScreen(
                 )
             }
 
+            // Incomplete-history note: token wallets whose FINAL balance
+            // is negative - their export is missing the early rows (e.g.
+            // the first purchase), so the ledger reads negative. The
+            // names + balances ride the SAME ParseData post as the other
+            // notes; the row only exists for a non-empty set, so a
+            // complete export changes nothing here.
+            data?.incompleteHistory?.takeIf { it.isNotEmpty() }?.let { notes ->
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(
+                        R.string.incomplete_history_note,
+                        notes.joinToString(", ") { "${it.name} (${it.balanceText})" },
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             Spacer(Modifier.height(24.dp))
 
             FilledTonalButton(

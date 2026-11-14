@@ -22,6 +22,7 @@ import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.DBTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.TransactionData
+import at.msd.friehs_bicha.cdcsvparser.ui.display.incompleteHistoryNotes
 import at.msd.friehs_bicha.cdcsvparser.util.FileUtil
 import at.msd.friehs_bicha.cdcsvparser.util.FirebaseUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
@@ -544,6 +545,25 @@ class CoreService : Service() {
     private fun provideDataToActivityFromCppCore() {
         calculateWalletBalances()
 
+        // Wallets up front (before the card post below): the
+        // incomplete-history note needs them with FINAL balances, and
+        // the LiveData posts further down reuse this very list
+        // (transactions attach there), so this is the ONLY core round
+        // trip for wallets per post.
+        val wallets = getWalletsAsString()
+        val wallets_ = ArrayList<Wallet>()
+        wallets.forEach {
+            val data = WalletXmlSerializer().deserializeFromXml(it)
+            wallets_.add(Wallet(data))
+        }
+        // Incomplete history: token wallets with a negative FINAL
+        // balance - the partial-export signal (the early rows, e.g. the
+        // first purchase, are missing). The detector excludes the
+        // never-flagged families itself (card / fiat / outside);
+        // empty list = the parse-screen note row stays off, which a
+        // complete export always is for token wallets.
+        val incompleteHistory = incompleteHistoryNotes(wallets_)
+
         val currencies = getCurrencies().toList()
         // Price pass, phase 1: a pure cache read - NO network on the
         // cpp-core thread (a cold 163-symbol cache used to block this
@@ -599,6 +619,7 @@ class CoreService : Service() {
                         ),
                         offlinePriceNote = offlinePriceNote,
                         parseBudgetNote = parseBudgetNote,
+                        incompleteHistory = incompleteHistory,
                     )
                 }
 
@@ -614,6 +635,7 @@ class CoreService : Service() {
                         profitLossText = "prices loading",
                         offlinePriceNote = offlinePriceNote,
                         parseBudgetNote = parseBudgetNote,
+                        incompleteHistory = incompleteHistory,
                     )
                 }
 
@@ -644,6 +666,7 @@ class CoreService : Service() {
                         profitLossText = WalletAssets.NO_INTERNET,
                         offlinePriceNote = offlinePriceNote,
                         parseBudgetNote = parseBudgetNote,
+                        incompleteHistory = incompleteHistory,
                     )
                 }
             }
@@ -697,15 +720,12 @@ class CoreService : Service() {
         cardTransactionsLiveData.postValue(cardTransactions_)
 
 
-        //get Wallets from core and set it to the LiveData
-        val wallets = getWalletsAsString()
+        // Standard wallets were fetched at the top of this function
+        // (the note needs them before the card post); only the card
+        // wallets come in here, and the transactions attach to the
+        // SAME wallet objects as before.
         val cardWallets = getCardWalletsAsStrings()
-        val wallets_ = ArrayList<Wallet>()
         val cardWallets_ = ArrayList<Wallet>()
-        wallets.forEach {
-            val data = WalletXmlSerializer().deserializeFromXml(it)
-            wallets_.add(Wallet(data))
-        }
         transactions_.forEach { tx ->
             wallets_.find { it.walletId == tx.walletId }?.transactions?.add(tx)
         }

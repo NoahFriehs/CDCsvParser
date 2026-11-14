@@ -1,11 +1,13 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.display
 
+import at.msd.friehs_bicha.cdcsvparser.core.IncompleteWalletNote
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 
+import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -84,6 +86,10 @@ data class WalletRow(
     // type "EUR" - the exact exclusion the standard card/scope aggregates
     // already apply.
     val isFiatBuffer: Boolean,
+    // Resolved at row-build time (see isIncompleteHistory): the row gains the
+    // "incomplete history" footnote when the ledger is partial, not the
+    // number itself.
+    val incompleteHistory: Boolean = false,
     val amountText: String,
     val assetValueText: String,
     val percentText: String,
@@ -109,6 +115,7 @@ fun walletRow(wallet: Wallet): WalletRow {
         name = wallet.getTypeString(),
         currencyType = wallet.currencyType,
         isFiatBuffer = wallet !is CroCardWallet && wallet.currencyType == "EUR",
+        incompleteHistory = isIncompleteHistory(wallet),
         amountText = StringHelper.formatAmountToString(wallet.amount.toDouble(), 5, wallet.currencyType),
         assetValueText = StringHelper.formatAmountToString(assetValue, 5),
         percentText = StringHelper.formatAmountToString(percentProfit - 100, 2, "%", true),
@@ -120,6 +127,43 @@ fun walletRow(wallet: Wallet): WalletRow {
         isOutside = wallet.isOutsideWallet,
     )
 }
+
+/**
+ * Incomplete-history detection: a wallet whose FINAL computed
+ * balance in its own unit is negative on a held token wallet is the
+ * partial-export signature - the early rows (e.g. the first purchase) are
+ * missing from the export, so the debits outrun the credits. The check is
+ * on the ledger as posted; no price is involved.
+ * Never flagged: the internal fiat "EUR" buffer and card wallets (a
+ * negative there is an overdraft, not a missing ledger - the same scope
+ * rule that keeps the buffer out of the card aggregates), and outside
+ * (bookkeeping) wallets: they hold the counter entry of external movements,
+ * where a negative balance is normal (a complete export with plain deposits
+ * lands them negative - deposits debit the outside wallet, withdrawals
+ * credit it).
+ */
+fun isIncompleteHistory(wallet: Wallet): Boolean =
+    wallet !is CroCardWallet &&
+        !wallet.isOutsideWallet &&
+        wallet.currencyType != "EUR" &&
+        wallet.amount.signum() < 0
+
+/** The flagged wallets (empty = the hint stays off on every surface). */
+fun incompleteHistory(wallets: List<Wallet>): List<Wallet> =
+    wallets.filter { isIncompleteHistory(it) }
+
+/** The note-row entries in wallet-name order: name + the negative balance. */
+fun incompleteHistoryNotes(wallets: List<Wallet>): List<IncompleteWalletNote> =
+    incompleteHistory(wallets)
+        .sortedBy { it.getTypeString() }
+        .map {
+            IncompleteWalletNote(
+                name = it.getTypeString(),
+                balanceText = StringHelper.removeLastZeros(
+                    DecimalFormat("#0.00000").format(it.amount.toDouble())
+                ),
+            )
+        }
 
 /** EUR value of a wallet; card wallets are already denominated in fiat. */
 fun walletValueInEur(wallet: Wallet): Double {

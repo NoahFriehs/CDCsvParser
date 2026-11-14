@@ -87,6 +87,11 @@ data class ParseData(
     val attributionVisible: Boolean = true,
     val offlinePriceNote: OfflinePriceNote? = null,
     val parseBudgetNote: ParseBudgetNote? = null,
+    /** Token wallets with a negative final balance (partial export), name +
+     *  balance per wallet; EMPTY = no incomplete-history note row. Like the
+     *  other notes this is a property of the LIVE model (recomputed on every
+     *  post), not per-parse state. */
+    val incompleteHistory: List<IncompleteWalletNote> = emptyList(),
 ) {
     companion object {
         /**
@@ -99,6 +104,10 @@ data class ParseData(
                 attributionVisible = false,
                 parseBudgetNote = parseBudgetNote,
             )
+
+        // Note: the card shape intentionally takes no incompleteHistory - a
+        // card/fiat model holds only card wallets (never flagged), so the
+        // note is empty by construction there.
 
         /**
          * Standard (crypto) files: footer stays up; the three derived
@@ -113,6 +122,7 @@ data class ParseData(
             profitLossText: String,
             offlinePriceNote: OfflinePriceNote? = null,
             parseBudgetNote: ParseBudgetNote? = null,
+            incompleteHistory: List<IncompleteWalletNote> = emptyList(),
         ): ParseData = ParseData(
             moneySpent = moneySpentText,
             assets = assetsText,
@@ -120,6 +130,7 @@ data class ParseData(
             profitLoss = profitLossText,
             offlinePriceNote = offlinePriceNote,
             parseBudgetNote = parseBudgetNote,
+            incompleteHistory = incompleteHistory,
         )
     }
 }
@@ -137,6 +148,18 @@ data class OfflinePriceNote(
     val oldestAgeMinutes: Int? = null,
     /** At least one held symbol had no cache entry and was filled from the static baseline table. */
     val usesStaticBaseline: Boolean = false,
+)
+
+/**
+ * One token wallet named by the incomplete-history note (transport for
+ * [ParseData]): the wallet's display name + its negative final balance in
+ * the wallet's own unit (number only - the screen renders
+ * "name (balance)"). The check is on the ledger as posted, never on the
+ * valuation.
+ */
+data class IncompleteWalletNote(
+    val name: String,
+    val balanceText: String,
 )
 
 /**
