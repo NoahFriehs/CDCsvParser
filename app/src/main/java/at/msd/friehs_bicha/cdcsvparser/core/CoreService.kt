@@ -280,6 +280,11 @@ class CoreService : Service() {
             errorCounter.postValue((errorCounter.value ?: 0) + 1)
             return
         }
+        if (appType == AppType.Kraken && !(isCoreInitialized && useCpp)) {
+            FileLog.e(TAG, "Kraken files can only be parsed with the C++ core.")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+            return
+        }
         when (isCoreInitialized && useCpp) {
             true -> {
                 val coreMode = CoreModeMapper.toCoreMode(appType)
