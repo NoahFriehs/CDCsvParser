@@ -6,19 +6,26 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -51,6 +58,88 @@ object Motion {
             slideInVertically(tween(SECTION_ENTER_MS, easing = FastOutSlowInEasing)) { it / 20 }
 
     fun sectionExit(): ExitTransition = fadeOut(tween(SECTION_EXIT_MS))
+
+    // ---- Expressive springs (2026 look) ---------------------------------
+    // The expressive motion scheme is internal-only on the stable 1.4
+    // surface, so the two specs are hand-rolled: SPATIAL drives
+    // position/size and is underdamped (damping 0.8 - it overshoots and
+    // settles, the expressive "bounce"); EFFECT drives opacity/color and is
+    // critically damped (1.0 - no overshoot). Every call site short-circuits
+    // on [rememberReduceMotion].
+
+    const val SPATIAL_DAMPING = 0.8f
+
+    // Named arguments on purpose: the spring() parameter order in the
+    // stable line is (dampingRatio, stiffness) - not the (stiffness,
+    // damping) of the pre-1.12 API the values were copied from.
+    val spatialSpring: SpringSpec<Float> =
+        spring<Float>(dampingRatio = SPATIAL_DAMPING, stiffness = Spring.StiffnessLow)
+
+    val effectSpring: SpringSpec<Float> =
+        spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        )
+
+    /** The segmented chip pop starts from this scale and springs to 1.0. */
+    const val SELECTION_POP_START = 0.96f
+}
+
+/**
+ * Overview -> detail spatial reveal: the detail header springs in from a
+ * short top offset (the underdamped [Motion.spatialSpring] - a slight
+ * overshoot before it settles) while its opacity rides the critically
+ * damped [Motion.effectSpring]. With reduced motion the content renders
+ * statically. [content] is stacked VERTICALLY (like a [Column]) - the
+ * reveal is the box that carries the alpha/offset, so the content must not
+ * bring its own conflicting size modifiers (a fillMaxSize child fills the
+ * revealed area, as before the reveal existed).
+ */
+@Composable
+fun SpatialReveal(distance: Dp = 20.dp, content: @Composable () -> Unit) {
+    if (rememberReduceMotion()) {
+        Column { content() }
+        return
+    }
+    val density = LocalDensity.current
+    val offset = remember(density) { Animatable(with(density) { distance.toPx() }) }
+    val alpha = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        launch { offset.animateTo(0f, Motion.spatialSpring) }
+        alpha.animateTo(1f, Motion.effectSpring)
+    }
+    Box(
+        modifier = Modifier
+            .alpha(alpha.value)
+            .offset { IntOffset(0, offset.value.roundToInt()) },
+    ) {
+        Column { content() }
+    }
+}
+
+/**
+ * Segmented-control selection pop: when a segment becomes active it springs
+ * from [Motion.SELECTION_POP_START] to full scale (the [Motion.spatialSpring]
+ * overshoot makes the active segment "pop"), a deselection snaps back.
+ * [rememberReduceMotion] returns the plain [Modifier].
+ */
+@Composable
+fun Modifier.selectionPopModifier(selected: Boolean): Modifier {
+    if (rememberReduceMotion()) return this
+    val scale = remember { Animatable(1f) }
+    LaunchedEffect(selected) {
+        if (selected) {
+            scale.snapTo(Motion.SELECTION_POP_START)
+            scale.animateTo(1f, Motion.spatialSpring)
+        } else {
+            scale.snapTo(1f)
+        }
+    }
+    return Modifier.graphicsLayer {
+        scaleX = scale.value
+        scaleY = scale.value
+        transformOrigin = TransformOrigin.Center
+    }
 }
 
 /** The system-wide animator scale at 0 ("remove animations") means no motion. */

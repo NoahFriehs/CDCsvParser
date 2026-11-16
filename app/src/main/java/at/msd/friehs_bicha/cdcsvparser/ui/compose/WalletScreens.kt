@@ -292,96 +292,101 @@ fun WalletViewScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp),
         ) {
-            TextField(
-                value = search,
-                onValueChange = { search = it; onSearchChanged(it) },
-                placeholder = { Text(stringResource(R.string.filter_coin_list)) },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-            )
+            // Overview -> drill-down: the header block (search/sort + the
+            // allocation donut) springs in with the spatial reveal; the
+            // list below stays put (static under reduce motion).
+            SpatialReveal {
+                TextField(
+                    value = search,
+                    onValueChange = { search = it; onSearchChanged(it) },
+                    placeholder = { Text(stringResource(R.string.filter_coin_list)) },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                )
 
-            Text(
-                text = stringResource(R.string.sort_by),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
-            )
+                Text(
+                    text = stringResource(R.string.sort_by),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
+                )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                ExposedDropdownMenuBox(
-                    expanded = sortKeyExpanded,
-                    onExpandedChange = { sortKeyExpanded = it },
-                    modifier = Modifier.weight(1f),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    TextField(
-                        value = sortValues[sortKey],
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(sortKeyExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
-                    )
-                    ExposedDropdownMenu(
+                    ExposedDropdownMenuBox(
                         expanded = sortKeyExpanded,
-                        onDismissRequest = { sortKeyExpanded = false },
+                        onExpandedChange = { sortKeyExpanded = it },
+                        modifier = Modifier.weight(1f),
                     ) {
-                        sortValues.forEachIndexed { index, label ->
-                            DropdownMenuItem(
-                                text = { Text(label) },
-                                onClick = {
-                                    if (index != sortKey) onSortKeySelected(index)
-                                    sortKeyExpanded = false
-                                },
-                            )
+                        TextField(
+                            value = sortValues[sortKey],
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(sortKeyExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = sortKeyExpanded,
+                            onDismissRequest = { sortKeyExpanded = false },
+                        ) {
+                            sortValues.forEachIndexed { index, label ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        if (index != sortKey) onSortKeySelected(index)
+                                        sortKeyExpanded = false
+                                    },
+                                )
+                            }
                         }
                     }
-                }
-                ExposedDropdownMenuBox(
-                    expanded = sortDirExpanded,
-                    onExpandedChange = { sortDirExpanded = it },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    TextField(
-                        value = directions[sortDirection],
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(sortDirExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
-                    )
-                    ExposedDropdownMenu(
+                    ExposedDropdownMenuBox(
                         expanded = sortDirExpanded,
-                        onDismissRequest = { sortDirExpanded = false },
+                        onExpandedChange = { sortDirExpanded = it },
+                        modifier = Modifier.weight(1f),
                     ) {
-                        directions.forEachIndexed { index, label ->
-                            DropdownMenuItem(
-                                text = { Text(label) },
-                                onClick = {
-                                    if (index != sortDirection) onSortDirectionSelected(index)
-                                    sortDirExpanded = false
-                                },
-                            )
+                        TextField(
+                            value = directions[sortDirection],
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(sortDirExpanded) },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                        )
+                        ExposedDropdownMenu(
+                            expanded = sortDirExpanded,
+                            onDismissRequest = { sortDirExpanded = false },
+                        ) {
+                            directions.forEachIndexed { index, label ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        if (index != sortDirection) onSortDirectionSelected(index)
+                                        sortDirExpanded = false
+                                    },
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            Text(
-                text = stringResource(R.string.allocation_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-            AllocationDonut(
-                rows = allRows,
-                modifier = Modifier.padding(top = 8.dp),
-            )
+                Text(
+                    text = stringResource(R.string.allocation_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+                AllocationDonut(
+                    rows = allRows,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
 
             WalletList(
                 rows = rows,

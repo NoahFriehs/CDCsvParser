@@ -1,11 +1,17 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.compose
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  * M3 color scheme mirroring `res/values/colors.xml` / `values-night`
@@ -60,8 +66,50 @@ private val DarkColors = darkColorScheme(
 )
 
 /**
+ * Expressive corner scale (2026 look), hand-rolled on the stable 1.4
+ * surface where the expressive tokens are internal-only. It carries the two
+ * raised tiers of the expressive scale - large 20 dp (was the 16 dp M3
+ * default) and extraLarge 32 dp (was 28 dp) - on the standard slots, with
+ * the small tiers unchanged. The top expressive tier (xxlarge 48 dp) has no
+ * 1.4 API slot; it is [HeroCardCorners], applied to the overview's metric
+ * cards - the app's single dominant surface.
+ */
+private val ExpressiveShapes = Shapes(
+    // The small tiers keep the 1.4 baseline (4/8/12 dp); only the two
+    // raised expressive tiers move.
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(32.dp),
+)
+
+/** The xxlarge (48 dp) tier: the overview metric cards only. */
+val HeroCardCorners = RoundedCornerShape(48.dp)
+
+/**
+ * Hand-rolled emphasized type layer (2026 look): the expressive type scale's
+ * emphasized styles are 1.5-line internal symbols, so on the stable 1.4
+ * surface they are plain [TextStyle] values. Applied ONLY to the hero
+ * numbers (the overview metric cards); body and list text stay on the
+ * baseline [MaterialTheme.typography]. Weight-based emphasis per the locked
+ * type ruling (Roboto, no bundled variable font).
+ */
+val HeroValueStyle = TextStyle(
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 28.sp,
+    lineHeight = 34.sp,
+    letterSpacing = (-0.3).sp,
+)
+
+val CardValueStyle = TextStyle(
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 21.sp,
+    lineHeight = 26.sp,
+    letterSpacing = (-0.2).sp,
+)
+
+/**
  * App theme for Compose screens. Follows the system dark setting exactly
- * like the XML `Theme.Material3.DayNight` base.
+ * like the XML `Theme.Material3.DayNight` base. Colors are the locked brand
+ * identity ([LightColors]/[DarkColors]); [shapes] is the expressive scale.
  */
 @Composable
 fun CdcsvTheme(
@@ -70,6 +118,7 @@ fun CdcsvTheme(
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
+        shapes = ExpressiveShapes,
         content = content,
     )
 }

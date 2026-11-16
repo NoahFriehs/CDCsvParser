@@ -368,46 +368,51 @@ fun TransactionDetailScreen(
     toAmount: String?,
     txHash: String?,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // Explicit scheme roles: this screen has no Scaffold/Surface, and
-        // M3's MaterialTheme does NOT provide LocalContentColor, so bare
-        // Text defaults to the platform black (unreadable in dark mode).
-        Text(text = type, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
-        Text(text = date, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
-        if (description.isNotEmpty()) {
-            Text(text = description, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
-        }
-        Spacer(Modifier.height(8.dp))
-        Text(stringResource(R.string.amount), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(amount, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
-        if (toAmount != null) {
-            Text(
-                stringResource(R.string.to_amount),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(toAmount, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
-        }
-        if (txHash != null) {
-            Text(
-                stringResource(R.string.transaction_hash),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Text(
-                txHash,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(),
-            )
+    // Overview -> drill-down: the header springs in with the spatial
+    // reveal (static under reduce motion).
+    SpatialReveal {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // Explicit scheme roles: this screen has no Scaffold/Surface,
+            // and M3's MaterialTheme does NOT provide LocalContentColor, so
+            // bare Text defaults to the platform black (unreadable in dark
+            // mode).
+            Text(text = type, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+            Text(text = date, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+            if (description.isNotEmpty()) {
+                Text(text = description, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.amount), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(amount, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+            if (toAmount != null) {
+                Text(
+                    stringResource(R.string.to_amount),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(toAmount, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+            }
+            if (txHash != null) {
+                Text(
+                    stringResource(R.string.transaction_hash),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    txHash,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

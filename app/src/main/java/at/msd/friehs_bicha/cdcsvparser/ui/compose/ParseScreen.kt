@@ -1,6 +1,7 @@
 package at.msd.friehs_bicha.cdcsvparser.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +54,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -201,25 +204,29 @@ fun ParseScreen(
             if (data != null && data.assets == null) {
                 // Card/fiat scope: only "money spent" exists - the single
                 // card replaces the crypto 2x2 (the attribution footer is
-                // hidden by attributionVisible).
+                // hidden by attributionVisible). It is the only number on
+                // the view, so it gets the hero style.
                 MetricCard(
                     modifier = Modifier.fillMaxWidth(),
                     iconRes = R.drawable.ic_spending_24,
                     tint = MaterialTheme.colorScheme.secondary,
                     label = stringResource(R.string.money_spent_label),
                     value = displayValue(context, data.moneySpent),
+                    valueStyle = HeroValueStyle,
                 )
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    // The portfolio total is the view's hero number.
                     MetricCard(
                         modifier = Modifier.weight(1f),
                         iconRes = R.drawable.ic_savings_24,
                         tint = MaterialTheme.colorScheme.primary,
                         label = stringResource(R.string.assets_value_label),
                         value = displayValue(context, data?.assets),
+                        valueStyle = HeroValueStyle,
                     )
                     MetricCard(
                         modifier = Modifier.weight(1f),
@@ -394,9 +401,12 @@ private fun MetricCard(
     label: String,
     value: String?,
     valueColor: Color? = null,
+    /** Emphasized (hero) layer; the other metric cards keep the card one. */
+    valueStyle: TextStyle = CardValueStyle,
 ) {
     Card(
         modifier = modifier,
+        shape = HeroCardCorners,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         ),
@@ -419,8 +429,7 @@ private fun MetricCard(
             if (value != null) {
                 Text(
                     text = value,
-                    fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    style = valueStyle,
                     color = valueColor ?: MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 8.dp),
                 )
@@ -839,6 +848,7 @@ private fun ChartPanel(
                         overlaySelection = null
                     },
                     shape = SegmentedButtonDefaults.itemShape(index, TimeFrame.entries.size),
+                    modifier = Modifier.selectionPopModifier(timeFrame == frame),
                 ) {
                     Text(stringResource(frame.labelRes))
                 }
@@ -856,6 +866,7 @@ private fun ChartPanel(
                         overlaySelection = null
                     },
                     shape = SegmentedButtonDefaults.itemShape(index, ChartRange.entries.size),
+                    modifier = Modifier.selectionPopModifier(customRange == null && range == r),
                 ) {
                     Text(stringResource(r.labelRes))
                 }
@@ -1580,10 +1591,11 @@ private fun SeriesChip(
     // same token values directly (M3 1.4 OutlinedSegmentedButtonTokens:
     // selected = secondary container on secondary container, unselected =
     // transparent on surface, borders = outline, disabled label 0.38 and
-    // disabled outline 0.12 alpha).
+    // disabled outline 0.12 alpha). The selection FILL and the check ride
+    // the critically damped effect spring (color never overshoots) and the
+    // chip body gets the spatial selection pop - both static under
+    // reduce motion.
     val colorScheme = MaterialTheme.colorScheme
-    val containerColor =
-        if (selected || !enabled) colorScheme.secondaryContainer else Color.Transparent
     val contentColor = when {
         !enabled -> colorScheme.onSurface.copy(alpha = 0.38f)
         selected -> colorScheme.onSecondaryContainer
@@ -1591,11 +1603,17 @@ private fun SeriesChip(
     }
     val borderColor =
         if (enabled) colorScheme.outline else colorScheme.outline.copy(alpha = 0.12f)
+    val reduceMotion = rememberReduceMotion()
+    val fill = remember { Animatable(if (selected || !enabled) 1f else 0f) }
+    LaunchedEffect(selected, enabled, reduceMotion) {
+        val target = if (selected || !enabled) 1f else 0f
+        if (reduceMotion) fill.snapTo(target) else fill.animateTo(target, Motion.effectSpring)
+    }
     Surface(
         onClick = onClick,
         enabled = enabled,
         shape = shape,
-        color = containerColor,
+        color = colorScheme.secondaryContainer.copy(alpha = fill.value),
         contentColor = contentColor,
         border = SegmentedButtonDefaults.borderStroke(borderColor),
         modifier = Modifier
@@ -1603,6 +1621,7 @@ private fun SeriesChip(
                 minWidth = ButtonDefaults.MinWidth,
                 minHeight = ButtonDefaults.MinHeight,
             )
+            .selectionPopModifier(selected)
             .semantics { role = Role.RadioButton },
     ) {
         Row(
@@ -1613,7 +1632,9 @@ private fun SeriesChip(
                 Icon(
                     imageVector = Icons.Filled.Check,
                     contentDescription = null,
-                    modifier = Modifier.size(SegmentedButtonDefaults.IconSize),
+                    modifier = Modifier
+                        .size(SegmentedButtonDefaults.IconSize)
+                        .alpha(fill.value),
                 )
             } else {
                 Spacer(Modifier.size(SegmentedButtonDefaults.IconSize))
