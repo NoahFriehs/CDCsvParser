@@ -306,6 +306,20 @@ class CoreService : Service() {
                     lastParseUnprocessedRows = getLastParseUnprocessedRows().coerceAtLeast(0)
                     if (lastParseBudgetCut) {
                         FileLog.w(TAG, "C++ core parse cut by the budget: $lastParseUnprocessedRows row(s) unprocessed.")
+                        // Persist the cut for the history list marker: the
+                        // note above only lives on the parse screen, the
+                        // chip must survive leaving it. A file-name import
+                        // has a name to mark; a data-array import (restore)
+                        // has none and stays unmarked.
+                        if (pendingFile != null) {
+                            PreferenceHelper.recordPartialImport(App.instance, setOf(pendingFile))
+                        }
+                    } else if (pendingFile != null) {
+                        // This file completed: a same-name upload that was
+                        // cut before is now whole, so its marker goes with
+                        // the re-import (otherwise the chip would mark a
+                        // complete file as partial).
+                        PreferenceHelper.clearPartialImport(App.instance, setOf(pendingFile))
                     }
                     if (lastFailedLines > 0) {
                         FileLog.w(TAG, "C++ core skipped $lastFailedLines unparsable CSV line(s).")
@@ -1091,10 +1105,18 @@ class CoreService : Service() {
         }
         var totalFailedLines = getFailedLines().coerceAtLeast(0)
         // Per-file budget units: every entry point gets the full budget, so
-        // more than one file of the selection can be cut - accumulate.
+        // more than one file of the selection can be cut - accumulate. The
+        // CUT NAMES feed the history marker: the chip is per file, and a
+        // combined cut can hit any subset of the selection.
         var cutAny = wasLastParseBudgetCut()
         var totalUnprocessed =
             if (cutAny) getLastParseUnprocessedRows().coerceAtLeast(0) else 0
+        val cutFileNames = mutableSetOf<String>()
+        if (cutAny) cutFileNames += fileNames[0]
+        // Every file that actually parsed (replace or append): the ones
+        // of these that were NOT cut are whole in the model now, so any
+        // earlier same-name marker is obsolete after this selection.
+        val parsedFileNames = mutableSetOf(fileNames[0])
 
         // Files 2..N: the dedup append. The TM carries each file's own
         // failed-line count after the call, so accumulate per success.
@@ -1110,9 +1132,11 @@ class CoreService : Service() {
             val array = Array(data.size) { j -> data[j] }
             if (appendWithData(array, data.size, coreMode, logFilePath, PARSE_BUDGET_MS)) {
                 totalFailedLines += getFailedLines().coerceAtLeast(0)
+                parsedFileNames += fileNames[i]
                 if (wasLastParseBudgetCut()) {
                     cutAny = true
                     totalUnprocessed += getLastParseUnprocessedRows().coerceAtLeast(0)
+                    cutFileNames += fileNames[i]
                 }
             } else {
                 FileLog.w(TAG, "Combined selection: ${fileNames[i]} added no rows, skipped.")
@@ -1138,6 +1162,13 @@ class CoreService : Service() {
             FileLog.w(TAG, "Combined selection cut by the budget: $totalUnprocessed row(s) unprocessed in total.")
         }
         PreferenceHelper.setCombinedSelection(App.instance, fileNames)
+        if (cutFileNames.isNotEmpty()) {
+            PreferenceHelper.recordPartialImport(App.instance, cutFileNames)
+        }
+        val completeNames = parsedFileNames - cutFileNames
+        if (completeNames.isNotEmpty()) {
+            PreferenceHelper.clearPartialImport(App.instance, completeNames)
+        }
 
         isRunning = true
         checkAndSetModes()

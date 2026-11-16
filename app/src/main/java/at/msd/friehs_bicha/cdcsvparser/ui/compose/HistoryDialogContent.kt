@@ -4,9 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.lazy.LazyColumn
@@ -58,6 +61,12 @@ fun HistoryDialogContent(
      * passes the persisted selection filtered to files that exist).
      */
     initialSelected: Set<String> = emptySet(),
+    /**
+     * File names whose import parse was cut by the parse budget (the host
+     * prunes them against the files on disk). The row shows a small chip:
+     * the import is only partially in the model.
+     */
+    partialNames: Set<String> = emptySet(),
     /** Confirmed combined selection (in list order); the shell dismisses. */
     onSelectCombined: (List<java.io.File>) -> Unit,
     onSelect: (java.io.File) -> Unit,
@@ -200,6 +209,22 @@ fun HistoryDialogContent(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            if (file.name in partialNames) {
+                                // The partial-import marker: an error-toned
+                                // chip (the data signal), not the row accent.
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = stringResource(R.string.history_partial_imported),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier
+                                        .background(
+                                            MaterialTheme.colorScheme.errorContainer,
+                                            RoundedCornerShape(4.dp),
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                                )
+                            }
                         }
                         Checkbox(
                             checked = isSelected,

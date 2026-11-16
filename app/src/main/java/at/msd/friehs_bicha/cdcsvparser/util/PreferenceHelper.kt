@@ -10,6 +10,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.preferencesDataStore
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.general.HistoryFileUtil
+import at.msd.friehs_bicha.cdcsvparser.general.ImportNotes
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +68,11 @@ object PreferenceHelper {
     // The combined (multi-file) view: the history file names the live core
     // model was built from (comma-joined, "" = no combined view).
     const val COMBINED_SELECTION = "combined_selection"
+    // The "partially imported" history marker: file names whose IMPORT
+    // PARSE was cut by the hard parse budget (JSON array of names; see
+    // ImportNotes). Additive per-file signal - deleting a file just
+    // prunes the read (the dialog intersects with the files on disk).
+    const val PARTIAL_IMPORT_FILES = "partial_import_files"
 
     private const val LOAD_TIMEOUT_MS = 500L
     private const val DATASTORE_FILE = "settings.preferences_pb"
@@ -520,6 +526,48 @@ object PreferenceHelper {
         val value = HistoryFileUtil.normalizeCombinedSelection(fileNames).joinToString(",")
         put(COMBINED_SELECTION, value)
         persist(COMBINED_SELECTION, value)
+    }
+
+    /**
+     * The history file names whose import parse was cut by the parse
+     * budget (empty = every import landed whole). Read by the history
+     * list to mark the affected rows; the caller intersects with the
+     * files actually on disk (a removed file's entry is stale).
+     */
+    fun getPartialImportedFiles(context: Context): Set<String> {
+        awaitLoaded()
+        return ImportNotes.loadPartialImported(cachedString(PARTIAL_IMPORT_FILES))
+    }
+
+    /**
+     * Marks [fileNames] as partially imported. Written by the import
+     * pipeline on the cpp-core thread right after the cut state is read
+     * (the flag merge is one cache read + one async persist - never a
+     * block on that thread).
+     */
+    fun recordPartialImport(context: Context, fileNames: Collection<String>) {
+        awaitLoaded()
+        if (fileNames.isEmpty()) return
+        val value = ImportNotes.mergePartialImported(cachedString(PARTIAL_IMPORT_FILES), fileNames)
+        if (value == cachedString(PARTIAL_IMPORT_FILES)) return
+        put(PARTIAL_IMPORT_FILES, value)
+        persist(PARTIAL_IMPORT_FILES, value)
+    }
+
+    /**
+     * Removes [fileNames] from the partially-imported marker. A file of
+     * the same name re-imported WITHOUT a cut is now whole in the model
+     * (the "entry updated" flow), so its chip goes with the re-import or
+     * it would mark a complete file as partial. Same threading contract
+     * as [recordPartialImport].
+     */
+    fun clearPartialImport(context: Context, fileNames: Collection<String>) {
+        awaitLoaded()
+        if (fileNames.isEmpty()) return
+        val value = ImportNotes.removePartialImported(cachedString(PARTIAL_IMPORT_FILES), fileNames)
+        if (value == cachedString(PARTIAL_IMPORT_FILES)) return
+        put(PARTIAL_IMPORT_FILES, value)
+        persist(PARTIAL_IMPORT_FILES, value)
     }
 
     private const val TAG = "PreferenceHelper"

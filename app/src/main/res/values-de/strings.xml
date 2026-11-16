@@ -23,6 +23,7 @@
     <string name="history_purged_count">%1$d Dateien gelöscht</string>
     <string name="history_updated_existing">Gleicher Upload wie bereits vorhanden - Eintrag aktualisiert</string>
     <string name="history_file_missing">Die Datei dieses Uploads existiert nicht mehr</string>
+    <string name="history_partial_imported">Teilweise importiert</string>
     <string name="history_combined_open" formatted="false">Kombiniert öffnen · %1$d ausgewählt</string>
     <string name="combined_view_badge" formatted="false">Kombinierte Ansicht · %1$d Dateien</string>
     <string name="duplicates_skipped" formatted="false">Doppelte Zeilen übersprungen: %1$d</string>
@@ -169,7 +170,7 @@
     <string name="allocation_title">Portfolio-Allokation</string>
     <string name="no_allocation_data">Noch keine Werte zum Darstellen</string>
     <string name="app_type_label">App-Typ</string>
-    <string name="core_mode_label">Berechnung</string>
+    <string name="core_mode_label">Rechenmodul</string>
     <string name="file_history_placeholder">Noch keine Dateien</string>
     <string name="log_section">Protokoll</string>
     <string name="log_help">Die eigenen Protokolle der App (Kotlin-App-Log + C++-Kern-Log): hier filtern, ansehen und kopieren — ohne adb.</string>

@@ -50,6 +50,11 @@ class HistoryDialogFragment : DialogFragment() {
         } else {
             emptySet<String>()
         }
+        // The "partially imported" marker (import cut by the parse budget).
+        // Same prune as the pre-checks: a removed file's entry is stale and
+        // falls out against the files actually on disk.
+        val partialNames = PreferenceHelper.getPartialImportedFiles(context)
+            .filterTo(mutableSetOf(), { it in existingNames })
 
         val composeView = ComposeView(context).apply {
             setContent {
@@ -58,6 +63,7 @@ class HistoryDialogFragment : DialogFragment() {
                         initialFiles = fileList,
                         purgeCandidates = purgeCandidates,
                         initialSelected = initialSelected,
+                        partialNames = partialNames,
                         onSelectCombined = { files ->
                             setFragmentResult(
                                 REQUESTED_SELECT_COMBINED,
