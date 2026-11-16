@@ -20,7 +20,11 @@ class CDCWallet : Wallet, Serializable {
         isOutsideWallet: Boolean?
     ) : super(currencyType, amount, nativeAmount) {
         this.txApp = txApp
-        this.isOutsideWallet = isOutsideWallet!!
+        // Write-only construction: every surviving ctor call hands in a
+        // fully set flag (the wallet-build sites pass explicit true/false);
+        // the null-safe default keeps a null input a defaulting restore
+        // edge instead of a crash at wallet build time.
+        this.isOutsideWallet = isOutsideWallet ?: false
     }
 
     // Non-null pass-through (no callers existed for the nullable variant -
@@ -56,7 +60,10 @@ class CDCWallet : Wallet, Serializable {
      * @return the index of the wallet
      */
     override fun getWallet(ct: String?): Int {
-        for ((i, w) in txApp!!.wallets.withIndex()) {
+        // Write-only construction: no live path feeds this override
+        // anymore (the island parse path that used it is gone); the null
+        // default keeps a model-less wallet a plain -1, not a crash.
+        for ((i, w) in (txApp?.wallets ?: emptyList()).withIndex()) {
             if (w.currencyType == ct) return i
         }
         return -1
@@ -85,8 +92,8 @@ class CDCWallet : Wallet, Serializable {
         moneySpent = moneySpent.add(transaction.nativeAmount)
         amountBonus = amountBonus.add(transaction.amountBonus)
         //transaction.setWalletIdFk(this.uid);
-        if (!transactions!!.contains(transaction)) {
-            transactions!!.add(transaction)
+        if (!transactions.contains(transaction)) {
+            transactions.add(transaction)
         }
     }
 

@@ -10,6 +10,18 @@ open class BaseAppModel
  *
  * @param appType which app to use
  */(var appType: AppType) : Serializable {
+    /**
+     * The model's app - the >=1-app invariant, made explicit: every
+     * constructor ends with this set, except the no-arg Room model's
+     * logged no-data edge (a saved-local flag with an emptied Room),
+     * where the Room load logs and leaves this null; the start flow
+     * then carries the null safely through to an empty posted wallet
+     * set (treated as "nothing to post"). Callers may therefore rely
+     * on it non-null once the model is usable; a null observed at a
+     * use site is a broken-restore edge, and the throwing use sites
+     * there are that edge's loud failure by design instead of a silent
+     * zero.
+     */
     var txApp: BaseApp? = null
     var isRunning = false
 

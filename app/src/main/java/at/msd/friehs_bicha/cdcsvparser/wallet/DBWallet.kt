@@ -23,18 +23,22 @@ open class DBWallet(wallet: Wallet?, overridTX: Boolean = false) : Serializable 
     var isOutsideWallet = false
 
     init {
-        walletId = wallet!!.walletId.toLong()
-        currencyType = wallet.currencyType
-        amount = wallet.amount.toDouble()
-        amountBonus = wallet.amountBonus.toDouble()
-        moneySpent = wallet.moneySpent.toDouble()
+        // Write-only construction: every surviving caller hands in a fully
+        // set wallet (the model export + Room/Firestore rehydrate); the
+        // null-safe defaults keep a null input a zeroed DB row instead of
+        // a crash at DB-wallet build time (restore edge).
+        walletId = wallet?.walletId?.toLong() ?: 0L
+        currencyType = wallet?.currencyType ?: ""
+        amount = wallet?.amount?.toDouble() ?: 0.0
+        amountBonus = wallet?.amountBonus?.toDouble() ?: 0.0
+        moneySpent = wallet?.moneySpent?.toDouble() ?: 0.0
         if (!overridTX) {
             transactions = ArrayList()
-            wallet.transactions?.forEach { transaction ->
+            wallet?.transactions?.forEach { transaction ->
                 transactions?.add(transaction?.let { DBTransaction(it) })
             }
         }
-        isOutsideWallet = wallet.isOutsideWallet
+        isOutsideWallet = wallet?.isOutsideWallet ?: false
     }
 
 }
