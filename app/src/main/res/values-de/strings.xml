@@ -221,4 +221,23 @@
     <string name="a11y_delete_file">%1$s löschen</string>
     <string name="a11y_wallet_row">%1$s: %2$s, ca. %3$s, %4$s, %5$d Transaktionen</string>
     <string name="a11y_transaction_row">%1$s am %2$s: %3$s</string>
+
+    <!-- Balance sheet (liabilities) -->
+    <string name="liabilities_section">Schulden</string>
+    <string name="liabilities_help">Verbindlichkeiten, die Sie hier pflegen. Der aktuelle Restwert wird im App-Kern berechnet und in seinem eigenen Speicher abgelegt.</string>
+    <string name="liabilities_empty">Noch keine Schulden.</string>
+    <string name="liabilities_add">Hinzufügen</string>
+    <string name="liabilities_edit">Bearbeiten</string>
+    <string name="liabilities_delete">Löschen</string>
+    <string name="liabilities_per_month">/ Monat</string>
+    <string name="liabilities_field_label">Bezeichnung</string>
+    <string name="liabilities_field_principal">Schuldhöhe (€)</string>
+    <string name="liabilities_field_rate">Zinssatz (% p.a.)</string>
+    <string name="liabilities_field_start">Beginn (JJJJ-MM-TT)</string>
+    <string name="liabilities_field_end">Ende (JJJJ-MM-TT, optional)</string>
+    <string name="liabilities_field_payment">Monatliche Rate (€, optional)</string>
+    <string name="liabilities_save">Speichern</string>
+    <string name="liabilities_cancel">Abbrechen</string>
+    <string name="liabilities_invalid">Bitte prüfen Sie die Eingaben: Zahlen mit mindestens einer Ziffer, Daten als JJJJ-MM-TT.</string>
+    <string name="liabilities_save_failed">Speichern fehlgeschlagen: Der Kern war nicht bereit oder hat den Eintrag verworfen. Es wurde nichts gespeichert.</string>
 </resources>

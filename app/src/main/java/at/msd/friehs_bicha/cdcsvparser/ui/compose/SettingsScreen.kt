@@ -194,6 +194,13 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // The user-owned balance sheet (liabilities): the core owns
+            // the state, the math and the persistence; the section owns
+            // its own UI state (the core's sheetList lines).
+            SettingsLiabilitiesSection()
+
+            Spacer(Modifier.height(24.dp))
+
             // Runtime price API keys + the cache delete feature.
             Text(
                 text = stringResource(R.string.api_keys_section),

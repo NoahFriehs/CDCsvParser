@@ -18,6 +18,8 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         FileLog.h
         library.h
         library.cpp
+        BalanceSheet.h
+        BalanceSheet.cpp
         Wallet/Wallet.cpp
         Util/Util.h
         DataHolder.cpp

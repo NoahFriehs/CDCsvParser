@@ -1631,6 +1631,37 @@ class CoreService : Service() {
         private external fun getStaticPrice(symbol: String): Double
 
         /**
+         * The user-owned balance sheet (liabilities): user-maintained
+         * entries whose current balance the CORE computes (closed-form
+         * amortization) and which the CORE persists in its own save
+         * (the additive v5 section - the app has no separate store for
+         * it). The serde line is the contract (see the core's
+         * BalanceSheet.h); [LiabilityLine] builds and parses it on the
+         * JVM. The core triggers its own (atomic) save on a mutation
+         * when a save dir is known, so an entry survives the next cold
+         * start without any extra save here. Runs on the cpp-core
+         * thread; a rejected line is reported as false (the sheet stays
+         * untouched).
+         */
+        fun sheetUpsert(line: String): Boolean = onCoreThread {
+            sheetSet(line)
+        }
+
+        fun sheetDeleteEntry(kindId: String): Boolean = onCoreThread {
+            sheetDelete(kindId)
+        }
+
+        fun sheetLines(kind: String): List<String> = onCoreThread {
+            sheetList(kind)?.toList() ?: emptyList()
+        }
+
+        private external fun sheetSet(line: String): Boolean
+
+        private external fun sheetDelete(kindId: String): Boolean
+
+        private external fun sheetList(kind: String): Array<String>
+
+        /**
          * All core work - and in particular every JNI call into the C++
          * core - runs on this single "cpp-core" thread. The C++
          * TransactionManager is not thread-safe, so the whole JNI surface

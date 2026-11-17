@@ -228,4 +228,23 @@
     <string name="a11y_delete_file">Delete %1$s</string>
     <string name="a11y_wallet_row">%1$s: %2$s, about %3$s, %4$s, %5$d transactions</string>
     <string name="a11y_transaction_row">%1$s on %2$s: %3$s</string>
+
+    <!-- Balance sheet (liabilities) -->
+    <string name="liabilities_section">Liabilities</string>
+    <string name="liabilities_help">Debt entries you maintain here. The current balance is computed by the app core and stored in its own save.</string>
+    <string name="liabilities_empty">No liabilities yet.</string>
+    <string name="liabilities_add">Add</string>
+    <string name="liabilities_edit">Edit</string>
+    <string name="liabilities_delete">Delete</string>
+    <string name="liabilities_per_month">/ month</string>
+    <string name="liabilities_field_label">Label</string>
+    <string name="liabilities_field_principal">Principal (€)</string>
+    <string name="liabilities_field_rate">Interest rate (% p.a.)</string>
+    <string name="liabilities_field_start">Start (YYYY-MM-DD)</string>
+    <string name="liabilities_field_end">End (YYYY-MM-DD, optional)</string>
+    <string name="liabilities_field_payment">Monthly payment (€, optional)</string>
+    <string name="liabilities_save">Save</string>
+    <string name="liabilities_cancel">Cancel</string>
+    <string name="liabilities_invalid">Please check the inputs: numbers with at least one digit, dates as YYYY-MM-DD.</string>
+    <string name="liabilities_save_failed">Saving failed: the core was not ready or rejected the entry. Nothing was saved.</string>
 </resources>
