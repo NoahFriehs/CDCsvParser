@@ -108,10 +108,14 @@ fun HistoryDialogContent(
                             if (files.isEmpty()) onEmpty()
                         }
                     },
+                    modifier = Modifier.a11yTarget(),
                 ) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { fileToConfirmDelete = null }) {
+                TextButton(
+                    onClick = { fileToConfirmDelete = null },
+                    modifier = Modifier.a11yTarget(),
+                ) {
                     Text(stringResource(android.R.string.cancel))
                 }
             },
@@ -138,10 +142,14 @@ fun HistoryDialogContent(
                             if (files.isEmpty()) onEmpty()
                         }
                     },
+                    modifier = Modifier.a11yTarget(),
                 ) { Text(stringResource(android.R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { purgeToConfirm = false }) {
+                TextButton(
+                    onClick = { purgeToConfirm = false },
+                    modifier = Modifier.a11yTarget(),
+                ) {
                     Text(stringResource(android.R.string.cancel))
                 }
             },
@@ -164,7 +172,8 @@ fun HistoryDialogContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { purgeToConfirm = true }
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                    .a11yTarget(),
             )
         }
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
@@ -236,10 +245,15 @@ fun HistoryDialogContent(
                                 .padding(end = 4.dp)
                                 .semantics { contentDescription = file.name },
                         )
-                        IconButton(onClick = { fileToConfirmDelete = file }) {
+                        IconButton(
+                            onClick = { fileToConfirmDelete = file },
+                            modifier = Modifier.a11yTarget(),
+                        ) {
+                            // Names the FILE in the announcement (a bare
+                            // "delete" carried no context for a screen reader).
                             Icon(
                                 imageVector = Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.delete),
+                                contentDescription = stringResource(R.string.a11y_delete_file, file.name),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -263,7 +277,8 @@ fun HistoryDialogContent(
                 .clickable(enabled = selectedNames.size >= 2) {
                     onSelectCombined(files.filter { it.name in selectedNames })
                 }
-                .padding(horizontal = 24.dp, vertical = 8.dp),
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .a11yTarget(),
         )
     }
 }

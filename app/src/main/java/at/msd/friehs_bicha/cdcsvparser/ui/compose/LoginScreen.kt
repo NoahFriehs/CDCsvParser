@@ -152,6 +152,7 @@ fun LoginScreen(
             onClick = onSkipLogin,
             modifier = Modifier
                 .fillMaxWidth()
+                .a11yTarget()
                 .padding(bottom = 24.dp),
         ) {
             Text(stringResource(R.string.use_app_without_login))

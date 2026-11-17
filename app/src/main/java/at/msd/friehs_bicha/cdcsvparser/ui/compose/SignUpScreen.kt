@@ -70,7 +70,7 @@ fun SignUpScreen(
         Spacer(Modifier.height(16.dp))
         Button(
             onClick = { onSignup(email, password) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().a11yTarget(),
         ) {
             Text(stringResource(R.string.signup))
         }

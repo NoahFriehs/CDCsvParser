@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
@@ -51,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -338,14 +342,14 @@ fun ParseScreen(
 
             FilledTonalButton(
                 onClick = onFilterClick,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().a11yTarget(),
             ) {
                 Text(stringResource(R.string.filter_by_asset))
             }
             Spacer(Modifier.height(8.dp))
             Button(
                 onClick = onAllTransactionsClick,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().a11yTarget(),
             ) {
                 Text(stringResource(R.string.all_transactions))
             }
@@ -415,7 +419,9 @@ private fun MetricCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     painter = painterResource(iconRes),
-                    contentDescription = label,
+                    // The label text sits right next to the icon: a second
+                    // description would double-announce it.
+                    contentDescription = null,
                     tint = tint,
                     modifier = Modifier.size(22.dp),
                 )
@@ -521,6 +527,7 @@ private fun ChartPanel(
     /** The touched bucket in "All" mode (which series + which bucket). */
     var overlaySelection by remember { mutableStateOf<Pair<ChartSeries, ChartPoint>?>(null) }
     var showRangeDialog by remember { mutableStateOf(false) }
+    var showValuesDialog by remember { mutableStateOf(false) }
     val today = remember { LocalDate.now() }
     val priceSeriesMap = remember(history) {
         history.mapValues { PriceSeries(it.value.points) }
@@ -730,6 +737,49 @@ private fun ChartPanel(
     val historyIncomplete = visibleStock &&
         historyProgress != null &&
         historyProgress.first < historyProgress.second
+    // ---- Non-graphical data path (accessibility) ----
+    // The series the panel currently DRAWS - the summary (announced on the
+    // chart node) and the "show values" list both read this, so the screen
+    // reader and the data table describe exactly what the pixels show. Same
+    // data source as the chart render below. Function-level so the dialog
+    // (outside the panel column) sees it.
+    val a11ySeries: List<ChartValueSeries> = when {
+        inWalletMode -> listOf(ChartValueSeries(activeScope ?: "", points))
+        useOverlay -> {
+            val grid = overlay?.first.orEmpty()
+            val visible = overlay?.second.orEmpty().filter { it.values.isNotEmpty() }
+            val list = ArrayList<ChartValueSeries>(visible.size)
+            for (s in visible) {
+                list.add(
+                    ChartValueSeries(
+                        label = stringResource(s.series.labelRes),
+                        points = s.values.mapIndexed { i, v ->
+                            ChartPoint(grid.getOrNull(i) ?: "", v)
+                        },
+                    ),
+                )
+            }
+            list
+        }
+        else -> listOf(ChartValueSeries(stringResource(selectedSeries.labelRes), points))
+    }
+    val hasChartData = a11ySeries.any { it.points.isNotEmpty() }
+    // Localized per-series lines (composable calls, so no lambda).
+    val summaryParts = ArrayList<String>()
+    for (stats in chartSeriesStats(a11ySeries)) {
+        summaryParts.add(
+            stringResource(
+                R.string.chart_series_summary,
+                stats.label,
+                bucketLabel(stats.firstKey, timeFrame),
+                bucketLabel(stats.lastKey, timeFrame),
+                formatAmountToString(stats.min),
+                formatAmountToString(stats.max),
+                formatAmountToString(stats.latest),
+            ),
+        )
+    }
+    val chartSummary = summaryParts.joinToString("; ")
 
     // Theme the chart explicitly - MPAndroidChart's renderers
     // hard-code light-mode colors (black axis labels), unreadable on the
@@ -848,7 +898,7 @@ private fun ChartPanel(
                         overlaySelection = null
                     },
                     shape = SegmentedButtonDefaults.itemShape(index, TimeFrame.entries.size),
-                    modifier = Modifier.selectionPopModifier(timeFrame == frame),
+                    modifier = Modifier.a11yTarget().selectionPopModifier(timeFrame == frame),
                 ) {
                     Text(stringResource(frame.labelRes))
                 }
@@ -866,7 +916,7 @@ private fun ChartPanel(
                         overlaySelection = null
                     },
                     shape = SegmentedButtonDefaults.itemShape(index, ChartRange.entries.size),
-                    modifier = Modifier.selectionPopModifier(customRange == null && range == r),
+                    modifier = Modifier.a11yTarget().selectionPopModifier(customRange == null && range == r),
                 ) {
                     Text(stringResource(r.labelRes))
                 }
@@ -875,7 +925,7 @@ private fun ChartPanel(
         Spacer(Modifier.height(4.dp))
         TextButton(
             onClick = { showRangeDialog = true },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().a11yTarget(),
         ) {
             Text(
                 text = if (customRange != null) {
@@ -888,6 +938,14 @@ private fun ChartPanel(
                     stringResource(R.string.range_custom)
                 },
             )
+        }
+        if (hasChartData) {
+            TextButton(
+                onClick = { showValuesDialog = true },
+                modifier = Modifier.fillMaxWidth().a11yTarget(),
+            ) {
+                Text(stringResource(R.string.chart_show_values))
+            }
         }
         if (historyIncomplete) {
             val done = historyProgress!!.first
@@ -947,7 +1005,7 @@ private fun ChartPanel(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .heightIn(min = 180.dp)
                     .padding(vertical = 48.dp),
             )
 
@@ -957,7 +1015,7 @@ private fun ChartPanel(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .heightIn(min = 180.dp)
                     .padding(vertical = 48.dp),
             )
 
@@ -966,7 +1024,7 @@ private fun ChartPanel(
                     overlay ?: (emptyList<String>() to emptyList<AlignedSeries>())
                 // The tooltip is a caption row ABOVE the chart
                 // (fixed height, so the chart never jumps while it shows).
-                Box(modifier = Modifier.fillMaxWidth().height(20.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().heightIn(min = 20.dp)) {
                     if (useOverlay) {
                         // The overlay says WHICH series was hit.
                         overlaySelection?.let { (series, point) ->
@@ -998,6 +1056,7 @@ private fun ChartPanel(
                         timeFrame = timeFrame,
                         labelColor = labelColor,
                         gridColor = gridColor,
+                        a11yDescription = chartSummary,
                         onPointSelected = { overlaySelection = it },
                     )
                     if (overlayAligned.any { it.estimated > 0 }) {
@@ -1016,6 +1075,7 @@ private fun ChartPanel(
                         lineColor = lineColor,
                         labelColor = labelColor,
                         gridColor = gridColor,
+                        a11yDescription = chartSummary,
                         onPointSelected = { selectedPoint = it },
                     )
                     if (estimatedCount > 0) {
@@ -1082,6 +1142,14 @@ private fun ChartPanel(
             },
         )
     }
+
+    if (showValuesDialog) {
+        ChartValuesDialog(
+            series = a11ySeries,
+            timeFrame = timeFrame,
+            onDismiss = { showValuesDialog = false },
+        )
+    }
 }
 
 /** String resource for a series button (P/L reuses the card label). */
@@ -1146,6 +1214,8 @@ private fun ChartLine(
     lineColor: Int,
     labelColor: Int,
     gridColor: Int,
+    /** Localized summary of the drawn series (non-graphical data path). */
+    a11yDescription: String,
     onPointSelected: (ChartPoint?) -> Unit,
 ) {
     // Rendering signature: the apply happens (re)only when the data or the
@@ -1156,7 +1226,7 @@ private fun ChartLine(
     // chart re-apply below.
     val dataSignature = System.identityHashCode(points).toString() +
         "|" + estimatedCount + "|" + timeFrame +
-        "|" + lineColor + "|" + labelColor + "|" + gridColor
+        "|" + lineColor + "|" + labelColor + "|" + gridColor + "|" + a11yDescription
 
     AndroidView(
         factory = { context ->
@@ -1164,6 +1234,10 @@ private fun ChartLine(
                 applyChartState(
                     points, timeFrame, estimatedCount, lineColor, labelColor, gridColor, onPointSelected,
                 )
+                // The summary rides the VIEW itself (TalkBack reads the
+                // chart node on focus; a wrapper-level semantics node would
+                // double-announce it).
+                contentDescription = a11yDescription
                 setTag(dataSignature)
             }
         },
@@ -1172,6 +1246,7 @@ private fun ChartLine(
                 chart.applyChartState(
                     points, timeFrame, estimatedCount, lineColor, labelColor, gridColor, onPointSelected,
                 )
+                chart.contentDescription = a11yDescription
                 chart.setTag(dataSignature)
             }
         },
@@ -1202,21 +1277,26 @@ private fun ChartMultiLine(
     timeFrame: TimeFrame,
     labelColor: Int,
     gridColor: Int,
+    /** Localized summary of the drawn series (non-graphical data path). */
+    a11yDescription: String,
     onPointSelected: (Pair<ChartSeries, ChartPoint>?) -> Unit,
 ) {
     val dataSignature = System.identityHashCode(grid).toString() +
         "|" + System.identityHashCode(series).toString() +
-        "|" + timeFrame + "|" + labelColor + "|" + gridColor
+        "|" + timeFrame + "|" + labelColor + "|" + gridColor + "|" + a11yDescription
     AndroidView(
         factory = { context ->
             LineChart(context).apply {
                 applyMultiState(grid, series, colors, timeFrame, labelColor, gridColor, onPointSelected)
+                // Summary on the view itself - see [ChartLine].
+                contentDescription = a11yDescription
                 setTag(dataSignature)
             }
         },
         update = { chart ->
             if (chart.getTag() != dataSignature) {
                 chart.applyMultiState(grid, series, colors, timeFrame, labelColor, gridColor, onPointSelected)
+                chart.contentDescription = a11yDescription
                 chart.setTag(dataSignature)
             }
         },
@@ -1347,6 +1427,13 @@ private fun LineChart.applyMultiState(
  * MPAndroidChart's renderers hard-code light-mode colors (the axis labels
  * are black in their constructors) - every visible element is
  * themed explicitly from the Compose scheme.
+ *
+ * Reduced motion: the 3.1.0 chart animates ONLY via explicit
+ * animateX/animateY/animateXY calls (verified in the library source: no
+ * implicit entry/exit animation, no global switch). This app never calls
+ * any of them, so under the system's "remove animations" setting the chart
+ * is static - if an animate* call is ever added here, gate it on
+ * rememberReduceMotion().
  */
 private fun LineChart.applyChartState(
     points: List<ChartPoint>,
@@ -1442,6 +1529,63 @@ private fun LineChart.applyChartState(
 }
 
 /**
+ * The chart's non-graphical data path: every point the panel currently
+ * draws, as a scrollable label + value list (same dialog mechanism as the
+ * range dialog - no new screen). Section per visible series.
+ */
+@Composable
+private fun ChartValuesDialog(
+    series: List<ChartValueSeries>,
+    timeFrame: TimeFrame,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.chart_values_title)) },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp),
+            ) {
+                series.forEach { s ->
+                    item(key = "header:${s.label}") {
+                        Text(
+                            text = s.label,
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                        )
+                    }
+                    items(s.points) { p ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                        ) {
+                            Text(
+                                text = bucketLabel(p.key, timeFrame),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                text = formatAmountToString(p.value),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.a11yTarget()) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+    )
+}
+
+/**
  * The custom date range. Two M3 date pickers (start, end);
  * nothing before the first activity day or after today is pickable, and
  * end is clamped to >= start.
@@ -1470,7 +1614,7 @@ private fun ChartRangeDialog(
             ) {
                 OutlinedButton(
                     onClick = { pickingStart = true },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().a11yTarget(),
                 ) {
                     Text(stringResource(R.string.range_start))
                     Spacer(Modifier.width(8.dp))
@@ -1478,7 +1622,7 @@ private fun ChartRangeDialog(
                 }
                 OutlinedButton(
                     onClick = { pickingEnd = true },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().a11yTarget(),
                 ) {
                     Text(stringResource(R.string.range_end))
                     Spacer(Modifier.width(8.dp))
@@ -1487,12 +1631,17 @@ private fun ChartRangeDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onApply(start to end.coerceAtLeast(start)) }) {
+            TextButton(
+                onClick = { onApply(start to end.coerceAtLeast(start)) },
+                modifier = Modifier.a11yTarget(),
+            ) {
                 Text(stringResource(R.string.range_apply))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.range_cancel)) }
+            TextButton(onClick = onDismiss, modifier = Modifier.a11yTarget()) {
+                Text(stringResource(R.string.range_cancel))
+            }
         },
     )
 
@@ -1507,16 +1656,19 @@ private fun ChartRangeDialog(
         DatePickerDialog(
             onDismissRequest = { pickingStart = false },
             confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let {
-                        start = utcDateOf(it)
-                        if (end < start) end = start
-                    }
-                    pickingStart = false
-                }) { Text(stringResource(R.string.ok)) }
+                TextButton(
+                    onClick = {
+                        state.selectedDateMillis?.let {
+                            start = utcDateOf(it)
+                            if (end < start) end = start
+                        }
+                        pickingStart = false
+                    },
+                    modifier = Modifier.a11yTarget(),
+                ) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { pickingStart = false }) {
+                TextButton(onClick = { pickingStart = false }, modifier = Modifier.a11yTarget()) {
                     Text(stringResource(R.string.range_cancel))
                 }
             },
@@ -1534,13 +1686,16 @@ private fun ChartRangeDialog(
         DatePickerDialog(
             onDismissRequest = { pickingEnd = false },
             confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { end = utcDateOf(it) }
-                    pickingEnd = false
-                }) { Text(stringResource(R.string.ok)) }
+                TextButton(
+                    onClick = {
+                        state.selectedDateMillis?.let { end = utcDateOf(it) }
+                        pickingEnd = false
+                    },
+                    modifier = Modifier.a11yTarget(),
+                ) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { pickingEnd = false }) {
+                TextButton(onClick = { pickingEnd = false }, modifier = Modifier.a11yTarget()) {
                     Text(stringResource(R.string.range_cancel))
                 }
             },
@@ -1621,6 +1776,7 @@ private fun SeriesChip(
                 minWidth = ButtonDefaults.MinWidth,
                 minHeight = ButtonDefaults.MinHeight,
             )
+            .a11yTarget()
             .selectionPopModifier(selected)
             .semantics { role = Role.RadioButton },
     ) {

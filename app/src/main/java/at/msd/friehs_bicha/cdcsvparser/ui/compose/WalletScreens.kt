@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -40,6 +42,7 @@ import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.ui.display.ProfitTrend
 import at.msd.friehs_bicha.cdcsvparser.ui.display.WalletRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.donutSlices
+import at.msd.friehs_bicha.cdcsvparser.util.StringHelper.formatAmountToString
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
@@ -47,6 +50,7 @@ import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.formatter.PercentFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import androidx.core.content.ContextCompat
+import kotlin.math.roundToInt
 
 /**
  * Wallet view screen (Compose): allocation donut (MPAndroidChart via
@@ -94,6 +98,24 @@ fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
         return
     }
     val total = sliceable.sumOf { it.assetValue }
+    // Non-graphical data path: the slice summary (top 5 + the rest) is
+    // announced on the chart node; built from the same sorted data the
+    // pie entries below draw.
+    val donutStatsLocal = donutStats(sliceable.map { it.name to it.assetValue }, 5)
+    // Composable string calls outside lambdas (@Composable can't run inside
+    // a buildString/joinToString lambda) - at most 5 slices, a loop is fine.
+    val sliceTexts = ArrayList<String>(donutStatsLocal.top.size)
+    for (slice in donutStatsLocal.top) {
+        sliceTexts.add(
+            stringResource(R.string.a11y_donut_slice, slice.name, "${(slice.share * 100).roundToInt()}%"),
+        )
+    }
+    val donutA11y = stringResource(R.string.a11y_donut_label) + ": " +
+        sliceTexts.joinToString(", ") +
+        (if (donutStatsLocal.moreCount > 0) {
+            " " + stringResource(R.string.a11y_donut_more, donutStatsLocal.moreCount)
+        } else "") +
+        stringResource(R.string.a11y_donut_total, formatAmountToString(total))
     // Entries (and the legend that follows their order) go by allocation:
     // biggest slice first.
     val entries = sliceable
@@ -130,6 +152,13 @@ fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
                 setHighlightPerTapEnabled(false)
                 setNoDataText("")
                 setNoDataTextColor(android.graphics.Color.TRANSPARENT)
+                // Slice summary on the view itself (the non-graphical data
+                // path - the line charts do the same).
+                contentDescription = donutA11y
+                // Reduced motion: see LineChart.applyChartState - the 3.1.0
+                // pie has no implicit animation (and this app never calls an
+                // animate* method), so it is static under the system's
+                // "remove animations" setting.
             }
         },
         update = { chart ->
@@ -151,6 +180,7 @@ fun AllocationDonut(rows: List<WalletRow>, modifier: Modifier = Modifier) {
             chart.setCenterText(if (total > 0) "%.0f €".format(total) else "")
             chart.setCenterTextSize(16f)
             chart.setCenterTextColor(ContextCompat.getColor(chart.context, R.color.on_surface))
+            chart.contentDescription = donutA11y
             chart.invalidate()
         },
         modifier = modifier
@@ -183,11 +213,21 @@ fun WalletList(
 @Composable
 private fun WalletRowView(row: WalletRow, onClick: () -> Unit) {
     val context = LocalContext.current
+    // One a11y node per row: merge all the sub-labels into a single clean
+    // description instead of a stream of fragments.
+    val rowA11y = stringResource(
+        R.string.a11y_wallet_row,
+        row.name, row.amountText, row.assetValueText,
+        row.percentText, row.transactionCount,
+    ) + if (row.incompleteHistory) {
+        " (" + stringResource(R.string.wallet_incomplete_history) + ")"
+    } else ""
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 6.dp),
+            .padding(vertical = 6.dp)
+            .semantics(mergeDescendants = true) { contentDescription = rowA11y },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Stable per-currency hue so a dot keeps its color across re-sorts.

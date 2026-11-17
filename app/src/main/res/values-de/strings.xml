@@ -210,4 +210,15 @@
     <string name="cloud_cipher_too_new">Diese Cloud-Sicherung wurde von einer neueren App-Version gespeichert und kann von dieser Version nicht gelesen werden.</string>
     <string name="cloud_reencrypt_success">Cloud-Sicherung unter dem neuen Schlüssel erneut verschlüsselt</string>
     <string name="cloud_reencrypt_failed">Die Cloud-Sicherung konnte nicht erneut verschlüsselt werden: Die aktuelle Sicherung ist nicht lesbar, oder es existiert kein Schlüssel für das gewählte Schlüsselmodell. Die Sicherung wurde unverändert gelassen.</string>
+    <!-- Nicht-graphischer Datenpfad der Diagramme (Barrierefreiheit) -->
+    <string name="chart_show_values">Werte anzeigen</string>
+    <string name="chart_values_title">Werte</string>
+    <string name="chart_series_summary">%1$s: von %2$s bis %3$s, min. %4$s, max. %5$s, zuletzt %6$s</string>
+    <string name="a11y_donut_label">Zuteilungsdiagramm</string>
+    <string name="a11y_donut_slice">%1$s %2$s</string>
+    <string name="a11y_donut_more">und %1$d weitere</string>
+    <string name="a11y_donut_total">, Gesamt %1$s</string>
+    <string name="a11y_delete_file">%1$s löschen</string>
+    <string name="a11y_wallet_row">%1$s: %2$s, ca. %3$s, %4$s, %5$d Transaktionen</string>
+    <string name="a11y_transaction_row">%1$s am %2$s: %3$s</string>
 </resources>

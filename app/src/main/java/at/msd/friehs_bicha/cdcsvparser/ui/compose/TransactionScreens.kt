@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
@@ -115,11 +117,20 @@ private fun MonthHeaderRow(month: String) {
 @Composable
 private fun TransactionRowView(row: TransactionRow, onClick: () -> Unit) {
     val context = LocalContext.current
+    // One a11y node per row: the type icon, texts and amounts merge into a
+    // single clean description (description + date + native amount).
+    val rowA11y = stringResource(
+        R.string.a11y_transaction_row,
+        row.description.ifEmpty { row.fallbackDescription(context) },
+        row.date,
+        row.nativeAmount,
+    )
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .semantics(mergeDescendants = true) { contentDescription = rowA11y },
     ) {
         Row(
             modifier = Modifier
@@ -311,12 +322,14 @@ fun TransactionScreen(
                         selected = selectedAsset == null,
                         onClick = { onAssetSelected(null) },
                         label = { Text(stringResource(R.string.filter_all)) },
+                        modifier = Modifier.a11yTarget(),
                     )
                     assetOptions.forEach { currency ->
                         FilterChip(
                             selected = selectedAsset == currency,
                             onClick = { onAssetSelected(currency) },
                             label = { Text(currency) },
+                            modifier = Modifier.a11yTarget(),
                         )
                     }
                 }
@@ -335,6 +348,7 @@ fun TransactionScreen(
                             selected = type in selectedTypes,
                             onClick = { onTypeToggled(type) },
                             label = { Text(label) },
+                            modifier = Modifier.a11yTarget(),
                         )
                     }
                 }

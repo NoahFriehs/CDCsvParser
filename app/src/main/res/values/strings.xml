@@ -217,4 +217,15 @@
     <string name="cloud_cipher_too_new">This cloud backup was saved by a newer version of the app and cannot be read by this version.</string>
     <string name="cloud_reencrypt_success">Cloud backup re-encrypted under the new key</string>
     <string name="cloud_reencrypt_failed">The cloud backup could not be re-encrypted: the current backup cannot be read, or no key exists for the selected key model. The backup was left unchanged.</string>
+    <!-- Non-graphical chart data path (accessibility) -->
+    <string name="chart_show_values">Show values</string>
+    <string name="chart_values_title">Values</string>
+    <string name="chart_series_summary">%1$s: from %2$s to %3$s, min %4$s, max %5$s, latest %6$s</string>
+    <string name="a11y_donut_label">Allocation donut</string>
+    <string name="a11y_donut_slice">%1$s %2$s</string>
+    <string name="a11y_donut_more">and %1$d more</string>
+    <string name="a11y_donut_total">, total %1$s</string>
+    <string name="a11y_delete_file">Delete %1$s</string>
+    <string name="a11y_wallet_row">%1$s: %2$s, about %3$s, %4$s, %5$d transactions</string>
+    <string name="a11y_transaction_row">%1$s on %2$s: %3$s</string>
 </resources>

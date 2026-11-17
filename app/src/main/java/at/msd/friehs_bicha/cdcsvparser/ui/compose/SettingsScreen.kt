@@ -224,7 +224,7 @@ fun SettingsScreen(
 
             OutlinedButton(
                 onClick = { showDeleteCachesDialog = true },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().a11yTarget(),
             ) {
                 Text(stringResource(R.string.delete_price_caches))
             }
@@ -262,6 +262,7 @@ fun SettingsScreen(
                         selected = index == cloudKeyModelSelected,
                         onClick = { onCloudKeyModelSelected(index) },
                         shape = SegmentedButtonDefaults.itemShape(index, cloudKeyModelOptions.size),
+                        modifier = Modifier.a11yTarget(),
                     ) { Text(label) }
                 }
             }
@@ -303,7 +304,7 @@ fun SettingsScreen(
 
             FilledTonalButton(
                 onClick = onAbout,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().a11yTarget(),
             ) {
                 Text(stringResource(R.string.about_us))
             }
@@ -313,12 +314,12 @@ fun SettingsScreen(
             if (isSignedIn) {
                 OutlinedButton(
                     onClick = onLogout,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().a11yTarget(),
                 ) { Text(stringResource(R.string.logout)) }
                 Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = onDeleteAccount,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().a11yTarget(),
                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError,
@@ -327,7 +328,7 @@ fun SettingsScreen(
             } else {
                 OutlinedButton(
                     onClick = onLogin,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().a11yTarget(),
                 ) { Text(stringResource(R.string.login)) }
             }
         }
@@ -344,10 +345,14 @@ fun SettingsScreen(
                         showDeleteCachesDialog = false
                         onDeletePriceCaches()
                     },
+                    modifier = Modifier.a11yTarget(),
                 ) { Text(stringResource(R.string.yes)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteCachesDialog = false }) {
+                TextButton(
+                    onClick = { showDeleteCachesDialog = false },
+                    modifier = Modifier.a11yTarget(),
+                ) {
                     Text(stringResource(R.string.no))
                 }
             },
@@ -421,7 +426,7 @@ private fun LogSection(
         Row(modifier = Modifier.fillMaxWidth()) {
             OutlinedButton(
                 onClick = { onVisibleChange(!visible) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).a11yTarget(),
             ) {
                 Text(stringResource(if (visible) R.string.log_hide else R.string.log_show))
             }
@@ -429,9 +434,14 @@ private fun LogSection(
             OutlinedButton(
                 onClick = onCopy,
                 enabled = visible && lines.isNotEmpty(),
+                modifier = Modifier.a11yTarget(),
             ) { Text(stringResource(R.string.log_copy)) }
             Spacer(Modifier.width(8.dp))
-            OutlinedButton(onClick = onClear, enabled = visible) {
+            OutlinedButton(
+                onClick = onClear,
+                enabled = visible,
+                modifier = Modifier.a11yTarget(),
+            ) {
                 Text(stringResource(R.string.log_clear))
             }
         }
@@ -481,14 +491,17 @@ private fun ApiKeyField(
         trailingIcon = {
             // Text toggle (the icons-core set of the current BOM carries no
             // visibility glyph; the word is clearer in any locale).
-            TextButton(onClick = { visible = !visible }) {
+            TextButton(
+                onClick = { visible = !visible },
+                modifier = Modifier.a11yTarget(),
+            ) {
                 Text(stringResource(if (visible) R.string.hide_key else R.string.show_key))
             }
         },
         modifier = Modifier.fillMaxWidth(),
     )
     if (value.isNotEmpty()) {
-        TextButton(onClick = onClear) {
+        TextButton(onClick = onClear, modifier = Modifier.a11yTarget()) {
             Text(stringResource(R.string.clear_key))
         }
     }

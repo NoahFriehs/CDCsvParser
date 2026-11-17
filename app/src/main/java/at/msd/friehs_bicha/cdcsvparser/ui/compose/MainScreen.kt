@@ -56,7 +56,7 @@ fun MainScreen(
 
             FilledTonalButton(
                 onClick = onUploadClick,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().a11yTarget(),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_upload_24),
@@ -83,7 +83,7 @@ fun MainScreen(
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = onHistoryClick,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().a11yTarget(),
                 ) {
                     Text(historyFile)
                 }
@@ -97,7 +97,7 @@ fun MainScreen(
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = onLoadFromDbClick,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().a11yTarget(),
                 ) {
                     Text(stringResource(R.string.load_latest_from_database))
                 }

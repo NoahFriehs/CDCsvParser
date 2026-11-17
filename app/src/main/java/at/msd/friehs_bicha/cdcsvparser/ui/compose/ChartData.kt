@@ -993,3 +993,73 @@ fun walletIntradayValueSeries(
     )
 }
 
+// ---------------------------------------------------------------------------
+// Non-graphical data path for the charts (accessibility):
+// pure summary builders over the EXACT same data the chart draws. The UI
+// localizes and formats the results; the math here stays JVM-testable.
+// ---------------------------------------------------------------------------
+
+/**
+ * One visible chart series for the non-graphical path: [label] is the
+ * localized series name (resolved at the call site), [points] the points
+ * the chart actually plots (bucket key -> value, oldest first).
+ */
+data class ChartValueSeries(val label: String, val points: List<ChartPoint>)
+
+/** The span + range of one series as plotted. */
+data class ChartSeriesStats(
+    val label: String,
+    val firstKey: String,
+    val lastKey: String,
+    val count: Int,
+    val min: Double,
+    val max: Double,
+    /** The last (newest) plotted value - the one a glance at the line gives. */
+    val latest: Double,
+)
+
+/**
+ * Per-series stats for the chart summary. Empty series are dropped (the
+ * chart does not plot them); the result is in input order.
+ */
+fun chartSeriesStats(series: List<ChartValueSeries>): List<ChartSeriesStats> =
+    series.mapNotNull { s ->
+        s.points.takeIf { it.isNotEmpty() }?.let { pts ->
+            ChartSeriesStats(
+                label = s.label,
+                firstKey = pts.first().key,
+                lastKey = pts.last().key,
+                count = pts.size,
+                min = pts.minOf { it.value },
+                max = pts.maxOf { it.value },
+                latest = pts.last().value,
+            )
+        }
+    }
+
+/** One donut slice in the a11y summary: [share] = value / total (0..1). */
+data class DonutSliceStat(val name: String, val value: Double, val share: Double)
+
+/** The donut's non-graphical summary: top-[topN] slices by size + the rest. */
+data class DonutStats(val top: List<DonutSliceStat>, val moreCount: Int, val total: Double)
+
+/**
+ * Slice summary for the allocation donut: [entries] are name + value in any
+ * order; the result is biggest-first, [topN] slices, the remainder counted
+ * as [DonutStats.moreCount]. A zero total yields zero shares (a donut with
+ * nothing allocated is not rendered at all - this is the degenerate guard).
+ */
+fun donutStats(entries: List<Pair<String, Double>>, topN: Int): DonutStats {
+    if (entries.isEmpty()) return DonutStats(emptyList(), 0, 0.0)
+    val total = entries.sumOf { it.second }
+    val sorted = entries.sortedByDescending { it.second }
+    val n = topN.coerceIn(0, sorted.size)
+    return DonutStats(
+        top = sorted.take(n).map { (name, value) ->
+            DonutSliceStat(name, value, if (total > 0) value / total else 0.0)
+        },
+        moreCount = sorted.size - n,
+        total = total,
+    )
+}
+

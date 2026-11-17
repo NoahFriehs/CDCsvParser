@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -141,6 +142,20 @@ fun Modifier.selectionPopModifier(selected: Boolean): Modifier {
         transformOrigin = TransformOrigin.Center
     }
 }
+
+/**
+ * Touch-target floor (48×48 dp): M3 buttons render at 40 dp and filter
+ * chips at 32 dp - below the accessibility floor. This enlarges the HIT
+ * AREA: the component measures at >=48 dp and centers its own content
+ * (pure, non-composable). Hand-rolled: the platform
+ * `minimumInteractiveComponentSize` modifier (which keeps the visual at its
+ * spec size while enlarging the hit area) is not exposed by the resolved
+ * foundation 1.12.1 line - verified against the artifact. Applied to every
+ * interactive element below the floor (buttons, segmented chips, filter
+ * chips, icon buttons, row-level clickable texts); list rows that already
+ * measure >=48 dp are unaffected.
+ */
+fun Modifier.a11yTarget(): Modifier = defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
 
 /** The system-wide animator scale at 0 ("remove animations") means no motion. */
 @Composable
