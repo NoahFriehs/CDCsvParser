@@ -109,6 +109,19 @@ jobs:
       - name: Run JVM unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
 
+      # Profile generation stays the documented local recipe (device +
+      # KVM budget); the release artifacts must still ship the committed
+      # profile, so the lane builds the release APK and verifies that:
+      # the R8 full-mode rewrite packages the committed profile as the
+      # binary AOT profile assets/dexopt/baseline.prof (plus the
+      # rewritten text twin) in the release APK.
+      - name: Build release APK (R8 full mode + baseline profile)
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Verify the release APK ships the baseline profile
+        run: |
+          unzip -l app/build/outputs/apk/release/app-release.apk | grep 'assets/dexopt/baseline.prof'
+
   ui-tests:
     name: Compose UI tests (emulator)
     runs-on: ubuntu-latest

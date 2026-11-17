@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- The app classes embedded from the app dependency carry
+             resource IDs baked against the app table, so every startup
+             initializer the test process would run crashes on its first
+             resource lookup (Resources$NotFoundException). The journeys
+             never need in-process initialization; disabling the provider
+             keeps all of them (startup, profileinstaller, tracing) out
+             of the test process. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:enabled="false" />
+    </application>
+</manifest>

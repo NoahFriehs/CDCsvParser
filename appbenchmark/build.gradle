@@ -1,0 +1,87 @@
+plugins {
+    id 'com.android.test'
+    id 'androidx.baselineprofile'
+}
+
+// No kotlin plugin here: the project-wide android.builtInKotlin mode
+// (gradle.properties) compiles this module's Kotlin sources.
+android {
+    namespace 'at.msd.friehs_bicha.cdcsvparser.benchmark'
+    compileSdk 37
+
+    defaultConfig {
+        // BaselineProfileRule captures without root only on API 33+;
+        // 28 is the rooted-device floor of the rule. The generation
+        // lane runs the API 37 Medium_Phone device.
+        minSdk 28
+        targetSdk 36
+        // The generation/measurement lanes run on the emulator device
+        // budget; the macrobenchmark rule hard-fails there without this
+        // (startup numbers stay relative - the delta is the signal).
+        testInstrumentationRunnerArguments[
+            "androidx.benchmark.suppressErrors"
+        ] = "EMULATOR"
+    }
+
+    // The module under test: the app.
+    targetProjectPath ':app'
+
+    // Variant notes: the nonMinifiedRelease test variant is the lane's
+    // APK for BOTH profile generation (run manually against the app
+    // DEBUG build with run-as seeding - the device budget has no root
+    // and a tested-release app data dir is unreachable; see the module
+    // doc) and the measured startup benchmark (against the minified
+    // release APK installed manually - see the module docs). The companion
+    // benchmarkRelease variant cannot build for this app: it embeds the
+    // app (needed for the journey tests) into a test APK that AGP
+    // forces R8 on (the tested app is obfuscated), and R8 full mode
+    // rejects the duplicated R classes.
+}
+
+dependencies {
+    implementation 'androidx.benchmark:benchmark-macro-junit4:1.5.0'
+    // The profile journeys drive the UI the same way the instrumented
+    // tests do; pinned to the UiAutomator line benchmark 1.5.0 itself
+    // compiles against.
+    implementation 'androidx.test.uiautomator:uiautomator:2.4.0'
+    implementation 'androidx.test:core:1.7.0'
+    // AndroidJUnit4 class runner (the macrobenchmark test runner class).
+    implementation 'androidx.test:runner:1.7.0'
+    // App classes for the profile journeys (the app R class for UI
+    // string lookups, resolved against the app package's resources);
+    // the startup benchmark class itself references no app class. The
+    // firebase/gms AARs are excluded: their init provider would be
+    // merged into the test manifest, and the embedded classes carry
+    // resource IDs baked against the app table, so the provider would
+    // crash the test process (Resources$NotFoundException) before any
+    // test ran. The tests never talk to Firebase.
+    implementation(project(':app')) {
+        exclude group: 'com.google.firebase'
+        exclude group: 'com.google.android.gms'
+        // The app's AAR classes inside the test APK carry resource IDs
+        // baked against the app table, so any content provider the test
+        // process initializes at startup crashes on its first resource
+        // lookup. The journeys never need these in-process, so their
+        // declaring AARs (with their providers) stay out of the graph.
+        exclude group: 'androidx.startup'
+        // work-runtime is the remaining edge that re-introduces the
+        // startup provider transitively; the journeys never schedule work
+        // in the test process.
+        exclude group: 'androidx.work'
+        // The compose/material/emoji2 chain is the last set of edges
+        // into the startup provider (emoji2 registers an initializer);
+        // none of it is reachable from the journey code paths in the
+        // test process (class loading is lazy), and keeping the UI libs
+        // out also shrinks this 100 MB+ test APK.
+        exclude group: 'androidx.emoji2'
+        exclude group: 'androidx.compose'
+        exclude group: 'androidx.compose.animation'
+        exclude group: 'androidx.compose.foundation'
+        exclude group: 'androidx.compose.material'
+        exclude group: 'androidx.compose.material3'
+        exclude group: 'androidx.compose.runtime'
+        exclude group: 'androidx.compose.ui'
+        exclude group: 'com.google.android.material'
+    }
+}
+

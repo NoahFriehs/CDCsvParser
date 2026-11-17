@@ -1,5 +1,9 @@
 plugins {
     id 'com.android.application'
+    // Baseline Profile consumer side: makes this app the profile
+    // target for the appbenchmark producer module (the
+    // generateBaselineProfile task + the baselineProfile DSL below).
+    id 'androidx.baselineprofile'
     id 'com.google.devtools.ksp'
     id 'com.google.gms.google-services'
     id 'org.jetbrains.kotlin.plugin.serialization'
@@ -96,6 +100,19 @@ android {
     buildFeatures {
         viewBinding true
         buildConfig true
+    }
+    // The generated profile is committed (saveInSrc) as ONE merged
+    // profile for all variants (mergeIntoMain): it lands in
+    // src/main/generated/baselineProfiles, which every variant consumes.
+    // The release R8 pass rewrites the rules to the obfuscated names and
+    // installs them for dexopt; that rewrite (and the startup-profile
+    // dex layout) needs R8 full mode, pinned in gradle.properties
+    // (android.enableR8.fullMode).
+    baselineProfile {
+        saveInSrc = true
+        mergeIntoMain = true
+        // The producer module that generates this app's profile.
+        from project(':appbenchmark')
     }
     testOptions {
         // Android framework calls (Log, etc.) in unit tests return default
