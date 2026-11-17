@@ -19,6 +19,16 @@ if (cgKeyFile.exists()) {
 def cgApiKey = (localProps.getProperty('coingecko_api_key', '') ?: '').trim()
 def ccApiKey = (localProps.getProperty('cryptocompare_api_key', '') ?: '').trim()
 
+// Release signing facts (Play store artifact). The keystore file and both
+// passwords live in the gitignored local.properties / on disk — never in
+// git. When the facts are absent, release builds stay unsigned (still
+// buildable and verifiable; an unsigned AAB simply can't be installed).
+def releaseKsFile = (localProps.getProperty('release_keystore_file', '').trim())
+def releaseKsAlias = (localProps.getProperty('release_keystore_key_alias', '').trim())
+def releaseKsStorePw = (localProps.getProperty('release_keystore_store_password', ''))
+def releaseKsKeyPw = (localProps.getProperty('release_keystore_key_password', ''))
+def hasReleaseSigning = releaseKsFile != '' && new File(releaseKsFile).exists()
+
 
 android {
     namespace 'at.msd.friehs_bicha.cdcsvparser'
@@ -28,7 +38,10 @@ android {
     defaultConfig {
         applicationId "at.msd.friehs_bicha.cdcsvparser"
         minSdk 26
-        targetSdk 35 // edge-to-edge handled per activity via util.EdgeToEdge
+        // target 36: mandatory for Play submissions since 2026-08-31. The
+        // edge-to-edge opt-out is GONE at this level (Android 16+); insets
+        // are handled per activity via util.EdgeToEdge.
+        targetSdk 36
         versionCode 1
         versionName "1.0"
 
@@ -43,11 +56,26 @@ android {
         }
     }
 
+    // Declared BEFORE buildTypes so the ternary below can resolve it by name.
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseKsFile)
+                storePassword releaseKsStorePw
+                keyAlias releaseKsAlias
+                keyPassword releaseKsKeyPw
+            }
+        }
+    }
+
     buildTypes {
         release {
             // Always keyless (the debug key must never ship).
             buildConfigField "String", "CG_API_KEY", "\"\""
             buildConfigField "String", "CC_API_KEY", "\"\""
+            // Signed with the keystore from local.properties when present,
+            // unsigned otherwise (debug/dev machines without the facts).
+            signingConfig hasReleaseSigning ? signingConfigs.getByName('release') : null
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
