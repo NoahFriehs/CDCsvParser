@@ -201,6 +201,14 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // The user-owned balance sheet (non-financial assets): the
+            // same core section, the declared values are static (no
+            // schedule math) with the last-updated stamp as the honesty
+            // signal.
+            SettingsAssetsSection()
+
+            Spacer(Modifier.height(24.dp))
+
             // Runtime price API keys + the cache delete feature.
             Text(
                 text = stringResource(R.string.api_keys_section),

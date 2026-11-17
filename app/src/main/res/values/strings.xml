@@ -247,4 +247,26 @@
     <string name="liabilities_cancel">Cancel</string>
     <string name="liabilities_invalid">Please check the inputs: numbers with at least one digit, dates as YYYY-MM-DD.</string>
     <string name="liabilities_save_failed">Saving failed: the core was not ready or rejected the entry. Nothing was saved.</string>
+    <!-- Balance sheet (non-financial assets) -->
+    <string name="assets_section">Assets (non-financial)</string>
+    <string name="assets_help">Things you own that are not in a wallet - home, car, gold… The value is declared by you; the app core stores it and shows when you last updated it.</string>
+    <string name="assets_empty">No assets yet.</string>
+    <string name="assets_add">Add</string>
+    <string name="assets_edit">Edit</string>
+    <string name="assets_delete">Delete</string>
+    <string name="assets_total">Total</string>
+    <string name="assets_field_label">Label</string>
+    <string name="assets_field_category">Category</string>
+    <string name="assets_field_value">Value (€)</string>
+    <string name="assets_field_note">Note (optional)</string>
+    <string name="assets_save">Save</string>
+    <string name="assets_cancel">Cancel</string>
+    <string name="assets_invalid">Please check the inputs: a label and a number with at least one digit.</string>
+    <string name="assets_save_failed">Saving failed: the core was not ready or rejected the entry. Nothing was saved.</string>
+    <string name="asset_category_real_estate">Real estate</string>
+    <string name="asset_category_vehicle">Vehicle</string>
+    <string name="asset_category_art">Art</string>
+    <string name="asset_category_collectible">Collectible</string>
+    <string name="asset_category_commodity">Commodity</string>
+    <string name="asset_category_other">Other</string>
 </resources>

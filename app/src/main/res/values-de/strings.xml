@@ -240,4 +240,26 @@
     <string name="liabilities_cancel">Abbrechen</string>
     <string name="liabilities_invalid">Bitte prüfen Sie die Eingaben: Zahlen mit mindestens einer Ziffer, Daten als JJJJ-MM-TT.</string>
     <string name="liabilities_save_failed">Speichern fehlgeschlagen: Der Kern war nicht bereit oder hat den Eintrag verworfen. Es wurde nichts gespeichert.</string>
+    <!-- Balance sheet (non-financial assets) -->
+    <string name="assets_section">Vermögenswerte (nicht finanziell)</string>
+    <string name="assets_help">Besitz, der nicht in einer Brieftasche ist - Haus, Auto, Gold… Der Wert wird von Ihnen angegeben; der App-Kern speichert ihn und zeigt, wann Sie ihn zuletzt aktualisiert haben.</string>
+    <string name="assets_empty">Noch keine Vermögenswerte.</string>
+    <string name="assets_add">Hinzufügen</string>
+    <string name="assets_edit">Bearbeiten</string>
+    <string name="assets_delete">Löschen</string>
+    <string name="assets_total">Gesamt</string>
+    <string name="assets_field_label">Bezeichnung</string>
+    <string name="assets_field_category">Kategorie</string>
+    <string name="assets_field_value">Wert (€)</string>
+    <string name="assets_field_note">Notiz (optional)</string>
+    <string name="assets_save">Speichern</string>
+    <string name="assets_cancel">Abbrechen</string>
+    <string name="assets_invalid">Bitte prüfen Sie die Eingaben: eine Bezeichnung und eine Zahl mit mindestens einer Ziffer.</string>
+    <string name="assets_save_failed">Speichern fehlgeschlagen: Der Kern war nicht bereit oder hat den Eintrag verworfen. Es wurde nichts gespeichert.</string>
+    <string name="asset_category_real_estate">Immobilie</string>
+    <string name="asset_category_vehicle">Fahrzeug</string>
+    <string name="asset_category_art">Kunst</string>
+    <string name="asset_category_collectible">Sammlung</string>
+    <string name="asset_category_commodity">Rohstoff</string>
+    <string name="asset_category_other">Sonstiges</string>
 </resources>
