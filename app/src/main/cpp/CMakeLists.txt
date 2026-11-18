@@ -26,6 +26,8 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
         DataHolder.h
         ExportCsv.h
         ExportCsv.cpp
+        ReturnMetrics.h
+        ReturnMetrics.cpp
         TransactionParser.cpp
         TransactionParser.h
         TransactionManager.cpp

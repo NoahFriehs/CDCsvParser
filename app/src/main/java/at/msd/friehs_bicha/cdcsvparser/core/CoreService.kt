@@ -1741,6 +1741,20 @@ class CoreService : Service() {
             alertCheck()?.toList() ?: emptyList()
         }
 
+        /**
+         * The core's portfolio-return metric (TWR + MWR/IRR): the
+         * two-line metric result for the priced daily series lines
+         * (`R;<YYYY-MM-DD>;<V>;<CF>` - the core's metric contract owns
+         * the line format, the period/skip guards and the INSUFFICIENT
+         * markers). The math is pure core side; the lines are the only
+         * input. Returns the two metric lines (TWR first), EMPTY when
+         * no line of [series] is valid. Runs on the cpp-core thread.
+         */
+        fun returnMetrics(series: List<String>): List<String> = onCoreThread {
+            val result = computeReturns(series.joinToString("\n")) ?: ""
+            if (result.isEmpty()) emptyList() else result.split("\n")
+        }
+
         private external fun sheetSet(line: String): Boolean
 
         private external fun sheetDelete(kindId: String): Boolean
@@ -1752,6 +1766,8 @@ class CoreService : Service() {
         private external fun exportCsv(): String?
 
         private external fun alertCheck(): Array<String>?
+
+        private external fun computeReturns(series: String): String?
 
         /**
          * All core work - and in particular every JNI call into the C++
