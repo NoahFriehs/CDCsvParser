@@ -15,6 +15,9 @@ import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.app.GoalLine
+import at.msd.friehs_bicha.cdcsvparser.app.GoalProgress
+import at.msd.friehs_bicha.cdcsvparser.app.GoalProgressRow
 import at.msd.friehs_bicha.cdcsvparser.app.NetWorthSnapshot
 import at.msd.friehs_bicha.cdcsvparser.core.Core
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
@@ -38,6 +41,12 @@ class NetWorthFragment : Fragment() {
     /** The remembered snapshot (null = not ready / no live core yet). */
     private val _snapshot = mutableStateOf<NetWorthSnapshot?>(null)
 
+    /**
+     * The remembered goals card rows (the user's goal lines joined with
+     * the core's GP progress lines from the same snapshot pass).
+     */
+    private val _goalRows = mutableStateOf<List<GoalProgressRow>>(emptyList())
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -48,6 +57,7 @@ class NetWorthFragment : Fragment() {
                 CdcsvTheme {
                     NetWorthScreen(
                         snapshot = _snapshot.value,
+                        goalRows = _goalRows.value,
                         onTrackedAssetsClick = {
                             findNavController().navigate(R.id.walletViewFragment)
                         },
@@ -88,9 +98,23 @@ class NetWorthFragment : Fragment() {
         refreshSnapshot()
     }
 
-    /** One snapshot line off the core (cpp-core thread), parsed thin. */
+    override fun onResume() {
+        super.onResume()
+        // Coming back from the settings sections (a goal add/edit/delete
+        // mutates the sheet without a core data post), so the rows are
+        // re-read here - a fast JNI pair on the cpp-core thread.
+        refreshSnapshot()
+    }
+
+    /** The snapshot lines off the core (cpp-core thread), parsed thin. */
     private fun refreshSnapshot() {
-        _snapshot.value = CoreService.netWorthSnapshot().firstOrNull()
-            ?.let { NetWorthSnapshot.parse(it) }
+        val lines = CoreService.netWorthSnapshot()
+        _snapshot.value = lines.firstOrNull()?.let { NetWorthSnapshot.parse(it) }
+        // The goals card: the user's goal lines (label, target date,
+        // metric) joined with the core's GP lines (the progress from the
+        // same pass) - both reads on the cpp-core thread.
+        val goals = CoreService.sheetLines(GoalLine.KIND).mapNotNull { GoalLine.parse(it) }
+        val progress = lines.mapNotNull { GoalProgress.parse(it) }
+        _goalRows.value = GoalProgressRow.from(goals, progress)
     }
 }

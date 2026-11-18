@@ -209,6 +209,13 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // The user-owned balance sheet (financial goals): the same
+            // core section; the progress is core-computed on the net
+            // worth snapshot (the two core metrics, never app-side math).
+            SettingsGoalsSection()
+
+            Spacer(Modifier.height(24.dp))
+
             // Runtime price API keys + the cache delete feature.
             Text(
                 text = stringResource(R.string.api_keys_section),

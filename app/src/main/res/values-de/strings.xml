@@ -268,4 +268,26 @@
     <string name="networth_row_liabilities">Schulden</string>
     <string name="networth_row_net">Vermögen</string>
     <string name="networth_empty">Noch keine Daten - der Kern hat keinen aktuellen Zustand.</string>
+    <!-- Balance sheet (financial goals) -->
+    <string name="goals_section">Finanzielle Ziele</string>
+    <string name="goals_help">Ziele, die Sie hier pflegen. Der App-Kern berechnet den Fortschritt aus Ihrem Vermögen oder Ihren erfassten Vermögenswerten und legt die Ziele in seinem eigenen Speicher ab.</string>
+    <string name="goals_empty">Noch keine Ziele.</string>
+    <string name="goals_add">Hinzufügen</string>
+    <string name="goals_edit">Bearbeiten</string>
+    <string name="goals_delete">Löschen</string>
+    <string name="goals_by_date">bis %1$s</string>
+    <string name="goals_field_label">Bezeichnung</string>
+    <string name="goals_field_target">Zielbetrag (€)</string>
+    <string name="goals_field_date">Zieldatum (JJJJ-MM-TT, optional)</string>
+    <string name="goals_field_metric">Kennzahl</string>
+    <string name="goals_save">Speichern</string>
+    <string name="goals_cancel">Abbrechen</string>
+    <string name="goals_invalid">Bitte prüfen Sie die Eingaben: Zahlen mit mindestens einer Ziffer, Daten als JJJJ-MM-TT.</string>
+    <string name="goals_save_failed">Speichern fehlgeschlagen: Der Kern war nicht bereit oder hat den Eintrag verworfen. Es wurde nichts gespeichert.</string>
+    <string name="goal_metric_net_worth">Vermögen</string>
+    <string name="goal_metric_assets">Erfasste Vermögenswerte</string>
+    <string name="networth_goals_title">Ziele</string>
+    <string name="networth_goal_reached">Erreicht</string>
+    <string name="networth_goal_to_go">Noch %1$s</string>
+    <string name="networth_goal_no_target">Kein Zielbetrag festgelegt</string>
 </resources>
