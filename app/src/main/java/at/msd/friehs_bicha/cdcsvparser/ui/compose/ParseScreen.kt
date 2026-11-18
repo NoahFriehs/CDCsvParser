@@ -502,6 +502,14 @@ private fun ChartPanel(
 ) {
     val seriesData = remember(dailySeries) { parseDailySeries(dailySeries) }
     val walletData = remember(walletSeries) { parseWalletSeries(walletSeries) }
+    // The aggregate (all-wallets) chart keeps the legacy crypto-only
+    // scope: the EUR cash buffer is now a first-class per-wallet scope
+    // entry (face value) and shows up in the scope row, but it must not
+    // leak into the aggregate value line - that line stays byte-
+    // identical to the pinned card / 4-line total, which excludes the
+    // buffer. The explicit filter is the app-side scope decision (the
+    // core emits the buffer in the per-wallet family now).
+    val walletDataCryptoOnly = remember(walletData) { walletData.filterKeys { it != "EUR" } }
     // A re-parse replaces the ledger: a stored scope the new file does not
     // contain falls back to the aggregate view (and clears the stored
     // selection so a later file does not silently re-activate it).
@@ -535,9 +543,9 @@ private fun ChartPanel(
     // The last ledger transaction date - label-only now (the intraday
     // frames no longer anchor to it; see the note's "data until").
     val lastTxDate = walletData.values.flatten().maxOfOrNull { it.date }
-    val historical = remember(walletData, priceSeriesMap, seriesData, timeFrame, currentPrices) {
+    val historical = remember(walletDataCryptoOnly, priceSeriesMap, seriesData, timeFrame, currentPrices) {
         historicalStockSeries(
-            walletSeries = walletData,
+            walletSeries = walletDataCryptoOnly,
             prices = priceSeriesMap,
             spentPoints = seriesData[ChartSeries.SPENT].orEmpty(),
             frame = timeFrame,
@@ -607,7 +615,9 @@ private fun ChartPanel(
         val win = window ?: return@remember null // narrowed window empty
         intradaySeries(
             subSpentRows = sub.first,
-            subWalletRows = sub.second,
+            // Legacy crypto-only aggregate scope (see the daily twin
+            // above): the EUR buffer line is not part of the total.
+            subWalletRows = sub.second.filterNot { it.startsWith("EUR;") },
             intraday = intraday.mapValues { it.value.points },
             daily = history.mapValues { it.value.points },
             livePrices = currentPrices,

@@ -33,6 +33,9 @@ import java.time.LocalDate
 object PriceHistoryPass {
     private const val TAG = "PriceHistoryPass"
 
+    /** The internal cash buffer (fiat - face value, never fetched). */
+    private const val FIAT_SYMBOL = "EUR"
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** Per-symbol history published so far (grows in; shared with screens). */
@@ -66,6 +69,12 @@ object PriceHistoryPass {
      * set: the caller filters it to the positions the ledger still holds -
      * zero symbols contribute nothing to any frame; the daily phase
      * always covers [symbols].
+     *
+     * The internal EUR cash buffer may sit in [symbols] (the per-wallet
+     * series is buffer-inclusive) but is FIAT-SKIPPED: it is never
+     * fetched or refined (its price is 1.0 by definition) and instead
+     * gets a synthetic face-value daily series published into
+     * [history], so a buffer-scoped consumer can price every day.
      */
     fun ensureAll(
         symbols: List<String>,
@@ -74,6 +83,12 @@ object PriceHistoryPass {
         intradaySymbols: List<String>? = null,
     ) {
         if (symbols.isEmpty()) return
+        // The fiat-skip split (see the doc): the request's currency set
+        // stays authoritative (covers / pass identity run on the FULL
+        // set - a buffer-inclusive and a crypto-only request for the
+        // same export attach to each other), only the fetch and the
+        // refinement drop the fiat side.
+        val fetchSymbols = symbols.filterNot { it == FIAT_SYMBOL }
         val live = job?.isActive == true
         val covers = passSymbols.toHashSet().containsAll(symbols) &&
             passDays >= days &&
@@ -98,25 +113,35 @@ object PriceHistoryPass {
         }
         if (passSymbols != symbols) {
             // Different export: the old maps no longer describe this one.
+            // (The reset also drops a previously published face series -
+            // it is re-published below with the new window.)
             history.value = emptyMap()
             intraday.value = emptyMap()
+        }
+        passSymbols = symbols
+        passDays = days
+        passAnchorDay = anchorDay?.toEpochDay() ?: Long.MIN_VALUE
+        publishFaceSeries(symbols - fetchSymbols, days)
+        if (fetchSymbols.isEmpty()) {
+            // A fiat-only request never touches the chain.
+            passCompletedDay = PriceHistoryProvider.todayUtcDay()
+            progress.value = symbols.size to symbols.size
+            return
         }
         val prices = AssetValue.getInstance().priceProvider as? CryptoPricesCryptoCompare
         if (prices == null) {
             FileLog.w(TAG, "Live price provider is not CryptoPricesCryptoCompare; no history pass.")
             return
         }
-        passSymbols = symbols
-        passDays = days
-        passAnchorDay = anchorDay?.toEpochDay() ?: Long.MIN_VALUE
         progress.value = 0 to symbols.size
         job = scope.launch {
             try {
                 PriceHistoryProvider(prices).ensureAll(
-                    symbols = symbols,
+                    symbols = fetchSymbols,
                     days = days,
                     anchorDay = anchorDay,
-                    intradaySymbols = intradaySymbols,
+                    intradaySymbols = (intradaySymbols ?: fetchSymbols)
+                        .filterNot { it == FIAT_SYMBOL },
                     onProgress = { done, total -> progress.value = done to total },
                     onSymbol = { symbol, entry -> addSymbol(symbol, entry) },
                     onIntraday = { symbol, entry -> addIntraday(symbol, entry) },
@@ -134,6 +159,23 @@ object PriceHistoryPass {
                     "(range ${days} d).",
             )
         }
+    }
+
+    /**
+     * The fiat side's published state: one 1.0 close per day of the
+     * requested window (ascending). Completes synchronously (no
+     * network); a consumer pricing a day BEFORE the series starts
+     * back-fills to the first close - 1.0 likewise - so the window
+     * only needs to cover the requested range, not a wider pass.
+     */
+    private fun publishFaceSeries(fiat: List<String>, days: Int) {
+        if (fiat.isEmpty()) return
+        val today = PriceHistoryProvider.todayUtcDay()
+        val range = days.coerceAtLeast(1)
+        val points = ArrayList<Pair<Long, Double>>(range)
+        for (d in today - range + 1L..today) points.add(d to 1.0)
+        val entry = DailyPrices(today, points)
+        for (symbol in fiat) addSymbol(symbol, entry)
     }
 
     /**

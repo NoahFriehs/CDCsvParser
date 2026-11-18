@@ -279,6 +279,14 @@
     <string name="networth_row_liabilities">Liabilities</string>
     <string name="networth_row_net">Net worth</string>
     <string name="networth_empty">No data yet - the core has no live state.</string>
+    <!-- Net worth (returns block: core-computed portfolio return metrics) -->
+    <string name="networth_returns_title">Returns</string>
+    <string name="networth_returns_twr">Time-weighted return (TWR)</string>
+    <string name="networth_returns_irr">Money-weighted return (IRR)</string>
+    <string name="networth_returns_annualized">p.a.</string>
+    <string name="networth_returns_since">since %1$s (%2$d days)</string>
+    <string name="networth_returns_no_valuation">(%1$d days without valuation)</string>
+    <string name="networth_returns_insufficient">Return figures need at least 30 days of history.</string>
     <!-- Balance sheet (financial goals) -->
     <string name="goals_section">Financial goals</string>
     <string name="goals_help">Targets you maintain here. The app core computes the progress from your net worth or your tracked assets and stores the goals in its own save.</string>

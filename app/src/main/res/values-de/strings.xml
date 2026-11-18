@@ -272,6 +272,14 @@
     <string name="networth_row_liabilities">Schulden</string>
     <string name="networth_row_net">Vermögen</string>
     <string name="networth_empty">Noch keine Daten - der Kern hat keinen aktuellen Zustand.</string>
+    <!-- Vermögen (Rendite-Block: vom Kern berechnete Portfolio-Renditen) -->
+    <string name="networth_returns_title">Renditen</string>
+    <string name="networth_returns_twr">Zeitgewichtete Rendite (TWR)</string>
+    <string name="networth_returns_irr">Geldgewichtete Rendite (IRR)</string>
+    <string name="networth_returns_annualized">p. a.</string>
+    <string name="networth_returns_since">seit %1$s (%2$d Tage)</string>
+    <string name="networth_returns_no_valuation">(%1$d Tage ohne Bewertung)</string>
+    <string name="networth_returns_insufficient">Für Rendite-Zahlen sind mindestens 30 Tage Historie nötig.</string>
     <!-- Balance sheet (financial goals) -->
     <string name="goals_section">Finanzielle Ziele</string>
     <string name="goals_help">Ziele, die Sie hier pflegen. Der App-Kern berechnet den Fortschritt aus Ihrem Vermögen oder Ihren erfassten Vermögenswerten und legt die Ziele in seinem eigenen Speicher ab.</string>

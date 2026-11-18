@@ -26,7 +26,9 @@ import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.app.GoalMetric
 import at.msd.friehs_bicha.cdcsvparser.app.GoalProgressRow
 import at.msd.friehs_bicha.cdcsvparser.app.NetWorthSnapshot
+import at.msd.friehs_bicha.cdcsvparser.app.networth.ReturnsMetrics
 import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
+import java.time.LocalDate
 
 /**
  * Net-worth screen (Compose surface): the core-computed headline figure,
@@ -43,6 +45,12 @@ fun NetWorthScreen(
     snapshot: NetWorthSnapshot?,
     /** The goals card rows (goal line + core GP progress line). */
     goalRows: List<GoalProgressRow>,
+    /** The Returns block (the core's metric lines, parsed thin); null =
+     * nothing to show yet (no series, or the core returned nothing). */
+    returns: ReturnsMetrics?,
+    /** The priced series' first day (the caption's "since" date); null
+     * with [returns] null. */
+    returnsFirstDay: LocalDate?,
     /** Tracked assets row tap: the existing per-wallet screen. */
     onTrackedAssetsClick: () -> Unit,
     /** Liabilities & assets row tap: the settings sections. */
@@ -55,6 +63,7 @@ fun NetWorthScreen(
     val netLabel = stringResource(R.string.networth_row_net)
     val emptyText = stringResource(R.string.networth_empty)
     val goalsTitle = stringResource(R.string.networth_goals_title)
+    val returnsTitle = stringResource(R.string.networth_returns_title)
 
     Scaffold { padding ->
         Column(
@@ -128,6 +137,18 @@ fun NetWorthScreen(
                     )
                 }
             }
+            // The Returns block: hidden until the core has answered with
+            // a metric result (same no-silent-figures rule - nothing to
+            // show, no placeholder numbers).
+            if (returns != null && returnsFirstDay != null) {
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    text = returnsTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(Modifier.height(8.dp))
+                ReturnsBlock(returns = returns, firstDay = returnsFirstDay)
+            }
             // The goals card: hidden until the user has a goal (no goals
             // = nothing to show, no empty-state noise on the headline
             // screen).
@@ -155,6 +176,103 @@ fun NetWorthScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * The Returns block card: the two core-computed metric lines (TWR,
+ * MWR/IRR - absolute + annualized where the core numbers it), the
+ * honesty hint whenever a metric is marked INSUFFICIENT, and the window
+ * caption ("since first record (date, N days)", gaining the skipped-day
+ * note when the core reports unvalued periods). Everything rendered is
+ * core output - the block never computes a figure of its own.
+ */
+@Composable
+private fun ReturnsBlock(returns: ReturnsMetrics, firstDay: LocalDate) {
+    val twrLabel = stringResource(R.string.networth_returns_twr)
+    val irrLabel = stringResource(R.string.networth_returns_irr)
+    val sinceFormat = stringResource(R.string.networth_returns_since)
+    val noValuationFormat = stringResource(R.string.networth_returns_no_valuation)
+    val insuffHint = stringResource(R.string.networth_returns_insufficient)
+    val annSuffix = stringResource(R.string.networth_returns_annualized)
+
+    // Fraction -> "21.00 %" (the house's amount format with the percent
+    // symbol; the plus on gains is the display house rule for trends).
+    fun percent(v: Double): String =
+        StringHelper.formatAmountToString(v * 100.0, 2, "%", true)
+
+    // One metric line: the absolute figure + the annualized one when the
+    // core numbered it (the "-" marker / INSUFFICIENT both parse to a
+    // null annualized); a null ABSOLUTE = the metric is marked and the
+    // hint below takes over.
+    fun metricText(absolute: Double?, annualized: Double?): String? {
+        val abs = absolute ?: return null
+        if (annualized == null) return percent(abs)
+        return percent(abs) + " (" + percent(annualized) + " " + annSuffix + ")"
+    }
+
+    val caption = String.format(
+        sinceFormat, firstDay.toString(), returns.spanDays,
+    ) + if (returns.twrSkipped > 0) {
+        " " + String.format(noValuationFormat, returns.twrSkipped)
+    } else {
+        ""
+    }
+
+    Card(
+        shape = HeroCardCorners,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+        ) {
+            MetricRow(label = twrLabel, value = metricText(returns.twrAbsolute, returns.twrAnnualized))
+            MetricRow(label = irrLabel, value = metricText(returns.mwrAbsolute, returns.mwrAnnualized))
+            // The honesty rule's display side: a marked metric (span < 30
+            // days / no computable period / IRR without a root) gets the
+            // hint instead of a number - the core never numbered it.
+            if (returns.twrAbsolute == null || returns.mwrAbsolute == null) {
+                Text(
+                    text = insuffHint,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 4.dp),
+                )
+            }
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+    }
+}
+
+/** One metric line: label left, value right. A null value (a marked
+ * metric) leaves the side empty - the hint above the caption explains. */
+@Composable
+private fun MetricRow(label: String, value: String?) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        if (value != null) {
+            Text(text = value, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }
