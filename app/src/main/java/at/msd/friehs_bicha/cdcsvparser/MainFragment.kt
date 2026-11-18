@@ -28,6 +28,7 @@ import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.general.HistoryFileUtil
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
+import at.msd.friehs_bicha.cdcsvparser.app.NetWorthSnapshot
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.MainScreen
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
@@ -60,6 +61,14 @@ class MainFragment : Fragment() {
     /** Display name of the newest history file (recomputed on onResume). */
     private val _newestHistoryFile = mutableStateOf<String?>(null)
     private val _isSignedIn = mutableStateOf(FirebaseAuth.getInstance().currentUser != null)
+    /**
+     * The net-worth summary card: the core's snapshot line, re-read on
+     * every core data post (the fast-start readiness + the price-refresh
+     * rhythm - the tracked value is priced, so a price pass moves the
+     * figure). null = no live core state yet (the card stays hidden,
+     * never a placeholder number).
+     */
+    private val _netWorth = mutableStateOf<NetWorthSnapshot?>(null)
 
     // SAF file picker (ActivityResult API): no storage permissions are
     // needed for ACTION_GET_CONTENT.
@@ -86,12 +95,16 @@ class MainFragment : Fragment() {
                 CdcsvTheme {
                     MainScreen(
                         isSignedIn = _isSignedIn.value,
+                        netWorth = _netWorth.value,
                         newestHistoryFile = _newestHistoryFile.value,
                         onUploadClick = { onBtnUploadClick() },
                         onHistoryClick = {
                             HistoryDialogFragment().show(childFragmentManager, "history")
                         },
                         onLoadFromDbClick = { loadFromFireBaseDB() },
+                        onNetWorthClick = {
+                            findNavController().navigate(R.id.networthFragment)
+                        },
                     )
                 }
             }
@@ -158,6 +171,14 @@ class MainFragment : Fragment() {
             viewLifecycleOwner,
         )
 
+        // The net-worth card rides the same data posts as the charts:
+        // every core data post (fast-start readiness, a new import, a
+        // price pass) re-reads the snapshot line. The read is a fast JNI
+        // call on the cpp-core thread; the core stays the source of the
+        // figure (the buffer-inclusion semantic is pinned there).
+        core.chartSeriesLiveData.observe(viewLifecycleOwner) { refreshNetWorth() }
+        refreshNetWorth()
+
         // The launcher activity passes "fastStart" to go straight to the
         // overview (fast start). The extra is consumed ONCE: a recreated view
         // (pop-back delivers a fresh view with savedInstanceState == null,
@@ -183,6 +204,12 @@ class MainFragment : Fragment() {
 
     private fun fastStart() {
         findNavController().navigate(R.id.parseFragment)
+    }
+
+    /** One snapshot line off the core (cpp-core thread), parsed thin. */
+    private fun refreshNetWorth() {
+        _netWorth.value = CoreService.netWorthSnapshot().firstOrNull()
+            ?.let { NetWorthSnapshot.parse(it) }
     }
 
     /**

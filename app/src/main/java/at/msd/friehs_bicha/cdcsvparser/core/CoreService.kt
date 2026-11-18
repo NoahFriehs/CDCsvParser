@@ -1655,11 +1655,27 @@ class CoreService : Service() {
             sheetList(kind)?.toList() ?: emptyList()
         }
 
+        /**
+         * The net-worth snapshot line(s) of the core's balance sheet (the
+         * read-only contract the net-worth screen shows; [NetWorthSnapshot]
+         * parses the NW line on the JVM). The values are CORE-computed -
+         * the core's own current EUR wallet value (the internal EUR cash
+         * buffer INCLUDED), the declared asset sum and the current
+         * liability balances - so the display cannot drift from the core.
+         * Runs on the cpp-core thread; EMPTY when no live core (the
+         * not-ready window, the screen hides its card then).
+         */
+        fun netWorthSnapshot(): List<String> = onCoreThread {
+            sheetSnapshot()?.toList() ?: emptyList()
+        }
+
         private external fun sheetSet(line: String): Boolean
 
         private external fun sheetDelete(kindId: String): Boolean
 
         private external fun sheetList(kind: String): Array<String>
+
+        private external fun sheetSnapshot(): Array<String>
 
         /**
          * All core work - and in particular every JNI call into the C++

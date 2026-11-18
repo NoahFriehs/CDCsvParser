@@ -52,6 +52,12 @@
     </fragment>
 
     <fragment
+        android:id="@+id/networthFragment"
+        android:name="at.msd.friehs_bicha.cdcsvparser.ui.fragments.NetWorthFragment"
+        android:label="CDCsvParser"
+        tools:layout="@layout/activity_settings" />
+
+    <fragment
         android:id="@+id/settingsFragment"
         android:name="at.msd.friehs_bicha.cdcsvparser.SettingsFragment"
         android:label="CDCsvParser"

@@ -269,4 +269,10 @@
     <string name="asset_category_collectible">Collectible</string>
     <string name="asset_category_commodity">Commodity</string>
     <string name="asset_category_other">Other</string>
+    <string name="networth_title">Net worth</string>
+    <string name="networth_row_tracked">Tracked assets</string>
+    <string name="networth_row_assets">Assets (non-financial)</string>
+    <string name="networth_row_liabilities">Liabilities</string>
+    <string name="networth_row_net">Net worth</string>
+    <string name="networth_empty">No data yet - the core has no live state.</string>
 </resources>

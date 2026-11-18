@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +22,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import at.msd.friehs_bicha.cdcsvparser.R
+import at.msd.friehs_bicha.cdcsvparser.app.NetWorthSnapshot
+import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 
 /**
  * Main screen (Compose). Import a CSV (new or from history) and jump
@@ -29,11 +33,17 @@ import at.msd.friehs_bicha.cdcsvparser.R
 @Composable
 fun MainScreen(
     isSignedIn: Boolean,
+    /**
+     * The core's net-worth snapshot for the summary card (null = no live
+     * core state yet: the card stays hidden, never a placeholder number).
+     */
+    netWorth: NetWorthSnapshot?,
     /** Display name of the newest history file, or null when there is none. */
     newestHistoryFile: String?,
     onUploadClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onLoadFromDbClick: () -> Unit,
+    onNetWorthClick: () -> Unit,
 ) {
     // #47: single header bar — the settings action lives in the
     // activity's action bar (view-scoped menu provider in MainFragment),
@@ -51,6 +61,41 @@ fun MainScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(top = 32.dp),
             )
+
+            // The net-worth summary card: the ONE core-computed number on
+            // this screen (the full breakdown lives on its destination).
+            if (netWorth != null) {
+                Spacer(Modifier.height(16.dp))
+                Card(
+                    shape = HeroCardCorners,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ),
+                    onClick = onNetWorthClick,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.networth_title),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = StringHelper.formatAmountToString(netWorth.netWorthEur),
+                            style = CardValueStyle,
+                            color = if (netWorth.netWorthEur < 0) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                        )
+                    }
+                }
+            }
 
             Spacer(Modifier.weight(1f))
 

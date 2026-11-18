@@ -262,4 +262,10 @@
     <string name="asset_category_collectible">Sammlung</string>
     <string name="asset_category_commodity">Rohstoff</string>
     <string name="asset_category_other">Sonstiges</string>
+    <string name="networth_title">Vermögen</string>
+    <string name="networth_row_tracked">Erfasste Vermögenswerte</string>
+    <string name="networth_row_assets">Vermögenswerte (nicht finanziell)</string>
+    <string name="networth_row_liabilities">Schulden</string>
+    <string name="networth_row_net">Vermögen</string>
+    <string name="networth_empty">Noch keine Daten - der Kern hat keinen aktuellen Zustand.</string>
 </resources>
