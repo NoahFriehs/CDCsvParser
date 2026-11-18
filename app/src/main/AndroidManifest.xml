@@ -6,6 +6,12 @@
          (ACTION_GET_CONTENT), which does not need any of them. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Local notification delivery of the core's price/goal alert
+         crossings (runtime permission on API 33+; the core keeps
+         latching state either way, so a denial only blocks the
+         notifications, never the state). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".App"
         android:allowBackup="true"

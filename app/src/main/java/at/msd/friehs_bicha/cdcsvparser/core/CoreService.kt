@@ -1473,6 +1473,24 @@ class CoreService : Service() {
     }
 
 
+    /**
+     * The held symbols (the core's currency list, INCLUDING the internal
+     * "EUR" cash buffer). Runs on the cpp-core thread (the JNI rule) -
+     * callers go through the companion wrappers that hop onto that
+     * thread.
+     */
+    internal fun heldCurrencies(): List<String> =
+        getCurrencies()?.toList() ?: emptyList()
+
+    /**
+     * Pushes prices into the core in [currencies] order (the setPrice
+     * contract: same order as the held list). Runs on the cpp-core
+     * thread (the JNI rule).
+     */
+    internal fun pushPricesToCore(currencies: List<String>, prices: Map<String, Double>) {
+        setPrice(Array<Double>(currencies.size) { index -> prices[currencies[index]] ?: 0.0 })
+    }
+
     private external fun init(logFilePath: String, savePath: String): Boolean
     private external fun getFailedLines(): Int
     private external fun wasLastParseBudgetCut(): Boolean
@@ -1681,6 +1699,48 @@ class CoreService : Service() {
             exportCsv()
         }
 
+        /**
+         * The held symbols a price alert may target: the core's
+         * currency list minus the internal "EUR" cash buffer (an alert
+         * on the cash buffer is meaningless - its price is pinned to
+         * 1.0). Runs on the cpp-core thread; empty when the core is
+         * not live.
+         */
+        fun heldAlertSymbols(): List<String> = onCoreThread {
+            val running = service
+            if (running == null || !isRunning) return@onCoreThread emptyList()
+            running.heldCurrencies().filter { it != "EUR" }
+        }
+
+        /**
+         * The core's alert pass (the latched crossing state machine,
+         * core-owned): pushes this process's current cache prices into
+         * the core (the same order contract as the in-app price pass),
+         * then lets the core evaluate the sheet's price alerts (the
+         * core's current prices - the same hierarchy the valuation
+         * uses) and the goal-achieved state against the goal progress.
+         * Returns the FIRED lines the core built (`FIRED;PRICE;...` /
+         * `FIRED;GOAL;...`) for
+         * [at.msd.friehs_bicha.cdcsvparser.alerting.Notifier] to
+         * deliver; the state, the thresholds and the math never cross
+         * the ABI.
+         *
+         * Call it ONLY after a price pass that produced fresh values:
+         * a no-op pass (e.g. a 429 blackout tick) must not call it -
+         * the alerts then wait for the next real pass (documented).
+         * Empty when the core is not live or nothing fired. Runs on the
+         * cpp-core thread.
+         */
+        fun alertPass(): List<String> = onCoreThread {
+            val running = service
+            if (running == null || !isRunning) return@onCoreThread emptyList()
+            val currencies = running.heldCurrencies()
+            if (currencies.isEmpty()) return@onCoreThread emptyList()
+            val cachePrices = priceProvider.getPricesFromCache(currencies)
+            running.pushPricesToCore(currencies, cachePrices)
+            alertCheck()?.toList() ?: emptyList()
+        }
+
         private external fun sheetSet(line: String): Boolean
 
         private external fun sheetDelete(kindId: String): Boolean
@@ -1690,6 +1750,8 @@ class CoreService : Service() {
         private external fun sheetSnapshot(): Array<String>
 
         private external fun exportCsv(): String?
+
+        private external fun alertCheck(): Array<String>?
 
         /**
          * All core work - and in particular every JNI call into the C++

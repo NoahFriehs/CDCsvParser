@@ -159,6 +159,9 @@ dependencies {
     // Compose (Phase 3.1): BOM + UI + M3. The compiler comes from the
     // kotlin.plugin.compose plugin above (Kotlin 2.x style).
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    // The ActivityResult launcher API of the settings UI (the
+    // POST_NOTIFICATIONS request); the version is managed by the BOM.
+    implementation("androidx.activity:activity-compose")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-core")

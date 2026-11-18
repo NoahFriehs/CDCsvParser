@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Small icon of the alert notifications: white-on-transparent silhouette
+  (the status bar tints it itself, so any other color reads as gray).
+  Same mark as the launcher - the three growth bars and the up trend
+  line - redrawn at 24 dp so the shape fills the small-icon canvas
+  (the 108 dp themed-icon monochrome layer would shrink to ~12 dp and
+  not read at all).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4.5,14H5.5A2,2 0 0 1 7.5,16V18A2,2 0 0 1 5.5,20H4.5A2,2 0 0 1 2.5,18V16A2,2 0 0 1 4.5,14Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M11.5,10.5H12.5A2,2 0 0 1 14.5,12.5V18A2,2 0 0 1 12.5,20H11.5A2,2 0 0 1 9.5,18V12.5A2,2 0 0 1 11.5,10.5Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M18.5,7H19.5A2,2 0 0 1 21.5,9V18A2,2 0 0 1 19.5,20H18.5A2,2 0 0 1 16.5,18V9A2,2 0 0 1 18.5,7Z" />
+    <path
+        android:pathData="M3.5,13L12,9.5L20.5,6"
+        android:strokeWidth="1.75"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

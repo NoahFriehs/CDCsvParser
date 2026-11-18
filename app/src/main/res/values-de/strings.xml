@@ -294,4 +294,32 @@
     <string name="networth_goal_reached">Erreicht</string>
     <string name="networth_goal_to_go">Noch %1$s</string>
     <string name="networth_goal_no_target">Kein Zielbetrag festgelegt</string>
+    <!-- Balance sheet (Preis- und Zielalarme) -->
+    <string name="alerts_section">Preis- &amp; Zielalarme</string>
+    <string name="alerts_help">Löst einmal aus, wenn ein gehaltenes Symbol seinen Schwellenwert überquert, und einmal pro Ziel, das erreicht wird. Der App-Kern besitzt den Zustand und prüft ihn in den Hintergrund-Preispässen; die Benachrichtigungen folgen dem nächsten Pass nach einer Überquerung.</string>
+    <string name="alerts_empty">Noch keine Alarme. Jedes Ziel bekommt seinen Ziel-Erreichungs-Alarm automatisch.</string>
+    <string name="alerts_add">Hinzufügen</string>
+    <string name="alerts_edit">Bearbeiten</string>
+    <string name="alerts_delete">Löschen</string>
+    <string name="alerts_dialog_title">Preisalarm</string>
+    <string name="alerts_field_symbol">Symbol</string>
+    <string name="alerts_field_direction">Richtung</string>
+    <string name="alerts_field_threshold">Schwellenwert (€)</string>
+    <string name="alerts_save">Speichern</string>
+    <string name="alerts_cancel">Abbrechen</string>
+    <string name="alerts_invalid">Bitte prüfen Sie die Eingaben: eine Zahl mit mindestens einer Ziffer.</string>
+    <string name="alerts_save_failed">Speichern fehlgeschlagen: Der Kern war nicht bereit oder hat den Eintrag verworfen. Es wurde nichts gespeichert.</string>
+    <string name="alerts_no_symbols">Noch keine Symbole verfügbar: Zuerst Daten importieren (ein Alarm braucht einen aktuellen Preis).</string>
+    <string name="alerts_armed">scharf</string>
+    <string name="alerts_fired">ausgelöst um %1$s</string>
+    <string name="alert_direction_above">über</string>
+    <string name="alert_direction_below">unter</string>
+    <string name="alerts_permission_hint">Benachrichtigungen werden blockiert. Aktivieren Sie Benachrichtigungen in den Systemeinstellungen, um die Alarme zu erhalten - der Zustand wird derweil weiter im Kern erfasst.</string>
+    <string name="alerts_permission_open_settings">Systemeinstellungen öffnen</string>
+    <string name="alerts_run_now_debug">Preis- &amp; Alarmprüfung jetzt ausführen (Debug)</string>
+    <string name="alert_channel_name">Preis- &amp; Zielalarme</string>
+    <string name="alert_price_title">Preisalarm: %1$s</string>
+    <string name="alert_price_body">%1$s liegt jetzt bei %2$s (%3$s %4$s)</string>
+    <string name="alert_goal_title">Ziel erreicht</string>
+    <string name="alert_goal_body">%1$s erreicht bei %2$s (Ziel %3$s)</string>
 </resources>

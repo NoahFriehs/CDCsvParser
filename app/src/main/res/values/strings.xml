@@ -301,4 +301,32 @@
     <string name="networth_goal_reached">Reached</string>
     <string name="networth_goal_to_go">%1$s to go</string>
     <string name="networth_goal_no_target">No target amount set</string>
+    <!-- Balance sheet (price & goal alerts) -->
+    <string name="alerts_section">Price &amp; goal alerts</string>
+    <string name="alerts_help">Fires once when a held symbol crosses its threshold, and once per goal that turns reached. The app core owns the state and evaluates it in the background price passes; the notifications follow the next pass after a crossing.</string>
+    <string name="alerts_empty">No alerts yet. Every goal gets its goal-achieved alert automatically.</string>
+    <string name="alerts_add">Add</string>
+    <string name="alerts_edit">Edit</string>
+    <string name="alerts_delete">Delete</string>
+    <string name="alerts_dialog_title">Price alert</string>
+    <string name="alerts_field_symbol">Symbol</string>
+    <string name="alerts_field_direction">Direction</string>
+    <string name="alerts_field_threshold">Threshold (€)</string>
+    <string name="alerts_save">Save</string>
+    <string name="alerts_cancel">Cancel</string>
+    <string name="alerts_invalid">Please check the inputs: a number with at least one digit.</string>
+    <string name="alerts_save_failed">Saving failed: the core was not ready or rejected the entry. Nothing was saved.</string>
+    <string name="alerts_no_symbols">No symbols available yet: import data first (an alert needs a live price).</string>
+    <string name="alerts_armed">armed</string>
+    <string name="alerts_fired">fired at %1$s</string>
+    <string name="alert_direction_above">above</string>
+    <string name="alert_direction_below">below</string>
+    <string name="alerts_permission_hint">Notifications are blocked. Enable notifications in the system settings to receive the alerts - the state is still tracked in the core meanwhile.</string>
+    <string name="alerts_permission_open_settings">Open system settings</string>
+    <string name="alerts_run_now_debug">Run the price &amp; alert pass now (debug)</string>
+    <string name="alert_channel_name">Price &amp; goal alerts</string>
+    <string name="alert_price_title">Price alert: %1$s</string>
+    <string name="alert_price_body">%1$s is now %2$s (%3$s %4$s)</string>
+    <string name="alert_goal_title">Goal reached</string>
+    <string name="alert_goal_body">%1$s reached at %2$s (target %3$s)</string>
 </resources>

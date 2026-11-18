@@ -217,6 +217,14 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // The price & goal alerts: the CORE owns the state, the
+            // crossing math and the persistence (evaluated on the
+            // worker's price pass); the section owns its CRUD, the
+            // notification permission and the delivery.
+            SettingsAlertsSection()
+
+            Spacer(Modifier.height(24.dp))
+
             // Runtime price API keys + the cache delete feature.
             Text(
                 text = stringResource(R.string.api_keys_section),
