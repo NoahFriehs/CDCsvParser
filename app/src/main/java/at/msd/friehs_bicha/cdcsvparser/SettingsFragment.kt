@@ -7,6 +7,8 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.net.Uri
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.MenuProvider
 import androidx.compose.material3.SnackbarHostState
@@ -22,6 +24,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.core.Core
+import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.logging.LogFilter
@@ -30,9 +33,12 @@ import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.SettingsScreen
 import at.msd.friehs_bicha.cdcsvparser.util.CloudMigration
 import at.msd.friehs_bicha.cdcsvparser.util.CoreCipher
+import at.msd.friehs_bicha.cdcsvparser.util.ExportFileNaming
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.android.material.snackbar.Snackbar
 import java.io.File
+import java.io.IOException
+import java.time.LocalDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -55,6 +61,13 @@ class SettingsFragment : Fragment() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
     private val snackbarHostState = SnackbarHostState()
+
+    // SAF create-document for the data export: the user picks the target
+    // in the system picker (no storage permissions). Cancel = no-op.
+    private val createExportDocument =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri: Uri? ->
+            if (uri != null) exportDataTo(uri)
+        }
 
     // Settings values are read once into Compose state; writes go straight
     // to PreferenceHelper (the DataStore-backed facade).
@@ -254,6 +267,11 @@ class SettingsFragment : Fragment() {
                         logLines = _logLines.value,
                         onCopyLog = { copyLogLines() },
                         onClearLog = { confirmClearLog() },
+                        onExportData = {
+                            createExportDocument.launch(
+                                ExportFileNaming.suggestedName(LocalDateTime.now()),
+                            )
+                        },
                         onAbout = { findNavController().navigate(R.id.aboutUsFragment) },
                         onLogin = { findNavController().navigate(R.id.loginFragment) },
                         onLogout = { confirmLogout() },
@@ -315,6 +333,42 @@ class SettingsFragment : Fragment() {
         // navigate away), so a one-off read is correct and avoids a
         // listener that would outlive the fragment.
         _signedIn.value = auth.currentUser != null
+    }
+
+    /**
+     * SAF result of the data export: the core builds the WHOLE file on
+     * the cpp-core thread (its own serializer - the app owns no part of
+     * the format), the bytes land untouched at the user's chosen target
+     * and no copy is kept. Cancel = no-op (handled at the launcher),
+     * not-ready core and write failures = one note row.
+     */
+    private fun exportDataTo(uri: Uri) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val csv = withContext(Dispatchers.IO) { CoreService.csvExport() }
+            if (csv == null) {
+                if (isAdded) {
+                    snackbarHostState.showSnackbar(getString(R.string.export_not_ready))
+                }
+                return@launch
+            }
+            try {
+                withContext(Dispatchers.IO) {
+                    requireContext().contentResolver
+                        .openOutputStream(uri)
+                        ?.use { it.write(csv.toByteArray(Charsets.UTF_8)) }
+                        ?: throw IOException("no output stream")
+                }
+            } catch (e: Exception) {
+                FileLog.e("Settings-Export", "CSV export write failed: ${e.message}")
+                if (isAdded) {
+                    snackbarHostState.showSnackbar(getString(R.string.export_failed))
+                }
+                return@launch
+            }
+            if (isAdded) {
+                snackbarHostState.showSnackbar(getString(R.string.export_written))
+            }
+        }
     }
 
     private fun logFile(fileIndex: Int): File =

@@ -1669,6 +1669,18 @@ class CoreService : Service() {
             sheetSnapshot()?.toList() ?: emptyList()
         }
 
+        /**
+         * The full CSV export of the core state as ONE file string (the
+         * core owns the serializer and the WHOLE format: header, the
+         * 9-column transaction table of every wallet, the balance-sheet
+         * section and the export stamp). The caller is a byte-transport
+         * only - write the bytes verbatim. Runs on the cpp-core thread;
+         * EMPTY when no live core (the not-ready window).
+         */
+        fun csvExport(): String? = onCoreThread {
+            exportCsv()
+        }
+
         private external fun sheetSet(line: String): Boolean
 
         private external fun sheetDelete(kindId: String): Boolean
@@ -1676,6 +1688,8 @@ class CoreService : Service() {
         private external fun sheetList(kind: String): Array<String>
 
         private external fun sheetSnapshot(): Array<String>
+
+        private external fun exportCsv(): String?
 
         /**
          * All core work - and in particular every JNI call into the C++

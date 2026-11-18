@@ -91,6 +91,7 @@ fun SettingsScreen(
     logLines: List<String>,
     onCopyLog: () -> Unit,
     onClearLog: () -> Unit,
+    onExportData: () -> Unit,
     onAbout: () -> Unit,
     onLogin: () -> Unit,
     onLogout: () -> Unit,
@@ -323,6 +324,18 @@ fun SettingsScreen(
             )
 
             Spacer(Modifier.height(24.dp))
+
+            // Data export: the core's own serializer builds the whole
+            // file, the SAF picker (in the fragment) picks the target -
+            // the app keeps no copy.
+            OutlinedButton(
+                onClick = onExportData,
+                modifier = Modifier.fillMaxWidth().a11yTarget(),
+            ) {
+                Text(stringResource(R.string.export_data))
+            }
+
+            Spacer(Modifier.height(12.dp))
 
             FilledTonalButton(
                 onClick = onAbout,

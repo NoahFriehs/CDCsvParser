@@ -73,6 +73,10 @@
     <string name="delete_price_caches_question">Deletes the downloaded price history and the symbol cache. The next parse re-downloads the history; the CSV imports are not touched.</string>
     <string name="caches_deleted">Price caches deleted.</string>
     <string name="caches_already_empty">No price caches to delete.</string>
+    <string name="export_data">Export data</string>
+    <string name="export_written">CSV export written to the selected file.</string>
+    <string name="export_not_ready">Nothing to export yet - import data first.</string>
+    <string name="export_failed">Export failed.</string>
     <string name="type_purchase">Purchase</string>
     <string name="type_income">Income</string>
     <string name="type_debit">Withdrawal</string>

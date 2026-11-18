@@ -72,6 +72,10 @@
     <string name="delete_price_caches_question">Löscht den heruntergeladenen Preisverlauf und den Symbol-Cache. Der nächste Parse lädt den Verlauf neu; die CSV-Importe bleiben erhalten.</string>
     <string name="caches_deleted">Preis-Caches gelöscht.</string>
     <string name="caches_already_empty">Keine zu löschenden Preis-Caches.</string>
+    <string name="export_data">Daten exportieren</string>
+    <string name="export_written">CSV-Export in die gewählte Datei geschrieben.</string>
+    <string name="export_not_ready">Noch nichts zu exportieren - zuerst Daten importieren.</string>
+    <string name="export_failed">Export fehlgeschlagen.</string>
     <string name="type_purchase">Kauf</string>
     <string name="type_income">Einnahme</string>
     <string name="type_debit">Auszahlung</string>
