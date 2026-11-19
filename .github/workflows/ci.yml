@@ -118,9 +118,15 @@ jobs:
       - name: Build release APK (R8 full mode + baseline profile)
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
+      # CI has no local.properties, so the release signing config is absent
+      # and AGP names the artifact app-release-unsigned.apk (a signed local
+      # machine produces app-release.apk). Verify whichever name exists.
       - name: Verify the release APK ships the baseline profile
         run: |
-          unzip -l app/build/outputs/apk/release/app-release.apk | grep 'assets/dexopt/baseline.prof'
+          APK=$(ls app/build/outputs/apk/release/app-release*.apk 2>/dev/null | head -1)
+          [ -n "$APK" ] || { echo "no release APK in app/build/outputs/apk/release/"; exit 1; }
+          echo "verifying $APK"
+          unzip -l "$APK" | grep 'assets/dexopt/baseline.prof'
 
   ui-tests:
     name: Compose UI tests (emulator)
