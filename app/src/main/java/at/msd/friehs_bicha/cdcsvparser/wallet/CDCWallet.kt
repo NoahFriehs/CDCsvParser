@@ -1,35 +1,21 @@
 package at.msd.friehs_bicha.cdcsvparser.wallet
 
-import at.msd.friehs_bicha.cdcsvparser.app.BaseApp
-import at.msd.friehs_bicha.cdcsvparser.app.StandardTxApp
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import java.io.Serializable
 import java.math.BigDecimal
 
 /**
- * Represents a CDCWallet object
+ * Standard-family wallet on the typed consumer models.
+ *
+ * Restore-only since the Kotlin standard island retired: the C++ core is
+ * the only standard producer (its posts build the plain [Wallet] entity),
+ * and the only surviving constructor path is the encrypted-cloud restore
+ * ([fromDb]) which rebuilds a wallet from a stored document. The Room
+ * write path (legacy schema) persists plain [Wallet] rows and never
+ * constructs this class.
  */
 class CDCWallet : Wallet, Serializable {
-    var txApp: BaseApp? = null
 
-    constructor(
-        currencyType: String,
-        amount: BigDecimal?,
-        nativeAmount: BigDecimal?,
-        txApp: BaseApp?,
-        isOutsideWallet: Boolean?
-    ) : super(currencyType, amount, nativeAmount) {
-        this.txApp = txApp
-        // Write-only construction: every surviving ctor call hands in a
-        // fully set flag (the wallet-build sites pass explicit true/false);
-        // the null-safe default keeps a null input a defaulting restore
-        // edge instead of a crash at wallet build time.
-        this.isOutsideWallet = isOutsideWallet ?: false
-    }
-
-    // Non-null pass-through (no callers existed for the nullable variant -
-    // pure type-safety cleanup, no behavior change).
-    constructor(DBWallet: DBWallet) : super(DBWallet)
     constructor(
         walletId: Long,
         currencyType: String,
@@ -48,67 +34,13 @@ class CDCWallet : Wallet, Serializable {
         this.isOutsideWallet = outsideWallet
     }
 
-    constructor(wallet: Wallet, standardTxApp: StandardTxApp) : super(wallet)
-    {
-        this.txApp = standardTxApp
-    }
-
     /**
-     * Get CDCWallet from CurrencyType String
+     * Get CDCWallet from a stored document map (the encrypted-cloud
+     * restore path).
      *
-     * @param ct the CurrencyType as String
-     * @return the index of the wallet
+     * @param wallet the stored wallet document
+     * @return the rebuilt wallet
      */
-    override fun getWallet(ct: String?): Int {
-        // Write-only construction: no live path feeds this override
-        // anymore (the island parse path that used it is gone); the null
-        // default keeps a model-less wallet a plain -1, not a crash.
-        for ((i, w) in (txApp?.wallets ?: emptyList()).withIndex()) {
-            if (w.currencyType == ct) return i
-        }
-        return -1
-    }
-
-    /**
-     * Add a transaction to the CDCWallet
-     *
-     * @param amount       the amount of the coin
-     * @param nativeAmount the amount in native currency
-     * @param amountBonus  the amount the user got for free
-     */
-    fun addToWallet(amount: BigDecimal?, nativeAmount: BigDecimal?, amountBonus: BigDecimal?) {
-        this.amount = this.amount.add(amount)
-        moneySpent = moneySpent.add(nativeAmount)
-        this.amountBonus = this.amountBonus.add(amountBonus)
-    }
-
-    /**
-     * Add a transaction to the CDCWallet
-     *
-     * @param transaction the transaction to be added
-     */
-    fun addToWallet(transaction: Transaction) {
-        amount = amount.add(transaction.amount)
-        moneySpent = moneySpent.add(transaction.nativeAmount)
-        amountBonus = amountBonus.add(transaction.amountBonus)
-        //transaction.setWalletIdFk(this.uid);
-        if (!transactions.contains(transaction)) {
-            transactions.add(transaction)
-        }
-    }
-
-    /**
-     * Remove a transaction from the CDCWallet
-     *
-     * @param amount       the amount to remove
-     * @param nativeAmount the amount in native currency to remove
-     */
-    override fun removeFromWallet(amount: BigDecimal?, nativeAmount: BigDecimal?) {
-        this.amount = this.amount.subtract(amount)
-        moneySpent = moneySpent.subtract(nativeAmount)
-    }
-
-
     companion object {
 
         /**

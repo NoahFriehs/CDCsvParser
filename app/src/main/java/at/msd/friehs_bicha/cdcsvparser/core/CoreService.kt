@@ -12,9 +12,6 @@ import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
 import at.msd.friehs_bicha.cdcsvparser.app.AppStatus
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.app.AppTypeIdentifier
-import at.msd.friehs_bicha.cdcsvparser.app.DataTypes
-import at.msd.friehs_bicha.cdcsvparser.app.TxAppFactory
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
 import at.msd.friehs_bicha.cdcsvparser.transactions.CCDBTransaction
@@ -126,10 +123,6 @@ class CoreService : Service() {
         if (intent == null) {
             FileLog.w(TAG, "Initialization failed. Intent is null.")
             return super.onStartCommand(null, flags, startId)
-        }
-
-        if (appModel != null) {
-            FileLog.i(TAG, "AppModel already initialized.")
         }
 
         // BEFORE the launch: if this line is missing while "Import
@@ -351,27 +344,13 @@ class CoreService : Service() {
             }
 
             false -> {
-                if (appModel != null && data.size == 0) {
-                    FileLog.i(TAG, "AppModel already initialized.")
-                    isRunning = true
-                    isInitialized = true
-                } else {
-                    appModel = AppModel(data, appType, false)
-                    replaceClearsCombinedState()
-                }
-                isInitialized = true
-                isRunning = true
-                appModel?.let {
-                    hasCardTx = it.hasCard()
-                    hasCryptoTx = it.hasTxModule()
-                    val failed = it.txApp?.amountTxFailed ?: 0L
-                    if (failed > 0) {
-                        FileLog.w(
-                            TAG,
-                            "Parsing finished with $failed failed line(s), continuing with the parsed subset."
-                        )
-                    }
-                }
+                // The C++ core is the only parse path: without the native
+                // library nothing can be parsed - the guarded refusal. The
+                // standard / BlockPit / Kraken families already refused
+                // above; this arm catches what they do not (card types on a
+                // broken install - never an uncaught throw).
+                FileLog.e(TAG, "The C++ core is unavailable; the import cannot be parsed.")
+                errorCounter.postValue((errorCounter.value ?: 0) + 1)
             }
         }
 
@@ -431,151 +410,19 @@ class CoreService : Service() {
 
     /**
      * Provides the data to the activity
+     *
+     * The C++ core is the only post path: with the native library loaded
+     * the core's state is posted; without it there is no model to post -
+     * the guarded refusal, the same surface as the parse guards.
      */
-    @OptIn(DelicateCoroutinesApi::class)
-    private fun provideDataToActivity(forceKotlin: Boolean = false) {
-
-        when {
-            !forceKotlin && isCoreInitialized -> {
-                provideDataToActivityFromCppCore()
-            }
-
-            forceKotlin -> {
-                serviceScope.launch {
-                    try {
-                        try {
-                            withTimeout(90_000) {
-                                while (!isRunning) {
-                                    delay(500)
-                                    FileLog.d(TAG, "Waiting for initialization to finish.")
-                                }
-                            }
-                        } catch (e: TimeoutCancellationException) {
-                            FileLog.e(TAG, "Timed out waiting for initialization to finish.")
-                            errorCounter.postValue((errorCounter.value ?: 0) + 1)
-                            return@launch
-                        }
-                        FileLog.d(TAG, "isRunning")
-                        if (appModel == null) {
-                            // The app model lives on the companion itself now
-                            // (the old manager threw here for the same case).
-                            FileLog.w(TAG, "AppModel is null")
-                            throw IllegalStateException(
-                                "AppModel has not been initialized. Call setInstance() first."
-                            )
-                        }
-                        try {
-                            withTimeout(60_000) {
-                                // Wait for the WHOLE model: the Room load builds
-                                // txApp asynchronously, and an earlier exit
-                                // would post half-empty cards.
-                                while (appModel?.isFullyLoaded != true) {
-                                    delay(200)
-                                }
-                            }
-                        } catch (e: TimeoutCancellationException) {
-                            FileLog.e(TAG, "Timed out waiting for the local model load.")
-                            errorCounter.postValue((errorCounter.value ?: 0) + 1)
-                            return@launch
-                        }
-                        walletsLiveData.postValue(appModel?.txApp?.wallets)
-                        outsideWalletsLiveData.postValue(appModel?.txApp?.outsideWallets)
-                        // The Kotlin core holds no card data anymore (the card
-                        // parser island is retired, the C++ core is the only
-                        // card path): the card LiveData is populated by the
-                        // core path only, this side posts an empty set.
-                        cardWalletsLiveData.postValue(ArrayList())
-
-                        val allWallets = mutableListOf<Wallet>()
-                        allWallets.addAll(appModel?.txApp?.wallets ?: emptyList())
-
-                        val noDuplicatesAllWallets = allWallets.distinctBy { it.walletId }
-                        allWalletsLiveData.postValue(noDuplicatesAllWallets.toCollection(ArrayList()))
-
-                        val walletNames_ = Array<String?>(allWallets.size) { _ -> null }
-
-                        allWallets.forEachIndexed { index, wallet ->
-                            walletNames_[index] = wallet.getTypeString()
-                        }
-
-                        walletNames.postValue(walletNames_)
-
-                        var data = appModel?.parseData
-                        try {
-                            // The isFullyLoaded wait above already resolved: a null
-                            // here is a code bug, not a loading state, so only a
-                            // short bounded retry (the old 60 s loop spammed the
-                            // log and delayed the error signal by a full minute).
-                            withTimeout(10_000) {
-                                while (data == null) {
-                                    FileLog.e(TAG, "data from appModel parseData is null")
-                                    //pause and try again
-                                    delay(500)
-                                    data = appModel?.parseData
-                                }
-                            }
-                        } catch (e: TimeoutCancellationException) {
-                            FileLog.e(
-                                TAG,
-                                "Timed out waiting for parseMap. " +
-                                    "appType=${appModel?.appType}, " +
-                                    "isFullyLoaded=${appModel?.isFullyLoaded}"
-                            )
-                            errorCounter.postValue((errorCounter.value ?: 0) + 1)
-                            return@launch
-                        }
-                        parsedDataLiveData.postValue(
-                            requireNotNull(data) {
-                                "parseData stayed null after the bounded retry"
-                            }
-                        )
-
-                        val transactions_ = ArrayList<Transaction?>()
-                        val cardTransactions_ = ArrayList<CroCardTransaction?>()
-                        appModel?.txApp?.wallets?.forEach {
-                            transactions_.addAll(it.transactions.toCollection(ArrayList()))
-                        }
-                        appModel?.txApp?.outsideWallets?.forEach {
-                            transactions_.addAll(it.transactions.toCollection(ArrayList()))
-                        }
-                        val validTransactions: ArrayList<Transaction> =
-                            ArrayList(transactions_.filterNotNull())
-                        if (validTransactions.size != transactions_.size) {
-                            FileLog.e(TAG, "transactions_ contained nulls, removed")
-                        }
-                        transactionsLiveData.postValue(validTransactions)
-                        val assetMaps_ = ArrayList<AssetEntry>()
-                        allWallets.forEach {
-                            assetMaps_.add(AssetEntry(it.walletId, getAssetMap(it.walletId)))
-                        }
-                        assetMaps.postValue(assetMaps_)
-                        // Same data the LiveData posts above (explicit: the
-                        // `.value` of a postValue is not visible here yet).
-                        val stdWallets_ = appModel?.txApp?.wallets
-                        // The Kotlin path never holds card data: the card DAOs
-                        // get wiped by the guarded save but nothing is
-                        // re-inserted on this path (the core path re-inserts).
-                        saveToRoomsDB(
-                            stdWallets_, validTransactions,
-                            null, cardTransactions_.filterNotNull()
-                        )
-                    } catch (e: InterruptedException) {
-                        FileLog.e(TAG, " : $e")
-                        throw RuntimeException(e)
-                    }
-                }
-            }
-
-            else -> {
-                // The C++ core is the only provide path: without the native
-                // library there is no model to post - the guarded refusal,
-                // the same surface as the parse guards above.
-                FileLog.e(TAG, "The C++ core is unavailable; no model can be posted.")
-                errorCounter.postValue((errorCounter.value ?: 0) + 1)
-            }
+    private fun provideDataToActivity() {
+        if (isCoreInitialized) {
+            provideDataToActivityFromCppCore()
+        } else {
+            FileLog.e(TAG, "The C++ core is unavailable; no model can be posted.")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
         }
     }
-
     @OptIn(DelicateCoroutinesApi::class)
     private fun provideDataToActivityFromCppCore() {
         calculateWalletBalances()
@@ -823,30 +670,10 @@ class CoreService : Service() {
     }
 
     private fun getCardAssetMap(walletId: Int): WalletAssets {
-        return if (isCoreInitialized) {
-            // Card buckets are fiat: the C++ path only carries "money
-            // spent"; the other three rows are hidden (null) - the same
-            // shape the old map posted (explicit nulls).
-            WalletAssets.card(StringHelper.formatAmountToString(getMoneySpentByWID(walletId)))
-        } else {
-            walletAssetMapFromKotlinCore(walletId)
-        }
-    }
-
-    /**
-     * Null-safe Kotlin-core fallback: look the wallet up without asserting
-     * the model / tx app into existence (card-only data has no txApp).
-     * A missing wallet yields all-null (every row hidden - the old map's
-     * `emptyMap()` behavior).
-     */
-    private fun walletAssetMapFromKotlinCore(walletId: Int): WalletAssets {
-        val app = appModel ?: return WalletAssets()
-        val wallet = app.txApp?.wallets?.find { it.walletId == walletId }
-        if (wallet == null) {
-            FileLog.w(TAG, "No wallet with id $walletId found")
-            return WalletAssets()
-        }
-        return app.walletAssets(wallet)
+        // Card buckets are fiat: the C++ path only carries "money
+        // spent"; the other three rows are hidden (null) - the same shape
+        // the old map posted (explicit nulls).
+        return WalletAssets.card(StringHelper.formatAmountToString(getMoneySpentByWID(walletId)))
     }
 
     /**
@@ -914,20 +741,16 @@ class CoreService : Service() {
      * @return the amount of the asset in the wallet
      */
     private fun getAssetMap(walletId: Int): WalletAssets {
-        return if (isCoreInitialized) {
-            val moneySpent = getMoneySpentByWID(walletId)
-            WalletAssets.standard(
-                moneySpentText = StringHelper.formatAmountToString(moneySpent),
-                assetsText = StringHelper.formatAmountToString(getValueOfAssetsByWID(walletId)),
-                rewardsText = StringHelper.formatAmountToString(getTotalBonusByWID(walletId)),
-                profitLossText = StringHelper.formatAmountToString(
-                    getValueOfAssetsByWID(walletId) - moneySpent
-                ),
-                pricesRunning = AssetValue.getInstance().isRunning,
-            )
-        } else {
-            walletAssetMapFromKotlinCore(walletId)
-        }
+        val moneySpent = getMoneySpentByWID(walletId)
+        return WalletAssets.standard(
+            moneySpentText = StringHelper.formatAmountToString(moneySpent),
+            assetsText = StringHelper.formatAmountToString(getValueOfAssetsByWID(walletId)),
+            rewardsText = StringHelper.formatAmountToString(getTotalBonusByWID(walletId)),
+            profitLossText = StringHelper.formatAmountToString(
+                getValueOfAssetsByWID(walletId) - moneySpent
+            ),
+            pricesRunning = AssetValue.getInstance().isRunning,
+        )
     }
 
     /**
@@ -941,34 +764,27 @@ class CoreService : Service() {
                     // C++ state - the wallet balances and the per-wallet
                     // transaction lists, but NOT the applied
                     // per-transaction ledger series, so the daily series
-                    // are still empty here. Show the complete saved values
-                    // from the local (Room) model first, then re-parse the
-                    // last imported CSV in the background and re-post from
-                    // the C++ core: the daily series and the chart appear
-                    // when the rebuild finishes (a few seconds for normal
-                    // exports). Both posts queue on the single cpp-core
-                    // thread, so the order is guaranteed.
+                    // are still empty here. Post the loaded state from the
+                    // core first (cash-priced from the cache, no series),
+                    // then re-parse the last imported CSV in the background
+                    // and re-post from the C++ core: the daily series and
+                    // the chart appear when the rebuild finishes (a few
+                    // seconds for normal exports). Both posts queue on the
+                    // single cpp-core thread, so the order is guaranteed.
                     FileLog.d(TAG, "Initialization successful.")
                     isRunning = true
+                    provideDataToActivity()
                     val csvFile = latestImportedCsv()
                     if (csvFile == null) {
-                        FileLog.w(TAG, "Fast start (C++): no imported CSV to rebuild from; showing the saved local values only.")
-                        waitLocalModelAndProvide()
+                        FileLog.w(TAG, "Fast start (C++): no imported CSV to rebuild from; showing the loaded values only.")
                     } else {
-                        waitLocalModelAndProvide()
                         rebuildCppStateFrom(csvFile)
                     }
-                } else if (appModel != null) {
-                    // Fast-start fallback: no usable saved C++ state (first
-                    // fast start after the save fix, or the last parse ran
-                    // in Kotlin mode). Show the saved Room values via the
-                    // Kotlin pricing path instead of erroring.
-                    FileLog.w(TAG, "No saved C++ state; fast start falls back to the saved local model.")
-                    isInitialized = true
-                    isRunning = true
-                    waitLocalModelAndProvide()
                 } else {
-                    FileLog.w(TAG, "Initialization failed.")
+                    // No usable saved C++ state (a first fast start before
+                    // any parse save, or a corrupt save): nothing to show -
+                    // re-importing the last CSV rebuilds the state.
+                    FileLog.w(TAG, "No saved C++ state; fast start has no values to show.")
                     errorCounter.postValue((errorCounter.value ?: 0) + 1)
                 }
             }
@@ -985,13 +801,6 @@ class CoreService : Service() {
     }
 
     /**
-     * Fast start with a locally loaded model (`AppModel()` from Room, plan
-     * 003): the model is populated by the asynchronous
-     * `loadAppModelLocal()`, so wait (bounded) until its wallets exist
-     * before the Kotlin path posts the overview - otherwise the cards
-     * would be posted while the model is still empty (zeros).
-     */
-    /**
      * The newest CSV in private storage (the last uploaded /
      * imported file - the history dialog lists exactly these). The fast-
      * start C++ rebuild reparses it, because the persisted C++ state
@@ -1006,8 +815,9 @@ class CoreService : Service() {
     /**
      * Reparses [csvFile] into the C++ core (background rebuild
      * behind the fast start), persists the resulting state and re-posts
-     * the overview from the C++ core. Any failure keeps the previously
-     * posted local values in place - the user never sees zeros.
+     * the overview from the C++ core: the daily chart rows only exist
+     * after this re-parse. Any failure keeps the previously posted
+     * leg-1 values (the loaded state) in place - nothing is zeroed.
      */
     private fun rebuildCppStateFrom(csvFile: File) {
         serviceScope.launch {
@@ -1017,9 +827,15 @@ class CoreService : Service() {
                 FileLog.e(TAG, "Fast-start rebuild: reading ${csvFile.name} failed: $e")
                 return@launch
             }
-            val appType = AppTypeIdentifier.getAppType(data.firstOrNull())
+            // Same header resolution as a single import: a distinctive header
+            // decides; for the shared CDC/card header the first data line
+            // decides (the plain sniffer is deliberately non-decisive for it,
+            // and the saved-model fast start must still re-parse the standard
+            // family, whose summary cards read the core post).
+            val appTypeFromSettings = PreferenceHelper.getSelectedType(App.instance)
+            val appType = detectAppType(data, appTypeFromSettings)
             if (appType == null) {
-                FileLog.w(TAG, "Fast-start rebuild: header unknown, keeping the posted local values.")
+                FileLog.w(TAG, "Fast-start rebuild: header unknown, keeping the posted values.")
                 return@launch
             }
             val coreMode = CoreModeMapper.toCoreMode(appType)
@@ -1044,7 +860,7 @@ class CoreService : Service() {
                 FileLog.d(TAG, "Fast start (C++): background rebuild finished; re-posting from the C++ core.")
                 provideDataToActivity()
             } else {
-                FileLog.w(TAG, "Fast start (C++): background rebuild failed, keeping the posted local values.")
+                FileLog.w(TAG, "Fast start (C++): background rebuild failed, keeping the posted leg-1 values.")
             }
         }
     }
@@ -1185,35 +1001,6 @@ class CoreService : Service() {
         }
         provideDataToActivity()
     }
-
-    private fun waitLocalModelAndProvide() {
-        serviceScope.launch {
-            try {
-                withTimeout(15_000) {
-                    while (appModel?.isFullyLoaded != true) {
-                        delay(200)
-                    }
-                }
-            } catch (e: TimeoutCancellationException) {
-                FileLog.w(TAG, "Local model did not finish loading within 15 s.")
-            }
-            // Only post when the local model actually holds data: on an empty
-            // Room an immediate empty post would race the C++ rebuild queued
-            // behind it.
-            if (localModelWalletsEmpty()) {
-                FileLog.w(TAG, "Local model empty; skipping the local post (the next post wins).")
-            } else {
-                provideDataToActivity(forceKotlin = true)
-            }
-        }
-    }
-
-    /**
-     * True while the (Room-loaded) local model has no wallets yet: the Kotlin
-     * model holds only the crypto half, card data lives in the core state.
-     */
-    private fun localModelWalletsEmpty(): Boolean =
-        appModel?.txApp?.wallets.isNullOrEmpty()
 
     /**
      * Loads the data from Firebase.
@@ -1872,8 +1659,6 @@ class CoreService : Service() {
 
         var priceProvider: AssetValue = AssetValue.getInstance()
         @Volatile var user = FirebaseAuth.getInstance().currentUser
-        @Volatile internal var appModel: AppModel? = null
-
 
         val path: String
             get() = App.instance.filesDir.absolutePath
@@ -1954,34 +1739,6 @@ class CoreService : Service() {
 
 
         /**
-         * Returns the amount the asset is worth in EUR
-         *
-         * @return the amount the asset is worth in EUR
-         */
-        fun getValueOfAssetsFromWID(walletId: Int): Double {
-            val w: Wallet? = if (isCoreInitialized) {
-                walletsLiveData.value?.find { it.walletId == walletId }
-            } else {
-                appModel?.txApp?.wallets?.find { it.walletId == walletId }
-            }
-            if (w == null) {
-                FileLog.w(
-                    "$TAG.getValueOfAssetsFromWID",
-                    "No wallet found for id $walletId"
-                )   //normal when only card tx
-                return 0.0
-            }
-            return try {
-                val price = AssetValue.getInstance().getPrice(w.currencyType)
-                price * w.amount.toDouble()
-            } catch (e: Exception) {
-                FileLog.e("$TAG.getValueOfAssetsFromWID", "Exception: $e")
-                0.0
-            }
-        }
-
-
-        /**
          * Returns the typed wallet display state of the wallet (all rows
          * hidden when the wallet is not in the posted list yet - the old
          * emptyMap behavior).
@@ -2007,19 +1764,10 @@ class CoreService : Service() {
                     })
                 return
             }
-            appModel?.let {
-                user = FirebaseAuth.getInstance().currentUser   //refresh user
-                if (user != null) {
-                    // Fire-and-forget on the IO pool: touches only the
-                    // Firebase SDK and the Kotlin model, never the C++ core.
-                    CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-                        FirebaseUtil(App.instance).saveDataToFirebase(
-                            it
-                        )
-                    }
-                }
-            }
-
+            // The C++ core is the only save source: without the native
+            // library there is nothing to save - the guarded refusal.
+            FileLog.e(TAG, "Saving to Firebase needs the C++ core, which is unavailable.")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
         }
 
         /**

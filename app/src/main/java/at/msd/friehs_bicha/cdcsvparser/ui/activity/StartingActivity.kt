@@ -11,7 +11,6 @@ import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.core.Core
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
@@ -56,18 +55,17 @@ class StartingActivity : ComponentActivity() {
     private fun determineNextActivity(): Intent = Intent(this, MainActivity::class.java)
 
     private fun fastStart() {
-        // Fast start: with "Store data local" + "Enable fast
-        // start" on and a local model present, the last parse is shown
-        // directly. The C++ core loads its own persisted state (the core
-        // saves it after every parse); the Room local model (built here)
-        // is the saved-model first post of the core fast start and the
-        // fallback source when the C++ save state is missing.
+        // Fast start: with "Store data local" + "Enable fast start" on
+        // and a saved state present, the last parse is shown directly.
+        // The C++ core loads its own persisted state (the core saves it
+        // after every parse) and posts it as the first leg; the saved
+        // local flag (set by the post-parse Room write) is the "there is
+        // state to fast-start from" marker.
         val isLocal = PreferenceHelper.getFastStartEnabled(App.instance) &&
             PreferenceHelper.getIsDataLocal(App.instance) &&
             PreferenceHelper.getIsAppModelSavedLocal(App.instance)
         if (isLocal) {
             Benchmarker.start()
-            CoreService.appModel = AppModel()
             // No settings writes: the C++ core is the only compute path
             // (the core-mode setting is retired).
             core.startServiceFromLocal()

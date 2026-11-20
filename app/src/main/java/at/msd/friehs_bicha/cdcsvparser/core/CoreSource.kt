@@ -1,7 +1,6 @@
 package at.msd.friehs_bicha.cdcsvparser.core
 
 import androidx.lifecycle.MutableLiveData
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.transactions.CroCardTransaction
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
@@ -14,7 +13,7 @@ import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
  * UI layer. The surface is EXACTLY the members the consumers read
  * today; nothing else leaks through.
  *
- * [lastFailedLines] / [appModel] / [logFilePath] are read-only here on
+ * [lastFailedLines] / [logFilePath] are read-only here on
  * purpose: all writes stay on the core side.
  */
 interface CoreSource {
@@ -38,9 +37,6 @@ interface CoreSource {
      * (0 after any plain single import — a fresh TM per single import).
      */
     val lastDuplicateSkips: Long
-
-    /** The legacy-Kotlin-core model, when that path runs. */
-    val appModel: AppModel?
 
     val errorCounter: MutableLiveData<Int>
     val parsedDataLiveData: MutableLiveData<ParseData>
@@ -96,9 +92,6 @@ object Core : CoreSource {
 
     override val lastDuplicateSkips: Long
         get() = CoreService.lastDuplicateSkips
-
-    override val appModel: AppModel?
-        get() = CoreService.appModel
 
     override val errorCounter: MutableLiveData<Int>
         get() = CoreService.errorCounter

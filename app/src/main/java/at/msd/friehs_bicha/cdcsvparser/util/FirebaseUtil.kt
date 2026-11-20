@@ -9,7 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import at.msd.friehs_bicha.cdcsvparser.app.AppSettings
-import at.msd.friehs_bicha.cdcsvparser.general.AppModel
 import at.msd.friehs_bicha.cdcsvparser.R
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.CCDBTransaction
@@ -34,85 +33,6 @@ import javax.crypto.SecretKey
  * which blocked the calling thread and only sometimes worked.
  */
 class FirebaseUtil(private val context: Context) {
-
-    /**
-     * Saves the local app model to the user's Firebase document.
-     *
-     * This is the Kotlin-model fallback writer (the C++ core is not
-     * initialized): it stores the SAME canonical encrypted document the
-     * core path writes, so the document has one shape regardless of
-     * which writer produced it. The payload (the wallet/transaction
-     * collections) is AES-256-GCM ciphertext; `appSettings` (incl.
-     * `dbVersion`, the pre-decrypt compatibility gate) stays in the
-     * clear. The Kotlin model carries the crypto half only - the card
-     * path is core-owned, so its collections are written empty.
-     *
-     * @return false immediately if there is no signed-in user, otherwise
-     * the save is performed asynchronously (result via toast + log).
-     */
-    fun saveDataToFirebase(appModel: AppModel): Boolean {
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user == null) {
-            FileLog.e("FirebaseUtil", "saveDataToFirebase: user is null")
-            return false
-        }
-        val txApp = appModel.txApp
-        if (txApp == null) {
-            FileLog.e("FirebaseUtil", "saveDataToFirebase: app model has no tx module")
-            return false
-        }
-        val uid = user.uid
-        val db = Firebase.firestore
-
-        val appSettings = AppSettings(
-            uid,
-            PreferenceHelper.getSelectedType(context),
-            PreferenceHelper.getUseStrictType(context)
-        )
-        // The restore path decides from these flags: derive them from
-        // what is actually in the model.
-        if (!txApp.wallets.isNullOrEmpty() ||
-            !txApp.outsideWallets.isNullOrEmpty() ||
-            !txApp.transactions.isNullOrEmpty()
-        ) {
-            appSettings.hasCryptoTx = "true"
-        }
-
-        // KDF/GCM over the whole export must not run on the caller: IO pool.
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            try {
-                val dbWallets = ArrayList<DBWallet>()
-                val dbOutsideWallets = ArrayList<DBWallet>()
-                val dbTransactions = ArrayList<DBTransaction>()
-                txApp.wallets.forEach { dbWallets.add(DBWallet(it)) }
-                txApp.outsideWallets.forEach { dbOutsideWallets.add(DBWallet(it)) }
-                txApp.transactions.forEach { dbTransactions.add(DBTransaction(it)) }
-
-                val collections = buildCollectionsMap(
-                    dbWallets,
-                    dbOutsideWallets,
-                    dbTransactions,
-                    emptyList(),
-                    emptyList(),
-                )
-                val docFields = buildEncryptedUserDoc(appSettings.toHashMap(), collections)
-                writeUserDoc(
-                    uid,
-                    db,
-                    docFields,
-                    context,
-                    context.getString(R.string.data_saved_successfully),
-                    context.getString(R.string.error_saving_data),
-                )
-            } catch (e: Exception) {
-                FileLog.e("FirebaseUtil", "saveDataToFirebase: ${e.message}")
-                Toast.makeText(
-                    context, context.getString(R.string.error_saving_data), Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-        return true
-    }
 
     companion object {
         /**

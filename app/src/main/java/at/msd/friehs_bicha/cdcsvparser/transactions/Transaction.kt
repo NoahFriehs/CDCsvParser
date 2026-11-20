@@ -5,11 +5,8 @@ import androidx.room.ForeignKey
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
-import at.msd.friehs_bicha.cdcsvparser.app.AppType
-import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import at.msd.friehs_bicha.cdcsvparser.util.CurrencyType
-import at.msd.friehs_bicha.cdcsvparser.util.StringHelper
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
 import com.google.firebase.Timestamp
 import java.io.Serializable
@@ -240,60 +237,6 @@ open class Transaction : Serializable {
 
 
         /**
-         * @exception IllegalArgumentException if the AppType is not supported yet
-         *
-         * @param line
-         * @param appType
-         * @return
-         */
-        fun fromCsvLine(line: String, appType: AppType): Transaction? {
-
-            return when (appType) {
-                AppType.CdCsvParser -> fromCdCsvParserCsvLine(line)
-                AppType.Default -> fromDefaultCsvLine(line)
-                else -> {
-                    throw IllegalArgumentException("AppType not supported")
-                }
-            }
-        }
-
-
-        /**
-         * Converts a line from the CSV file to a Transaction object
-         *
-         * @param line
-         * @return
-         */
-        private fun fromDefaultCsvLine(line: String): Transaction? {
-            val sa = StringHelper.splitCsvLine(line).toTypedArray()
-            if (sa.size == 10 || sa.size == 11) {
-                val t = Transaction(
-                    sa[0],
-                    sa[1],
-                    sa[2],
-                    Converter.amountConverter(sa[3]),
-                    Converter.amountConverter(sa[7]),
-                    Converter.ttConverter(sa[9])
-                )
-                if (sa.size == 11) t.transHash = sa[10]
-                if (Converter.ttConverter(sa[9]) == TransactionType.viban_purchase) {
-                    t.toCurrency = sa[4]
-                    t.toAmount = Converter.amountConverter(sa[5])
-                }
-                return t
-            } else {
-                // Do NOT log the raw line: it contains the user's
-                // transaction details (description, amounts, hash).
-                FileLog.e(
-                    "TxApp",
-                    "Error processing transaction line, columns: ${sa.size} (line length: ${line.length})"
-                )
-            }
-            return null
-        }
-
-
-        /**
          * Converts a HashMap<String, *> to a Transaction object
          *
          * @param transaction
@@ -318,42 +261,6 @@ open class Transaction : Serializable {
                 (transaction["toAmount"] as? Number)?.toDouble(),
                 transaction["outsideTransaction"] as? Boolean ?: false
             )
-        }
-
-
-        /**
-         * Transaction from a .csv line of the Crypto.com App history export
-         *
-         * @param line
-         * @return
-         */
-        private fun fromCdCsvParserCsvLine(line: String): Transaction? {
-
-            val sa = StringHelper.splitCsvLine(line).toTypedArray()
-            if (sa.size == 10 || sa.size == 11) {
-                val t = Transaction(
-                    sa[0],
-                    sa[1],
-                    sa[2],
-                    Converter.amountConverter(sa[3]),
-                    Converter.amountConverter(sa[7]),
-                    Converter.ttConverter(sa[9])
-                )
-                if (sa.size == 11) t.transHash = sa[10]
-                if (Converter.ttConverter(sa[9]) == TransactionType.viban_purchase) {
-                    t.toCurrency = sa[4]
-                    t.toAmount = Converter.amountConverter(sa[5])
-                }
-                return t
-            } else {
-                FileLog.e("TxApp", sa.contentToString())
-                FileLog.e("TxApp", sa.size.toString())
-                FileLog.e(
-                    "TxApp",
-                    "Error while processing the following transaction: $line"
-                )
-            }
-            return null
         }
     }
 }

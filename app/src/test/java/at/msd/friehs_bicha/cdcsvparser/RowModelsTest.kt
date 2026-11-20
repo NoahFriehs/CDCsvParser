@@ -12,6 +12,7 @@ import at.msd.friehs_bicha.cdcsvparser.ui.display.sortWalletRows
 import at.msd.friehs_bicha.cdcsvparser.ui.display.transactionIcon
 import at.msd.friehs_bicha.cdcsvparser.ui.display.transactionRow
 import at.msd.friehs_bicha.cdcsvparser.ui.display.walletRow
+import at.msd.friehs_bicha.cdcsvparser.util.Converter
 import at.msd.friehs_bicha.cdcsvparser.wallet.CroCardWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
@@ -36,12 +37,20 @@ class RowModelsTest {
 
     private fun tx(desc: String, amount: Double, currency: String): Transaction =
         Transaction(
-            "Wed Jul 20 18:19:24 GMT+02:00 2022",
+            1L,
             desc,
+            0,
+            0,
+            Converter.dateConverter("Wed Jul 20 18:19:24 GMT+02:00 2022"),
             currency,
-            BigDecimal(amount),
-            BigDecimal(amount),
-            TransactionType.crypto_deposit
+            amount,
+            amount,
+            0.0,
+            TransactionType.crypto_deposit,
+            null,
+            null,
+            null,
+            false
         )
 
     private fun cardWallet(name: String, amount: Double, txCount: Int): CroCardWallet {
@@ -112,7 +121,7 @@ class RowModelsTest {
     @Test
     fun cryptoWalletRowFallsBackToZeroWithoutPrices() {
         // No native price cache in JVM tests -> price 0 -> asset value 0.
-        val w = CDCWallet("BTC", BigDecimal(2.0), BigDecimal(0.0), null, false)
+        val w = CDCWallet(1L, "BTC", 2.0, 0.0, 0.0, false, ArrayList())
         val row = walletRow(w)
         assertEquals("BTC", row.name)
         assertEquals(0.0, row.assetValue, 0.0001)

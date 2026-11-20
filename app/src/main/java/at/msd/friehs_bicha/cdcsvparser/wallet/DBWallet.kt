@@ -24,9 +24,11 @@ open class DBWallet(wallet: Wallet?, overridTX: Boolean = false) : Serializable 
 
     init {
         // Write-only construction: every surviving caller hands in a fully
-        // set wallet (the model export + Room/Firestore rehydrate); the
+        // set wallet from the posted state (the cloud export); the
         // null-safe defaults keep a null input a zeroed DB row instead of
-        // a crash at DB-wallet build time (restore edge).
+        // a crash at export edge. [overridTX] leaves the transaction list
+        // uninitialized: the card export (CCDBWallet) fills it with its own
+        // row type.
         walletId = wallet?.walletId?.toLong() ?: 0L
         currencyType = wallet?.currencyType ?: ""
         amount = wallet?.amount?.toDouble() ?: 0.0
