@@ -56,9 +56,6 @@ fun SettingsScreen(
     appTypeOptions: List<String>,
     appTypeSelected: Int,
     onAppTypeSelected: (Int) -> Unit,
-    coreModeOptions: List<String>,
-    coreModeSelected: Int,
-    onCoreModeSelected: (Int) -> Unit,
     useStrictType: Boolean,
     strictTypeEnabled: Boolean,
     onUseStrictTypeChange: (Boolean) -> Unit,
@@ -99,7 +96,6 @@ fun SettingsScreen(
     snackbarHostState: SnackbarHostState,
 ) {
     var appTypeExpanded by remember { mutableStateOf(false) }
-    var coreModeExpanded by remember { mutableStateOf(false) }
     var showDeleteCachesDialog by remember { mutableStateOf(false) }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
@@ -134,38 +130,6 @@ fun SettingsScreen(
                             onClick = {
                                 onAppTypeSelected(index)
                                 appTypeExpanded = false
-                            },
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = coreModeExpanded,
-                onExpandedChange = { coreModeExpanded = it },
-            ) {
-                TextField(
-                    value = coreModeOptions.getOrElse(coreModeSelected) { "" },
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text(stringResource(R.string.core_mode_label)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(coreModeExpanded) },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
-                )
-                ExposedDropdownMenu(
-                    expanded = coreModeExpanded,
-                    onDismissRequest = { coreModeExpanded = false },
-                ) {
-                    coreModeOptions.forEachIndexed { index, label ->
-                        DropdownMenuItem(
-                            text = { Text(label) },
-                            onClick = {
-                                onCoreModeSelected(index)
-                                coreModeExpanded = false
                             },
                         )
                     }

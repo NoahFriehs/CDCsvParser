@@ -174,7 +174,6 @@
     <string name="allocation_title">Portfolio-Allokation</string>
     <string name="no_allocation_data">Noch keine Werte zum Darstellen</string>
     <string name="app_type_label">App-Typ</string>
-    <string name="core_mode_label">Rechenmodul</string>
     <string name="file_history_placeholder">Noch keine Dateien</string>
     <string name="log_section">Protokoll</string>
     <string name="log_help">Die eigenen Protokolle der App (Kotlin-App-Log + C++-Kern-Log): hier filtern, ansehen und kopieren — ohne adb.</string>

@@ -30,9 +30,6 @@ interface CoreSource {
     /** The native library loaded (the C++ core is usable). */
     val isCoreInitialized: Boolean
 
-    /** The user's setting: run the C++ core (vs. the legacy Kotlin core). */
-    val useCpp: Boolean
-
     /** Unparsable CSV lines of the last parse (0 = clean). */
     val lastFailedLines: Int
 
@@ -93,9 +90,6 @@ object Core : CoreSource {
 
     override val isCoreInitialized: Boolean
         get() = CoreService.isCoreInitialized
-
-    override val useCpp: Boolean
-        get() = CoreService.useCpp
 
     override val lastFailedLines: Int
         get() = CoreService.lastFailedLines

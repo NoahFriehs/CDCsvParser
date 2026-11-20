@@ -93,11 +93,9 @@ class ComposeUiTest {
                 "pass-8;ui-pass-8;Manual;CITest\n",
         )
         // Belt and braces: the core also detects BlockPit from the file
-        // header, but set the intended type anyway. BlockPit imports only
-        // run on the C++ core, so pin the core mode - a device left on the
-        // Kotlin core would fail every import-based test with a timeout.
+        // header, but set the intended type anyway (BlockPit imports run
+        // on the C++ core - the only compute path).
         PreferenceHelper.setSelectedType(target, AppType.BlockPit)
-        PreferenceHelper.setUseCpp(target, true)
 
         scenario = ActivityScenario.launch(StartingActivity::class.java)
     }
@@ -312,7 +310,7 @@ class ComposeUiTest {
         // Gear icon: contentDescription from the settings string resource.
         tap(waitFor(By.desc(str(R.string.settings)), "settings icon not visible"))
         waitText(str(R.string.app_type_label))
-        waitText(str(R.string.core_mode_label))
+        waitText(str(R.string.use_strict_wallet_type))
     }
 
     @Test

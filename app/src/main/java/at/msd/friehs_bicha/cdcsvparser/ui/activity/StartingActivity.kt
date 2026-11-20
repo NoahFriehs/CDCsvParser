@@ -58,18 +58,18 @@ class StartingActivity : ComponentActivity() {
     private fun fastStart() {
         // Fast start: with "Store data local" + "Enable fast
         // start" on and a local model present, the last parse is shown
-        // directly. The C++ core mode loads its own persisted state (the
-        // core saves it after every parse since the save fix); the Room
-        // local model (built here) is the data for Kotlin core mode and
-        // the fallback source when the C++ save state is missing.
+        // directly. The C++ core loads its own persisted state (the core
+        // saves it after every parse); the Room local model (built here)
+        // is the saved-model first post of the core fast start and the
+        // fallback source when the C++ save state is missing.
         val isLocal = PreferenceHelper.getFastStartEnabled(App.instance) &&
             PreferenceHelper.getIsDataLocal(App.instance) &&
             PreferenceHelper.getIsAppModelSavedLocal(App.instance)
         if (isLocal) {
             Benchmarker.start()
             CoreService.appModel = AppModel()
-            // No core-mode persist: fast start must not flip the user's
-            // "Core Mode" setting (the old startService(false) did).
+            // No settings writes: the C++ core is the only compute path
+            // (the core-mode setting is retired).
             core.startServiceFromLocal()
         }
 

@@ -72,7 +72,6 @@ class SettingsFragment : Fragment() {
     // Settings values are read once into Compose state; writes go straight
     // to PreferenceHelper (the DataStore-backed facade).
     private val _appTypeIndex = mutableStateOf(0)
-    private val _coreModeIndex = mutableStateOf(0)
     private val _useStrictType = mutableStateOf(false)
     private val _dataLocal = mutableStateOf(false)
     private val _fastStart = mutableStateOf(false)
@@ -156,12 +155,6 @@ class SettingsFragment : Fragment() {
                         onAppTypeSelected = { index ->
                             _appTypeIndex.value = index
                             PreferenceHelper.setSelectedType(requireContext(), AppType.values()[index])
-                        },
-                        coreModeOptions = resources.getStringArray(R.array.core_modes).toList(),
-                        coreModeSelected = _coreModeIndex.value,
-                        onCoreModeSelected = { index ->
-                            _coreModeIndex.value = index
-                            PreferenceHelper.setUseCpp(requireContext(), index == 0)
                         },
                         useStrictType = _useStrictType.value,
                         strictTypeEnabled = _appTypeIndex.value != AppType.CroCard.ordinal,
@@ -285,7 +278,6 @@ class SettingsFragment : Fragment() {
 
     private fun readPreferences() {
         _appTypeIndex.value = PreferenceHelper.getSelectedType(requireContext()).ordinal
-        _coreModeIndex.value = if (PreferenceHelper.getUseCpp(requireContext())) 0 else 1
         _useStrictType.value = PreferenceHelper.getUseStrictType(requireContext())
         _dataLocal.value = PreferenceHelper.getIsDataLocal(requireContext())
         _fastStart.value = PreferenceHelper.getFastStartEnabled(requireContext())

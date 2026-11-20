@@ -52,7 +52,6 @@ object PreferenceHelper {
     const val LOG_FILENAME = "LOG_FILENAME"
     const val MAX_LOG_LEVEL = "MAX_LOG_LEVEL"
     const val IS_FIRST_START = "IS_FIRST_START"
-    const val USE_CPP = "USE_CPP"
     // User-supplied price API keys (Settings -> API keys).
     const val CG_API_KEY = "cg_api_key"
     const val CC_API_KEY = "cc_api_key"
@@ -390,29 +389,6 @@ object PreferenceHelper {
     fun getIsFirstStart(context: Context): Boolean {
         awaitLoaded()
         return cachedBoolean(IS_FIRST_START) ?: true
-    }
-
-    /**
-     * sets if the C++ core is used
-     *
-     * @param context the context
-     * @param useCpp if the C++ core is used
-     */
-    fun setUseCpp(context: Context, useCpp: Boolean) {
-        awaitLoaded()
-        put(USE_CPP, useCpp)
-        persist(USE_CPP, useCpp)
-    }
-
-    /**
-     * returns if the C++ core is used
-     *
-     * @param context the context
-     * @return if the C++ core is used
-     */
-    fun getUseCpp(context: Context): Boolean {
-        awaitLoaded()
-        return cachedBoolean(USE_CPP) ?: true
     }
 
     /**

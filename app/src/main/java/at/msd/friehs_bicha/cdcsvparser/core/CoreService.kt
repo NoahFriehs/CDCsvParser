@@ -132,8 +132,6 @@ class CoreService : Service() {
             FileLog.i(TAG, "AppModel already initialized.")
         }
 
-        useCpp = PreferenceHelper.getUseCpp(App.instance)
-
         // BEFORE the launch: if this line is missing while "Import
         // dispatched" is present, the intent never reached the component.
         FileLog.i(TAG, "Service start command: ${intent.action} (gen $generation)")
@@ -275,17 +273,27 @@ class CoreService : Service() {
         if (appType != appTypeFromSettings) {
             FileLog.i(TAG, "File content indicates $appType; using it instead of the selected type $appTypeFromSettings.")
         }
-        if (appType == AppType.BlockPit && !(isCoreInitialized && useCpp)) {
+        if (appType == AppType.BlockPit && !isCoreInitialized) {
             FileLog.e(TAG, "BlockPit files can only be parsed with the C++ core.")
             errorCounter.postValue((errorCounter.value ?: 0) + 1)
             return
         }
-        if (appType == AppType.Kraken && !(isCoreInitialized && useCpp)) {
+        if (appType == AppType.Kraken && !isCoreInitialized) {
             FileLog.e(TAG, "Kraken files can only be parsed with the C++ core.")
             errorCounter.postValue((errorCounter.value ?: 0) + 1)
             return
         }
-        when (isCoreInitialized && useCpp) {
+        // The standard family is core-enforced: the Kotlin island's escape
+        // parse is retired from the live paths, so a standard-family file
+        // without an initialized core is a guarded refusal (the BlockPit /
+        // Kraken twin - no partial parse, no empty model; the localized
+        // parse-screen note rides the error counter).
+        if ((appType == AppType.CdCsvParser || appType == AppType.Default) && !isCoreInitialized) {
+            FileLog.e(TAG, "Standard files can only be parsed with the C++ core.")
+            errorCounter.postValue((errorCounter.value ?: 0) + 1)
+            return
+        }
+        when (isCoreInitialized) {
             true -> {
                 val coreMode = CoreModeMapper.toCoreMode(appType)
                 if (coreMode == null) {
@@ -427,12 +435,12 @@ class CoreService : Service() {
     @OptIn(DelicateCoroutinesApi::class)
     private fun provideDataToActivity(forceKotlin: Boolean = false) {
 
-        when (!forceKotlin && isCoreInitialized && useCpp) {
-            true -> {
+        when {
+            !forceKotlin && isCoreInitialized -> {
                 provideDataToActivityFromCppCore()
             }
 
-            false -> {
+            forceKotlin -> {
                 serviceScope.launch {
                     try {
                         try {
@@ -556,6 +564,14 @@ class CoreService : Service() {
                         throw RuntimeException(e)
                     }
                 }
+            }
+
+            else -> {
+                // The C++ core is the only provide path: without the native
+                // library there is no model to post - the guarded refusal,
+                // the same surface as the parse guards above.
+                FileLog.e(TAG, "The C++ core is unavailable; no model can be posted.")
+                errorCounter.postValue((errorCounter.value ?: 0) + 1)
             }
         }
     }
@@ -807,7 +823,7 @@ class CoreService : Service() {
     }
 
     private fun getCardAssetMap(walletId: Int): WalletAssets {
-        return if (isCoreInitialized && useCpp) {
+        return if (isCoreInitialized) {
             // Card buckets are fiat: the C++ path only carries "money
             // spent"; the other three rows are hidden (null) - the same
             // shape the old map posted (explicit nulls).
@@ -898,7 +914,7 @@ class CoreService : Service() {
      * @return the amount of the asset in the wallet
      */
     private fun getAssetMap(walletId: Int): WalletAssets {
-        return if (isCoreInitialized && useCpp) {
+        return if (isCoreInitialized) {
             val moneySpent = getMoneySpentByWID(walletId)
             WalletAssets.standard(
                 moneySpentText = StringHelper.formatAmountToString(moneySpent),
@@ -918,7 +934,7 @@ class CoreService : Service() {
      * Initializes the Core
      */
     private fun handleStartService() {
-        when (isCoreInitialized && useCpp) {
+        when (isCoreInitialized) {
             true -> {
                 if (init(logFilePath, savePath)) {
                     // Fast start (C++ mode): init() loaded the persisted
@@ -958,20 +974,12 @@ class CoreService : Service() {
             }
 
             false -> {
-                if (appModel != null) {
-                    isInitialized = true
-                    isRunning = true
-                    FileLog.d(TAG, "AppModel already initialized.")
-                    provideDataToActivity()
-                } else {
-                    if (PreferenceHelper.getIsAppModelSavedLocal(App.instance)) {
-                        appModel = AppModel()
-                        isInitialized = true
-                        waitLocalModelAndProvide()
-                    } else {
-                        FileLog.e(TAG, "AppModel not initialized. No data available.")
-                    }
-                }
+                // The C++ core is the only parse and provide path: without
+                // the native library no model can be served (a saved Room
+                // model is legacy persistence - re-importing the CSV
+                // rebuilds it through the core).
+                FileLog.e(TAG, "The C++ core is unavailable; fast start needs it.")
+                errorCounter.postValue((errorCounter.value ?: 0) + 1)
             }
         }
     }
@@ -1066,7 +1074,7 @@ class CoreService : Service() {
      * as for a single import.
      */
     fun parseCombinedSelection(fileNames: List<String>, settingsMode: Int) {
-        if (!isCoreInitialized || !useCpp) {
+        if (!isCoreInitialized) {
             FileLog.w(TAG, "Combined selection needs the C++ core path; refusing ${fileNames.size} file(s).")
             errorCounter.postValue(errorCounter.value?.plus(1) ?: 1)
             return
@@ -1317,7 +1325,7 @@ class CoreService : Service() {
             }
 
             if (hasCryptoTx) {
-                when (isCoreInitialized && useCpp) {
+                when (isCoreInitialized) {
                     true -> {
                         val txXMl = mutableListOf<String>()
                         val walletXml = mutableListOf<String>()
@@ -1363,20 +1371,17 @@ class CoreService : Service() {
                     }
 
                     false -> {
-                        val newAppModel = AppModel(
-                            dbWallets,
-                            dbOutsideWallets,
-                            dbTransactions,
-                            AppType.CdCsvParser,
-                            0,
-                            appSettings.useStrictType
-                        )
-                        CoreService.appModel = newAppModel
+                        // The island rehydrate is retired with the standard
+                        // escape switch: without the native library the cloud
+                        // document cannot be applied - the guarded refusal.
+                        FileLog.e(TAG, "Cloud restore needs the C++ core, which is unavailable.")
+                        errorCounter.postValue((errorCounter.value ?: 0) + 1)
+                        return
                     }
                 }
             }
             if (hasCardTx && hasCryptoTx) {
-                when (isCoreInitialized && useCpp) {
+                when (isCoreInitialized) {
                     true -> {
                         dbCardWallets?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
                             setCardWalletData(
@@ -1404,16 +1409,13 @@ class CoreService : Service() {
                         })
                     }
 
-                    // useCpp off: the Kotlin core holds no card data anymore
-                    // (the card parser island is retired, the C++ core is the
-                    // only card path): nothing to rehydrate on this side -
-                    // the card rows simply ride the crypto model's restore
-                    // (documented limitation of the escape switch).
+                    // Unreachable: the crypto half above already refused
+                    // the restore when the core is unavailable.
                     false -> {}
                 }
             }
             if (hasCardTx) {
-                when (isCoreInitialized && useCpp) {
+                when (isCoreInitialized) {
                     true -> {
 
                         // "" on purpose: a live Firebase import must start
@@ -1452,18 +1454,12 @@ class CoreService : Service() {
                     }
 
                     false -> {
-                        // useCpp off: the Kotlin card path is retired, so this
-                        // hits the factory's not-supported arm (throws) - the
-                        // documented broken state of the escape switch.
-                        val newAppModel = AppModel(
-                            dbCardWallets,
-                            null,
-                            dbCardTransactions,
-                            AppType.CroCard,
-                            0,
-                            appSettings.useStrictType
-                        )
-                        CoreService.appModel = newAppModel
+                        // The C++ core is the only card path: without it the
+                        // cloud document cannot be applied - the guarded
+                        // refusal (the old island rehydrate is retired).
+                        FileLog.e(TAG, "Cloud restore needs the C++ core, which is unavailable.")
+                        errorCounter.postValue((errorCounter.value ?: 0) + 1)
+                        return
                     }
                 }
             }
@@ -1850,7 +1846,6 @@ class CoreService : Service() {
             coreExecutor.submit { running.provideDataToActivityFromCppCore() }
         }
         @Volatile var isInitialized = false
-        @Volatile var useCpp = true
 
         @Volatile var isRunning = false
 
@@ -1907,20 +1902,9 @@ class CoreService : Service() {
         }
 
         /**
-         * Starts the CoreService
-         */
-        fun startService(useCpp: Boolean = true) {
-            val intent = Intent(App.instance, CoreService::class.java)
-            intent.action = ACTION_START_SERVICE
-            PreferenceHelper.setUseCpp(App.instance, useCpp)
-            App.instance.startService(intent)
-        }
-
-        /**
-         * Starts the CoreService for the fast-start path:
-         * `ACTION_START_SERVICE` without persisting a core-mode choice -
-         * `useCpp` already mirrors the user's setting from
-         * `onStartCommand`, and fast start must not flip it.
+         * Starts the CoreService for the fast-start path: plain
+         * `ACTION_START_SERVICE`, no settings writes - the C++ core is the
+         * only compute path (the core-mode choice is retired).
          */
         fun startServiceFromLocal() {
             val intent = Intent(App.instance, CoreService::class.java)
@@ -1975,7 +1959,7 @@ class CoreService : Service() {
          * @return the amount the asset is worth in EUR
          */
         fun getValueOfAssetsFromWID(walletId: Int): Double {
-            val w: Wallet? = if (isCoreInitialized && useCpp) {
+            val w: Wallet? = if (isCoreInitialized) {
                 walletsLiveData.value?.find { it.walletId == walletId }
             } else {
                 appModel?.txApp?.wallets?.find { it.walletId == walletId }

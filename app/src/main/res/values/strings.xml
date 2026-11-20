@@ -181,7 +181,6 @@
     <string name="allocation_title">Portfolio allocation</string>
     <string name="no_allocation_data">No values to chart yet</string>
     <string name="app_type_label">App type</string>
-    <string name="core_mode_label">Calculation module</string>
     <string name="file_history_placeholder">No files yet</string>
     <string name="log_section">Log</string>
     <string name="log_help">The app\u0027s own logs (Kotlin app log + C++ core log): filter, read and copy them here — no adb needed.</string>

@@ -2,18 +2,22 @@ package at.msd.friehs_bicha.cdcsvparser.app
 
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.transactions.Transaction
-import at.msd.friehs_bicha.cdcsvparser.wallet.CDCWallet
 import at.msd.friehs_bicha.cdcsvparser.wallet.Wallet
-import java.util.function.Consumer
 
 /**
  * TxApp factory
  *
- * The card family (CroCard/CurveCard) has no branch on purpose: the Kotlin
- * card parse path is retired and the C++ core is the only card path. Any
- * card type handed in - CSV or DB restore - falls through to the
- * not-supported arm below (throws), which is the documented limitation of
- * the escape switch (useCpp off), not a live promise.
+ * The C++ core is the only parse path for every live family. The Kotlin
+ * standard island's live-construction arms (the CSV import and the
+ * cloud-restore rehydrate) are retired with the standard escape: a
+ * standard type reaching them hits the not-supported arm (throws) -
+ * defense in depth for routing the CoreService guards already keep out of
+ * the factory. The island's legacy Room re-read (`Finished`) outlives the
+ * parse arms: the Room save stays part of the legacy persistence, and the
+ * fast start still shows the saved model until the core re-parse re-posts.
+ * The card family has no branch on purpose (the C++ core is the only card
+ * path): any card type handed in falls through to the not-supported arm
+ * below (throws).
  */
 @Suppress("UNCHECKED_CAST")
 class TxAppFactory {
@@ -40,19 +44,21 @@ class TxAppFactory {
             val txApp = when (appType) {
                 AppType.CdCsvParser -> {
                     when (appStatus) {
-                        AppStatus.NotStarted -> StandardTxApp(
-                            dataContainer[DataTypes.csvAsList] as ArrayList<String>,
-                            appType
-                        )
+                        // Retired escape arms: the standard island cannot
+                        // be constructed from a CSV import or a fetched
+                        // document anymore (the C++ core is the only
+                        // standard path).
+                        AppStatus.NotStarted, AppStatus.importFromFB -> {
+                            FileLog.e(
+                                "TxAppFactory",
+                                "CdCsvParser: the Kotlin standard parse is retired (core-only family), AppStatus: $appStatus"
+                            )
+                            throw RuntimeException("Usage not found")
+                        }
 
-                        AppStatus.importFromFB -> initFromFirebase(
-                            dataContainer[DataTypes.dbWallets] as ArrayList<java.util.HashMap<String, *>>,
-                            dataContainer[DataTypes.dbOutsideWallets] as ArrayList<java.util.HashMap<String, *>>,
-                            dataContainer[DataTypes.dbTransactions] as ArrayList<java.util.HashMap<String, *>>,
-                            appType,
-                            dataContainer[DataTypes.amountTxFailed] as Long
-                        )
-
+                        // The legacy Room re-read outlives the parse arms:
+                        // the fast start still shows the saved model until
+                        // the core re-parse re-posts.
                         AppStatus.Finished -> initFromLocalDB(
                             dataContainer[DataTypes.dbWallets] as ArrayList<Wallet>,
                             dataContainer[DataTypes.dbOutsideWallets] as ArrayList<Wallet>,
@@ -69,9 +75,15 @@ class TxAppFactory {
 
                 AppType.Default -> {
                     when (appStatus) {
-                        AppStatus.NotStarted -> StandardTxApp(
-                            dataContainer[DataTypes.csvAsList] as ArrayList<String>, appType
-                        )
+                        // Retired escape arm: same as the CdCsvParser CSV
+                        // import - the island parse is gone.
+                        AppStatus.NotStarted -> {
+                            FileLog.e(
+                                "TxAppFactory",
+                                "Default: the Kotlin standard parse is retired (core-only family), AppStatus: $appStatus"
+                            )
+                            throw RuntimeException("Usage not found")
+                        }
 
                         else -> {
                             FileLog.e("TxAppFactory", "Default: Usage not found, AppStatus: $appStatus")
@@ -98,39 +110,6 @@ class TxAppFactory {
             tXs.addAll(transactions)
 
             return StandardTxApp(tXs, wTXs, wTXsOutside, amountTxFailed, appType, true)
-        }
-
-        /**
-         * Init from firebase
-         *
-         * @param dbWallets
-         * @param dbOutsideWallets
-         * @param dbTransactions
-         * @param appType
-         * @param amountTxFailed
-         * @return StandardTxApp
-         */
-        private fun initFromFirebase(
-            dbWallets: ArrayList<java.util.HashMap<String, *>>,
-            dbOutsideWallets: ArrayList<java.util.HashMap<String, *>>?,
-            dbTransactions: ArrayList<java.util.HashMap<String, *>>,
-            appType: AppType,
-            amountTxFailed: Long
-        ): StandardTxApp {
-            val tXs: MutableList<Transaction> = ArrayList()
-            val wTXs: MutableList<CDCWallet> = ArrayList()
-            val wTXsOutside: MutableList<CDCWallet> = ArrayList()
-
-            dbTransactions.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
-                tXs.add(Transaction.fromDb(hashMap))
-            })
-            dbWallets.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
-                wTXs.add(CDCWallet.fromDb(hashMap))
-            })
-            dbOutsideWallets?.forEach(Consumer { hashMap: java.util.HashMap<String, *> ->
-                wTXsOutside.add(CDCWallet.fromDb(hashMap))
-            })
-            return StandardTxApp(tXs, wTXs, wTXsOutside, amountTxFailed, appType)
         }
     }
 }
