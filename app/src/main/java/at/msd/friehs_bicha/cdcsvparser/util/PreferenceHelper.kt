@@ -572,5 +572,34 @@ object PreferenceHelper {
         persist(PARTIAL_IMPORT_FILES, value)
     }
 
+    /**
+     * Clears ALL stored settings: the DataStore store AND the
+     * in-process cache. Both are required - the facade reads from the
+     * cache, so clearing only the store would keep the pre-clear values
+     * alive for the rest of the process lifetime. The legacy
+     * `settings_prefs` SharedPreferences are cleared too, so the
+     * one-shot migration can never resurrect an old key into the
+     * freshly emptied store.
+     *
+     * The in-memory reset is synchronous (the next getter read sees
+     * defaults at once); the store file itself is cleared on the
+     * facade's IO lane, like every other write here.
+     */
+    fun clearAllStored(context: Context) {
+        synchronized(cacheLock) { cache.clear() }
+        val ds = dataStore ?: context.dataStore
+        scope.launch {
+            try {
+                ds.edit { it.clear() }
+                // The interface clear() is gone in API 37 - the only
+                // reset left is the editor's.
+                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    .edit().clear().apply()
+            } catch (e: Exception) {
+                FileLog.e(TAG, "clearAllStored failed: $e")
+            }
+        }
+    }
+
     private const val TAG = "PreferenceHelper"
 }

@@ -77,6 +77,11 @@
     <string name="delete_price_caches_question">Löscht den heruntergeladenen Preisverlauf und den Symbol-Cache. Der nächste Parse lädt den Verlauf neu; die CSV-Importe bleiben erhalten.</string>
     <string name="caches_deleted">Preis-Caches gelöscht.</string>
     <string name="caches_already_empty">Keine zu löschenden Preis-Caches.</string>
+    <string name="delete_all_data_section">Daten</string>
+    <string name="delete_all_data_help">Entfernt die App-Daten auf diesem Gerät – die importierten Daten und die Upload-Historie, die Einstellungen und die Preis-Caches. Importiere die Original-CSV-Exporte erneut, um sie wiederherzustellen.</string>
+    <string name="delete_all_data">Alle Daten löschen</string>
+    <string name="delete_all_data_question">Löscht alle importierten Daten und die Upload-Historie, alle Einstellungen und die Preis-Caches auf diesem Gerät. Die Daten sind nur durch erneuten Import der Original-CSV-Exporte wiederherstellbar.</string>
+    <string name="all_data_deleted">Alle Daten gelöscht.</string>
     <string name="export_data">Daten exportieren</string>
     <string name="export_written">CSV-Export in die gewählte Datei geschrieben.</string>
     <string name="export_not_ready">Noch nichts zu exportieren - zuerst Daten importieren.</string>

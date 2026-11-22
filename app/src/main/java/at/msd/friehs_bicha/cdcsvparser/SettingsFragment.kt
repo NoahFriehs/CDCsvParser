@@ -25,6 +25,7 @@ import android.content.Context
 import at.msd.friehs_bicha.cdcsvparser.app.AppType
 import at.msd.friehs_bicha.cdcsvparser.core.Core
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
+import at.msd.friehs_bicha.cdcsvparser.core.DataWipe
 import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
 import at.msd.friehs_bicha.cdcsvparser.logging.LogFilter
@@ -116,8 +117,6 @@ class SettingsFragment : Fragment() {
     /** The longest tail the viewer reads into memory (2000 lines ≈ 200 KB). */
     private val LOG_TAIL_LINES = 2000
 
-    /** The on-disk price cache files. */
-    private val PRICE_CACHE_FILES = arrayOf("history_prices.json", "symbol_id_cache.json")
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -239,6 +238,7 @@ class SettingsFragment : Fragment() {
                             }
                         },
                         onDeletePriceCaches = { deletePriceCaches() },
+                        onDeleteAllData = { deleteAllData() },
                         logVisible = _logVisible.value,
                         onLogVisibleChange = { visible ->
                             _logVisible.value = visible
@@ -298,17 +298,18 @@ class SettingsFragment : Fragment() {
     }
 
     /**
-     * Removes the app's price caches - the two on-disk JSON
-     * files (deep history + symbol->id map) and the in-memory 5-minute
-     * price cache. The CSV imports (user data) and the Room DB are NOT
-     * touched. The next parse re-fetches the history; until then the
-     * charts fall back to the live prices only.
+     * Removes the app's price caches - the on-disk JSON files (deep
+     * history, symbol->id map, intraday refinement - the named list is
+     * the one the full data wipe shares) and the in-memory price cache.
+     * The CSV imports (user data) and the Room DB are NOT touched. The
+     * next parse re-fetches the history; until then the charts fall
+     * back to the live prices only.
      */
     private fun deletePriceCaches() {
         val context = requireContext().applicationContext
         lifecycleScope.launch(Dispatchers.IO) {
             var deleted = 0
-            for (name in PRICE_CACHE_FILES) {
+            for (name in DataWipe.PRICE_CACHE_FILE_NAMES) {
                 val file = File(context.filesDir, name)
                 if (file.exists() && file.delete()) deleted++
             }
@@ -426,6 +427,26 @@ class SettingsFragment : Fragment() {
             if (isAdded) {
                 _logLines.value = emptyList()
                 snackbarHostState.showSnackbar(getString(R.string.log_cleared))
+            }
+        }
+    }
+
+    /**
+     * The in-app data-deletion entry point (the confirm dialog is the
+     * screen's own, next to the cache-delete one): runs the full wipe -
+     * the ordering is the [DataWipe] contract (the core TM, the save
+     * files, the Room copy, the settings, the price caches, the
+     * uploaded history). The settings' Compose state is re-read
+     * afterwards, because the screen must not keep showing values the
+     * wipe just removed (API keys, toggles, the cloud model).
+     */
+    private fun deleteAllData() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            CoreService.deleteAllData()
+            readPreferences()
+            withContext(Dispatchers.Main) {
+                if (!isAdded) return@withContext
+                snackbarHostState.showSnackbar(getString(R.string.all_data_deleted))
             }
         }
     }

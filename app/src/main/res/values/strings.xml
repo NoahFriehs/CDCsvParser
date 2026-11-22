@@ -78,6 +78,11 @@
     <string name="delete_price_caches_question">Deletes the downloaded price history and the symbol cache. The next parse re-downloads the history; the CSV imports are not touched.</string>
     <string name="caches_deleted">Price caches deleted.</string>
     <string name="caches_already_empty">No price caches to delete.</string>
+    <string name="delete_all_data_section">Data</string>
+    <string name="delete_all_data_help">Removes the app\'s data on this device - the imported data and the upload history, the settings and the price caches. Re-import the original CSV exports to restore it.</string>
+    <string name="delete_all_data">Delete all data</string>
+    <string name="delete_all_data_question">Deletes all imported data and the upload history, all settings, and the price caches on this device. The data can only be restored by re-importing the original CSV exports.</string>
+    <string name="all_data_deleted">All data deleted.</string>
     <string name="export_data">Export data</string>
     <string name="export_written">CSV export written to the selected file.</string>
     <string name="export_not_ready">Nothing to export yet - import data first.</string>

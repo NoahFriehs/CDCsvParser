@@ -80,6 +80,7 @@ fun SettingsScreen(
     cloudPasswordApplyEnabled: Boolean,
     onCloudPasswordApply: () -> Unit,
     onDeletePriceCaches: () -> Unit,
+    onDeleteAllData: () -> Unit,
     logVisible: Boolean,
     onLogVisibleChange: (Boolean) -> Unit,
     logFileLabels: List<String>,
@@ -100,6 +101,7 @@ fun SettingsScreen(
 ) {
     var appTypeExpanded by remember { mutableStateOf(false) }
     var showDeleteCachesDialog by remember { mutableStateOf(false) }
+    var showDeleteAllDataDialog by remember { mutableStateOf(false) }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(
@@ -306,6 +308,33 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // The data lifecycle: the full wipe (the in-app data-deletion
+            // entry point - one confirm dialog, the localized wording
+            // states what goes and how to get it back) next to the CSV
+            // export (the copy the user keeps for the re-import).
+            Text(
+                text = stringResource(R.string.delete_all_data_section),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.delete_all_data_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { showDeleteAllDataDialog = true },
+                modifier = Modifier.fillMaxWidth().a11yTarget(),
+                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
+            ) {
+                Text(stringResource(R.string.delete_all_data))
+            }
+
+            Spacer(Modifier.height(12.dp))
+
             // Data export: the core's own serializer builds the whole
             // file, the SAF picker (in the fragment) picks the target -
             // the app keeps no copy.
@@ -367,6 +396,31 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(
                     onClick = { showDeleteCachesDialog = false },
+                    modifier = Modifier.a11yTarget(),
+                ) {
+                    Text(stringResource(R.string.no))
+                }
+            },
+        )
+    }
+
+    if (showDeleteAllDataDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllDataDialog = false },
+            title = { Text(stringResource(R.string.delete_all_data)) },
+            text = { Text(stringResource(R.string.delete_all_data_question)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteAllDataDialog = false
+                        onDeleteAllData()
+                    },
+                    modifier = Modifier.a11yTarget(),
+                ) { Text(stringResource(R.string.yes)) }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteAllDataDialog = false },
                     modifier = Modifier.a11yTarget(),
                 ) {
                     Text(stringResource(R.string.no))

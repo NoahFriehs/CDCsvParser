@@ -1561,6 +1561,116 @@ class CoreService : Service() {
             if (result.isEmpty()) emptyList() else result.split("\n")
         }
 
+        /**
+         * The "delete all data" action (the in-app data-deletion
+         * entry point): runs every [DataWipe.STEPS] exactly in order,
+         * one side effect per step. The core step is the single
+         * cpp-core-thread section (the TM reset + the re-post of the
+         * emptied state); every other step is a plain file / DB / store
+         * operation off that thread.
+         *
+         * A failing step does NOT abort the rest of the wipe: the
+         * stores are independent (a Room failure must not leave the
+         * caches and the history behind), and the result reports what
+         * the core step managed to clear. The Firebase account and its
+         * cloud document are NOT touched - the wipe is client-side
+         * state only (the account-delete path owns the cloud side).
+         */
+        suspend fun deleteAllData(): DataWipe.Result {
+            var coreStateCleared = false
+            var filesDeleted = 0
+            for (step in DataWipe.STEPS) {
+                when (step) {
+                    DataWipe.Step.CORE_STATE ->
+                        coreStateCleared = onCoreThread {
+                            val running = service
+                            if (running != null && isCoreInitialized && isRunning) {
+                                running.clearAll()
+                                // The mode flags mirror the core's
+                                // getModes(); the "no data at all" value
+                                // has no when-arm there, so after the
+                                // reset both scopes are gone and are
+                                // dropped explicitly (companion state -
+                                // [checkAndSetModes] sets them the same way).
+                                hasCryptoTx = false
+                                hasCardTx = false
+                                // The Kotlin-side per-import state of the
+                                // LAST parse is stale after the reset
+                                // (the core resets its own at the start
+                                // of the next parse, which no longer
+                                // describes a wiped app).
+                                lastFailedLines = 0
+                                lastParseBudgetCut = false
+                                lastParseUnprocessedRows = 0
+                                lastDuplicateSkips = 0L
+                                // Converge the UI: post the emptied core
+                                // state so the screens hold the
+                                // no-data state instead of the model
+                                // that was just wiped.
+                                running.provideDataToActivity()
+                                true
+                            } else {
+                                FileLog.w(
+                                    TAG,
+                                    "deleteAllData: no live core to clear - the on-disk stores are wiped anyway.",
+                                )
+                                false
+                            }
+                        }
+
+                    DataWipe.Step.CORE_SAVE_FILES,
+                    DataWipe.Step.PRICE_CACHE_FILES,
+                    DataWipe.Step.HISTORY_FILES ->
+                        withContext(Dispatchers.IO) {
+                            filesDeleted += when (step) {
+                                // The whole fast-start save dir (the core
+                                // writes exactly its three state files
+                                // there; deleting the directory content
+                                // covers any of them present).
+                                DataWipe.Step.CORE_SAVE_FILES ->
+                                    File(savePath).listFiles()
+                                        ?.filter { it.isFile }
+                                        ?.count { it.delete() } ?: 0
+
+                                DataWipe.Step.PRICE_CACHE_FILES ->
+                                    DataWipe.PRICE_CACHE_FILE_NAMES.count {
+                                        File(App.instance.filesDir, it).delete()
+                                    }
+
+                                // The upload history list is exactly the
+                                // CSV files in the app's files dir (the
+                                // history dialog lists the same set).
+                                else ->
+                                    App.instance.filesDir
+                                        .listFiles { f -> f.isFile && f.name.endsWith(".csv") }
+                                        ?.count { it.delete() } ?: 0
+                            }
+                        }
+
+                    DataWipe.Step.ROOM ->
+                        withContext(Dispatchers.IO) {
+                            // The same children-first order as the Room
+                            // save (the FK constraints).
+                            val db = App.instance.db
+                            db.transactionDao().deleteAll()
+                            db.walletDao().deleteAll()
+                            db.cardTransactionDao().deleteAll()
+                            db.cardWalletDao().deleteAll()
+                        }
+
+                    DataWipe.Step.DATASTORE -> PreferenceHelper.clearAllStored(App.instance)
+
+                    DataWipe.Step.PRICE_CACHE_MEMORY -> AssetValue.clearPriceCache()
+                }
+            }
+            FileLog.i(
+                TAG,
+                "deleteAllData done: core=${if (coreStateCleared) "cleared" else "no live core"}, " +
+                    "files deleted=$filesDeleted",
+            )
+            return DataWipe.Result(coreStateCleared, filesDeleted)
+        }
+
         private external fun sheetSet(line: String): Boolean
 
         private external fun sheetDelete(kindId: String): Boolean
