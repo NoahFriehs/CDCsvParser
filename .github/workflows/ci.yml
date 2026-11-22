@@ -246,21 +246,29 @@ jobs:
           # to CPU rendering; the tests are text-based and do not care.
           disable-animations: true
           emulator-options: -no-snapshot -no-window -noaudio -gpu off
-          # ONE line: the runner action truncated the previous multi-line
+          # The lane script owns the sequence: the plain suite, then the
+          # persistence-across-restart legs, whose process death between a
+          # setup and its assertion the HOST orchestrates (the connected
+          # test shares the app's process+uid - an in-test kill cannot
+          # work). The legs are per-leg `am instrument` invocations on
+          # the freshly installed APKs (no per-leg gradle run, nothing
+          # to uninstall the app's data between the legs).
+          # ONE line: the runner action truncated a previous multi-line
           # "|| ( … )" continuation, and sh died on the dangling operator.
-          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon || (adb -s emulator-5554 logcat -d -v time -t 4000 > adb_logcat_tail.txt || true)
+          script: bash scripts/ui-lane.sh || (adb -s emulator-5554 logcat -d -v time -t 4000 > adb_logcat_tail.txt || true)
 
-      # The step log above shows no per-test exceptions - on the last red run
-      # the UI never composited ("Failed to find ColorBuffer" loop) and the
-      # failures were only visible in the HTML report. Upload the evidence so
-      # the next red run is diagnosable from the log.
-      - name: Upload test report + logcat (on failure)
+      # The step log above carries only the lane's leg summaries - on a
+      # red run the per-test failures live in the lane's per-leg logs
+      # (the lane script writes one per instrumentation invocation), the
+      # same way the old HTML report did. Upload the evidence so the
+      # next red run is diagnosable from the log.
+      - name: Upload lane logs + logcat (on failure)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ui-test-evidence
           path: |
-            app/build/reports/androidTests/connected/
+            app/build/outputs/androidTest-results/lane/
             adb_logcat_tail.txt
           if-no-files-found: warn
           retention-days: 7
