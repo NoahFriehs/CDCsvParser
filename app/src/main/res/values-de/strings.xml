@@ -284,6 +284,17 @@
     <string name="networth_returns_since">seit %1$s (%2$d Tage)</string>
     <string name="networth_returns_no_valuation">(%1$d Tage ohne Bewertung)</string>
     <string name="networth_returns_insufficient">Für Rendite-Zahlen sind mindestens 30 Tage Historie nötig.</string>
+    <!-- Übersicht: Headline + Delta-Chip auf der Zeitpunkt-Reihe der erfassten Assets -->
+    <string name="summary_delta_basis_day">seit gestern</string>
+    <string name="summary_delta_basis_30d">seit 30 Tagen</string>
+    <string name="summary_delta_basis_30d_title">30-Tage-Veränderung an der Übersicht statt 24 Stunden</string>
+    <string name="summary_hint_networth">Schulden erfassen für das Nettovermögen</string>
+    <string name="summary_delta_up_a11y">gestiegen um %1$s Prozent, %2$s %3$s</string>
+    <string name="summary_delta_up_abs_a11y">gestiegen um %1$s %2$s</string>
+    <string name="summary_delta_down_a11y">gesunken um %1$s Prozent, %2$s %3$s</string>
+    <string name="summary_delta_down_abs_a11y">gesunken um %1$s %2$s</string>
+    <string name="summary_delta_flat_a11y">keine Veränderung, %1$s %2$s</string>
+    <string name="summary_delta_missing_a11y">keine Vergleichsdaten %1$s</string>
     <!-- Balance sheet (financial goals) -->
     <string name="goals_section">Finanzielle Ziele</string>
     <string name="goals_help">Ziele, die Sie hier pflegen. Der App-Kern berechnet den Fortschritt aus Ihrem Vermögen oder Ihren erfassten Vermögenswerten und legt die Ziele in seinem eigenen Speicher ab.</string>

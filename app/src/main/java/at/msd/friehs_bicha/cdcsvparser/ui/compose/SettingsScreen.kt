@@ -64,6 +64,9 @@ fun SettingsScreen(
     fastStart: Boolean,
     fastStartEnabled: Boolean,
     onFastStartChange: (Boolean) -> Unit,
+    /** The summary delta chip's basis: true = 30 days, false = 24 h. */
+    deltaBasis30d: Boolean,
+    onDeltaBasis30dChange: (Boolean) -> Unit,
     isSignedIn: Boolean,
     coingeckoKey: String,
     onCoinGeckoKeyChange: (String) -> Unit,
@@ -155,6 +158,12 @@ fun SettingsScreen(
                 checked = fastStart,
                 enabled = fastStartEnabled,
                 onCheckedChange = onFastStartChange,
+            )
+            SwitchRow(
+                label = stringResource(R.string.summary_delta_basis_30d_title),
+                checked = deltaBasis30d,
+                enabled = true,
+                onCheckedChange = onDeltaBasis30dChange,
             )
 
             Spacer(Modifier.height(24.dp))

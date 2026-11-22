@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.os.bundleOf
 import androidx.core.view.MenuProvider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -23,20 +25,27 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.snackbar.Snackbar
 import androidx.navigation.fragment.findNavController
 import at.msd.friehs_bicha.cdcsvparser.ui.fragments.HistoryDialogFragment
+import at.msd.friehs_bicha.cdcsvparser.core.ChartSeries
 import at.msd.friehs_bicha.cdcsvparser.core.Core
 import at.msd.friehs_bicha.cdcsvparser.core.CoreService
 import at.msd.friehs_bicha.cdcsvparser.core.CoreSource
 import at.msd.friehs_bicha.cdcsvparser.general.HistoryFileUtil
 import at.msd.friehs_bicha.cdcsvparser.logging.FileLog
-import at.msd.friehs_bicha.cdcsvparser.app.NetWorthSnapshot
+import at.msd.friehs_bicha.cdcsvparser.app.DeltaBasis
+import at.msd.friehs_bicha.cdcsvparser.app.SummaryDelta
+import at.msd.friehs_bicha.cdcsvparser.price.AssetValue
+import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryPass
+import at.msd.friehs_bicha.cdcsvparser.price.PriceHistoryProvider
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.MainScreen
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletSeries
 import at.msd.friehs_bicha.cdcsvparser.util.Benchmarker
 import at.msd.friehs_bicha.cdcsvparser.util.FileUtil
 import at.msd.friehs_bicha.cdcsvparser.util.PreferenceHelper
 import com.google.firebase.auth.FirebaseAuth
 import java.io.File
 import java.io.IOException
+import java.time.LocalDate
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -62,13 +71,32 @@ class MainFragment : Fragment() {
     private val _newestHistoryFile = mutableStateOf<String?>(null)
     private val _isSignedIn = mutableStateOf(FirebaseAuth.getInstance().currentUser != null)
     /**
-     * The net-worth summary card: the core's snapshot line, re-read on
-     * every core data post (the fast-start readiness + the price-refresh
-     * rhythm - the tracked value is priced, so a price pass moves the
-     * figure). null = no live core state yet (the card stays hidden,
+     * The core's chart-series post (the unpriced per-wallet lines are
+     * the delta builder's input). Null before the first core data post.
+     */
+    private val _chartSeries = mutableStateOf<ChartSeries?>(null)
+
+    /**
+     * The core's snapshot lines, re-read on every core data post (the
+     * fast-start readiness + the price-refresh rhythm - the tracked
+     * value is priced, so a price pass moves the figure). Consumed by
+     * the summary builder with the priced series.
+     */
+    private val _sheetLines = mutableStateOf<List<String>>(emptyList())
+
+    /**
+     * The active delta basis of the summary chip (the Settings toggle,
+     * re-read on resume - the toggle lives on another destination).
+     */
+    private val _basis = mutableStateOf(DeltaBasis.DAY)
+
+    /**
+     * The resolved summary hero state (headline + delta chip), built by
+     * the pure point-in-time builder from the same data the charts
+     * plot. null = no live core state yet (the card stays hidden,
      * never a placeholder number).
      */
-    private val _netWorth = mutableStateOf<NetWorthSnapshot?>(null)
+    private val _summary = mutableStateOf<SummaryDelta?>(null)
 
     // SAF file picker (ActivityResult API): no storage permissions are
     // needed for ACTION_GET_CONTENT.
@@ -93,9 +121,14 @@ class MainFragment : Fragment() {
         return ComposeView(requireContext()).apply {
             setContent {
                 CdcsvTheme {
+                    // Reading the shared pass state inside the composition
+                    // re-runs this block as the pass publishes symbols -
+                    // the same observation rhythm as the charts.
+                    val history = PriceHistoryPass.history.value
+                    summaryEffect(_chartSeries.value, history, _basis.value, _sheetLines.value)
                     MainScreen(
+                        summary = _summary.value,
                         isSignedIn = _isSignedIn.value,
-                        netWorth = _netWorth.value,
                         newestHistoryFile = _newestHistoryFile.value,
                         onUploadClick = { onBtnUploadClick() },
                         onHistoryClick = {
@@ -171,13 +204,19 @@ class MainFragment : Fragment() {
             viewLifecycleOwner,
         )
 
-        // The net-worth card rides the same data posts as the charts:
+        // The summary card rides the same data posts as the charts:
         // every core data post (fast-start readiness, a new import, a
-        // price pass) re-reads the snapshot line. The read is a fast JNI
-        // call on the cpp-core thread; the core stays the source of the
-        // figure (the buffer-inclusion semantic is pinned there).
-        core.chartSeriesLiveData.observe(viewLifecycleOwner) { refreshNetWorth() }
-        refreshNetWorth()
+        // price pass) re-reads the snapshot lines and (re)builds the
+        // priced delta. The read is a fast JNI call on the cpp-core
+        // thread; the core stays the source of the figure (the
+        // buffer-inclusion semantic is pinned there).
+        core.chartSeriesLiveData.observe(viewLifecycleOwner) { series ->
+            _chartSeries.value = series
+            _sheetLines.value = CoreService.netWorthSnapshot()
+            attachSummaryHistoryPass(series)
+        }
+        _sheetLines.value = CoreService.netWorthSnapshot()
+        readDeltaBasis()
 
         // The launcher activity passes "fastStart" to go straight to the
         // overview (fast start). The extra is consumed ONCE: a recreated view
@@ -200,16 +239,80 @@ class MainFragment : Fragment() {
         _isSignedIn.value = FirebaseAuth.getInstance().currentUser != null
         updateFiles()
         _newestHistoryFile.value = newestHistoryDisplayName()
+        // The delta-basis toggle lives on the settings destination:
+        // coming back here must pick up the choice the user made there.
+        readDeltaBasis()
     }
 
     private fun fastStart() {
         findNavController().navigate(R.id.parseFragment)
     }
 
-    /** One snapshot line off the core (cpp-core thread), parsed thin. */
-    private fun refreshNetWorth() {
-        _netWorth.value = CoreService.netWorthSnapshot().firstOrNull()
-            ?.let { NetWorthSnapshot.parse(it) }
+    /** The Settings preference of the active delta basis. */
+    private fun readDeltaBasis() {
+        _basis.value = if (PreferenceHelper.getDeltaBasis30d(requireContext())) {
+            DeltaBasis.THIRTY_DAYS
+        } else {
+            DeltaBasis.DAY
+        }
+    }
+
+    /**
+     * Joins the process-wide deep-history pass for the held currencies
+     * (zero new work when the same request already runs / finished
+     * today): the delta builder prices from its cache, exactly like the
+     * charts - the pass attach itself is non-blocking. The EUR cash
+     * buffer sits in the currency set (the per-wallet series is
+     * buffer-inclusive) but the pass FIAT-SKIPS it (face value, never
+     * fetched).
+     */
+    private fun attachSummaryHistoryPass(series: ChartSeries) {
+        val walletDays = parseWalletSeries(series.wallet)
+        val currencies = walletDays.keys.toList()
+        if (currencies.isEmpty()) return
+        val startDay = walletDays.values.flatten().minOf { it.date }
+        val rangeDays = ((LocalDate.now().toEpochDay() - startDay.toEpochDay()).coerceAtLeast(0) + 1).toInt()
+        PriceHistoryPass.ensureAll(currencies, rangeDays, null)
+    }
+
+    /**
+     * (Re)builds the remembered summary hero state: the pure builder
+     * prices the core's unpriced per-wallet series with the pass's
+     * published cache (no network of its own) - the last point at the
+     * live pin, the previous point at the price of its day. Re-runs on
+     * every series post, every pass publish and every basis change;
+     * the work is pure composition (the charts' rhythm).
+     */
+    @Composable
+    private fun summaryEffect(
+        series: ChartSeries?,
+        history: Map<String, PriceHistoryProvider.DailyPrices>,
+        basis: DeltaBasis,
+        sheetLines: List<String>,
+    ) {
+        LaunchedEffect(series, history, basis, sheetLines) {
+            if (series == null) {
+                _summary.value = null
+                return@LaunchedEffect
+            }
+            val walletDays = parseWalletSeries(series.wallet)
+            val currencies = walletDays.keys.toList()
+            if (currencies.isEmpty()) {
+                _summary.value = null
+                return@LaunchedEffect
+            }
+            // The pass's prices (cache-aware, the EUR buffer pinned to
+            // 1.0, no network) - the same source the charts value with.
+            val livePrices = AssetValue.getInstance().getPricesFromCache(currencies)
+            _summary.value = SummaryDelta.deltaChipSnapshot(
+                walletSeries = series.wallet,
+                history = history.mapValues { it.value.points },
+                livePrices = livePrices,
+                today = LocalDate.now(),
+                basis = basis,
+                sheetLines = sheetLines,
+            )
+        }
     }
 
     /**

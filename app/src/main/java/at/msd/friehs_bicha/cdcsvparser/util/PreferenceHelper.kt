@@ -72,6 +72,9 @@ object PreferenceHelper {
     // ImportNotes). Additive per-file signal - deleting a file just
     // prunes the read (the dialog intersects with the files on disk).
     const val PARTIAL_IMPORT_FILES = "partial_import_files"
+    // The Main summary delta chip: which previous point the headline is
+    // compared against (true = 30 days ago, default false = 24 hours).
+    const val DELTA_BASIS_30D = "delta_basis_30d"
 
     private const val LOAD_TIMEOUT_MS = 500L
     private const val DATASTORE_FILE = "settings.preferences_pb"
@@ -320,6 +323,29 @@ object PreferenceHelper {
     fun getFastStartEnabled(context: Context): Boolean {
         awaitLoaded()
         return cachedBoolean(FAST_START_ENABLED) ?: false
+    }
+
+    /**
+     * sets the Main summary delta basis (true = 30 days ago, false = 24 hours)
+     *
+     * @param context the context
+     * @param thirtyDays if the 30-day basis is active
+     */
+    fun setDeltaBasis30d(context: Context, thirtyDays: Boolean) {
+        awaitLoaded()
+        put(DELTA_BASIS_30D, thirtyDays)
+        persist(DELTA_BASIS_30D, thirtyDays)
+    }
+
+    /**
+     * returns the Main summary delta basis (false = the 24 h default)
+     *
+     * @param context the context
+     * @return if the 30-day basis is active
+     */
+    fun getDeltaBasis30d(context: Context): Boolean {
+        awaitLoaded()
+        return cachedBoolean(DELTA_BASIS_30D) ?: false
     }
 
     /**

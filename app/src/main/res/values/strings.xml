@@ -291,6 +291,17 @@
     <string name="networth_returns_since">since %1$s (%2$d days)</string>
     <string name="networth_returns_no_valuation">(%1$d days without valuation)</string>
     <string name="networth_returns_insufficient">Return figures need at least 30 days of history.</string>
+    <!-- Main summary: headline + delta chip on the point-in-time tracked series -->
+    <string name="summary_delta_basis_day">vs yesterday</string>
+    <string name="summary_delta_basis_30d">vs 30 days ago</string>
+    <string name="summary_delta_basis_30d_title">30-day change on the summary instead of 24 hours</string>
+    <string name="summary_hint_networth">Add liabilities for net worth</string>
+    <string name="summary_delta_up_a11y">up %1$s percent, %2$s %3$s</string>
+    <string name="summary_delta_up_abs_a11y">up %1$s %2$s</string>
+    <string name="summary_delta_down_a11y">down %1$s percent, %2$s %3$s</string>
+    <string name="summary_delta_down_abs_a11y">down %1$s %2$s</string>
+    <string name="summary_delta_flat_a11y">no change, %1$s %2$s</string>
+    <string name="summary_delta_missing_a11y">no comparison data %1$s</string>
     <!-- Balance sheet (financial goals) -->
     <string name="goals_section">Financial goals</string>
     <string name="goals_help">Targets you maintain here. The app core computes the progress from your net worth or your tracked assets and stores the goals in its own save.</string>

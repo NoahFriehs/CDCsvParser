@@ -75,6 +75,7 @@ class SettingsFragment : Fragment() {
     private val _useStrictType = mutableStateOf(false)
     private val _dataLocal = mutableStateOf(false)
     private val _fastStart = mutableStateOf(false)
+    private val _deltaBasis30d = mutableStateOf(false)
     private val _signedIn = mutableStateOf(auth.currentUser != null)
     // Runtime price API keys ("" = unset / keyless).
     private val _cgKey = mutableStateOf("")
@@ -172,6 +173,11 @@ class SettingsFragment : Fragment() {
                         onFastStartChange = {
                             _fastStart.value = it
                             PreferenceHelper.setFastStartEnabled(requireContext(), it)
+                        },
+                        deltaBasis30d = _deltaBasis30d.value,
+                        onDeltaBasis30dChange = {
+                            _deltaBasis30d.value = it
+                            PreferenceHelper.setDeltaBasis30d(requireContext(), it)
                         },
                         isSignedIn = _signedIn.value,
                         coingeckoKey = _cgKey.value,
@@ -281,6 +287,7 @@ class SettingsFragment : Fragment() {
         _useStrictType.value = PreferenceHelper.getUseStrictType(requireContext())
         _dataLocal.value = PreferenceHelper.getIsDataLocal(requireContext())
         _fastStart.value = PreferenceHelper.getFastStartEnabled(requireContext())
+        _deltaBasis30d.value = PreferenceHelper.getDeltaBasis30d(requireContext())
         _cgKey.value = PreferenceHelper.getCoinGeckoApiKey(requireContext())
         _ccKey.value = PreferenceHelper.getCryptoCompareApiKey(requireContext())
         _cloudKeyModelIndex.value =
