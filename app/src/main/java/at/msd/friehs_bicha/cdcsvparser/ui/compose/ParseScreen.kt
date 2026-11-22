@@ -131,6 +131,12 @@ fun ParseScreen(
     currentPrices: Map<String, Double>,
     /** The asset cards show the offline placeholder. */
     noInternet: Boolean,
+    /** The money-spent card's scope-chip selection (a mixed wallet+card
+     *  model only); null = no selection yet (the model's default scope).
+     *  Fragment-owned on purpose: a recreated view re-reads it, so the
+     *  selection survives navigation round-trips and theme toggles. */
+    spendScope: SpendScope? = null,
+    onSpendScopeChanged: (SpendScope) -> Unit = {},
     /** The chart panel's wallet scope (currency); null = the aggregate view.
      *  Fragment-owned on purpose: a recreated view re-reads it, so the
      *  selection survives navigation round-trips and theme toggles. */
@@ -205,6 +211,51 @@ fun ParseScreen(
                 )
             }
 
+            // The money-spent card's scope chips (MIXED model only: both
+            // scopes live in the model at once). The pure resolver maps
+            // the posted scope texts to the chip's selection - including
+            // the stale-selection fallback when the chip outlived a model
+            // change. Single-scope models post one text each and render
+            // no chips at all (nothing to disambiguate).
+            val spend = remember(data, spendScope) {
+                if (data == null) {
+                    SpendCard.resolve(null, null, null, null)
+                } else if (data.assets == null) {
+                    // The card shape's moneySpent is the card-scope number.
+                    SpendCard.resolve(null, data.moneySpent, null, null)
+                } else {
+                    SpendCard.resolve(
+                        walletText = data.moneySpent,
+                        cardText = data.cardMoneySpent,
+                        blendedText = data.blendedMoneySpent,
+                        requested = spendScope,
+                    )
+                }
+            }
+
+            if (spend.chipVisible) {
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(
+                        -SegmentedButtonDefaults.BorderWidth,
+                    ),
+                ) {
+                    SpendScope.entries.forEachIndexed { index, scope ->
+                        SeriesChip(
+                            selected = spend.scope == scope,
+                            onClick = { onSpendScopeChanged(scope) },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index,
+                                SpendScope.entries.size,
+                            ),
+                            label = stringResource(scope.labelRes),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
             if (data != null && data.assets == null) {
                 // Card/fiat scope: only "money spent" exists - the single
                 // card replaces the crypto 2x2 (the attribution footer is
@@ -215,7 +266,7 @@ fun ParseScreen(
                     iconRes = R.drawable.ic_spending_24,
                     tint = MaterialTheme.colorScheme.secondary,
                     label = stringResource(R.string.money_spent_label),
-                    value = displayValue(context, data.moneySpent),
+                    value = displayValue(context, spend.text),
                     valueStyle = HeroValueStyle,
                 )
             } else {
@@ -232,12 +283,16 @@ fun ParseScreen(
                         value = displayValue(context, data?.assets),
                         valueStyle = HeroValueStyle,
                     )
+                    // The scope chips (above) pick which ledger this
+                    // number covers - the resolver resolved it to the
+                    // posted text already (single-scope models: the plain
+                    // wallet-scope number, exactly as before).
                     MetricCard(
                         modifier = Modifier.weight(1f),
                         iconRes = R.drawable.ic_spending_24,
                         tint = MaterialTheme.colorScheme.secondary,
                         label = stringResource(R.string.money_spent_label),
-                        value = displayValue(context, data?.moneySpent),
+                        value = displayValue(context, spend.text),
                     )
                 }
                 Spacer(Modifier.height(8.dp))
@@ -1169,6 +1224,14 @@ private val ChartSeries.labelRes: Int
         ChartSeries.VALUE -> R.string.series_portfolio_value
         ChartSeries.PL -> R.string.profit_loss
         ChartSeries.BONUS -> R.string.series_bonus
+    }
+
+/** String resource for a money-spent scope chip (mixed model). */
+private val SpendScope.labelRes: Int
+    get() = when (this) {
+        SpendScope.WALLET -> R.string.spend_scope_wallet
+        SpendScope.CARD -> R.string.spend_scope_card
+        SpendScope.BLENDED -> R.string.spend_scope_both
     }
 
 // The frame row uses SHORT labels (W/M/Q/J + T/D) so the

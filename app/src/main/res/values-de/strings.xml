@@ -9,6 +9,11 @@
     <string name="money_spent_label">Geld ausgegeben</string>
     <string name="profit_loss">Gewinn/Verlust</string>
     <string name="rewards_earned">Erhaltene Belohnungen</string>
+    <!-- Scope-Chips der „Geld ausgegeben“-Karte (nur gemischtes
+         Wallet+Karten-Modell): welche Buchhaltung die eine Zahl deckt. -->
+    <string name="spend_scope_wallet">Wallet</string>
+    <string name="spend_scope_card">Karte</string>
+    <string name="spend_scope_both">Beide</string>
     <string name="filter_by_asset">Nach Asset filtern</string>
     <string name="all_transactions">Alle Transaktionen</string>
     <string name="choose_asset">Asset auswählen</string>

@@ -33,6 +33,7 @@ import java.io.File
 import java.time.LocalDate
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.CdcsvTheme
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.ParseScreen
+import at.msd.friehs_bicha.cdcsvparser.ui.compose.SpendScope
 import at.msd.friehs_bicha.cdcsvparser.ui.compose.parseWalletSeries
 import kotlinx.coroutines.launch
 
@@ -123,6 +124,13 @@ class ParseFragment : Fragment() {
      * resets it to the aggregate like every other screen state.
      */
     private val _chartWalletScope = mutableStateOf<String?>(null)
+    /**
+     * The money-spent card's scope-chip selection (a mixed wallet+card
+     * model only); null = no selection yet (the model's default scope).
+     * Same fragment-instance lifecycle as the chart wallet scope: a
+     * recreated view re-reads it, process death resets it.
+     */
+    private val _spendScope = mutableStateOf<SpendScope?>(null)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -148,6 +156,8 @@ class ParseFragment : Fragment() {
                         historyProgress = PriceHistoryPass.progress.value,
                         currentPrices = _currentPrices.value,
                         noInternet = _noInternet.value,
+                        spendScope = _spendScope.value,
+                        onSpendScopeChanged = { _spendScope.value = it },
                         chartWalletScope = _chartWalletScope.value,
                         onChartWalletScopeChanged = { _chartWalletScope.value = it },
                         onFilterClick = { findNavController().navigate(R.id.walletViewFragment) },

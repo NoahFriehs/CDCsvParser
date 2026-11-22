@@ -8,6 +8,11 @@
     <string name="money_spent_label">Money spent</string>
     <string name="profit_loss">Profit/Loss</string>
     <string name="rewards_earned">Rewards earned</string>
+    <!-- Scope chips of the money-spent card (a mixed wallet+card model
+         only): which outflow ledger the card's one number covers. -->
+    <string name="spend_scope_wallet">Wallet</string>
+    <string name="spend_scope_card">Card</string>
+    <string name="spend_scope_both">Both</string>
     <string name="filter_by_asset">Filter by asset</string>
     <string name="all_transactions">All transactions</string>
     <string name="choose_asset">choose asset</string>

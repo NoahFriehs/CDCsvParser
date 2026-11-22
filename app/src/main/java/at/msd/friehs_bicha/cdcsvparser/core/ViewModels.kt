@@ -82,6 +82,17 @@ data class AssetEntry(val walletId: Int, val assets: WalletAssets)
 data class ParseData(
     val assets: String? = null,
     val moneySpent: String? = null,
+    /**
+     * Card scope's money spent (mixed wallet+card models only): null in
+     * every single-scope model. In the card shape ([attributionVisible] =
+     * false) [moneySpent] already IS the card-scope number, so these two
+     * stay null there. Non-null exactly when the live model mixes both
+     * scopes - the parse screen's scope chip is visible in that state.
+     */
+    val cardMoneySpent: String? = null,
+    /** Both scopes' money spent summed; non-null under the same condition
+     *  as [cardMoneySpent]. */
+    val blendedMoneySpent: String? = null,
     val rewards: String? = null,
     val profitLoss: String? = null,
     val attributionVisible: Boolean = true,
@@ -123,11 +134,15 @@ data class ParseData(
             offlinePriceNote: OfflinePriceNote? = null,
             parseBudgetNote: ParseBudgetNote? = null,
             incompleteHistory: List<IncompleteWalletNote> = emptyList(),
+            cardMoneySpent: String? = null,
+            blendedMoneySpent: String? = null,
         ): ParseData = ParseData(
             moneySpent = moneySpentText,
             assets = assetsText,
             rewards = rewardsText,
             profitLoss = profitLossText,
+            cardMoneySpent = cardMoneySpent,
+            blendedMoneySpent = blendedMoneySpent,
             offlinePriceNote = offlinePriceNote,
             parseBudgetNote = parseBudgetNote,
             incompleteHistory = incompleteHistory,

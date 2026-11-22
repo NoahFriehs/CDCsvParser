@@ -476,6 +476,23 @@ class CoreService : Service() {
         var totalMoneySpent = getTotalMoneySpent()
         val totalMoneySpentString =
             StringHelper.formatAmountToString(totalMoneySpent)
+        // Mixed model (both scopes live at once): the 2x2 money-spent
+        // card disambiguates scope with a chip. The card-scope and the
+        // combined (both-scopes) totals ride the SAME post as the wallet
+        // scope; null in every single-scope model, which is what hides
+        // the chip. Spend is a ledger fact - no price involved, so all
+        // three price states below carry identical scope texts.
+        val cardMoneySpentText: String?
+        val blendedMoneySpentText: String?
+        if (hasCryptoTx && hasCardTx) {
+            val cardSpent = getTotalMoneySpentCard()
+            cardMoneySpentText = StringHelper.formatAmountToString(cardSpent)
+            blendedMoneySpentText =
+                StringHelper.formatAmountToString(totalMoneySpent + cardSpent)
+        } else {
+            cardMoneySpentText = null
+            blendedMoneySpentText = null
+        }
         // Set in the offline branch below: there the 5 s retry loop owns
         // the recovery, so the phase-2 fetch must not stack on top of it.
         var offlinePlaceholder = false
@@ -502,6 +519,8 @@ class CoreService : Service() {
                         offlinePriceNote = offlinePriceNote,
                         parseBudgetNote = parseBudgetNote,
                         incompleteHistory = incompleteHistory,
+                        cardMoneySpent = cardMoneySpentText,
+                        blendedMoneySpent = blendedMoneySpentText,
                     )
                 }
 
@@ -518,6 +537,8 @@ class CoreService : Service() {
                         offlinePriceNote = offlinePriceNote,
                         parseBudgetNote = parseBudgetNote,
                         incompleteHistory = incompleteHistory,
+                        cardMoneySpent = cardMoneySpentText,
+                        blendedMoneySpent = blendedMoneySpentText,
                     )
                 }
 
@@ -549,6 +570,8 @@ class CoreService : Service() {
                         offlinePriceNote = offlinePriceNote,
                         parseBudgetNote = parseBudgetNote,
                         incompleteHistory = incompleteHistory,
+                        cardMoneySpent = cardMoneySpentText,
+                        blendedMoneySpent = blendedMoneySpentText,
                     )
                 }
             }
